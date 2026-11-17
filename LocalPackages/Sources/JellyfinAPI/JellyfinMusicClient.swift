@@ -242,9 +242,11 @@ extension JellyfinMediaClient {
         return (artists, page.totalRecordCount ?? startIndex + artists.count)
     }
 
-    public func getMusicGenres(credential: ServerCredential, authHeader: String, libraryId: String) async throws -> [MusicGenre] {
+    /// A music library's genres, or every music library's.
+    public func getMusicGenres(credential: ServerCredential, authHeader: String, libraryId: String?) async throws -> [MusicGenre] {
         var query = baseQuery(credential: credential, startIndex: 0, limit: 500)
-        query += [.init(name: "ParentId", value: libraryId), .init(name: "SortBy", value: "SortName")]
+        if let libraryId { query.append(.init(name: "ParentId", value: libraryId)) }
+        query.append(.init(name: "SortBy", value: "SortName"))
         let page: MusicPage = try await getMusic("MusicGenres", query: query, credential: credential, authHeader: authHeader)
         return page.items.map { MusicGenre(id: $0.id, name: $0.name ?? "", primaryImageTag: $0.imageTags?["Primary"]) }
     }

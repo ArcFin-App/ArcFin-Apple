@@ -6,18 +6,22 @@ import JellyfinAPI
 import MediaEngine
 import UIKit
 
-/// Music in the car, laid out like the system's music app: Listen Now (rows of covers for
-/// what's been played, added and played most, and favorites) and Library (playlists,
-/// artists, albums, songs, downloaded), then the system's Now Playing with shuffle, repeat,
-/// favorite, Up Next and the album. Everything is CarPlay's own templates, so a knob, a
+/// Music in the car, laid out like the system's music app so something plays in a tap or two:
+/// Home (Shuffle All and rows of covers for what's been played, played most and favorites),
+/// New (what was added lately), Radio (stations from what's playing, favorite artists and
+/// genres) and Library (playlists, artists, albums, songs, downloaded), then the system's
+/// Now Playing with shuffle, repeat, favorite, Up Next and the album. Everything is CarPlay's own templates, so a knob, a
 /// touchpad or the steering wheel's buttons move through it as well as touch does. It plays
 /// through the same player as the phone, so the queue, lock screen and remotes carry on.
 @MainActor
 final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPTabBarTemplateDelegate,
                                   CPNowPlayingTemplateObserver {
     private var interface: CPInterfaceController?
-    private let listenNow = CPListTemplate(title: String(localized: "Listen Now"), sections: [])
+    private let home = CPListTemplate(title: String(localized: "Home"), sections: [])
+    private let new = CPListTemplate(title: String(localized: "New"), sections: [])
+    private let radio = CPListTemplate(title: String(localized: "Radio"), sections: [])
     private let library = CPListTemplate(title: String(localized: "Library"), sections: [])
+    private var tabs: [CPListTemplate] { [home, new, radio, library] }
 
     private var music: MusicPlayback { AppServices.music }
     private var player: MusicQueuePlayer { music.player }
@@ -25,16 +29,17 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                   didConnect interfaceController: CPInterfaceController) {
         interface = interfaceController
-        listenNow.tabImage = UIImage(systemName: "play.circle")
+        home.tabImage = UIImage(systemName: "house")
+        new.tabImage = UIImage(systemName: "sparkles")
+        radio.tabImage = UIImage(systemName: "dot.radiowaves.left.and.right")
         library.tabImage = UIImage(systemName: "square.stack")
-        let tabs = CPTabBarTemplate(templates: [listenNow, library])
-        tabs.delegate = self
-        interfaceController.setRootTemplate(tabs, animated: false, completion: nil)
+        let bar = CPTabBarTemplate(templates: tabs)
+        bar.delegate = self
+        interfaceController.setRootTemplate(bar, animated: false, completion: nil)
         setUpNowPlaying()
         watchProfile()
         watchSong()
-        load(listenNow)
-        load(library)
+        tabs.forEach(load)
     }
 
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
@@ -54,8 +59,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         } onChange: { [weak self] in
             Task { @MainActor [weak self] in
                 guard let self, interface != nil else { return }
-                load(listenNow)
-                load(library)
+                tabs.forEach(load)
                 watchProfile()
             }
         }
@@ -91,7 +95,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                 return
             }
             list.emptyViewTitleVariants = [String(localized: "Nothing Here Yet")]
-            list.updateSections(list === listenNow ? await listenNowSections() : librarySections())
+            switch list {
+            case home: list.updateSections(await homeSections())
+            case new: list.updateSections(await newSections())
+            case radio: list.updateSections(await radioSections())
+            default: list.updateSections(librarySections())
+            }
         }
     }
 
@@ -102,7 +111,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     /// Shuffle All, then rows of covers; a cover plays (or opens) that one, the row's title
     /// opens the whole list.
-    private func listenNowSections() async -> [CPListSection] {
+    private func homeSections() async -> [CPListSection] {
         let shuffle = CPListItem(text: String(localized: "Shuffle All"), detailText: nil, image: UIImage(systemName: "shuffle"))
         shuffle.handler = { [weak self] _, done in
             Task {
@@ -117,13 +126,65 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         async let played = songs(sort: .datePlayed, filter: .init(playedOnly: true))
         async let most = songs(sort: .playCount, filter: .init(playedOnly: true))
         async let favorites = songs(sort: .name, filter: .init(favoritesOnly: true), ascending: true)
-        async let added = albums(sort: .dateAdded)
         var rows: [CPListTemplateItem] = [shuffle]
         if let row = songRow(String(localized: "Recently Played"), await played) { rows.append(row) }
-        if let row = albumRow(String(localized: "Recently Added"), await added) { rows.append(row) }
         if let row = songRow(String(localized: "Most Played"), await most) { rows.append(row) }
         if let row = songRow(String(localized: "Favorite Songs"), await favorites) { rows.append(row) }
         return [CPListSection(items: rows)]
+    }
+
+    /// What was added lately: the newest albums as covers, then the newest songs.
+    private func newSections() async -> [CPListSection] {
+        async let added = albums(sort: .dateAdded)
+        async let latest = songs(sort: .dateAdded)
+        var sections: [CPListSection] = []
+        if let row = albumRow(String(localized: "Latest Albums"), await added) { sections.append(CPListSection(items: [row])) }
+        let newest = await latest
+        if !newest.isEmpty {
+            sections.append(CPListSection(items: songItems(newest), header: String(localized: "Latest Songs"), sectionIndexTitle: nil))
+        }
+        return sections
+    }
+
+    /// Stations: one from what's playing, then from the artists played most, then by genre.
+    private func radioSections() async -> [CPListSection] {
+        var sections: [CPListSection] = []
+        if let song = player.current {
+            let item = station(String(localized: "Station from \(song.name)"), detail: song.artistLine,
+                               symbol: "dot.radiowaves.left.and.right", seed: song.id)
+            loadImage(MusicAPI.artworkURL(song, width: 120), into: item)
+            sections.append(CPListSection(items: [item]))
+        }
+        async let most = songs(sort: .playCount, filter: .init(playedOnly: true))
+        async let genres = (try? await MusicAPI.call { try await $0.getMusicGenres(credential: $1, authHeader: $2, libraryId: nil) }) ?? []
+        var seen = Set<String>()
+        let artists = await most.compactMap(\.artists.first).filter { seen.insert($0.id).inserted }.prefix(8)
+        if !artists.isEmpty {
+            let items = artists.map { artist in
+                station(artist.name, detail: String(localized: "Artist Station"), symbol: "music.microphone", seed: artist.id)
+            }
+            sections.append(CPListSection(items: Array(items), header: String(localized: "Your Artists"), sectionIndexTitle: nil))
+        }
+        let genreItems = await genres.prefix(20).map { genre in
+            station(genre.name, detail: String(localized: "Genre Station"), symbol: "guitars", seed: genre.id)
+        }
+        if !genreItems.isEmpty {
+            sections.append(CPListSection(items: Array(genreItems), header: String(localized: "Genres"), sectionIndexTitle: nil))
+        }
+        return sections
+    }
+
+    /// Songs like the seed (a song, artist or genre), playing at once.
+    private func station(_ title: String, detail: String?, symbol: String, seed: String) -> CPListItem {
+        let item = CPListItem(text: title, detailText: detail, image: UIImage(systemName: symbol))
+        item.handler = { [weak self] _, done in
+            Task {
+                await MusicActions.instantMix(from: seed)
+                self?.showNowPlaying()
+                done()
+            }
+        }
+        return item
     }
 
     private func librarySections() -> [CPListSection] {
