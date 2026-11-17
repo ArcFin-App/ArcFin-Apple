@@ -2,6 +2,7 @@
 
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
+import CarPlay
 import UserNotifications
 import CastKit
 import Telemetry
@@ -60,7 +61,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
         let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
-        config.delegateClass = QuickActionSceneDelegate.self
+        // The car's screen has its own scene, with CarPlay's templates instead of a window.
+        config.delegateClass = connectingSceneSession.role == .carTemplateApplication
+            ? CarPlaySceneDelegate.self : QuickActionSceneDelegate.self
         return config
     }
 }
