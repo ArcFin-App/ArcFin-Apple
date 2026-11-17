@@ -28,7 +28,10 @@ public final class MusicQueuePlayer {
     public private(set) var position: Double = 0
     public private(set) var duration: Double = 0
     /// This player's own level, under the device's; a remote sets it.
-    public var volume: Float = 1 { didSet { if fade == nil { player.volume = volume } } }
+    public var volume: Float = 1 { didSet { if fade == nil { player.volume = output } } }
+    /// A fade over the volume (the sleep timer's), apart from it so remotes don't see it change.
+    @ObservationIgnored public var fadeLevel: Float = 1 { didSet { if fade == nil { player.volume = output } } }
+    private var output: Float { volume * fadeLevel }
     public var isMuted = false {
         didSet {
             player.isMuted = isMuted
@@ -575,8 +578,8 @@ public final class MusicQueuePlayer {
                 guard (try? await Task.sleep(for: .seconds(seconds / Double(steps)))) != nil, let self else { return }
                 // Equal power, so the middle doesn't dip.
                 let progress = Double(step) / Double(steps)
-                player.volume = volume * Float(sin(progress * .pi / 2))
-                old.volume = volume * Float(cos(progress * .pi / 2))
+                player.volume = output * Float(sin(progress * .pi / 2))
+                old.volume = output * Float(cos(progress * .pi / 2))
             }
             self?.finishCrossfade()
         }
@@ -590,7 +593,7 @@ public final class MusicQueuePlayer {
         fadingOut = nil
         old.pause()
         old.removeAllItems()
-        player.volume = volume
+        player.volume = output
     }
 
     private func markStarted(_ entry: MusicQueue.Entry) {

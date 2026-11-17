@@ -493,19 +493,18 @@ final class MusicPlayback {
     /// Fades the last seconds out, then pauses and puts the volume back. The level falls on
     /// a curve, so the end sounds gradual rather than dropping away at the last moment.
     private func fallAsleep() async {
-        let level = player.volume
         let steps = 90
         for step in 1...steps {
             guard (try? await Task.sleep(for: .seconds(Self.sleepFade / Double(steps)))) != nil else {
-                player.volume = level
+                player.fadeLevel = 1
                 return
             }
-            player.volume = level * Self.fadeLevel(remaining: Double(steps - step) / Double(steps))
+            player.fadeLevel = Self.fadeLevel(remaining: Double(steps - step) / Double(steps))
         }
         pause()
         autoplayTask?.cancel()
         autoplayTask = nil
-        player.volume = level
+        player.fadeLevel = 1
         sleepTimer = nil
         sleepsAt = nil
         sleepTask = nil
@@ -514,13 +513,13 @@ final class MusicPlayback {
     /// End of Song: the song's last seconds fade out, so it doesn't stop dead. Seeking back
     /// out of them brings the level back up.
     private func fadeOutWithSong() async {
-        let level = player.volume
-        defer { player.volume = level }
+        defer { player.fadeLevel = 1 }
         while sleepTimer == .endOfSong {
             guard (try? await Task.sleep(for: .milliseconds(150))) != nil else { return }
             let remaining = player.duration - player.position
-            guard player.duration > Self.sleepFade * 2, !isCasting else { continue }
-            player.volume = level * Self.fadeLevel(remaining: min(max(remaining / Self.sleepFade, 0), 1))
+            let level: Float = player.duration > Self.sleepFade * 2 && !isCasting && remaining < Self.sleepFade
+                ? Self.fadeLevel(remaining: max(remaining / Self.sleepFade, 0)) : 1
+            if abs(player.fadeLevel - level) > 0.005 { player.fadeLevel = level }
         }
     }
 
