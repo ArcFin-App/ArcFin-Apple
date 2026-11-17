@@ -222,14 +222,14 @@ extension JellyfinMediaClient {
         return (tracks, page.totalRecordCount ?? startIndex + tracks.count)
     }
 
-    /// Artists in a music library. Album artists only leaves out everyone who only guests on
-    /// a track.
-    public func getMusicArtists(credential: ServerCredential, authHeader: String, libraryId: String,
+    /// Artists in a music library, or in all of them. Album artists only leaves out everyone
+    /// who only guests on a track.
+    public func getMusicArtists(credential: ServerCredential, authHeader: String, libraryId: String?,
                                 albumArtistsOnly: Bool = true, filter: MusicFilter = .init(),
                                 startIndex: Int = 0, limit: Int = 100) async throws -> (artists: [MusicArtist], total: Int) {
         var query = baseQuery(credential: credential, startIndex: startIndex, limit: limit)
+        if let libraryId { query.append(.init(name: "ParentId", value: libraryId)) }
         query += [
-            .init(name: "ParentId", value: libraryId),
             .init(name: "SortBy", value: "SortName"),
             .init(name: "SortOrder", value: "Ascending"),
             .init(name: "Fields", value: "Overview,Genres,PrimaryImageAspectRatio"),
