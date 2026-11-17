@@ -205,7 +205,9 @@ public final class MusicQueuePlayer {
             return
         }
         let target = CMTime(seconds: seconds, preferredTimescale: 600), count = seekCount
-        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+        // A tenth of a second either way is inaudible and lands much sooner than an exact frame.
+        let tolerance = CMTime(seconds: 0.1, preferredTimescale: 600)
+        player.seek(to: target, toleranceBefore: tolerance, toleranceAfter: tolerance) { [weak self] finished in
             Task { @MainActor [weak self] in
                 guard let self, count == seekCount else { return }
                 let now = player.currentTime().seconds
@@ -497,9 +499,9 @@ public final class MusicQueuePlayer {
         let start = convertedStarts[ObjectIdentifier(item)]
         if time.isNumeric { position = (start ?? 0) + time.seconds }
         if position > 0 { failures = 0 }
-        // A conversion's own length is only what it has made so far; the song's is known.
-        if item.duration.isNumeric, item.duration.seconds > 0,
-           start == nil || queue.current?.track.duration == nil {
+        // The server's length wins: AVFoundation only estimates an Ogg file's (a 60-second
+        // Opus file read as 304), and a conversion's is only what it has made so far.
+        if queue.current?.track.duration == nil, item.duration.isNumeric, item.duration.seconds > 0 {
             duration = (start ?? 0) + item.duration.seconds
         }
         if crossfadesCurrent, fade == nil, isPlaying {
