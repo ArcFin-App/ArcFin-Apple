@@ -352,7 +352,8 @@ private struct MusicLyricsPanel: View {
     var body: some View {
         Group {
             if let lyrics, !lyrics.lines.isEmpty {
-                let current = lyrics.isSynced ? lyrics.lineIndex(at: music.position) : nil
+                let songID = player.current?.id ?? ""
+                let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: songID, at: music.position)
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: DT.Spacing.md) {
@@ -363,7 +364,7 @@ private struct MusicLyricsPanel: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .id(index)
                                     .onTapGesture {
-                                        if let start = line.start { music.seek(to: start) }
+                                        if let start = line.start { music.seek(to: start + MusicLyricsSource.shared.delay(songID)) }
                                     }
                             }
                         }
@@ -372,6 +373,16 @@ private struct MusicLyricsPanel: View {
                     .onChange(of: current) { _, line in
                         guard let line else { return }
                         withAnimation(DT.Animation.standard) { proxy.scrollTo(line, anchor: .center) }
+                    }
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    if lyrics.isSynced {
+                        MusicLyricsTimingMenu(songID: songID)
+                            .font(.footnote.weight(.semibold))
+                            .padding(.horizontal, DT.Spacing.sm)
+                            .padding(.vertical, DT.Spacing.xs)
+                            .background(.white.opacity(0.15), in: Capsule())
+                            .tint(.white)
                     }
                 }
             } else {
@@ -459,14 +470,23 @@ private struct MusicQueuePanel: View {
     }
 }
 
-/// The system volume slider, which also follows the volume buttons.
+/// The system volume slider, which also follows the volume buttons. It draws its track at
+/// the top of its frame, so it sits centred in a holder to line up with the speaker icons.
 private struct MusicVolumeSlider: UIViewRepresentable {
-    func makeUIView(context: Context) -> MPVolumeView {
-        let view = MPVolumeView()
-        view.tintColor = .white
-        return view
+    func makeUIView(context: Context) -> UIView {
+        let holder = UIView()
+        let slider = MPVolumeView()
+        slider.tintColor = .white
+        slider.translatesAutoresizingMaskIntoConstraints = false
+        holder.addSubview(slider)
+        NSLayoutConstraint.activate([
+            slider.leadingAnchor.constraint(equalTo: holder.leadingAnchor),
+            slider.trailingAnchor.constraint(equalTo: holder.trailingAnchor),
+            slider.centerYAnchor.constraint(equalTo: holder.centerYAnchor),
+        ])
+        return holder
     }
-    func updateUIView(_ uiView: MPVolumeView, context: Context) {}
+    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 /// AirPlay, offering speakers first.

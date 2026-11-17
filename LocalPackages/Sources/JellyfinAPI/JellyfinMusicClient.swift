@@ -136,8 +136,8 @@ public struct MusicGenre: Sendable, Identifiable, Equatable, Hashable {
     }
 }
 
-public struct Lyrics: Sendable, Equatable {
-    public struct Line: Sendable, Equatable {
+public struct Lyrics: Sendable, Equatable, Codable {
+    public struct Line: Sendable, Equatable, Codable {
         /// Seconds from the start; nil for lyrics without timing.
         public var start: TimeInterval?
         public var text: String

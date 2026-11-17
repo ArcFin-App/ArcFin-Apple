@@ -34,21 +34,62 @@ public struct LRCLIBClient: Sendable {
     /// within two seconds of the length). Throws when LRCLIB couldn't be asked, or asked to
     /// wait, so a miss isn't remembered then.
     public func lyrics(track: String, artist: String, album: String?, duration: TimeInterval?) async throws -> Result {
-        var comps = URLComponents(url: baseURL.appendingPathComponent("api/get"), resolvingAgainstBaseURL: false)
         var query: [URLQueryItem] = [.init(name: "track_name", value: track), .init(name: "artist_name", value: artist)]
         if let album, !album.isEmpty { query.append(.init(name: "album_name", value: album)) }
         if let duration, (1...3600).contains(duration) { query.append(.init(name: "duration", value: String(Int(duration.rounded())))) }
+        await withCheckedContinuation { PathWait(continuation: $0).start(timeoutSeconds: 6) }
+        if let data = try await get("api/get", query) {
+            let exact = try Self.decode(data)
+            if exact != .notFound { return exact }
+        }
+        // No exact match (the album or length differs, often a single or a video's audio):
+        // the closest in length of the same song and artist.
+        let search = [URLQueryItem(name: "track_name", value: track), .init(name: "artist_name", value: artist)]
+        guard let data = try await get("api/search", search) else { return .notFound }
+        return try Self.closest(data, duration: duration)
+    }
+
+    /// The response, or nil when LRCLIB has nothing there.
+    private func get(_ path: String, _ query: [URLQueryItem]) async throws -> Data? {
+        var comps = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)
         comps?.queryItems = query
         guard let url = comps?.url else { throw URLError(.badURL) }
-        await withCheckedContinuation { PathWait(continuation: $0).start(timeoutSeconds: 6) }
         var request = URLRequest(url: url)
         request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
         request.timeoutInterval = 15
         let (data, response) = try await Self.session.data(for: request)
         let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        if status == 404 { return .notFound }
+        if status == 404 { return nil }
         guard (200...299).contains(status) else { throw URLError(.badServerResponse) }
-        return try Self.decode(data)
+        return data
+    }
+
+    /// From search results, synced lyrics before plain ones, then the nearest length, within
+    /// 15 seconds when the song's length is known.
+    static func closest(_ data: Data, duration: TimeInterval?) throws -> Result {
+        struct Record: Decodable {
+            let duration: Double?
+            let instrumental: Bool?
+            let plainLyrics: String?
+            let syncedLyrics: String?
+        }
+        let records = try JSONDecoder().decode([Record].self, from: data).filter { record in
+            guard record.instrumental != true, record.syncedLyrics != nil || record.plainLyrics != nil else { return false }
+            guard let duration, let length = record.duration else { return true }
+            return abs(length - duration) <= 15
+        }
+        let best = records.min { a, b in
+            let aSynced = a.syncedLyrics != nil, bSynced = b.syncedLyrics != nil
+            if aSynced != bSynced { return aSynced }
+            guard let duration else { return false }
+            return abs((a.duration ?? .infinity) - duration) < abs((b.duration ?? .infinity) - duration)
+        }
+        guard let best else { return .notFound }
+        if let synced = best.syncedLyrics, let lyrics = parseLRC(synced) { return .found(lyrics) }
+        if let plain = best.plainLyrics?.trimmingCharacters(in: .whitespacesAndNewlines), !plain.isEmpty {
+            return .found(Lyrics(lines: plain.components(separatedBy: .newlines).map { Lyrics.Line(start: nil, text: $0) }))
+        }
+        return .notFound
     }
 
     static func decode(_ data: Data) throws -> Result {

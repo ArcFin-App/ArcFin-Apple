@@ -43,4 +43,20 @@ import Testing
         let json = #"{"instrumental":true,"plainLyrics":null,"syncedLyrics":null}"#
         #expect(try LRCLIBClient.decode(Data(json.utf8)) == .notFound)
     }
+
+    @Test func searchPicksSyncedThenNearestLength() throws {
+        let json = #"""
+        [{"duration":198,"instrumental":false,"plainLyrics":"Near plain","syncedLyrics":null},
+         {"duration":201,"instrumental":false,"plainLyrics":"x","syncedLyrics":"[00:01.00]Far synced"},
+         {"duration":209,"instrumental":false,"plainLyrics":"x","syncedLyrics":"[00:01.00]Near synced"},
+         {"duration":300,"instrumental":false,"plainLyrics":"x","syncedLyrics":"[00:01.00]Too long"}]
+        """#
+        let result = try LRCLIBClient.closest(Data(json.utf8), duration: 210)
+        #expect(result == .found(Lyrics(lines: [.init(start: 1, text: "Near synced")])))
+    }
+
+    @Test func searchWithNothingCloseFindsNone() throws {
+        let json = #"[{"duration":100,"instrumental":false,"plainLyrics":"x","syncedLyrics":null}]"#
+        #expect(try LRCLIBClient.closest(Data(json.utf8), duration: 210) == .notFound)
+    }
 }

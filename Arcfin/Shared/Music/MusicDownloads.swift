@@ -80,6 +80,18 @@ final class MusicDownloads {
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
 
+    private static func lyricsURL(_ songID: String) -> URL { folder.appendingPathComponent("\(songID).lyrics.json") }
+
+    func hasLyrics(_ songID: String) -> Bool {
+        localURL(for: songID) != nil && FileManager.default.fileExists(atPath: Self.lyricsURL(songID).path)
+    }
+
+    /// A downloaded song's lyrics, saved with it.
+    func lyrics(for songID: String) -> Lyrics? {
+        guard localURL(for: songID) != nil, let data = try? Data(contentsOf: Self.lyricsURL(songID)) else { return nil }
+        return try? JSONDecoder().decode(Lyrics.self, from: data)
+    }
+
     /// An album's cover, saved with its songs.
     func coverURL(albumID: String) -> URL? {
         let url = Self.folder.appendingPathComponent("\(albumID).jpg")
@@ -159,6 +171,7 @@ final class MusicDownloads {
         for id in ids {
             guard let saved = index.songs.removeValue(forKey: id) else { continue }
             try? FileManager.default.removeItem(at: Self.folder.appendingPathComponent(saved.file))
+            try? FileManager.default.removeItem(at: Self.lyricsURL(id))
         }
         dropUnusedAlbums()
         saveIndex()
@@ -244,6 +257,10 @@ final class MusicDownloads {
             index.songs[song.id] = Saved(song: song, file: file, userID: credential.userID, bytes: bytes, savedAt: .now)
             saveIndex()
             await saveCover(for: song)
+            if let lyrics = await MusicLyricsSource.shared.lyricsToSave(for: song),
+               let data = try? JSONEncoder().encode(lyrics) {
+                try? data.write(to: Self.lyricsURL(song.id))
+            }
         } catch {
             log.error("Couldn't save \(song.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }

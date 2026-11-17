@@ -170,7 +170,8 @@ struct TVMusicNowPlaying: View {
     @ViewBuilder
     private var lyricsView: some View {
         if let lyrics, !lyrics.lines.isEmpty {
-            let current = lyrics.isSynced ? lyrics.lineIndex(at: player.position) : nil
+            let songID = player.current?.id ?? ""
+            let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: songID, at: player.position)
             let lines = Array(lyrics.lines.enumerated())
             let shown = current.map { index in lines.filter { $0.offset >= index - 1 && $0.offset <= index + 2 } }
                 ?? Array(lines.prefix(4))
@@ -180,6 +181,10 @@ struct TVMusicNowPlaying: View {
                         .font(.title3.weight(.bold))
                         .foregroundStyle(.white.opacity(lyrics.isSynced && index != current ? 0.35 : 1))
                         .lineLimit(1)
+                }
+                if lyrics.isSynced {
+                    MusicLyricsTimingMenu(songID: songID)
+                        .font(.callout)
                 }
             }
             .animation(DT.Animation.standard, value: current)

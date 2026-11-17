@@ -249,7 +249,7 @@ struct MusicMacNowPlaying: View {
     @ViewBuilder
     private func lyricsView(_ song: MusicSong) -> some View {
         if let lyrics, !lyrics.lines.isEmpty {
-            let current = lyrics.isSynced ? lyrics.lineIndex(at: player.position) : nil
+            let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: song.id, at: player.position)
             ScrollViewReader { proxy in
                 ScrollView {
                     VStack(alignment: .leading, spacing: DT.Spacing.sm) {
@@ -259,7 +259,7 @@ struct MusicMacNowPlaying: View {
                                 .foregroundStyle(lyrics.isSynced && index != current ? .secondary : .primary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .id(index)
-                                .onTapGesture { if let start = line.start { player.seek(to: start) } }
+                                .onTapGesture { if let start = line.start { player.seek(to: start + MusicLyricsSource.shared.delay(song.id)) } }
                         }
                     }
                     .padding(.vertical, DT.Spacing.md)
@@ -267,6 +267,11 @@ struct MusicMacNowPlaying: View {
                 .onChange(of: current) { _, line in
                     guard let line else { return }
                     withAnimation(DT.Animation.standard) { proxy.scrollTo(line, anchor: .center) }
+                }
+                .overlay(alignment: .topTrailing) {
+                    if lyrics.isSynced {
+                        MusicLyricsTimingMenu(songID: song.id).fixedSize()
+                    }
                 }
             }
         } else if MusicLyricsSource.shared.isAvailable(song) {
