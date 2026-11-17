@@ -251,6 +251,7 @@ final class MusicPlayback {
             }
             topUpAutoplay()
             MusicLyricsSource.shared.prefetch(song)
+            refreshRating(of: song)
             saveQueue()
         case .ended(let song, let seconds):
             reportStop(song, at: seconds)
@@ -670,6 +671,46 @@ final class MusicPlayback {
         }
         center.nowPlayingInfo = info
         center.playbackState = isPlaying ? .playing : .paused
+        updateRatingCommands(for: song)
+    }
+
+    /// The system's Like, Dislike and Favorite show what this song has.
+    private func updateRatingCommands(for song: MusicSong) {
+        let commands = MPRemoteCommandCenter.shared()
+        let likes = MusicRatings.shared.likes(song.id, server: song.likes)
+        commands.likeCommand.isActive = likes == true
+        commands.dislikeCommand.isActive = likes == false
+        commands.bookmarkCommand.isActive = MusicFavorites.shared.isFavorite(song.id, server: song.isFavorite)
+    }
+
+    /// A rating changed in the app: the system's buttons follow.
+    func ratingsChanged() {
+        guard let song = castSong ?? player.current else { return }
+        updateRatingCommands(for: song)
+    }
+
+    func rateCurrent(likes: Bool) {
+        guard let song = castSong ?? player.current else { return }
+        MusicRatings.shared.set(song.id, likes: likes, server: song.likes)
+        updateRatingCommands(for: song)
+    }
+
+    func favoriteCurrent() {
+        guard let song = castSong ?? player.current else { return }
+        MusicFavorites.shared.toggle(song.id, server: song.isFavorite)
+        updateRatingCommands(for: song)
+    }
+
+    /// What the server has now for the song that started: liked, disliked or a favorite may
+    /// have changed elsewhere, or not have come with a queue saved before.
+    private func refreshRating(of song: MusicSong) {
+        Task {
+            guard let fresh = try? await MusicAPI.call({ try await $0.getSongs(credential: $1, authHeader: $2, ids: [song.id]) })?.first
+            else { return }
+            MusicFavorites.shared.sync(fresh.id, isFavorite: fresh.isFavorite)
+            MusicRatings.shared.sync(fresh.id, likes: fresh.likes)
+            if player.current?.id == song.id || castSong?.id == song.id { updateRatingCommands(for: fresh) }
+        }
     }
 
     private func loadArtwork(for song: MusicSong) {
@@ -687,7 +728,8 @@ final class MusicPlayback {
     private static var commands: [MPRemoteCommand] {
         let center = MPRemoteCommandCenter.shared()
         return [center.playCommand, center.pauseCommand, center.togglePlayPauseCommand,
-                center.nextTrackCommand, center.previousTrackCommand, center.changePlaybackPositionCommand]
+                center.nextTrackCommand, center.previousTrackCommand, center.changePlaybackPositionCommand,
+                center.likeCommand, center.dislikeCommand, center.bookmarkCommand]
     }
 
     private func removeCommands() {
@@ -711,6 +753,14 @@ final class MusicPlayback {
             Task { @MainActor in AppServices.music.seek(to: seconds) }
             return .success
         }
+        // Like, Dislike and Favorite, where the system shows them (CarPlay, the watch, the menu
+        // on the lock screen and in Control Center).
+        center.likeCommand.localizedTitle = String(localized: "Like")
+        center.dislikeCommand.localizedTitle = String(localized: "Dislike")
+        center.bookmarkCommand.localizedTitle = String(localized: "Favorite")
+        center.likeCommand.addTarget { _ in Task { @MainActor in AppServices.music.rateCurrent(likes: true) }; return .success }
+        center.dislikeCommand.addTarget { _ in Task { @MainActor in AppServices.music.rateCurrent(likes: false) }; return .success }
+        center.bookmarkCommand.addTarget { _ in Task { @MainActor in AppServices.music.favoriteCurrent() }; return .success }
         Self.commands.forEach { $0.isEnabled = true }
         // A song is skipped, not jumped through ten seconds at a time.
         center.skipForwardCommand.isEnabled = false

@@ -116,10 +116,14 @@ final class MusicFavorites {
 
     func isFavorite(_ id: String, server: Bool) -> Bool { changed[id] ?? server }
 
+    /// What the server says now, over anything older here.
+    func sync(_ id: String, isFavorite: Bool) { changed[id] = isFavorite }
+
     func toggle(_ id: String, server: Bool) {
         let favorite = !isFavorite(id, server: server)
         changed[id] = favorite
         Task { await MusicActions.setFavorite(id, favorite) }
+        AppServices.music.ratingsChanged()
         if favorite, MusicSettings.keepsFavoritesDownloaded {
             Task { await MusicDownloads.shared.downloadFavorite(id) }
         }
@@ -138,12 +142,16 @@ final class MusicRatings {
         return server
     }
 
+    /// What the server says now, over anything older here.
+    func sync(_ id: String, likes: Bool?) { changed[id] = .some(likes) }
+
     /// Tapping the one already chosen clears it.
     func set(_ id: String, likes: Bool, server: Bool?) {
         let value: Bool? = self.likes(id, server: server) == likes ? nil : likes
         changed[id] = .some(value)
         Task { _ = try? await MusicAPI.call { try await $0.setLikes(credential: $1, authHeader: $2, itemId: id, likes: value) } }
         AppServices.music.scrobbler.rated(id, likes: value)
+        AppServices.music.ratingsChanged()
     }
 }
 
