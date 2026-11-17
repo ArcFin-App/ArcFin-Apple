@@ -260,6 +260,13 @@ struct MusicMacNowPlaying: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .id(index)
                                 .onTapGesture { if let start = line.start { player.seek(to: start + MusicLyricsSource.shared.delay(song.id)) } }
+                                .contextMenu {
+                                    if line.start != nil {
+                                        Button("Sing This Line Now", systemImage: "music.mic") {
+                                            MusicLyricsSource.shared.align(song.id, line: line, to: player.position)
+                                        }
+                                    }
+                                }
                         }
                     }
                     .padding(.vertical, DT.Spacing.md)

@@ -54,7 +54,15 @@ final class MusicLyricsSource {
 
     func delay(_ songID: String) -> Double { delays[songID] ?? 0 }
 
-    /// Moves a song's lines half a second later (positive) or earlier, or back (nil).
+    /// Sets a song's timing so this line is the one being sung now.
+    func align(_ songID: String, line: Lyrics.Line, to position: Double) {
+        guard let start = line.start else { return }
+        let value = ((position - start) * 10).rounded() / 10
+        delays[songID] = value == 0 ? nil : value
+        UserDefaults.standard.set(delays, forKey: Self.delaysKey)
+    }
+
+    /// Moves a song's lines later (positive) or earlier, or back (nil).
     func adjust(_ songID: String, by step: Double?) {
         let value = step.map { ((delay(songID) + $0) * 10).rounded() / 10 } ?? 0
         delays[songID] = value == 0 ? nil : value
@@ -114,8 +122,12 @@ struct MusicLyricsTimingMenu: View {
 
     var body: some View {
         Menu {
-            Button("Show Lines Earlier", systemImage: "backward") { MusicLyricsSource.shared.adjust(songID, by: -0.5) }
-            Button("Show Lines Later", systemImage: "forward") { MusicLyricsSource.shared.adjust(songID, by: 0.5) }
+            Section {
+                Button("Show Lines 2 s Earlier", systemImage: "backward") { MusicLyricsSource.shared.adjust(songID, by: -2) }
+                Button("Show Lines 0.5 s Earlier", systemImage: "backward.frame") { MusicLyricsSource.shared.adjust(songID, by: -0.5) }
+                Button("Show Lines 0.5 s Later", systemImage: "forward.frame") { MusicLyricsSource.shared.adjust(songID, by: 0.5) }
+                Button("Show Lines 2 s Later", systemImage: "forward") { MusicLyricsSource.shared.adjust(songID, by: 2) }
+            }
             if delay != 0 {
                 Button("Reset Timing", systemImage: "arrow.counterclockwise") { MusicLyricsSource.shared.adjust(songID, by: nil) }
             }

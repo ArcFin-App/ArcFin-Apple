@@ -366,6 +366,13 @@ private struct MusicLyricsPanel: View {
                                     .onTapGesture {
                                         if let start = line.start { music.seek(to: start + MusicLyricsSource.shared.delay(songID)) }
                                     }
+                                    .contextMenu {
+                                        if line.start != nil {
+                                            Button("Sing This Line Now", systemImage: "music.mic") {
+                                                MusicLyricsSource.shared.align(songID, line: line, to: music.position)
+                                            }
+                                        }
+                                    }
                             }
                         }
                         .padding(.vertical, DT.Spacing.xl)
