@@ -127,7 +127,7 @@ private struct MusicGlassBars: View {
         ZStack {
             Rectangle().fill(.ultraThinMaterial)
             if let tint {
-                LinearGradient(colors: [tint.opacity(0.9), tint.opacity(0.6)], startPoint: .top, endPoint: .bottom)
+                LinearGradient(colors: [tint.opacity(0.5), tint.opacity(0.2)], startPoint: .top, endPoint: .bottom)
             } else {
                 LinearGradient(colors: [.white.opacity(0.45), .white.opacity(0.12)], startPoint: .top, endPoint: .bottom)
             }
