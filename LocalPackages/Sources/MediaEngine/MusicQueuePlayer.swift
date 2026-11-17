@@ -47,6 +47,13 @@ public final class MusicQueuePlayer {
     @ObservationIgnored private var pendingStart: Double?
     /// Goes up on every seek, for anything that shows the position without following it.
     public private(set) var seekCount = 0
+    /// One seek at a time: a flick's stream of values lands on the last, not on each in turn.
+    @ObservationIgnored private var seekInFlight: ObjectIdentifier?
+    @ObservationIgnored private var queuedSeek: Double?
+    @ObservationIgnored private var conversionRestart: Task<Void, Never>?
+    private var isSeeking: Bool {
+        conversionRestart != nil || (seekInFlight != nil && seekInFlight == player.currentItem.map(ObjectIdentifier.init))
+    }
     /// Copies each song's audio into `levels` as it plays, for a visualizer.
     public var isMetering = false { didSet { refreshTaps() } }
     /// Evens out loudness between songs with the server's per-song gain.
@@ -193,6 +200,8 @@ public final class MusicQueuePlayer {
 
     public func seek(to seconds: Double) {
         finishCrossfade()
+        // Past the end, a streamed file never loads again: no time, no end of song.
+        let seconds = duration > 2 ? min(max(seconds, 0), duration - 1) : max(seconds, 0)
         position = seconds
         seekCount += 1
         if pendingStart != nil {
@@ -200,19 +209,44 @@ public final class MusicQueuePlayer {
             return
         }
         if let item = player.currentItem, convertedStarts[ObjectIdentifier(item)] != nil {
-            log.notice("Seek to \(seconds, privacy: .public)s: restarting the conversion there")
-            restartConversion(at: seconds)
+            // Each restart is a new conversion on the server, so only the one the flick ends on.
+            conversionRestart?.cancel()
+            conversionRestart = Task { [weak self] in
+                try? await Task.sleep(for: .milliseconds(300))
+                guard let self, !Task.isCancelled else { return }
+                conversionRestart = nil
+                log.notice("Seek to \(seconds, privacy: .public)s: restarting the conversion there")
+                restartConversion(at: seconds)
+            }
             return
         }
-        let target = CMTime(seconds: seconds, preferredTimescale: 600), count = seekCount
+        startSeek(seconds)
+    }
+
+    private func startSeek(_ seconds: Double) {
+        guard let item = player.currentItem else { return }
+        let id = ObjectIdentifier(item)
+        if seekInFlight == id {
+            queuedSeek = seconds
+            return
+        }
+        seekInFlight = id
+        queuedSeek = nil
+        let target = CMTime(seconds: seconds, preferredTimescale: 600)
         // Exact: checked to land where it says in variable-bitrate Ogg files.
         player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
             Task { @MainActor [weak self] in
-                guard let self, count == seekCount else { return }
+                guard let self, seekInFlight == id else { return }
+                seekInFlight = nil
+                if let next = queuedSeek, player.currentItem.map(ObjectIdentifier.init) == id {
+                    queuedSeek = nil
+                    return startSeek(next)
+                }
+                queuedSeek = nil
                 let now = player.currentTime().seconds
                 log.notice("Seek to \(seconds, privacy: .public)s: \(finished ? "done" : "refused", privacy: .public), at \(now, privacy: .public)s of \(self.duration, privacy: .public)s")
                 // Some files can't land on an exact point; near it is fine.
-                if !finished { player.seek(to: target) }
+                if !finished, player.currentItem.map(ObjectIdentifier.init) == id { player.seek(to: target) }
             }
         }
     }
@@ -340,6 +374,10 @@ public final class MusicQueuePlayer {
     }
 
     private func forgetItems() {
+        conversionRestart?.cancel()
+        conversionRestart = nil
+        seekInFlight = nil
+        queuedSeek = nil
         player.removeAllItems()
         entryIDs.removeAll()
         itemObservations.removeAll()
@@ -499,6 +537,8 @@ public final class MusicQueuePlayer {
         guard let item = player.currentItem, entryIDs[ObjectIdentifier(item)] == queue.current?.id else { return }
         // A conversion started part-way through counts from where it began.
         let start = convertedStarts[ObjectIdentifier(item)]
+        // Mid-seek the old time still ticks in; the scrubber would jump back to it.
+        guard !isSeeking else { return }
         if time.isNumeric { position = (start ?? 0) + time.seconds }
         if position > 0 { failures = 0 }
         // The server's length wins: AVFoundation only estimates an Ogg file's (a 60-second

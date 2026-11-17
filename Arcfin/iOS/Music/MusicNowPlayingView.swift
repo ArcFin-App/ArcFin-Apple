@@ -101,9 +101,10 @@ struct MusicNowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var panel = Panel.artwork
     @State private var scrubbing: Double?
-    /// A held drag waits for the finger to lift; a tap, a flick or VoiceOver seeks at once,
-    /// since those don't always say when they've finished.
+    /// A held drag seeks when it's let go. A flick doesn't always say it's finished, so a
+    /// value that stops changing seeks too: at once off a drag, after a pause in one.
     @State private var isDragging = false
+    @State private var scrubSettle: Task<Void, Never>?
     @State private var lyrics: Lyrics?
     private var player: MusicQueuePlayer { AppServices.music.player }
     private var music: MusicPlayback { AppServices.music }
@@ -213,22 +214,29 @@ struct MusicNowPlayingView: View {
         .accessibilityLabel("More")
     }
 
+    private func finishScrub() {
+        scrubSettle?.cancel()
+        scrubSettle = nil
+        guard let scrubbing else { return }
+        music.seek(to: scrubbing)
+        self.scrubbing = nil
+    }
+
     private var scrubber: some View {
         let duration = max(player.duration, 1)
         let position = scrubbing ?? music.position
         return VStack(spacing: DT.Spacing.xxs) {
             Slider(value: Binding(get: { position }, set: { value in
-                if isDragging {
-                    scrubbing = value
-                } else {
-                    music.seek(to: value)
+                scrubbing = value
+                scrubSettle?.cancel()
+                scrubSettle = Task {
+                    try? await Task.sleep(for: .milliseconds(isDragging ? 700 : 150))
+                    guard !Task.isCancelled else { return }
+                    finishScrub()
                 }
             }), in: 0...duration) { editing in
                 isDragging = editing
-                if !editing, let scrubbing {
-                    music.seek(to: scrubbing)
-                    self.scrubbing = nil
-                }
+                if !editing { finishScrub() }
             }
             .tint(.white)
             .accessibilityLabel("Position")
