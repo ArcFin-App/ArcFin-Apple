@@ -577,6 +577,70 @@
         }
       }
     },
+    "Movies, shows, music, live TV, people…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Filme, Serien, Musik, Live-TV, Personen …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Películas, series, música, TV en directo, personas…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Films, séries, musique, TV en direct, personnes…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Film, serie, musica, TV in diretta, persone…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "映画、シリーズ、音楽、ライブTV、人物…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "영화, 시리즈, 음악, 라이브 TV, 인물…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Films, series, muziek, live-tv, personen…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Filmes, séries, músicas, TV ao vivo, pessoas…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Фильмы, сериалы, музыка, ТВ-эфир, люди…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "电影、剧集、音乐、直播电视、人物…"
+          }
+        }
+      }
+    },
     "Next Song" : {
       "localizations" : {
         "de" : {
