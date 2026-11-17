@@ -445,6 +445,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Intents/ControlIntents.swift,
+				Intents/MusicIntents.swift,
 			);
 			target = FA2E1939305DEF7900513FD4 /* ArcfinWidgetsExtension */;
 		};

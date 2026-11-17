@@ -15,6 +15,7 @@ struct PlatformAppDelegate {
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         BackgroundRefresh.register()
         Diagnostics.shared.start()
+        MusicWidgetPublisher.start()
     }
 }
 

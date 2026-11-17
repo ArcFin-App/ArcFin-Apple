@@ -19,6 +19,9 @@ struct ArcfinWidgetsBundle: WidgetBundle {
         #endif
         ContinueWatchingWidget()
         RecentlyAddedWidget()
+        MusicNowPlayingWidget()
+        MusicRecentlyPlayedWidget()
+        MusicPlaybackControl()
         ResumeWatchingControl()
         DownloadsControl()
         DiscoverControl()

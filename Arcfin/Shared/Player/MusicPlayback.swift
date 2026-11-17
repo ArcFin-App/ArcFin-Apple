@@ -448,7 +448,8 @@ final class MusicPlayback {
     }
 
     /// The last queue for this profile, paused where it was.
-    private func restoreQueue() {
+    /// The profile's saved queue, when nothing's queued; also run by a widget's Play on a cold start.
+    func restoreQueue() {
         guard MusicSettings.remembersQueue, player.queue.isEmpty, let userID = authManager.state.credential?.userID,
               let data = try? Data(contentsOf: Self.savedQueueURL),
               let saved = try? JSONDecoder().decode(SavedQueue.self, from: data),
@@ -660,9 +661,13 @@ final class MusicPlayback {
             MPMediaItemPropertyPlaybackDuration: player.duration,
             MPNowPlayingInfoPropertyElapsedPlaybackTime: position,
             MPNowPlayingInfoPropertyPlaybackRate: isPlaying ? 1.0 : 0.0,
+            // The car's instrument cluster and dashboard run their progress on at this rate.
+            MPNowPlayingInfoPropertyDefaultPlaybackRate: 1.0,
             MPNowPlayingInfoPropertyMediaType: MPNowPlayingInfoMediaType.audio.rawValue,
+            MPNowPlayingInfoPropertyIsLiveStream: false,
         ]
         if let artist = song.artistLine { info[MPMediaItemPropertyArtist] = artist }
+        if let albumArtist = song.albumArtist { info[MPMediaItemPropertyAlbumArtist] = albumArtist }
         if let album = song.albumName { info[MPMediaItemPropertyAlbumTitle] = album }
         if let index = player.queue.currentIndex {
             info[MPNowPlayingInfoPropertyPlaybackQueueIndex] = index

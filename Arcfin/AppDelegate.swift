@@ -25,6 +25,7 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         BackgroundRefresh.register()
         RemotePlaybackActivity.shared.install()
         WatchLink.shared.install()
+        MusicWidgetPublisher.start()
         return true
     }
 

@@ -301,6 +301,7 @@ struct ContinueWatchingWidget: Widget {
         .configurationDisplayName("Continue Watching")
         .description("Pick up where you left off.")
         .supportedFamilies(families)
+        .notForCarPlay()
     }
 
     /// The Lock Screen sizes exist on iOS only.

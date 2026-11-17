@@ -137,5 +137,6 @@ struct RecentlyAddedWidget: Widget {
         .configurationDisplayName("Recently Added")
         .description("See the newest movies and shows on your server.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
+        .notForCarPlay()
     }
 }
