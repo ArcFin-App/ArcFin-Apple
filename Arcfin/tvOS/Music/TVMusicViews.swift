@@ -317,6 +317,11 @@ struct TVMusicLibraryView: View {
                             TVMusicPresenter.shared.isShowingNowPlaying = true
                         }
                     }
+                    NavigationLink { TVMusicSearchView() } label: {
+                        TVMusicPill(title: "Search", systemImage: "magnifyingglass")
+                    }
+                    .buttonStyle(TVCardButtonStyle())
+                    .focusEffectDisabled()
                     link("Playlists", systemImage: "music.note.list", route: .playlists)
                     link("Artists", systemImage: "music.microphone", route: .artists(libraryID: library.id))
                     link("Albums", systemImage: "square.stack", route: .albums(libraryID: library.id, title: String(localized: "Albums")))
@@ -759,6 +764,23 @@ struct TVMusicArtistView: View {
 }
 
 // MARK: - Search
+
+/// Searching the music on its own, from the music library.
+struct TVMusicSearchView: View {
+    @State private var query = ""
+    @State private var search = MusicSearchModel()
+
+    var body: some View {
+        ScrollView {
+            TVMusicSearchSection(results: search.results)
+                .padding(.horizontal, 80)
+                .padding(.vertical, 48)
+        }
+        .screenBackground()
+        .searchable(text: $query, prompt: "Artists, albums and songs")
+        .onChange(of: query) { _, term in search.search(term) }
+    }
+}
 
 /// Music in search on Apple TV: rows of artists and albums, then songs.
 struct TVMusicSearchSection: View {

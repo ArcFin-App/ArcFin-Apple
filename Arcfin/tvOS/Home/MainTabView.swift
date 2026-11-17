@@ -32,7 +32,7 @@ struct MainTabView: View {
                 Tab("Search", systemImage: "magnifyingglass", role: .search) {
                     NavigationStack {
                         SearchView(query: $searchQuery)
-                            .searchable(text: $searchQuery, prompt: "Movies, shows, people…")
+                            .searchable(text: $searchQuery, prompt: "Movies, shows, music, people…")
                             .screenBackground()
                             .navigationDestination(for: MediaItem.self) { item in
                                 MediaDetailView(item: item)

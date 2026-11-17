@@ -30,7 +30,7 @@ struct LibraryView: View {
             }
             .screenBackground()
             .navigationTitle("Browse")
-            .searchable(text: $model.searchQuery, prompt: "Movies, shows, people…")
+            .searchable(text: $model.searchQuery, prompt: "Movies, shows, music, people…")
             .searchFocused($isSearchFocused)
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 libraryDestination(library)

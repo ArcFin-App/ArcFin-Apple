@@ -10,6 +10,8 @@ struct MusicLibraryView: View {
     @State private var recent: MusicPagedList<MusicAlbum>
     @State private var recentlyPlayed: MusicPagedList<MusicSong>
     @State private var mostPlayed: MusicPagedList<MusicSong>
+    @State private var query = ""
+    @State private var search = MusicSearchModel()
 
     init(library: JellyfinLibrary) {
         self.library = library
@@ -26,6 +28,20 @@ struct MusicLibraryView: View {
     }
 
     var body: some View {
+        Group {
+            if query.trimmingCharacters(in: .whitespaces).count >= 2 {
+                MusicLibrarySearchResults(model: search)
+            } else {
+                content
+            }
+        }
+        .screenBackground()
+        .navigationTitle(Text(verbatim: library.name))
+        .searchable(text: $query, prompt: "Artists, albums and songs")
+        .onChange(of: query) { _, term in search.search(term) }
+    }
+
+    private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                 VStack(spacing: 0) {
@@ -56,8 +72,6 @@ struct MusicLibraryView: View {
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.bottom, DT.Spacing.xl)
         }
-        .screenBackground()
-        .navigationTitle(Text(verbatim: library.name))
         .task {
             async let albums: Void = recent.loadIfNeeded()
             async let played: Void = recentlyPlayed.loadIfNeeded()
@@ -219,6 +233,24 @@ struct MusicAlbumsView: View {
                                             startIndex: start)
             }
             return (page.albums, page.total)
+        }
+    }
+}
+
+/// Search inside a music library: artists, albums and songs.
+struct MusicLibrarySearchResults: View {
+    let model: MusicSearchModel
+
+    var body: some View {
+        if !model.results.isEmpty {
+            ScrollView {
+                MusicSearchSection(results: model.results)
+                    .padding(.bottom, DT.Spacing.xl)
+            }
+        } else if model.isSearching {
+            ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            ContentUnavailableView.search
         }
     }
 }
