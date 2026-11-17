@@ -3,6 +3,8 @@
 import Foundation
 import AuthCore
 import JellyfinAPI
+import os
+import Telemetry
 
 /// Sends what plays here to the profile's ListenBrainz account, when it has a token. Listens
 /// wait on disk until ListenBrainz takes them, so ones heard offline go later.
@@ -14,6 +16,9 @@ final class MusicScrobbler {
     private var flushTask: Task<Void, Never>?
     /// ListenBrainz's id for each song played this session, which loving or hating it needs.
     private var recordingIDs: [String: String] = [:]
+    /// The account's name, which reading its loves and hates needs.
+    private var userNames: [UUID: String] = [:]
+    private let log = Telemetry.logger(category: "ListenBrainz")
     /// Enough for weeks offline; the oldest go first past it.
     private static let maxPending = 5000
 
@@ -53,6 +58,7 @@ final class MusicScrobbler {
         Task {
             guard let id = try? await client.playingNow(listen) else { return }
             recordingIDs[song.id] = id
+            await loadFeedback(for: song, recordingID: id, client: client, profile: profile)
             // A song liked or disliked before, here or on the server, is passed on as it plays.
             sendFeedback(for: song.id, likes: MusicRatings.shared.likes(song.id, server: song.likes),
                          client: client, profile: profile)
@@ -76,6 +82,19 @@ final class MusicScrobbler {
             sent[songID] = score == 0 ? nil : score
             UserDefaults.standard.set(sent, forKey: Self.feedbackKey(profile))
         }
+    }
+
+    /// Loved or hated on ListenBrainz and not rated here: shown here and saved to Jellyfin.
+    private func loadFeedback(for song: MusicSong, recordingID: String, client: ListenBrainzClient, profile: UUID) async {
+        if userNames[profile] == nil { userNames[profile] = try? await client.validate() }
+        guard let name = userNames[profile],
+              let score = try? await client.feedbackScore(userName: name, recordingMSID: recordingID) else { return }
+        log.notice("ListenBrainz has \(score, privacy: .public) for \(song.id, privacy: .public)")
+        var sent = Self.sentFeedback(profile)
+        sent[song.id] = score == 0 ? nil : score
+        UserDefaults.standard.set(sent, forKey: Self.feedbackKey(profile))
+        guard score != 0, MusicRatings.shared.likes(song.id, server: song.likes) == nil else { return }
+        MusicRatings.shared.adopt(song.id, likes: score > 0)
     }
 
     private static func feedbackKey(_ profile: UUID) -> String { "listenBrainzFeedback.\(profile.uuidString)" }

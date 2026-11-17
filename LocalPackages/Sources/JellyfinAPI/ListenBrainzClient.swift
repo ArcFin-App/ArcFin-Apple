@@ -97,6 +97,22 @@ public struct ListenBrainzClient: Sendable {
         _ = try await send(request)
     }
 
+    /// The profile's love (1), hate (-1) or neither (0) for a recording.
+    public func feedbackScore(userName: String, recordingMSID: String) async throws -> Int {
+        struct Reply: Decodable {
+            struct Item: Decodable { let score: Int }
+            let feedback: [Item]
+        }
+        var comps = URLComponents(url: baseURL.appendingPathComponent("1/feedback/user/\(userName)/get-feedback-for-recordings"),
+                                  resolvingAgainstBaseURL: false)
+        comps?.queryItems = [.init(name: "recording_msids", value: recordingMSID)]
+        guard let url = comps?.url else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
+        request.setValue("Token \(token)", forHTTPHeaderField: "Authorization")
+        let reply = try JSONDecoder().decode(Reply.self, from: try await send(request))
+        return reply.feedback.first?.score ?? 0
+    }
+
     /// Songs heard, at most `maxListensPerRequest`.
     public func submit(_ listens: [ListenBrainzListen]) async throws {
         try await submit(type: listens.count == 1 ? "single" : "import", listens)

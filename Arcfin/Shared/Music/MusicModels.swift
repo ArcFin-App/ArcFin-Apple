@@ -145,6 +145,13 @@ final class MusicRatings {
     /// What the server says now, over anything older here.
     func sync(_ id: String, likes: Bool?) { changed[id] = .some(likes) }
 
+    /// Rated elsewhere (ListenBrainz): shown here and saved to Jellyfin, not sent back.
+    func adopt(_ id: String, likes: Bool) {
+        changed[id] = .some(likes)
+        Task { _ = try? await MusicAPI.call { try await $0.setLikes(credential: $1, authHeader: $2, itemId: id, likes: likes) } }
+        AppServices.music.ratingsChanged()
+    }
+
     /// Tapping the one already chosen clears it.
     func set(_ id: String, likes: Bool, server: Bool?) {
         let value: Bool? = self.likes(id, server: server) == likes ? nil : likes
