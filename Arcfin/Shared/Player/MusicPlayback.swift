@@ -455,6 +455,9 @@ final class MusicPlayback {
               saved.userID == userID, !saved.songs.isEmpty else { return }
         player.load(saved.songs, startingAt: saved.index, at: saved.position,
                     repeatMode: MusicQueue.RepeatMode(rawValue: saved.repeatMode) ?? .off)
+        // Play on the lock screen, CarPlay and remotes reaches it before anything has played.
+        installCommands()
+        updateNowPlaying()
     }
 
     // MARK: Sleep timer
