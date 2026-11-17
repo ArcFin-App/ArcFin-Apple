@@ -64,8 +64,11 @@ public final class MusicQueuePlayer {
     @ObservationIgnored private var isTapped = false
 
     @ObservationIgnored public var onEvent: ((Event) -> Void)?
-    /// The song's address, converted from a point in seconds when it can't be played as is.
-    @ObservationIgnored private let streamURL: (MusicSong, Double) -> URL?
+    /// The song's address from a point in seconds; `true` asks for it converted, for a file
+    /// that turned out not to open as it is.
+    @ObservationIgnored private let streamURL: (MusicSong, Double, Bool) -> URL?
+    /// Songs whose file wouldn't open as it is (Ogg Vorbis, say), streamed converted instead.
+    @ObservationIgnored private var mustConvert: Set<String> = []
     /// Songs converted as they stream, and the point each conversion began. They can't be
     /// seeked in, so a seek starts the conversion again from there.
     @ObservationIgnored private var convertedStarts: [ObjectIdentifier: Double] = [:]
@@ -90,7 +93,7 @@ public final class MusicQueuePlayer {
     /// Songs that failed in a row; a whole queue of them stops instead of looping.
     @ObservationIgnored private var failures = 0
 
-    public init(streamURL: @escaping (MusicSong, Double) -> URL?) {
+    public init(streamURL: @escaping (MusicSong, Double, Bool) -> URL?) {
         self.streamURL = streamURL
         player = Self.makeDeck()
         follow(player)
@@ -194,10 +197,20 @@ public final class MusicQueuePlayer {
             return
         }
         if let item = player.currentItem, convertedStarts[ObjectIdentifier(item)] != nil {
+            log.notice("Seek to \(seconds, privacy: .public)s: restarting the conversion there")
             restartConversion(at: seconds)
             return
         }
-        player.seek(to: CMTime(seconds: seconds, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+        let target = CMTime(seconds: seconds, preferredTimescale: 600), count = seekCount
+        player.seek(to: target, toleranceBefore: .zero, toleranceAfter: .zero) { [weak self] finished in
+            Task { @MainActor [weak self] in
+                guard let self, count == seekCount else { return }
+                let now = player.currentTime().seconds
+                log.notice("Seek to \(seconds, privacy: .public)s: \(finished ? "done" : "refused", privacy: .public), at \(now, privacy: .public)s of \(self.duration, privacy: .public)s")
+                // Some files can't land on an exact point; near it is fine.
+                if !finished { player.seek(to: target) }
+            }
+        }
     }
 
     /// A converted song from a new point: a fresh conversion from there takes the old one's
@@ -358,7 +371,7 @@ public final class MusicQueuePlayer {
     }
 
     private func makeItem(_ entry: MusicQueue.Entry, from start: Double = 0) -> AVPlayerItem? {
-        guard let url = streamURL(entry.track, start) else { return nil }
+        guard let url = streamURL(entry.track, start, mustConvert.contains(entry.track.id)) else { return nil }
         let item = AVPlayerItem(url: url)
         entryIDs[ObjectIdentifier(item)] = entry.id
         if !url.isFileURL, url.query?.contains("static=true") != true { convertedStarts[ObjectIdentifier(item)] = start }
@@ -432,11 +445,28 @@ public final class MusicQueuePlayer {
         }
     }
 
+    /// Containers played as they are that hold codecs AVFoundation may not decode.
+    private static let mayNeedConverting: Set<String> = ["ogg", "oga", "opus"]
+
     private func itemFailed(_ item: ObjectIdentifier, path: String) {
         guard let failed = entryIDs[item] else { return }
         let error = player.items().first { ObjectIdentifier($0) == item }?.error as NSError?
         let reason = error.map { "\($0.domain) \($0.code): \($0.localizedDescription)" } ?? "unknown"
         log.error("Song failed (\(path, privacy: .public)): \(reason, privacy: .public)")
+        // A file played as it is that won't open is tried once more, converted.
+        if let entry = queue.entries.first(where: { $0.id == failed }), !mustConvert.contains(entry.track.id),
+           Self.mayNeedConverting.contains((path as NSString).pathExtension.lowercased()) {
+            mustConvert.insert(entry.track.id)
+            log.notice("Trying \(entry.track.id, privacy: .public) again, converted")
+            if failed == queue.current?.id {
+                let wasPlaying = isPlaying || player.rate != 0
+                reload()
+                if wasPlaying { resume() }
+            } else {
+                refreshUpcoming()
+            }
+            return
+        }
         if failed == queue.current?.id {
             // Paused (a queue lined up, or the sleep timer's end), it moves on but stays paused.
             let wasPlaying = isPlaying || player.rate != 0

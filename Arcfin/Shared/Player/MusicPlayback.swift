@@ -46,12 +46,14 @@ final class MusicPlayback {
     init(authManager: AuthManager) {
         self.authManager = authManager
         scrobbler = MusicScrobbler(authManager: authManager)
-        player = MusicQueuePlayer { [authManager] song, start in
+        player = MusicQueuePlayer { [authManager] song, start, convert in
             // A saved song plays from its file.
             if let local = MusicDownloads.shared.localURL(for: song.id) { return local }
             guard let credential = authManager.state.credential else { return nil }
             return JellyfinMediaClient().audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
-                                                      container: song.container, bitrateCap: MusicSettings.streamBitrate, startSeconds: start)
+                                                      container: song.container,
+                                                      direct: convert ? [] : JellyfinMediaClient.directAudioContainers,
+                                                      bitrateCap: MusicSettings.streamBitrate, startSeconds: start)
         }
         player.onEvent = { [weak self] event in self?.handle(event) }
         followPlayer()
@@ -122,7 +124,7 @@ final class MusicPlayback {
         removeCommands()
         hasYielded = true
         // The video's player fills Now Playing in; a paused state left here would hide it on the Mac.
-        MPNowPlayingInfoCenter.default().playbackState = .unknown
+        if PlatformMetrics.setsNowPlayingState { MPNowPlayingInfoCenter.default().playbackState = .unknown }
     }
 
     func artworkURL(for song: MusicSong, width: Int = 600) -> URL? {
@@ -648,7 +650,7 @@ final class MusicPlayback {
         guard !hasYielded else { return }
         guard let song = player.current else {
             center.nowPlayingInfo = nil
-            center.playbackState = .unknown
+            if PlatformMetrics.setsNowPlayingState { center.playbackState = .unknown }
             return
         }
         var info: [String: Any] = [
@@ -670,7 +672,7 @@ final class MusicPlayback {
             loadArtwork(for: song)
         }
         center.nowPlayingInfo = info
-        center.playbackState = isPlaying ? .playing : .paused
+        if PlatformMetrics.setsNowPlayingState { center.playbackState = isPlaying ? .playing : .paused }
         updateRatingCommands(for: song)
     }
 
