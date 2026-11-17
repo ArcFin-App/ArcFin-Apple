@@ -109,6 +109,7 @@ struct MusicPlayerBar: View {
 
     private func trailingControls(_ song: MusicSong) -> some View {
         HStack(spacing: DT.Spacing.sm) {
+            MusicRatingButtons(song: song)
             Button { nowPlaying = .lyrics } label: { Image(systemName: "quote.bubble") }
                 .disabled(!MusicLyricsSource.shared.isAvailable(song))
                 .accessibilityLabel("Lyrics")

@@ -126,6 +126,27 @@ final class MusicFavorites {
     }
 }
 
+/// Likes and dislikes changed here, over what the server sent. Saved to Jellyfin, and loved
+/// or hated on ListenBrainz when the profile has it.
+@MainActor @Observable
+final class MusicRatings {
+    static let shared = MusicRatings()
+    private var changed: [String: Bool?] = [:]
+
+    func likes(_ id: String, server: Bool?) -> Bool? {
+        if let local = changed[id] { return local }
+        return server
+    }
+
+    /// Tapping the one already chosen clears it.
+    func set(_ id: String, likes: Bool, server: Bool?) {
+        let value: Bool? = self.likes(id, server: server) == likes ? nil : likes
+        changed[id] = .some(value)
+        Task { _ = try? await MusicAPI.call { try await $0.setLikes(credential: $1, authHeader: $2, itemId: id, likes: value) } }
+        AppServices.music.scrobbler.rated(id, likes: value)
+    }
+}
+
 /// What Play, Shuffle and a row's menu do with songs.
 @MainActor
 enum MusicActions {
@@ -161,6 +182,38 @@ enum MusicActions {
         _ = try? await MusicAPI.call {
             try await $0.markFavorite(credential: $1, authHeader: $2, itemId: itemID, favorite: isFavorite)
         }
+    }
+}
+
+/// Favorite, Like and Dislike as icons, for the players.
+struct MusicRatingButtons: View {
+    let song: MusicSong
+    var showsFavorite = true
+    var spacing: CGFloat = DT.Spacing.sm
+
+    private var isFavorite: Bool { MusicFavorites.shared.isFavorite(song.id, server: song.isFavorite) }
+    private var likes: Bool? { MusicRatings.shared.likes(song.id, server: song.likes) }
+
+    var body: some View {
+        HStack(spacing: spacing) {
+            if showsFavorite {
+                Button { MusicFavorites.shared.toggle(song.id, server: song.isFavorite) } label: {
+                    Image(systemName: isFavorite ? "star.fill" : "star")
+                }
+                .accessibilityLabel(isFavorite ? "Remove from Favorites" : "Add to Favorites")
+            }
+            Button { MusicRatings.shared.set(song.id, likes: true, server: song.likes) } label: {
+                Image(systemName: likes == true ? "hand.thumbsup.fill" : "hand.thumbsup")
+            }
+            .accessibilityLabel("Like")
+            .accessibilityAddTraits(likes == true ? .isSelected : [])
+            Button { MusicRatings.shared.set(song.id, likes: false, server: song.likes) } label: {
+                Image(systemName: likes == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+            }
+            .accessibilityLabel("Dislike")
+            .accessibilityAddTraits(likes == false ? .isSelected : [])
+        }
+        .contentTransition(.symbolEffect(.replace))
     }
 }
 

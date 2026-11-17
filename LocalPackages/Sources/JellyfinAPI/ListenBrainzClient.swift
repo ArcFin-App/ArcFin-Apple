@@ -61,9 +61,31 @@ public struct ListenBrainzClient: Sendable {
         return validation.valid ? validation.userName : nil
     }
 
-    /// The song that just started, shown on the profile until the next one.
-    public func playingNow(_ listen: ListenBrainzListen) async throws {
-        try await submit(type: "playing_now", [listen])
+    /// The song that just started, shown on the profile until the next one. Returns the id
+    /// ListenBrainz gave the recording, which loving or hating it needs.
+    @discardableResult
+    public func playingNow(_ listen: ListenBrainzListen) async throws -> String? {
+        struct Response: Decodable {
+            let recordingMSID: String?
+            enum CodingKeys: String, CodingKey { case recordingMSID = "recording_msid" }
+        }
+        let data = try await submit(type: "playing_now", [listen], returnsMSID: true)
+        return (try? JSONDecoder().decode(Response.self, from: data))?.recordingMSID
+    }
+
+    /// Loves (1), hates (-1) or clears (0) a recording on the profile.
+    public func feedback(recordingMSID: String, score: Int) async throws {
+        struct Body: Encodable {
+            let recordingMSID: String
+            let score: Int
+            enum CodingKeys: String, CodingKey { case recordingMSID = "recording_msid", score }
+        }
+        var request = URLRequest(url: baseURL.appendingPathComponent("1/feedback/recording-feedback"))
+        request.httpMethod = "POST"
+        request.setValue("Token \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(Body(recordingMSID: recordingMSID, score: score))
+        _ = try await send(request)
     }
 
     /// Songs heard, at most `maxListensPerRequest`.
@@ -71,13 +93,17 @@ public struct ListenBrainzClient: Sendable {
         try await submit(type: listens.count == 1 ? "single" : "import", listens)
     }
 
-    private func submit(type: String, _ listens: [ListenBrainzListen]) async throws {
-        var request = URLRequest(url: baseURL.appendingPathComponent("1/submit-listens"))
+    @discardableResult
+    private func submit(type: String, _ listens: [ListenBrainzListen], returnsMSID: Bool = false) async throws -> Data {
+        var comps = URLComponents(url: baseURL.appendingPathComponent("1/submit-listens"), resolvingAgainstBaseURL: false)
+        if returnsMSID { comps?.queryItems = [.init(name: "return_msid", value: "true")] }
+        guard let url = comps?.url else { throw URLError(.badURL) }
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Token \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try Self.body(type: type, listens: listens, clientVersion: clientVersion)
-        _ = try await send(request)
+        return try await send(request)
     }
 
     private func send(_ request: URLRequest) async throws -> Data {

@@ -95,6 +95,7 @@ struct TVMusicNowPlaying: View {
                 case .one: .off
                 }
             }
+            ratingCircles(song)
             if MusicLyricsSource.shared.isAvailable(song) {
                 circle("quote.bubble", label: "Lyrics", isOn: panel == .lyrics) {
                     panel = panel == .lyrics ? .upNext : .lyrics
@@ -109,6 +110,21 @@ struct TVMusicNowPlaying: View {
             MusicSleepTimerOptions()
         } message: {
             MusicSleepTimerStatus()
+        }
+    }
+
+    @ViewBuilder
+    private func ratingCircles(_ song: MusicSong) -> some View {
+        let isFavorite = MusicFavorites.shared.isFavorite(song.id, server: song.isFavorite)
+        let likes = MusicRatings.shared.likes(song.id, server: song.likes)
+        circle(isFavorite ? "star.fill" : "star", label: isFavorite ? "Remove from Favorites" : "Add to Favorites", isOn: isFavorite) {
+            MusicFavorites.shared.toggle(song.id, server: song.isFavorite)
+        }
+        circle("hand.thumbsup", label: "Like", isOn: likes == true) {
+            MusicRatings.shared.set(song.id, likes: true, server: song.likes)
+        }
+        circle("hand.thumbsdown", label: "Dislike", isOn: likes == false) {
+            MusicRatings.shared.set(song.id, likes: false, server: song.likes)
         }
     }
 

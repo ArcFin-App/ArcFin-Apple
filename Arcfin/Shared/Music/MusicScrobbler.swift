@@ -12,6 +12,8 @@ final class MusicScrobbler {
     private var play: ListenBrainzPlay?
     private var listen: ListenBrainzListen?
     private var flushTask: Task<Void, Never>?
+    /// ListenBrainz's id for each song played this session, which loving or hating it needs.
+    private var recordingIDs: [String: String] = [:]
     /// Enough for weeks offline; the oldest go first past it.
     private static let maxPending = 5000
 
@@ -48,7 +50,38 @@ final class MusicScrobbler {
                                         durationMS: song.duration.map { Int($0 * 1000) })
         self.play = play
         self.listen = listen
-        Task { try? await client.playingNow(listen) }
+        Task {
+            guard let id = try? await client.playingNow(listen) else { return }
+            recordingIDs[song.id] = id
+            // A song liked or disliked before, here or on the server, is passed on as it plays.
+            sendFeedback(for: song.id, likes: MusicRatings.shared.likes(song.id, server: song.likes),
+                         client: client, profile: profile)
+        }
+    }
+
+    /// A song liked (loved there), disliked (hated) or neither. Without ListenBrainz's id for
+    /// it yet, it goes the next time the song plays.
+    func rated(_ songID: String, likes: Bool?) {
+        guard let profile, let client = Self.client(for: profile) else { return }
+        sendFeedback(for: songID, likes: likes, client: client, profile: profile)
+    }
+
+    private func sendFeedback(for songID: String, likes: Bool?, client: ListenBrainzClient, profile: UUID) {
+        let score = likes.map { $0 ? 1 : -1 } ?? 0
+        var sent = Self.sentFeedback(profile)
+        guard let id = recordingIDs[songID], (sent[songID] ?? 0) != score else { return }
+        Task {
+            guard (try? await client.feedback(recordingMSID: id, score: score)) != nil else { return }
+            sent = Self.sentFeedback(profile)
+            sent[songID] = score == 0 ? nil : score
+            UserDefaults.standard.set(sent, forKey: Self.feedbackKey(profile))
+        }
+    }
+
+    private static func feedbackKey(_ profile: UUID) -> String { "listenBrainzFeedback.\(profile.uuidString)" }
+
+    private static func sentFeedback(_ profile: UUID) -> [String: Int] {
+        UserDefaults.standard.dictionary(forKey: feedbackKey(profile)) as? [String: Int] ?? [:]
     }
 
     /// Where the song has got to, from the progress reports and its stop.
@@ -65,6 +98,7 @@ final class MusicScrobbler {
     func reset() {
         play = nil
         listen = nil
+        recordingIDs = [:]
     }
 
     // MARK: Sending
@@ -127,5 +161,6 @@ final class MusicScrobbler {
         try? ListenBrainzCredential.save("", profile: profile)
         try? FileManager.default.removeItem(at: pendingURL(profile))
         UserDefaults.standard.removeObject(forKey: refusedKey(profile))
+        UserDefaults.standard.removeObject(forKey: feedbackKey(profile))
     }
 }

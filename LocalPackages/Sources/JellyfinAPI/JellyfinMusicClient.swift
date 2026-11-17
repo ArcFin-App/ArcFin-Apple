@@ -76,13 +76,16 @@ public struct MusicSong: Sendable, Identifiable, Equatable, Hashable, Codable {
     public var playlistEntryId: String?
     /// The change in dB that brings it to the server's common loudness (Jellyfin 10.9+).
     public var normalizationGain: Double?
+    /// Liked (true), disliked (false), or neither.
+    public var likes: Bool?
 
     public init(id: String, name: String, albumId: String? = nil, albumName: String? = nil, albumArtist: String? = nil,
                 artists: [MusicArtistRef] = [], trackNumber: Int? = nil, discNumber: Int? = nil,
                 runTimeTicks: Int64? = nil, primaryImageTag: String? = nil, albumPrimaryImageTag: String? = nil,
                 isFavorite: Bool = false, playCount: Int = 0, hasLyrics: Bool = false, container: String? = nil,
-                playlistEntryId: String? = nil, normalizationGain: Double? = nil) {
+                playlistEntryId: String? = nil, normalizationGain: Double? = nil, likes: Bool? = nil) {
         self.normalizationGain = normalizationGain
+        self.likes = likes
         self.container = container
         self.playlistEntryId = playlistEntryId
         self.id = id; self.name = name; self.albumId = albumId; self.albumName = albumName
@@ -365,6 +368,22 @@ extension JellyfinMediaClient {
         return page.items.filter { $0.type == nil || $0.type == "Audio" }.map { $0.asTrack }
     }
 
+    /// Likes (true) or dislikes (false) a song for the profile, or clears either (nil).
+    public func setLikes(credential: ServerCredential, authHeader: String, itemId: String, likes: Bool?) async throws {
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("UserItems/\(itemId)/Rating"),
+                                  resolvingAgainstBaseURL: false)
+        comps?.queryItems = [.init(name: "userId", value: credential.userID)] + (likes.map { [.init(name: "likes", value: String($0))] } ?? [])
+        guard let url = comps?.url else { throw URLError(.badURL) }
+        var req = URLRequest(url: url)
+        req.httpMethod = likes == nil ? "DELETE" : "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (_, resp) = try await URLSession.arcfin.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
     /// The song's lyrics, or nil when the server has none (Jellyfin 10.9+).
     public func getLyrics(credential: ServerCredential, authHeader: String, trackId: String) async throws -> Lyrics? {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent("Audio/\(trackId)/Lyrics"))
@@ -484,7 +503,8 @@ struct MusicItemResponse: Decodable {
     struct UserDataResponse: Decodable {
         let isFavorite: Bool?
         let playCount: Int?
-        enum CodingKeys: String, CodingKey { case isFavorite = "IsFavorite", playCount = "PlayCount" }
+        let likes: Bool?
+        enum CodingKeys: String, CodingKey { case isFavorite = "IsFavorite", playCount = "PlayCount", likes = "Likes" }
     }
 
     let id: String
@@ -544,7 +564,7 @@ struct MusicItemResponse: Decodable {
                    runTimeTicks: runTimeTicks, primaryImageTag: imageTags?["Primary"],
                    albumPrimaryImageTag: albumPrimaryImageTag, isFavorite: userData?.isFavorite ?? false,
                    playCount: userData?.playCount ?? 0, hasLyrics: hasLyrics ?? false, container: container, playlistEntryId: playlistItemId,
-                   normalizationGain: normalizationGain)
+                   normalizationGain: normalizationGain, likes: userData?.likes)
     }
 }
 

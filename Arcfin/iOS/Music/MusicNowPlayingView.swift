@@ -36,6 +36,7 @@ struct MusicMiniPlayer: View {
                     .contentShape(Rectangle())
                 }
                 .accessibilityHint("Opens Now Playing")
+                MusicMiniFavoriteButton(song: song)
                 Button { music.togglePlayPause() } label: {
                     Image(systemName: music.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title3)
@@ -67,6 +68,27 @@ struct MusicMiniPlayer: View {
             })
             .accessibilityElement(children: .contain)
             .accessibilityAction(named: "Previous") { music.previous() }
+        }
+    }
+}
+
+/// The pill's star, sized like its other buttons.
+private struct MusicMiniFavoriteButton: View {
+    let song: MusicSong
+    private var isFavorite: Bool { MusicFavorites.shared.isFavorite(song.id, server: song.isFavorite) }
+
+    var body: some View {
+        Button { MusicFavorites.shared.toggle(song.id, server: song.isFavorite) } label: {
+            Image(systemName: isFavorite ? "star.fill" : "star")
+                .font(.body)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: 36, height: 44)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel(isFavorite ? "Remove from Favorites" : "Add to Favorites")
+        .contextMenu {
+            Button("Like", systemImage: "hand.thumbsup") { MusicRatings.shared.set(song.id, likes: true, server: song.likes) }
+            Button("Dislike", systemImage: "hand.thumbsdown") { MusicRatings.shared.set(song.id, likes: false, server: song.likes) }
         }
     }
 }
@@ -148,6 +170,9 @@ struct MusicNowPlayingView: View {
             }
             .lineLimit(1)
             Spacer()
+            MusicRatingButtons(song: song, spacing: DT.Spacing.md)
+                .font(.title3)
+                .buttonStyle(.plain)
             songMenu(song)
         }
     }
@@ -162,6 +187,9 @@ struct MusicNowPlayingView: View {
             }
             .lineLimit(1)
             Spacer()
+            MusicRatingButtons(song: song, spacing: DT.Spacing.md)
+                .font(.title3)
+                .buttonStyle(.plain)
             songMenu(song)
         }
     }
@@ -171,7 +199,6 @@ struct MusicNowPlayingView: View {
             Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
                 Task { await MusicActions.instantMix(from: song.id) }
             }
-            MusicFavoriteButton(id: song.id, server: song.isFavorite)
             MusicAddToPlaylistButton { [song] }
             MusicDownloadButton(songs: { [song] }, known: [song])
         } label: {
