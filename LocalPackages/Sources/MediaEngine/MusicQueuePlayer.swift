@@ -245,8 +245,17 @@ public final class MusicQueuePlayer {
                 queuedSeek = nil
                 let now = player.currentTime().seconds
                 log.notice("Seek to \(seconds, privacy: .public)s: \(finished ? "done" : "refused", privacy: .public), at \(now, privacy: .public)s of \(self.duration, privacy: .public)s")
+                guard let item = player.currentItem, ObjectIdentifier(item) == id else { return }
                 // Some files can't land on an exact point; near it is fine.
-                if !finished, player.currentItem.map(ObjectIdentifier.init) == id { player.seek(to: target) }
+                if !finished { return player.seek(to: target) }
+                // A saved file that says it moved and didn't (one kept from an old conversion):
+                // the server plays the song from there instead.
+                if seconds > 2, !(now.isFinite && abs(now - seconds) < 2), (item.asset as? AVURLAsset)?.url.isFileURL == true,
+                   let entry = queue.current, !mustConvert.contains(entry.track.id) {
+                    log.error("The saved file of \(entry.track.id, privacy: .public) can't seek; streaming it from \(seconds, privacy: .public)s")
+                    mustConvert.insert(entry.track.id)
+                    restartConversion(at: seconds)
+                }
             }
         }
     }
@@ -420,7 +429,7 @@ public final class MusicQueuePlayer {
         let path = url.path
         // Which way it streams: the file as is (stream.flac, …) or converted (stream.mp3 with a codec).
         let gain = entry.track.normalizationGain.map { String(format: " gain %.1f dB", $0) } ?? " no gain"
-        log.notice("Song stream: \(path, privacy: .public)\(url.query?.contains("static=true") == true ? "" : " (converted)", privacy: .public)\(gain, privacy: .public)")
+        log.notice("Song stream: \(path, privacy: .public)\(url.isFileURL ? " (saved)" : url.query?.contains("static=true") == true ? "" : " (converted)", privacy: .public)\(gain, privacy: .public)")
         itemObservations[ObjectIdentifier(item)] = item.observe(\.status) { [weak self] item, _ in
             guard item.status == .failed else { return }
             let failed = ObjectIdentifier(item)

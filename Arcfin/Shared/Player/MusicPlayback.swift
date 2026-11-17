@@ -47,8 +47,8 @@ final class MusicPlayback {
         self.authManager = authManager
         scrobbler = MusicScrobbler(authManager: authManager)
         player = MusicQueuePlayer { [authManager] song, start, convert in
-            // A saved song plays from its file.
-            if let local = MusicDownloads.shared.localURL(for: song.id) { return local }
+            // A saved song plays from its file, unless the file won't play or seek.
+            if !convert, let local = MusicDownloads.shared.localURL(for: song.id) { return local }
             guard let credential = authManager.state.credential else { return nil }
             return JellyfinMediaClient().audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
                                                       container: song.container,
