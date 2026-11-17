@@ -42,6 +42,7 @@ final class AuthManager {
     var state: AuthState = .unauthenticated {
         didSet {
             if let id = state.credential?.id, id != oldValue.credential?.id {
+                ProfileSettings.activate(profile: id.uuidString, profiles: profiles.map(\.id.uuidString))
                 activateSeerrAccount(for: id)
                 if oldValue.credential != nil { forgetPreviousProfile() }
             }
@@ -361,15 +362,20 @@ final class AuthManager {
         isSyncingArcfin = true
         Task { [weak self] in
             guard let self else { return }
-            defer { self.isSyncingArcfin = false }
-            guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed else {
+            // A switch since has started its own sync; this one leaves that alone.
+            defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
+            guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed,
+                  self.isActive(credential) else {
                 Self.syncLog.notice("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
                 return
             }
             Self.syncLog.notice("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
             self.arcfinSyncStatus = status
             let header = self.authClient.authHeader(token: credential.accessToken)
-            self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
+            let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
+                                                       isCurrent: { await self.isActive(credential) })
+            guard self.isActive(credential) else { return }
+            self.arcfinSyncLockedKeys = locked
             self.arcfinSyncLastSyncedAt = .now
             self.watchSettingsChanges()
             // Which encoders the server's hardware really has (plugin 0.3+); nil leaves it to
@@ -406,12 +412,17 @@ final class AuthManager {
                   SettingsSyncEngine.hasLocalChanges(profile: credential.id.uuidString)
             else { return }
             self.isSyncingArcfin = true
-            defer { self.isSyncingArcfin = false }
+            defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
             let header = self.authClient.authHeader(token: credential.accessToken)
-            self.arcfinSyncLockedKeys = await SettingsSyncEngine.sync(credential: credential, authHeader: header)
+            let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
+                                                       isCurrent: { await self.isActive(credential) })
+            guard self.isActive(credential) else { return }
+            self.arcfinSyncLockedKeys = locked
             self.arcfinSyncLastSyncedAt = .now
         }
     }
+
+    private func isActive(_ credential: ServerCredential) -> Bool { state.credential?.id == credential.id }
 
     /// Manual re-sync for a "Sync Now" button — re-runs the exact same check/sync as every
     /// automatic call site, just triggered on demand against whichever profile is active.
@@ -448,6 +459,7 @@ final class AuthManager {
         for key in Self.perProfileSeerrKeys { UserDefaults.standard.removeObject(forKey: Self.perProfileKey(key, for: id)) }
         try? TMDBCredential.save("", profile: id)
         MusicScrobbler.forget(profile: id)
+        ProfileSettings.forget(profile: id.uuidString)
         profiles.removeAll { $0.id == id }
         #if !os(tvOS)
         // Another profile's titles shouldn't stay searchable through Spotlight and Siri.
@@ -560,6 +572,36 @@ final class AuthManager {
     /// use different Seerr servers.
     private static let perProfileSeerrKeys = ["seerrURL", "seerrAuthMethod"]
     private static func perProfileKey(_ key: String, for id: UUID) -> String { "\(key).\(id.uuidString)" }
+
+    /// A profile's Seerr server, sign-in method and username, from the slot in use when it's
+    /// the active profile's. Nil when it hasn't connected Seerr.
+    func seerrConnection(for id: UUID) -> (url: String, authMethod: String, username: String)? {
+        let defaults = UserDefaults.standard
+        let isLive = defaults.string(forKey: Self.seerrOwnerKey) == id.uuidString
+        func value(_ key: String, stored: String) -> String {
+            defaults.string(forKey: isLive ? key : stored) ?? ""
+        }
+        let url = value("seerrURL", stored: Self.perProfileKey("seerrURL", for: id))
+        guard !url.isEmpty else { return nil }
+        return (url, value("seerrAuthMethod", stored: Self.perProfileKey("seerrAuthMethod", for: id)),
+                value("seerrUsername", stored: Self.seerrUsernameKey(for: id)))
+    }
+
+    /// Gives a profile the Seerr connection another device sent, without a password: a
+    /// Jellyfin sign-in goes through Quick Connect, a local account signs in here.
+    func setSeerrConnection(url: String, authMethod: String, username: String, for id: UUID) {
+        let defaults = UserDefaults.standard
+        if defaults.string(forKey: Self.seerrOwnerKey) == id.uuidString {
+            // The slot in use: Seerr reconfigures from it.
+            defaults.set(authMethod, forKey: "seerrAuthMethod")
+            defaults.set(username, forKey: "seerrUsername")
+            defaults.set(url, forKey: "seerrURL")
+        } else {
+            defaults.set(authMethod, forKey: Self.perProfileKey("seerrAuthMethod", for: id))
+            defaults.set(username, forKey: Self.seerrUsernameKey(for: id))
+            defaults.set(url, forKey: Self.perProfileKey("seerrURL", for: id))
+        }
+    }
 
     /// Sets the outgoing profile's Seerr sign-in aside and puts the incoming one's in place
     /// (or none, when it hasn't connected Seerr), which reconfigures Seerr through the
