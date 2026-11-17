@@ -3,6 +3,7 @@
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
 import CarPlay
+import Intents
 import UserNotifications
 import CastKit
 import Telemetry
@@ -27,6 +28,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         WatchLink.shared.install()
         MusicWidgetPublisher.start()
         return true
+    }
+
+    /// Siri's "Play … in Arcfin", on the phone or in the car.
+    func application(_ application: UIApplication, handlerFor intent: INIntent) -> Any? {
+        intent is INPlayMediaIntent ? MusicSiriHandler() : nil
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {

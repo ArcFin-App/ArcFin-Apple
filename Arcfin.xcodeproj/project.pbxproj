@@ -145,6 +145,7 @@
 				iOS/App/PlayerFirstResponder.swift = (ios, );
 				iOS/App/PlayerWindow.swift = (ios, );
 				iOS/CarPlay/CarPlaySceneDelegate.swift = (ios, );
+				iOS/CarPlay/MusicSiriHandler.swift = (ios, );
 				iOS/Components/LetterIndexBar.swift = (ios, );
 				iOS/Components/PINPadPlatform.swift = (ios, );
 				iOS/Components/PosterCard.swift = (ios, );
