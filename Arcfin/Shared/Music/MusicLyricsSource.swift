@@ -15,7 +15,9 @@ final class MusicLyricsSource {
     @ObservationIgnored private var lookups: [String: Task<Lyrics?, Never>] = [:]
 
     /// The lyrics button can be offered: the server has some, or LRCLIB found some.
-    func isAvailable(_ song: MusicSong) -> Bool { song.hasLyrics || found[song.id] != nil }
+    func isAvailable(_ song: MusicSong) -> Bool {
+        song.hasLyrics || (MusicSettings.findsLyricsOnline && found[song.id] != nil)
+    }
 
     func lyrics(for song: MusicSong) async -> Lyrics? {
         if song.hasLyrics, let lyrics = try? await MusicAPI.call({
