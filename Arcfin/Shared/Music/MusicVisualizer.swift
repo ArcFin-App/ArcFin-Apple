@@ -172,14 +172,9 @@ private final class MusicMeter {
         let elapsed = Float(min(max(date.timeIntervalSince(last ?? date), 0), 0.1))
         last = date
         let targets: [Float]
+        // Only what's heard: buffering, on AirPlay or a Chromecast, nothing comes through to show.
         if playing, let rate = AppServices.music.player.levels.latest(spectrum.size, into: &samples) {
             targets = spectrum.bands(count, of: samples, sampleRate: rate)
-        } else if playing {
-            let time = date.timeIntervalSinceReferenceDate
-            targets = (0..<count).map { index in
-                let phase = Double(index)
-                return Float(0.35 + 0.25 * sin(time * 3 + phase * 0.9) * sin(time * 1.7 + phase * 0.4))
-            }
         } else {
             targets = [Float](repeating: 0, count: count)
         }
