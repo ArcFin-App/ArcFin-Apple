@@ -490,6 +490,7 @@ private struct MusicVolumeSlider: UIViewRepresentable {
             slider.leadingAnchor.constraint(equalTo: holder.leadingAnchor),
             slider.trailingAnchor.constraint(equalTo: holder.trailingAnchor),
             slider.centerYAnchor.constraint(equalTo: holder.centerYAnchor),
+            slider.heightAnchor.constraint(equalToConstant: 34),
         ])
         return holder
     }

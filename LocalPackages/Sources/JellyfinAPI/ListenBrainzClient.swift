@@ -65,12 +65,21 @@ public struct ListenBrainzClient: Sendable {
     /// ListenBrainz gave the recording, which loving or hating it needs.
     @discardableResult
     public func playingNow(_ listen: ListenBrainzListen) async throws -> String? {
-        struct Response: Decodable {
-            let recordingMSID: String?
-            enum CodingKeys: String, CodingKey { case recordingMSID = "recording_msid" }
-        }
         let data = try await submit(type: "playing_now", [listen], returnsMSID: true)
-        return (try? JSONDecoder().decode(Response.self, from: data))?.recordingMSID
+        return Self.recordingMSID(in: data)
+    }
+
+    /// The docs name the field but not where it sits in the reply, so it's looked for anywhere.
+    static func recordingMSID(in data: Data) -> String? {
+        func find(_ value: Any) -> String? {
+            if let object = value as? [String: Any] {
+                if let id = object["recording_msid"] as? String { return id }
+                return object.values.lazy.compactMap(find).first
+            }
+            if let array = value as? [Any] { return array.lazy.compactMap(find).first }
+            return nil
+        }
+        return (try? JSONSerialization.jsonObject(with: data)).flatMap(find)
     }
 
     /// Loves (1), hates (-1) or clears (0) a recording on the profile.

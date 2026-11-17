@@ -90,4 +90,10 @@ import Testing
         #expect(!play.continues(songID: "s", at: 0))
         #expect(!play.continues(songID: "t", at: 30))
     }
+
+    @Test func recordingIDFoundWhereverItSits() {
+        #expect(ListenBrainzClient.recordingMSID(in: Data(#"{"status":"ok","recording_msid":"a"}"#.utf8)) == "a")
+        #expect(ListenBrainzClient.recordingMSID(in: Data(#"{"status":"ok","payload":[{"recording_msid":"b"}]}"#.utf8)) == "b")
+        #expect(ListenBrainzClient.recordingMSID(in: Data(#"{"status":"ok"}"#.utf8)) == nil)
+    }
 }
