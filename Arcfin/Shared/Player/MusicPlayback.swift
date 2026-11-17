@@ -329,15 +329,16 @@ final class MusicPlayback {
     /// The queue ran out before a station arrived: it carries on from the last song.
     private func continueAfterQueue(_ song: MusicSong) {
         guard MusicSettings.isAutoplayOn, player.repeatMode == .off else { return }
-        let last = player.queue.entries.last?.id
+        let last = player.queue.entries.last?.id, endedAt = Date.now
         fetchAutoplay(after: song) { [weak self] songs in
             // Only if nothing has been played or changed since.
             guard let self, !player.isPlaying, player.queue.entries.last?.id == last,
                   player.queue.current?.id == player.queue.entries.first?.id else { return }
             let count = player.queue.entries.count
             player.addToQueue(songs)
+            // Arriving long after the music stopped, they wait for Play instead of starting it.
             guard player.queue.entries.count > count else { return }
-            player.jump(to: player.queue.entries[count].id)
+            player.jump(to: player.queue.entries[count].id, plays: Date.now.timeIntervalSince(endedAt) < 8)
         }
     }
 
@@ -486,6 +487,8 @@ final class MusicPlayback {
             player.volume = level * Float(steps - step) / Float(steps)
         }
         pause()
+        autoplayTask?.cancel()
+        autoplayTask = nil
         player.volume = level
         sleepTimer = nil
         sleepsAt = nil
