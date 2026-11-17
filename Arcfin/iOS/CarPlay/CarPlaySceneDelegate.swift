@@ -217,7 +217,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private func songRow(_ title: String, _ songs: [MusicSong]) -> CPListImageRowItem? {
         guard !songs.isEmpty else { return nil }
         let shown = Array(songs.prefix(CPMaximumNumberOfGridImages))
-        let row = CPListImageRowItem(text: title, images: shown.map { _ in Self.placeholder })
+        let row = CPListImageRowItem(text: title, elements: shown.map {
+            CPListImageRowItemRowElement(image: Self.placeholder, title: $0.name, subtitle: $0.artistLine)
+        }, allowsMultipleLines: false)
         loadImages(shown.map { MusicAPI.artworkURL($0, width: 240) }, into: row)
         row.listImageRowHandler = { [weak self] _, index, done in
             MusicActions.play(songs, from: index)
@@ -234,7 +236,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private func albumRow(_ title: String, _ albums: [MusicAlbum]) -> CPListImageRowItem? {
         guard !albums.isEmpty else { return nil }
         let shown = Array(albums.prefix(CPMaximumNumberOfGridImages))
-        let row = CPListImageRowItem(text: title, images: shown.map { _ in Self.placeholder })
+        let row = CPListImageRowItem(text: title, elements: shown.map {
+            CPListImageRowItemRowElement(image: Self.placeholder, title: $0.name, subtitle: $0.albumArtist)
+        }, allowsMultipleLines: false)
         loadImages(shown.map { MusicAPI.artworkURL($0, width: 240) }, into: row)
         row.listImageRowHandler = { [weak self] _, index, done in
             Task {
@@ -250,7 +254,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private static let placeholder: UIImage = {
-        let size = CPListImageRowItem.maximumImageSize
+        let size = CPListImageRowItemRowElement.maximumImageSize
         return UIGraphicsImageRenderer(size: size).image { context in
             UIColor.secondarySystemFill.setFill()
             context.fill(CGRect(origin: .zero, size: size))
@@ -259,11 +263,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     private func loadImages(_ urls: [URL?], into row: CPListImageRowItem) {
         Task {
-            var images = row.gridImages
-            for (index, url) in urls.enumerated() {
+            let elements = row.elements
+            for (element, url) in zip(elements, urls) {
                 guard let url, let data = await URLSession.arcfin.imageData(from: url), let image = UIImage(data: data) else { continue }
-                images[index] = image
-                row.update(images)
+                element.image = image
+                // Handing the elements back is what redraws the row.
+                row.elements = elements
             }
         }
     }
