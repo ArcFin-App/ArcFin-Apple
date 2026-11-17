@@ -101,6 +101,9 @@ struct MusicNowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var panel = Panel.artwork
     @State private var scrubbing: Double?
+    /// A held drag waits for the finger to lift; a tap, a flick or VoiceOver seeks at once,
+    /// since those don't always say when they've finished.
+    @State private var isDragging = false
     @State private var lyrics: Lyrics?
     private var player: MusicQueuePlayer { AppServices.music.player }
     private var music: MusicPlayback { AppServices.music }
@@ -214,7 +217,14 @@ struct MusicNowPlayingView: View {
         let duration = max(player.duration, 1)
         let position = scrubbing ?? music.position
         return VStack(spacing: DT.Spacing.xxs) {
-            Slider(value: Binding(get: { position }, set: { scrubbing = $0 }), in: 0...duration) { editing in
+            Slider(value: Binding(get: { position }, set: { value in
+                if isDragging {
+                    scrubbing = value
+                } else {
+                    music.seek(to: value)
+                }
+            }), in: 0...duration) { editing in
+                isDragging = editing
                 if !editing, let scrubbing {
                     music.seek(to: scrubbing)
                     self.scrubbing = nil

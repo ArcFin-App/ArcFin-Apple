@@ -10,6 +10,9 @@ import MediaEngine
 struct MusicPlayerBar: View {
     @State private var nowPlaying: MusicMacNowPlaying.Panel?
     @State private var scrubbing: Double?
+    /// A held drag waits for the finger to lift; a tap, a flick or VoiceOver seeks at once,
+    /// since those don't always say when they've finished.
+    @State private var isDragging = false
     private var player: MusicQueuePlayer { AppServices.music.player }
 
     var body: some View {
@@ -92,7 +95,14 @@ struct MusicPlayerBar: View {
         let position = scrubbing ?? player.position
         return HStack(spacing: DT.Spacing.xs) {
             Text(verbatim: position.musicTime)
-            Slider(value: Binding(get: { position }, set: { scrubbing = $0 }), in: 0...duration) { editing in
+            Slider(value: Binding(get: { position }, set: { value in
+                if isDragging {
+                    scrubbing = value
+                } else {
+                    player.seek(to: value)
+                }
+            }), in: 0...duration) { editing in
+                isDragging = editing
                 if !editing, let scrubbing {
                     player.seek(to: scrubbing)
                     self.scrubbing = nil
