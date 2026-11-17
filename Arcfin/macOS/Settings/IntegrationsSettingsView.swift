@@ -2,6 +2,7 @@
 
 import SwiftUI
 import SeerrAPI
+import AuthCore
 
 struct IntegrationsSettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -41,6 +42,20 @@ struct IntegrationsSettingsView: View {
                 Text("Both are optional.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
+            }
+
+            Section {
+                NavigationLink {
+                    ListenBrainzSettingsView(profile: authManager.state.credential?.id)
+                } label: {
+                    HStack {
+                        TVRowLabelText(title: "ListenBrainz", detail: "Keep a history of the music you play, for recommendations.")
+                        Spacer()
+                        ListenBrainzStatusPill(profile: authManager.state.credential?.id)
+                    }
+                }
+            } header: {
+                Text("Music")
             }
         }
         .arcfinListStyle()

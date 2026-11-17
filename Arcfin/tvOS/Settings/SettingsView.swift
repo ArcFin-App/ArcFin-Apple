@@ -103,6 +103,13 @@ struct SettingsView: View {
                     }
                 }
             }
+            NavigationLink(value: TVSettingsPage.listenBrainz) {
+                HStack {
+                    Text("ListenBrainz")
+                    Spacer()
+                    ListenBrainzStatusPill(profile: authManager.state.credential?.id)
+                }
+            }
         } header: {
             sectionHeader("Plugins")
         }
@@ -165,6 +172,7 @@ struct SettingsView: View {
         case .addServer: AddServerFlowView()
         case .seerr: SeerrPluginView()
         case .tmdb: TMDBSettingsView()
+        case .listenBrainz: ListenBrainzSettingsView(profile: authManager.state.credential?.id)
         case .licenses: LicensesView()
         case .language:
             TVChoicePage(title: "Language", selection: $languageOverride, options: [""] + AppLanguage.available) { code in
@@ -262,7 +270,7 @@ private extension View {
 }
 
 private enum TVSettingsPage: Hashable {
-    case playback, music, appearance, profile, serverSettings(UUID), addServer, seerr, tmdb, language, licenses
+    case playback, music, appearance, profile, serverSettings(UUID), addServer, seerr, tmdb, listenBrainz, language, licenses
 }
 
 // Settings rows in the tvOS ScrollView: plain text at rest and the light platter of the

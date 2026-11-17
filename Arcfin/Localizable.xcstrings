@@ -3437,6 +3437,70 @@
         }
       }
     },
+    "Keep a history of the music you play, for recommendations." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Speichert, welche Musik du hörst, für Empfehlungen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Guarda un historial de la música que escuchas, para recomendaciones."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Garde l'historique de la musique que vous écoutez, pour des recommandations."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tieni una cronologia della musica che ascolti, per i consigli."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生した音楽の履歴を残して、おすすめに使います。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "재생한 음악 기록을 남겨 추천에 활용합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Houd bij welke muziek je afspeelt, voor aanbevelingen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantenha um histórico das músicas que você ouve, para recomendações."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сохраняет историю прослушанной музыки для рекомендаций."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "记录你播放的音乐，用于推荐。"
+          }
+        }
+      }
+    },
     "Keep Favorites Downloaded" : {
       "localizations" : {
         "de" : {
@@ -3561,6 +3625,198 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "收起"
+          }
+        }
+      }
+    },
+    "ListenBrainz" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz"
+          }
+        }
+      }
+    },
+    "ListenBrainz turned this token down. Nothing is sent until you save a new one." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz hat dieses Token abgelehnt. Bis du ein neues sicherst, wird nichts gesendet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz ha rechazado este token. No se envía nada hasta que guardes uno nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz a refusé ce jeton. Rien n'est envoyé tant que vous n'en enregistrez pas un nouveau."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz ha rifiutato questo token. Non viene inviato nulla finché non ne salvi uno nuovo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainzがこのトークンを拒否しました。新しいトークンを保存するまで何も送信されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz가 이 토큰을 거부했습니다. 새 토큰을 저장할 때까지 아무것도 전송되지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz heeft dit token geweigerd. Er wordt niets verstuurd tot je een nieuw token bewaart."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O ListenBrainz recusou este token. Nada é enviado até você salvar um novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz отклонил этот токен. Ничего не отправляется, пока вы не сохраните новый."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz 拒绝了此令牌。在你保存新令牌之前不会发送任何内容。"
+          }
+        }
+      }
+    },
+    "Listens waiting to be sent: %lld" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Noch zu sendende Wiedergaben: %lld"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escuchas pendientes de enviar: %lld"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Écoutes en attente d'envoi : %lld"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ascolti in attesa di invio: %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "送信待ちの再生: %lld"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "전송 대기 중인 재생: %lld"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Luisterbeurten die nog verstuurd moeten worden: %lld"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduções aguardando envio: %lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Прослушивания, ожидающие отправки: %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "待发送的收听记录：%lld"
           }
         }
       }
@@ -4845,6 +5101,70 @@
         }
       }
     },
+    "Optional. Sends the songs you play in Arcfin to your ListenBrainz account, for your listening history and recommendations. A song counts once you've heard half of it or four minutes. Find your token at listenbrainz.org under Settings. Stored in the Keychain on this device, for this profile only." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Optional. Sendet die Titel, die du in Arcfin hörst, an dein ListenBrainz-Konto, für deinen Hörverlauf und Empfehlungen. Ein Titel zählt, sobald du die Hälfte oder vier Minuten davon gehört hast. Dein Token findest du auf listenbrainz.org unter Einstellungen. Im Schlüsselbund dieses Geräts gespeichert, nur für dieses Profil."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Opcional. Envía las canciones que escuchas en Arcfin a tu cuenta de ListenBrainz, para tu historial y recomendaciones. Una canción cuenta cuando has escuchado la mitad o cuatro minutos. Encuentra tu token en listenbrainz.org, en Ajustes. Se guarda en el llavero de este dispositivo, solo para este perfil."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Facultatif. Envoie les morceaux que vous écoutez dans Arcfin à votre compte ListenBrainz, pour votre historique d'écoute et des recommandations. Un morceau compte dès que vous en avez écouté la moitié ou quatre minutes. Votre jeton se trouve sur listenbrainz.org, dans Réglages. Stocké dans le trousseau de cet appareil, pour ce profil uniquement."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Facoltativo. Invia i brani che ascolti in Arcfin al tuo account ListenBrainz, per la cronologia di ascolto e i consigli. Un brano conta quando ne hai ascoltato metà o quattro minuti. Trovi il token su listenbrainz.org, in Impostazioni. Salvato nel portachiavi di questo dispositivo, solo per questo profilo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "任意。Arcfinで再生した曲をListenBrainzアカウントに送信し、再生履歴とおすすめに使います。曲の半分または4分を聴くと1回として数えます。トークンはlistenbrainz.orgの「設定」にあります。このデバイスのキーチェーンに、このプロファイル専用で保存されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "선택 사항. Arcfin에서 재생한 노래를 ListenBrainz 계정으로 보내 감상 기록과 추천에 활용합니다. 노래의 절반 또는 4분을 들으면 한 번으로 집계됩니다. 토큰은 listenbrainz.org의 설정에서 확인할 수 있습니다. 이 기기의 키체인에 이 프로필 전용으로 저장됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Optioneel. Stuurt de nummers die je in Arcfin afspeelt naar je ListenBrainz-account, voor je luistergeschiedenis en aanbevelingen. Een nummer telt zodra je de helft of vier minuten hebt gehoord. Je token vind je op listenbrainz.org onder Instellingen. Bewaard in de sleutelhanger van dit apparaat, alleen voor dit profiel."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Opcional. Envia as músicas que você ouve no Arcfin para sua conta do ListenBrainz, para seu histórico e recomendações. Uma música conta depois que você ouve metade dela ou quatro minutos. Encontre seu token em listenbrainz.org, em Ajustes. Armazenado nas Chaves deste dispositivo, só para este perfil."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Необязательно. Отправляет песни, которые вы слушаете в Arcfin, в ваш аккаунт ListenBrainz для истории прослушивания и рекомендаций. Песня засчитывается, когда вы прослушали половину или четыре минуты. Токен можно найти на listenbrainz.org в разделе «Настройки». Хранится в связке ключей этого устройства, только для этого профиля."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "可选。将你在 Arcfin 中播放的歌曲发送到你的 ListenBrainz 账户，用于收听记录和推荐。听完一半或四分钟即算一次收听。可在 listenbrainz.org 的“设置”中找到令牌。存储在此设备的钥匙串中，仅限此个人资料。"
+          }
+        }
+      }
+    },
     "Original plays each song as it is. A lower rate has your server convert songs to MP3, using less data." : {
       "localizations" : {
         "de" : {
@@ -5801,6 +6121,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "移除下载"
+          }
+        }
+      }
+    },
+    "Remove Token" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token entfernen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Eliminar token"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Supprimer le jeton"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rimuovi token"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "トークンを削除"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "토큰 제거"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token verwijderen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Remover token"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Удалить токен"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "移除令牌"
           }
         }
       }
@@ -7213,6 +7597,70 @@
         }
       }
     },
+    "Token Refused" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token abgelehnt"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token rechazado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jeton refusé"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token rifiutato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "トークンが拒否されました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "토큰 거부됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token geweigerd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token recusado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Токен отклонён"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "令牌被拒绝"
+          }
+        }
+      }
+    },
     "Treble Booster" : {
       "localizations" : {
         "de" : {
@@ -7465,6 +7913,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "由音乐占用"
+          }
+        }
+      }
+    },
+    "User token" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Benutzer-Token"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token de usuario"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jeton utilisateur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token utente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ユーザートークン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "사용자 토큰"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gebruikerstoken"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token de usuário"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Токен пользователя"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用户令牌"
+          }
+        }
+      }
+    },
+    "User Token" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Benutzer-Token"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token de usuario"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jeton utilisateur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token utente"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ユーザートークン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "사용자 토큰"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gebruikerstoken"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Token de usuário"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Токен пользователя"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用户令牌"
           }
         }
       }
@@ -122107,6 +122683,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "YouTube 备选"
+          }
+        }
+      }
+    },
+    "✓ Connected as %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ Verbunden als %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ Conectado como %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ Connecté en tant que %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ Connesso come %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ %@ として接続済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ %@(으)로 연결됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ Verbonden als %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ Conectado como %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ Подключено как %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✓ 已连接为 %@"
+          }
+        }
+      }
+    },
+    "✗ ListenBrainz doesn't know this token." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ ListenBrainz kennt dieses Token nicht."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ ListenBrainz no reconoce este token."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ ListenBrainz ne reconnaît pas ce jeton."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ ListenBrainz non riconosce questo token."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ ListenBrainzはこのトークンを認識していません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ ListenBrainz에서 이 토큰을 인식하지 못합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ ListenBrainz kent dit token niet."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ O ListenBrainz não reconhece este token."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ ListenBrainz не знает этот токен."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "✗ ListenBrainz 无法识别此令牌。"
           }
         }
       }

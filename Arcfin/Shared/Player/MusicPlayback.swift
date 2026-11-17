@@ -17,6 +17,7 @@ final class MusicPlayback {
     let player: MusicQueuePlayer
 
     @ObservationIgnored private let authManager: AuthManager
+    @ObservationIgnored let scrobbler: MusicScrobbler
     @ObservationIgnored private let client = JellyfinMediaClient()
     @ObservationIgnored private var progressTask: Task<Void, Never>?
     @ObservationIgnored private var observation: Task<Void, Never>?
@@ -44,6 +45,7 @@ final class MusicPlayback {
 
     init(authManager: AuthManager) {
         self.authManager = authManager
+        scrobbler = MusicScrobbler(authManager: authManager)
         player = MusicQueuePlayer { [authManager] song in
             // A saved song plays from its file.
             if let local = MusicDownloads.shared.localURL(for: song.id) { return local }
@@ -99,6 +101,7 @@ final class MusicPlayback {
                     isSwitchingProfile = true
                     player.stop()
                     isSwitchingProfile = false
+                    scrobbler.reset()
                     // Signing in, at launch too: that profile's last queue comes back.
                     if now != nil { restoreQueue() }
                 }
@@ -258,6 +261,8 @@ final class MusicPlayback {
     }
 
     private func reportStart(_ song: MusicSong, at seconds: Double) {
+        scrobbler.started(song, at: seconds)
+        scrobbler.flush()
         guard let credential = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: credential.accessToken), client = client
         report {
@@ -269,6 +274,7 @@ final class MusicPlayback {
 
     private func reportStop(_ song: MusicSong, at seconds: Double) {
         progressTask?.cancel()
+        scrobbler.heard(song, upTo: seconds)
         guard let credential = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: credential.accessToken), client = client
         report {
@@ -301,6 +307,7 @@ final class MusicPlayback {
         saveQueue()
         guard let song = castSong ?? (player.isInSession ? player.current : nil),
               let credential = authManager.state.credential else { return }
+        scrobbler.heard(song, upTo: position)
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         let client = client, ticks = Int64(position * 10_000_000), isPaused = !isPlaying
         let volume = Int(((isCasting ? cast.volume : player.volume) * 100).rounded()), isMuted = player.isMuted

@@ -447,6 +447,7 @@ final class AuthManager {
         UserDefaults.standard.removeObject(forKey: Self.seerrUsernameKey(for: id))
         for key in Self.perProfileSeerrKeys { UserDefaults.standard.removeObject(forKey: Self.perProfileKey(key, for: id)) }
         try? TMDBCredential.save("", profile: id)
+        MusicScrobbler.forget(profile: id)
         profiles.removeAll { $0.id == id }
         #if !os(tvOS)
         // Another profile's titles shouldn't stay searchable through Spotlight and Siri.
