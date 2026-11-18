@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import AuthCore
+import AVFoundation
 import Foundation
 import Intents
 import JellyfinAPI
@@ -30,10 +31,9 @@ final class MusicSiriHandler: NSObject, INPlayMediaIntentHandling {
             WatchRoute.open(id: String(identifier.dropFirst("video:".count)))
             return .init(code: .continueInApp, userActivity: nil)
         }
-        // Siri still holds the audio while it answers, so music starts once it hands the
-        // request back to the app.
+        // Siri still holds the audio while it answers, so the music starts once it's quiet.
         await MusicSiriSearch.hold(identifier, shuffled: intent.playShuffled == true)
-        return .init(code: .handleInApp, userActivity: nil)
+        return .init(code: .success, userActivity: nil)
     }
 }
 
@@ -82,11 +82,13 @@ enum MusicSiriSearch {
     static func hold(_ identifier: String, shuffled: Bool) {
         log.notice("Siri asked for \(identifier, privacy: .public)")
         held = (identifier, shuffled)
-        // Played anyway if the request never comes back to the app.
         Task {
-            try? await Task.sleep(for: .seconds(4))
+            try? await Task.sleep(for: .seconds(1))
+            // Siri's answer is other audio: wait for it to finish, but not for ever.
+            for _ in 0..<16 where AVAudioSession.sharedInstance().isOtherAudioPlaying {
+                try? await Task.sleep(for: .milliseconds(250))
+            }
             guard held?.identifier == identifier else { return }
-            log.notice("Siri didn't hand back \(identifier, privacy: .public); playing it anyway")
             _ = await playHeld()
         }
     }
