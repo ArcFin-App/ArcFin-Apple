@@ -388,6 +388,10 @@ extension PlayerView {
             }
             .scrollBounceBehavior(.basedOnSize)
         }
+        // Down closes it, as on the music player.
+        .simultaneousGesture(DragGesture(minimumDistance: 20).onEnded { drag in
+            if drag.translation.height > 80, drag.translation.height > abs(drag.translation.width) { closePlayer() }
+        })
         .background {
             ZStack {
                 Color.black

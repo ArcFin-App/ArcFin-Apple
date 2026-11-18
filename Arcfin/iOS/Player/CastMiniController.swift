@@ -59,6 +59,11 @@ struct CastMiniController: View {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 16)
+        .contentShape(Rectangle())
+        // Up opens the player, as on the music pill.
+        .simultaneousGesture(DragGesture(minimumDistance: 12).onEnded { drag in
+            if drag.translation.height < -20, abs(drag.translation.height) > abs(drag.translation.width) { openPlayer() }
+        })
         .accessibilityElement(children: .contain)
     }
 
@@ -110,6 +115,11 @@ struct RemoteMiniController: View {
             }
             .buttonStyle(.plain)
             .padding(.horizontal, 16)
+            .contentShape(Rectangle())
+            // Up opens the remote, as on the music pill.
+            .simultaneousGesture(DragGesture(minimumDistance: 12).onEnded { drag in
+                if drag.translation.height < -20, abs(drag.translation.height) > abs(drag.translation.width) { remote.open(session) }
+            })
             .accessibilityElement(children: .contain)
         }
     }
@@ -158,6 +168,10 @@ struct RemoteControllerView: View {
                 .foregroundStyle(.white)
                 .buttonStyle(.plain)
                 .background { background(session) }
+                // Down closes it, as on the music player.
+                .simultaneousGesture(DragGesture(minimumDistance: 20).onEnded { drag in
+                    if drag.translation.height > 80, drag.translation.height > abs(drag.translation.width) { remote.isShowingRemote = false }
+                })
             } else {
                 VStack(spacing: 12) {
                     Text("Nothing Playing")
