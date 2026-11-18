@@ -139,13 +139,13 @@
 				Shared/Music/MusicLibraryView.swift = (ios, macos, );
 				Shared/Music/MusicListsView.swift = (ios, macos, );
 				Shared/Music/MusicSearchSection.swift = (ios, macos, );
+				Shared/Siri/MusicSiriHandler.swift = (ios, tvos, );
 				iOS/App/AppRootPlatform.swift = (ios, );
 				iOS/App/ArcfinScenes.swift = (ios, );
 				iOS/App/ContentView.swift = (ios, );
 				iOS/App/PlayerFirstResponder.swift = (ios, );
 				iOS/App/PlayerWindow.swift = (ios, );
 				iOS/CarPlay/CarPlaySceneDelegate.swift = (ios, );
-				iOS/CarPlay/MusicSiriHandler.swift = (ios, );
 				iOS/Components/LetterIndexBar.swift = (ios, );
 				iOS/Components/PINPadPlatform.swift = (ios, );
 				iOS/Components/PosterCard.swift = (ios, );
@@ -1205,6 +1205,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=appletvos*]" = Arcfin/tvOS/ArcfintvOS.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=appletvsimulator*]" = Arcfin/tvOS/ArcfintvOS.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
@@ -1280,6 +1282,8 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=appletvos*]" = Arcfin/tvOS/ArcfintvOS.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=appletvsimulator*]" = Arcfin/tvOS/ArcfintvOS.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
