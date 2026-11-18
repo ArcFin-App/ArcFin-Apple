@@ -18,7 +18,7 @@ import UIKit
 /// screen and remotes carry on.
 @MainActor
 final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPTabBarTemplateDelegate,
-                                  CPNowPlayingTemplateObserver {
+                                  CPNowPlayingTemplateObserver, CPSessionConfigurationDelegate {
     private var interface: CPInterfaceController?
     private let home = CPListTemplate(title: String(localized: "Home"), sections: [])
     private let new = CPListTemplate(title: String(localized: "New"), sections: [])
@@ -30,6 +30,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private var tabs: [CPListTemplate] { hasNewTab ? [home, new, radio, library, searchTab] : [home, radio, library, searchTab] }
 
     private lazy var search = CarPlaySearch(scene: self)
+    private lazy var voice = CarPlayVoiceSearch { [weak self] term in await self?.search.pushResults(for: term) }
+    /// Whether the car has the keyboard off (most do while driving).
+    private var session: CPSessionConfiguration?
 
     private var music: MusicPlayback { AppServices.music }
     private var player: MusicQueuePlayer { music.player }
@@ -37,6 +40,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                   didConnect interfaceController: CPInterfaceController) {
         interface = interfaceController
+        session = CPSessionConfiguration(delegate: self)
         home.tabImage = UIImage(systemName: "house")
         new.tabImage = UIImage(systemName: "sparkles")
         radio.tabImage = UIImage(systemName: "dot.radiowaves.left.and.right")
@@ -55,6 +59,11 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                                   didDisconnectInterfaceController interfaceController: CPInterfaceController) {
         CPNowPlayingTemplate.shared.remove(self)
         interface = nil
+    }
+
+    nonisolated func sessionConfiguration(_ sessionConfiguration: CPSessionConfiguration,
+                                          limitedUserInterfacesChanged limitedUserInterfaces: CPLimitableUserInterface) {
+        MainActor.assumeIsolated { load(searchTab) }
     }
 
     func tabBarTemplate(_ tabBarTemplate: CPTabBarTemplate, didSelect selectedTemplate: CPTemplate) {
@@ -153,16 +162,26 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         return rows.isEmpty ? [] : [CPListSection(items: rows)]
     }
 
-    /// Search Music opens the search; recent searches below it run again.
+    /// Search by Voice and Search Music (typing, when the car allows the keyboard); recent
+    /// searches below them run again.
     private func searchSections() -> [CPListSection] {
-        let open = CPListItem(text: String(localized: "Search Music"), detailText: nil, image: UIImage(systemName: "magnifyingglass"))
+        let byVoice = CPListItem(text: String(localized: "Search by Voice"), detailText: nil, image: UIImage(systemName: "mic"))
+        byVoice.handler = { [weak self] _, done in
+            guard let self else { return done() }
+            voice.start(in: interface)
+            done()
+        }
+        let keyboardOff = session?.limitedUserInterfaces.contains(.keyboard) == true
+        let open = CPListItem(text: String(localized: "Search Music"),
+                              detailText: keyboardOff ? String(localized: "The keyboard is off while driving") : nil,
+                              image: UIImage(systemName: "keyboard"))
         open.accessoryType = .disclosureIndicator
         open.handler = { [weak self] _, done in
             guard let self else { return done() }
             search.show(in: interface)
             done()
         }
-        var sections = [CPListSection(items: [open])]
+        var sections = [CPListSection(items: [byVoice, open])]
         let recents = search.recents.map { term in
             let item = CPListItem(text: term, detailText: nil, image: UIImage(systemName: "clock.arrow.circlepath"))
             item.accessoryType = .disclosureIndicator

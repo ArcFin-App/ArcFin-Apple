@@ -505,6 +505,78 @@
         }
       }
     },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin hört zu, wenn du im Auto per Sprache suchst, um Musik auf deinem Server zu finden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Arcfin listens when you search by voice in the car, to find music on your server."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin escucha cuando buscas por voz en el coche, para encontrar música en tu servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin vous écoute quand vous cherchez à la voix en voiture, pour trouver de la musique sur votre serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin ascolta quando cerchi con la voce in auto, per trovare musica sul tuo server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "車内で音声検索するとき、サーバ上の音楽を探すためにArcfinが音声を聞き取ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "차에서 음성으로 검색할 때 Arcfin이 서버에서 음악을 찾기 위해 듣습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin luistert als je in de auto met je stem zoekt, om muziek op je server te vinden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin escuta quando você busca por voz no carro, para encontrar músicas no seu servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin слушает, когда вы ищете голосом в машине, чтобы найти музыку на вашем сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在车内用语音搜索时，Arcfin 会聆听以在你的服务器上查找音乐。"
+          }
+        }
+      }
+    },
     "NSSiriUsageDescription" : {
       "comment" : "Permission prompt",
       "extractionState" : "extracted_with_value",
@@ -573,6 +645,78 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在 iPhone、iPad 上或车内提出请求时，Siri 会在 Arcfin 中播放你的电影、剧集和音乐。"
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin macht aus dem Gesagten eine Suche, wenn du im Auto per Sprache suchst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Arcfin turns what you say into a search when you search by voice in the car."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin convierte lo que dices en una búsqueda cuando buscas por voz en el coche."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin transforme ce que vous dites en recherche quand vous cherchez à la voix en voiture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin trasforma ciò che dici in una ricerca quando cerchi con la voce in auto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "車内で音声検索するとき、Arcfinが話した内容を検索語にします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "차에서 음성으로 검색할 때 Arcfin이 말한 내용을 검색어로 바꿉니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin maakt van wat je zegt een zoekopdracht als je in de auto met je stem zoekt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin transforma o que você diz em uma busca quando você busca por voz no carro."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin превращает сказанное в поисковый запрос, когда вы ищете голосом в машине."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在车内用语音搜索时，Arcfin 会把你说的话变成搜索内容。"
           }
         }
       }
