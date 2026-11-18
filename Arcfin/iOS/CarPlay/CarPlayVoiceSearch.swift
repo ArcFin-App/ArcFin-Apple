@@ -15,6 +15,7 @@ final class CarPlayVoiceSearch {
     private let template: CPVoiceControlTemplate
     private let capture = SpeechCapture()
     private var resumesMusic = false
+    private var isListening = false
     private var heard = ""
     private var finish: Task<Void, Never>?
     private weak var interface: CPInterfaceController?
@@ -65,6 +66,7 @@ final class CarPlayVoiceSearch {
                 showAlert(String(localized: "Voice search needs Arcfin open on your iPhone. You can also ask Siri: “Play … in Arcfin”."))
                 return
             }
+            isListening = true
             interface?.presentTemplate(template, animated: true, completion: nil)
             template.activateVoiceControlState(withIdentifier: "listening")
             // Nothing said at all: give up after a while.
@@ -97,21 +99,17 @@ final class CarPlayVoiceSearch {
     private func stop(search: Bool) {
         finish?.cancel()
         finish = nil
-        guard capture.isRunning else {
-            interface?.dismissTemplate(animated: true, completion: nil)
-            return
-        }
-        capture.stop()
+        guard isListening else { return }
+        isListening = false
+        let capture = capture
         let term = heard.trimmingCharacters(in: .whitespaces)
         Self.log.notice("Voice search heard \(term, privacy: .public)")
-        if search, !term.isEmpty {
-            template.activateVoiceControlState(withIdentifier: "searching")
-            Task {
-                await found(term)
-                interface?.dismissTemplate(animated: true, completion: nil)
-                if resumesMusic { AppServices.music.resume() }
-            }
-        } else {
+        let searches = search && !term.isEmpty
+        if searches { template.activateVoiceControlState(withIdentifier: "searching") }
+        Task {
+            // The audio session blocks, so it's put back off the main actor, before music plays.
+            await Task.detached { capture.stop() }.value
+            if searches { await found(term) }
             interface?.dismissTemplate(animated: true, completion: nil)
             if resumesMusic { AppServices.music.resume() }
         }
