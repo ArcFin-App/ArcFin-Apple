@@ -4,9 +4,10 @@ import SwiftUI
 import JellyfinAPI
 import MediaEngine
 
-/// Every song, with Play and Shuffle above and a sort.
+/// Every song, or only the favourites, with Play and Shuffle above and a sort.
 struct MusicSongsView: View {
     let libraryID: String
+    var favoritesOnly = false
     @AppStorage("music.songSort") private var sort: MusicSort = .name
     @State private var list: MusicPagedList<MusicSong>?
 
@@ -17,7 +18,7 @@ struct MusicSongsView: View {
                     .disabled(list.items.isEmpty)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-                MusicListState(list: list, empty: "No Songs")
+                MusicListState(list: list, empty: favoritesOnly ? "No Favorite Songs" : "No Songs")
                     .listRowBackground(Color.clear)
                 ForEach(Array(list.items.enumerated()), id: \.element.id) { index, song in
                     MusicSongRow(song: song) { MusicActions.play(list.items, from: index) }
@@ -28,7 +29,7 @@ struct MusicSongsView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .screenBackground()
-        .navigationTitle("Songs")
+        .navigationTitle(favoritesOnly ? "Favorite Songs" : "Songs")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -45,11 +46,12 @@ struct MusicSongsView: View {
             }
         }
         .task(id: sort) {
-            let libraryID = libraryID, sort = sort
+            let libraryID = libraryID, sort = sort, filter = MusicFilter(favoritesOnly: favoritesOnly)
             let list = MusicPagedList<MusicSong> { start in
                 let page = try await MusicAPI.call {
                     try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
-                                                ascending: sort != .dateAdded && sort != .playCount, startIndex: start)
+                                                ascending: sort != .dateAdded && sort != .playCount, filter: filter,
+                                                startIndex: start)
                 }
                 return (page.tracks, page.total)
             }
@@ -58,12 +60,13 @@ struct MusicSongsView: View {
         }
     }
 
-    /// The whole library at random, not only the songs loaded so far.
+    /// The whole list at random, not only the songs loaded so far.
     private func shuffleAll() {
-        let libraryID = libraryID
+        let libraryID = libraryID, filter = MusicFilter(favoritesOnly: favoritesOnly)
         Task {
             let page = try? await MusicAPI.call {
-                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: .random, limit: 300)
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: .random,
+                                            filter: filter, limit: 300)
             }
             if let songs = page?.tracks, !songs.isEmpty { MusicActions.play(songs) }
         }

@@ -14,6 +14,7 @@ enum MusicRoute: Hashable {
     case artists(libraryID: String)
     case albums(libraryID: String, title: String, genreID: String? = nil)
     case songs(libraryID: String)
+    case favorites(libraryID: String)
     case genres(libraryID: String)
     case playlists
     case playlist(MusicPlaylist)

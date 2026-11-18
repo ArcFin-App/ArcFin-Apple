@@ -45,6 +45,7 @@ struct MusicLibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                 VStack(spacing: 0) {
+                    row("Favorites", systemImage: "star", route: .favorites(libraryID: library.id))
                     row("Playlists", systemImage: "music.note.list", route: .playlists)
                     row("Artists", systemImage: "music.microphone", route: .artists(libraryID: library.id))
                     row("Albums", systemImage: "square.stack", route: .albums(libraryID: library.id, title: String(localized: "Albums")))

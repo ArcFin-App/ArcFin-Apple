@@ -14,6 +14,7 @@ struct MusicDestination: View {
         case .artists(let library): MusicArtistsView(libraryID: library)
         case .albums(let library, let title, let genre): MusicAlbumsView(libraryID: library, title: title, genreID: genre)
         case .songs(let library): MusicSongsView(libraryID: library)
+        case .favorites(let library): MusicSongsView(libraryID: library, favoritesOnly: true)
         case .genres(let library): MusicGenresView(libraryID: library)
         case .playlists: MusicPlaylistsView()
         case .playlist(let playlist): MusicPlaylistView(playlist: playlist)

@@ -11,6 +11,7 @@ extension View {
             case .artists(let library): TVMusicArtistsView(libraryID: library)
             case .albums(let library, let title, let genre): TVMusicAlbumsView(libraryID: library, title: title, genreID: genre)
             case .songs(let library): TVMusicSongsView(libraryID: library)
+            case .favorites(let library): TVMusicSongsView(libraryID: library, favoritesOnly: true)
             case .genres(let library): TVMusicGenresView(libraryID: library)
             case .playlists: TVMusicPlaylistsView()
             case .playlist(let playlist): TVMusicPlaylistView(playlist: playlist)
@@ -322,6 +323,7 @@ struct TVMusicLibraryView: View {
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
+                    link("Favorites", systemImage: "star", route: .favorites(libraryID: library.id))
                     link("Playlists", systemImage: "music.note.list", route: .playlists)
                     link("Artists", systemImage: "music.microphone", route: .artists(libraryID: library.id))
                     link("Albums", systemImage: "square.stack", route: .albums(libraryID: library.id, title: String(localized: "Albums")))
@@ -636,13 +638,16 @@ struct TVMusicPlaylistView: View {
 
 struct TVMusicSongsView: View {
     let libraryID: String
+    let favoritesOnly: Bool
     @State private var list: MusicPagedList<MusicSong>
 
-    init(libraryID: String) {
+    init(libraryID: String, favoritesOnly: Bool = false) {
         self.libraryID = libraryID
+        self.favoritesOnly = favoritesOnly
+        let filter = MusicFilter(favoritesOnly: favoritesOnly)
         _list = State(initialValue: MusicPagedList { start in
             let page = try await MusicAPI.call {
-                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, startIndex: start)
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, filter: filter, startIndex: start)
             }
             return (page.tracks, page.total)
         })
@@ -652,13 +657,13 @@ struct TVMusicSongsView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
                 HStack(spacing: 24) {
-                    Text("Songs").font(.title2.weight(.bold))
+                    Text(favoritesOnly ? "Favorite Songs" : "Songs").font(.title2.weight(.bold))
                     Spacer()
                     TVPillButton(title: "Play", systemImage: "play.fill") { TVMusicPresenter.shared.play(list.items) }
                     TVPillButton(title: "Shuffle", systemImage: "shuffle") { shuffleAll() }
                 }
                 .focusSection()
-                TVMusicLoading(list: list, empty: "No Songs")
+                TVMusicLoading(list: list, empty: favoritesOnly ? "No Favorite Songs" : "No Songs")
                 LazyVStack(spacing: 4) {
                     ForEach(Array(list.items.enumerated()), id: \.element.id) { index, song in
                         TVMusicSongRow(song: song, showsArtwork: true) { TVMusicPresenter.shared.play(list.items, from: index) }
@@ -675,10 +680,11 @@ struct TVMusicSongsView: View {
     }
 
     private func shuffleAll() {
-        let libraryID = libraryID
+        let libraryID = libraryID, filter = MusicFilter(favoritesOnly: favoritesOnly)
         Task {
             let page = try? await MusicAPI.call {
-                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: .random, limit: 300)
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: .random,
+                                            filter: filter, limit: 300)
             }
             TVMusicPresenter.shared.play(page?.tracks ?? [])
         }
