@@ -17,6 +17,8 @@ import Telemetry
 @MainActor @Observable
 final class MusicPlayback {
     let player: MusicQueuePlayer
+    /// The full player is up over the app, so what's behind it (Home's trailer) stops.
+    var isNowPlayingOpen = false
 
     @ObservationIgnored private let authManager: AuthManager
     @ObservationIgnored let scrobbler: MusicScrobbler

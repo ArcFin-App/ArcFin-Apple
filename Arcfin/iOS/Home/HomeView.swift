@@ -314,6 +314,7 @@ struct HomeView: View {
         model.detailItem != nil || seeAllShelf != nil || showSettings || model.seerrDetailItem != nil
             || trailerLaunchItem != nil || model.playbackRequest != nil || hero.playbackRequest != nil
             || PlayerActivity.shared.isPlayerOpen
+            || AppServices.music.isNowPlayingOpen || AppServices.remoteSessions.isShowingRemote
     }
 
     private func loadHeroVideoBackdrop() {

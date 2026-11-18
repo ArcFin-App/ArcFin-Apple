@@ -116,7 +116,6 @@ private struct CastMiniControllerAccessory: ViewModifier {
     private var casting: Bool {
         CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil && !AppServices.music.isCasting
     }
-    @State private var showsMusic = false
     @Namespace private var musicTransition
     /// Music playing here goes first; paused, it gives the bar to another device that's playing.
     private var showsMusicBar: Bool {
@@ -140,13 +139,15 @@ private struct CastMiniControllerAccessory: ViewModifier {
                 if casting {
                     CastMiniController()
                 } else if showsMusicBar || AppServices.remoteSessions.selected == nil {
-                    MusicMiniPlayer(isExpanded: $showsMusic)
+                    MusicMiniPlayer(isExpanded: Binding(get: { AppServices.music.isNowPlayingOpen },
+                                                        set: { AppServices.music.isNowPlayingOpen = $0 }))
                         .matchedTransitionSource(id: "music", in: musicTransition)
                 } else {
                     RemoteMiniController()
                 }
             }
-            .sheet(isPresented: $showsMusic) {
+            .sheet(isPresented: Binding(get: { AppServices.music.isNowPlayingOpen },
+                                        set: { AppServices.music.isNowPlayingOpen = $0 })) {
                 MusicNowPlayingView()
                     .navigationTransition(.zoom(sourceID: "music", in: musicTransition))
                     .presentationDragIndicator(.hidden)
