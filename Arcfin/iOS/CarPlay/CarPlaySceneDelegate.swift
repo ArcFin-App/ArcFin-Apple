@@ -24,7 +24,10 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private let new = CPListTemplate(title: String(localized: "New"), sections: [])
     private let radio = CPListTemplate(title: String(localized: "Radio"), sections: [])
     private let library = CPListTemplate(title: String(localized: "Library"), sections: [])
-    private var tabs: [CPListTemplate] { [home, new, radio, library] }
+    private let searchTab = CPListTemplate(title: String(localized: "Search"), sections: [])
+    /// The car decides how many tabs there can be; with only four, New's rows go on Home.
+    private var hasNewTab: Bool { CPTabBarTemplate.maximumTabCount >= 5 }
+    private var tabs: [CPListTemplate] { hasNewTab ? [home, new, radio, library, searchTab] : [home, radio, library, searchTab] }
 
     private lazy var search = CarPlaySearch(scene: self)
 
@@ -38,12 +41,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         new.tabImage = UIImage(systemName: "sparkles")
         radio.tabImage = UIImage(systemName: "dot.radiowaves.left.and.right")
         library.tabImage = UIImage(systemName: "square.stack")
-        for list in [home, library] {
-            list.trailingNavigationBarButtons = [CPBarButton(image: UIImage(systemName: "magnifyingglass") ?? UIImage()) { [weak self] _ in
-                guard let self else { return }
-                search.show(in: interface)
-            }]
-        }
+        searchTab.tabImage = UIImage(systemName: "magnifyingglass")
         let bar = CPTabBarTemplate(templates: tabs)
         bar.delegate = self
         interfaceController.setRootTemplate(bar, animated: false, completion: nil)
@@ -107,9 +105,10 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             }
             list.emptyViewTitleVariants = [String(localized: "Nothing Here Yet")]
             switch list {
-            case home: list.updateSections(await homeSections())
+            case home: list.updateSections(await homeSections() + (hasNewTab ? [] : await newSections()))
             case new: list.updateSections(await newSections())
             case radio: list.updateSections(await radioSections())
+            case searchTab: list.updateSections(searchSections())
             default: list.updateSections(librarySections())
             }
         }
@@ -152,6 +151,33 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         if let row = songRow(String(localized: "Most Played"), await most) { rows.append(row) }
         if let row = songRow(String(localized: "Favorite Songs"), await favorites) { rows.append(row) }
         return rows.isEmpty ? [] : [CPListSection(items: rows)]
+    }
+
+    /// Search Music opens the search; recent searches below it run again.
+    private func searchSections() -> [CPListSection] {
+        let open = CPListItem(text: String(localized: "Search Music"), detailText: nil, image: UIImage(systemName: "magnifyingglass"))
+        open.accessoryType = .disclosureIndicator
+        open.handler = { [weak self] _, done in
+            guard let self else { return done() }
+            search.show(in: interface)
+            done()
+        }
+        var sections = [CPListSection(items: [open])]
+        let recents = search.recents.map { term in
+            let item = CPListItem(text: term, detailText: nil, image: UIImage(systemName: "clock.arrow.circlepath"))
+            item.accessoryType = .disclosureIndicator
+            item.handler = { [weak self] _, done in
+                Task {
+                    await self?.search.pushResults(for: term)
+                    done()
+                }
+            }
+            return item
+        }
+        if !recents.isEmpty {
+            sections.append(CPListSection(items: recents, header: String(localized: "Recent Searches"), sectionIndexTitle: nil))
+        }
+        return sections
     }
 
     /// What was added lately: the newest albums as covers, then the newest songs.

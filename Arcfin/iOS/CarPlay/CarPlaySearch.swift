@@ -105,7 +105,7 @@ final class CarPlaySearch: NSObject, CPSearchTemplateDelegate {
     }
 
     /// Every result for the term, a section for each kind.
-    private func pushResults(for term: String) async {
+    func pushResults(for term: String) async {
         remember(term)
         let results = await Self.results(for: term)
         let all = items(for: results, term: term, limit: CPListTemplate.maximumItemCount)
@@ -125,9 +125,10 @@ final class CarPlaySearch: NSObject, CPSearchTemplateDelegate {
 
     // MARK: Recent searches
 
+    var recents: [String] { UserDefaults.standard.stringArray(forKey: Self.recentsKey) ?? [] }
+
     private func recentItems() -> [CPListItem] {
-        let recents = UserDefaults.standard.stringArray(forKey: Self.recentsKey) ?? []
-        return recents.map { recent in
+        recents.map { recent in
             let item = CPListItem(text: recent, detailText: nil, image: UIImage(systemName: "clock.arrow.circlepath"))
             item.userInfo = Action { [weak self] in await self?.pushResults(for: recent) }
             return item
