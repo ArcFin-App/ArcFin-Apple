@@ -5,6 +5,7 @@ import AVFoundation
 import Foundation
 import Intents
 import JellyfinAPI
+import MediaPlayer
 import os
 import Telemetry
 
@@ -38,8 +39,15 @@ final class MusicSiriHandler: NSObject, INPlayMediaIntentHandling {
             return .init(code: .continueInApp, userActivity: nil)
         }
         // Siri still holds the audio while it answers, so the music starts once it's quiet.
-        await MusicSiriSearch.hold(identifier, shuffled: intent.playShuffled == true)
-        return .init(code: .success, userActivity: nil)
+        MusicSiriSearch.hold(identifier, shuffled: intent.playShuffled == true)
+        let response = INPlayMediaIntentResponse(code: .success, userActivity: nil)
+        // What Siri says back: "Playing <song> by <artist>".
+        if let item = intent.mediaItems?.first, let title = item.title {
+            var info: [String: Any] = [MPMediaItemPropertyTitle: title]
+            if let artist = item.artist { info[MPMediaItemPropertyArtist] = artist }
+            response.nowPlayingInfo = info
+        }
+        return response
     }
 }
 
