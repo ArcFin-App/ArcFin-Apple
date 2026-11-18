@@ -1098,7 +1098,10 @@ public struct JellyfinMediaClient: Sendable {
         req.httpMethod = favorite ? "POST" : "DELETE"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        _ = try await URLSession.arcfin.data(for: req)
+        let (_, response) = try await URLSession.arcfin.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
     }
 
     /// An item's tags, as an admin edits them.

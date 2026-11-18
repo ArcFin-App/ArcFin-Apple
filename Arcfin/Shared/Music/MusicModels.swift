@@ -5,7 +5,9 @@ import Foundation
 import JellyfinAPI
 import MediaEngine
 import Observation
+import os
 import SwiftUI
+import Telemetry
 
 /// Where a music screen leads.
 enum MusicRoute: Hashable {
@@ -113,20 +115,55 @@ final class MusicPagedList<Item: Identifiable & Sendable> {
 final class MusicFavorites {
     static let shared = MusicFavorites()
     private var changed: [String: Bool] = [:]
+    @ObservationIgnored private var edits = MusicEdits()
 
     func isFavorite(_ id: String, server: Bool) -> Bool { changed[id] ?? server }
 
-    /// What the server says now, over anything older here.
-    func sync(_ id: String, isFavorite: Bool) { changed[id] = isFavorite }
+    /// What the server said when asked at `asked`, unless it's been changed here since.
+    func sync(_ id: String, isFavorite: Bool, asked: Date) {
+        guard !edits.changed(id, since: asked) else { return }
+        changed[id] = isFavorite
+    }
 
     func toggle(_ id: String, server: Bool) {
-        let favorite = !isFavorite(id, server: server)
+        let before = isFavorite(id, server: server), favorite = !before
         changed[id] = favorite
-        Task { await MusicActions.setFavorite(id, favorite) }
+        let edit = edits.begin(id)
         AppServices.music.ratingsChanged()
+        Task {
+            let saved = await MusicActions.setFavorite(id, favorite)
+            edits.end(id, edit)
+            if !saved, changed[id] == favorite {
+                changed[id] = before
+                AppServices.music.ratingsChanged()
+            }
+        }
         if favorite, MusicSettings.keepsFavoritesDownloaded {
             Task { await MusicDownloads.shared.downloadFavorite(id) }
         }
+    }
+}
+
+/// Which favourites and ratings are being saved, so an older answer from the server can't
+/// put back what was just changed.
+struct MusicEdits {
+    private var pending: [String: Int] = [:]
+    private var last: [String: Date] = [:]
+    private var count = 0
+
+    mutating func begin(_ id: String) -> Int {
+        count += 1
+        pending[id] = count
+        last[id] = .now
+        return count
+    }
+
+    mutating func end(_ id: String, _ edit: Int) {
+        if pending[id] == edit { pending[id] = nil }
+    }
+
+    func changed(_ id: String, since asked: Date) -> Bool {
+        pending[id] != nil || (last[id].map { $0 >= asked } ?? false)
     }
 }
 
@@ -136,29 +173,44 @@ final class MusicFavorites {
 final class MusicRatings {
     static let shared = MusicRatings()
     private var changed: [String: Bool?] = [:]
+    @ObservationIgnored private var edits = MusicEdits()
 
     func likes(_ id: String, server: Bool?) -> Bool? {
         if let local = changed[id] { return local }
         return server
     }
 
-    /// What the server says now, over anything older here.
-    func sync(_ id: String, likes: Bool?) { changed[id] = .some(likes) }
+    /// What the server said when asked at `asked`, unless it's been changed here since.
+    func sync(_ id: String, likes: Bool?, asked: Date) {
+        guard !edits.changed(id, since: asked) else { return }
+        changed[id] = .some(likes)
+    }
 
     /// Rated elsewhere (ListenBrainz): shown here and saved to Jellyfin, not sent back.
     func adopt(_ id: String, likes: Bool) {
-        changed[id] = .some(likes)
-        Task { _ = try? await MusicAPI.call { try await $0.setLikes(credential: $1, authHeader: $2, itemId: id, likes: likes) } }
-        AppServices.music.ratingsChanged()
+        save(id, likes, before: changed[id] ?? nil)
     }
 
     /// Tapping the one already chosen clears it.
     func set(_ id: String, likes: Bool, server: Bool?) {
-        let value: Bool? = self.likes(id, server: server) == likes ? nil : likes
-        changed[id] = .some(value)
-        Task { _ = try? await MusicAPI.call { try await $0.setLikes(credential: $1, authHeader: $2, itemId: id, likes: value) } }
+        let before = self.likes(id, server: server)
+        let value: Bool? = before == likes ? nil : likes
+        save(id, value, before: before)
         AppServices.music.scrobbler.rated(id, likes: value)
+    }
+
+    private func save(_ id: String, _ value: Bool?, before: Bool?) {
+        changed[id] = .some(value)
+        let edit = edits.begin(id)
         AppServices.music.ratingsChanged()
+        Task {
+            let saved = await MusicActions.setLikes(id, value)
+            edits.end(id, edit)
+            if !saved, changed[id] == .some(value) {
+                changed[id] = .some(before)
+                AppServices.music.ratingsChanged()
+            }
+        }
     }
 }
 
@@ -193,9 +245,31 @@ enum MusicActions {
         play(songs)
     }
 
-    static func setFavorite(_ itemID: String, _ isFavorite: Bool) async {
-        _ = try? await MusicAPI.call {
-            try await $0.markFavorite(credential: $1, authHeader: $2, itemId: itemID, favorite: isFavorite)
+    private static let ratingLog = Telemetry.logger(category: "MusicRatings")
+
+    /// Whether Jellyfin saved it.
+    @discardableResult
+    static func setFavorite(_ itemID: String, _ isFavorite: Bool) async -> Bool {
+        do {
+            try await MusicAPI.call { try await $0.markFavorite(credential: $1, authHeader: $2, itemId: itemID, favorite: isFavorite) }
+            ratingLog.notice("Saved \(itemID, privacy: .public) as favorite \(isFavorite, privacy: .public)")
+            return true
+        } catch {
+            ratingLog.error("Couldn't save \(itemID, privacy: .public) as favorite \(isFavorite, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
+        }
+    }
+
+    /// Whether Jellyfin saved it; nil clears the like or dislike.
+    static func setLikes(_ itemID: String, _ likes: Bool?) async -> Bool {
+        let value = likes.map(String.init) ?? "-"
+        do {
+            try await MusicAPI.call { try await $0.setLikes(credential: $1, authHeader: $2, itemId: itemID, likes: likes) }
+            ratingLog.notice("Saved \(itemID, privacy: .public) as likes \(value, privacy: .public)")
+            return true
+        } catch {
+            ratingLog.error("Couldn't save \(itemID, privacy: .public) as likes \(value, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
         }
     }
 }

@@ -76,6 +76,7 @@ struct MusicMiniPlayer: View {
 private struct MusicMiniFavoriteButton: View {
     let song: MusicSong
     private var isFavorite: Bool { MusicFavorites.shared.isFavorite(song.id, server: song.isFavorite) }
+    private var likes: Bool? { MusicRatings.shared.likes(song.id, server: song.likes) }
 
     var body: some View {
         Button { MusicFavorites.shared.toggle(song.id, server: song.isFavorite) } label: {
@@ -87,8 +88,12 @@ private struct MusicMiniFavoriteButton: View {
         }
         .accessibilityLabel(isFavorite ? "Remove from Favorites" : "Add to Favorites")
         .contextMenu {
-            Button("Like", systemImage: "hand.thumbsup") { MusicRatings.shared.set(song.id, likes: true, server: song.likes) }
-            Button("Dislike", systemImage: "hand.thumbsdown") { MusicRatings.shared.set(song.id, likes: false, server: song.likes) }
+            Button("Like", systemImage: likes == true ? "hand.thumbsup.fill" : "hand.thumbsup") {
+                MusicRatings.shared.set(song.id, likes: true, server: song.likes)
+            }
+            Button("Dislike", systemImage: likes == false ? "hand.thumbsdown.fill" : "hand.thumbsdown") {
+                MusicRatings.shared.set(song.id, likes: false, server: song.likes)
+            }
         }
     }
 }

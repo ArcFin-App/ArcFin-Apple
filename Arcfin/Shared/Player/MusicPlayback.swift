@@ -458,6 +458,8 @@ final class MusicPlayback {
               saved.userID == userID, !saved.songs.isEmpty else { return }
         player.load(saved.songs, startingAt: saved.index, at: saved.position,
                     repeatMode: MusicQueue.RepeatMode(rawValue: saved.repeatMode) ?? .off)
+        // The saved songs carry their ratings from when the queue was saved.
+        if let song = player.current { refreshRating(of: song) }
         // Play on the lock screen, CarPlay and remotes reaches it before anything has played.
         installCommands()
         updateNowPlaying()
@@ -718,11 +720,12 @@ final class MusicPlayback {
 
     private func refreshRating(of song: MusicSong) {
         Task {
+            let asked = Date.now
             guard let fresh = try? await MusicAPI.call({ try await $0.getSongs(credential: $1, authHeader: $2, ids: [song.id]) })?.first
             else { return }
             Self.ratingLog.notice("Jellyfin has \(fresh.id, privacy: .public): favorite \(fresh.isFavorite, privacy: .public), likes \(fresh.likes.map(String.init) ?? "-", privacy: .public)")
-            MusicFavorites.shared.sync(fresh.id, isFavorite: fresh.isFavorite)
-            MusicRatings.shared.sync(fresh.id, likes: fresh.likes)
+            MusicFavorites.shared.sync(fresh.id, isFavorite: fresh.isFavorite, asked: asked)
+            MusicRatings.shared.sync(fresh.id, likes: fresh.likes, asked: asked)
             if player.current?.id == song.id || castSong?.id == song.id { updateRatingCommands(for: fresh) }
         }
     }
