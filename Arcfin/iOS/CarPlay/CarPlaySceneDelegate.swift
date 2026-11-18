@@ -17,14 +17,10 @@ import UIKit
 final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPTabBarTemplateDelegate,
                                   CPNowPlayingTemplateObserver {
     private var interface: CPInterfaceController?
-    // Search in the car is Siri's: the row at the top asks for something to play.
-    private static var askSiri: CPAssistantCellConfiguration {
-        CPAssistantCellConfiguration(position: .top, visibility: .always, assistantAction: .playMedia)
-    }
-    private let home = CPListTemplate(title: String(localized: "Home"), sections: [], assistantCellConfiguration: CarPlaySceneDelegate.askSiri)
+    private let home = CPListTemplate(title: String(localized: "Home"), sections: [])
     private let new = CPListTemplate(title: String(localized: "New"), sections: [])
     private let radio = CPListTemplate(title: String(localized: "Radio"), sections: [])
-    private let library = CPListTemplate(title: String(localized: "Library"), sections: [], assistantCellConfiguration: CarPlaySceneDelegate.askSiri)
+    private let library = CPListTemplate(title: String(localized: "Library"), sections: [])
     private var tabs: [CPListTemplate] { [home, new, radio, library] }
 
     private var music: MusicPlayback { AppServices.music }
