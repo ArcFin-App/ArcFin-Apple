@@ -130,6 +130,7 @@
       }
     },
     "Arcfin Music" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -514,6 +515,7 @@
       }
     },
     "Listen Now" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -770,6 +772,7 @@
       }
     },
     "Nothing played yet" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -962,6 +965,7 @@
       }
     },
     "Play or pause music in Arcfin." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1026,6 +1030,7 @@
       }
     },
     "Play something from your library" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1282,6 +1287,7 @@
       }
     },
     "Songs you played lately in Arcfin; tap one to play from there." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1410,6 +1416,7 @@
       }
     },
     "What's playing in Arcfin, with play, pause and skip." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -58674,6 +58681,7 @@
       }
     },
     "Movies, shows, music, people…" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
