@@ -2,17 +2,20 @@
 
 import AuthCore
 import CarPlay
+import CoreMedia
 import JellyfinAPI
 import MediaEngine
 import UIKit
 
 /// Music in the car, laid out like the system's music app so something plays in a tap or two:
-/// Home (Shuffle All and rows of covers for what's been played, played most and favorites),
-/// New (what was added lately), Radio (stations from what's playing, favorite artists and
-/// genres) and Library (playlists, artists, albums, songs, downloaded), then the system's
-/// Now Playing with shuffle, repeat, favorite, Up Next and the album. Everything is CarPlay's own templates, so a knob, a
-/// touchpad or the steering wheel's buttons move through it as well as touch does. It plays
-/// through the same player as the phone, so the queue, lock screen and remotes carry on.
+/// Home (Shuffle All, Favorites and Downloaded along the top, then rows of covers for what's
+/// been played, played most and favorites), New (what was added lately), Radio (stations from
+/// what's playing, favorite artists and genres) and Library (favorites, playlists, artists A to
+/// Z, albums, songs, genres, downloaded), with Search at the top of Home and Library, then the
+/// system's Now Playing with shuffle, repeat, favorite, Up Next and the album. Everything is
+/// CarPlay's own templates, so a knob, a touchpad or the steering wheel's buttons move through
+/// it as well as touch does. It plays through the same player as the phone, so the queue, lock
+/// screen and remotes carry on.
 @MainActor
 final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegate, CPTabBarTemplateDelegate,
                                   CPNowPlayingTemplateObserver {
@@ -22,6 +25,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private let radio = CPListTemplate(title: String(localized: "Radio"), sections: [])
     private let library = CPListTemplate(title: String(localized: "Library"), sections: [])
     private var tabs: [CPListTemplate] { [home, new, radio, library] }
+
+    private lazy var search = CarPlaySearch(scene: self)
 
     private var music: MusicPlayback { AppServices.music }
     private var player: MusicQueuePlayer { music.player }
@@ -33,6 +38,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         new.tabImage = UIImage(systemName: "sparkles")
         radio.tabImage = UIImage(systemName: "dot.radiowaves.left.and.right")
         library.tabImage = UIImage(systemName: "square.stack")
+        for list in [home, library] {
+            list.trailingNavigationBarButtons = [CPBarButton(image: UIImage(systemName: "magnifyingglass") ?? UIImage()) { [weak self] _ in
+                guard let self else { return }
+                search.show(in: interface)
+            }]
+        }
         let bar = CPTabBarTemplate(templates: tabs)
         bar.delegate = self
         interfaceController.setRootTemplate(bar, animated: false, completion: nil)
@@ -109,28 +120,38 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         list.updateSections([])
     }
 
-    /// Shuffle All, then rows of covers; a cover plays (or opens) that one, the row's title
-    /// opens the whole list.
+    /// Shuffle All, Favorites and Downloaded along the top, then rows of covers; a cover plays
+    /// (or opens) that one, the row's title opens the whole list.
     private func homeSections() async -> [CPListSection] {
-        let shuffle = CPListItem(text: String(localized: "Shuffle All"), detailText: nil, image: UIImage(systemName: "shuffle"))
-        shuffle.handler = { [weak self] _, done in
-            Task {
-                let songs = (try? await MusicAPI.call {
-                    try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: nil, sort: .random, limit: 200)
-                })?.tracks ?? []
-                if !songs.isEmpty { MusicActions.play(songs) }
-                self?.showNowPlaying()
-                done()
-            }
+        var buttons = [
+            CPGridButton(titleVariants: [String(localized: "Shuffle All")], image: UIImage(systemName: "shuffle") ?? UIImage()) { [weak self] _ in
+                Task {
+                    let songs = (try? await MusicAPI.call {
+                        try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: nil, sort: .random, limit: 200)
+                    })?.tracks ?? []
+                    if !songs.isEmpty { MusicActions.play(songs) }
+                    self?.showNowPlaying()
+                }
+            },
+            CPGridButton(titleVariants: [String(localized: "Favorites")], image: UIImage(systemName: "star") ?? UIImage()) { [weak self] _ in
+                Task { await self?.pushFavorites() }
+            },
+        ]
+        if !MusicDownloads.shared.isEmpty {
+            buttons.append(CPGridButton(titleVariants: [String(localized: "Downloaded")],
+                                        image: UIImage(systemName: "arrow.down.circle") ?? UIImage()) { [weak self] _ in
+                self?.pushDownloaded()
+            })
         }
+        home.headerGridButtons = buttons
         async let played = songs(sort: .datePlayed, filter: .init(playedOnly: true))
         async let most = songs(sort: .playCount, filter: .init(playedOnly: true))
         async let favorites = songs(sort: .name, filter: .init(favoritesOnly: true), ascending: true)
-        var rows: [CPListTemplateItem] = [shuffle]
+        var rows: [CPListTemplateItem] = []
         if let row = songRow(String(localized: "Recently Played"), await played) { rows.append(row) }
         if let row = songRow(String(localized: "Most Played"), await most) { rows.append(row) }
         if let row = songRow(String(localized: "Favorite Songs"), await favorites) { rows.append(row) }
-        return [CPListSection(items: rows)]
+        return rows.isEmpty ? [] : [CPListSection(items: rows)]
     }
 
     /// What was added lately: the newest albums as covers, then the newest songs.
@@ -195,6 +216,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             return item
         }
         var items = [
+            row(String(localized: "Favorites"), "star") { [weak self] in await self?.pushFavorites() },
             row(String(localized: "Playlists"), "music.note.list") { [weak self] in await self?.pushPlaylists() },
             row(String(localized: "Artists"), "music.microphone") { [weak self] in await self?.pushArtists() },
             row(String(localized: "Albums"), "square.stack") { [weak self] in
@@ -205,6 +227,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                 guard let self else { return }
                 push(title: String(localized: "Songs"), songs: await songs(sort: .name, ascending: true))
             },
+            row(String(localized: "Genres"), "guitars") { [weak self] in await self?.pushGenres() },
         ]
         if !MusicDownloads.shared.isEmpty {
             items.append(row(String(localized: "Downloaded"), "arrow.down.circle") { [weak self] in self?.pushDownloaded() })
@@ -283,7 +306,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             loadImage(MusicAPI.artworkURL(playlist, width: 200), into: item)
             item.handler = { [weak self] _, done in
                 Task {
-                    self?.push(title: playlist.name, songs: await MusicActions.playlistSongs(playlist))
+                    self?.push(title: playlist.name, songs: await MusicActions.playlistSongs(playlist),
+                               cover: MusicAPI.artworkURL(playlist, width: 400),
+                               subtitle: playlist.songCount.map { String(localized: "\($0) songs") })
                     done()
                 }
             }
@@ -296,20 +321,61 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         let found = (try? await MusicAPI.call {
             try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: nil, limit: CPListTemplate.maximumItemCount)
         })?.artists ?? []
-        let items = found.map { artist in
-            let item = CPListItem(text: artist.name, detailText: nil)
+        // A to Z, with the letters down the side to jump through a long list.
+        let letters = Dictionary(grouping: found) { artist -> String in
+            guard let first = artist.name.first.map(String.init)?.uppercased(), first.first?.isLetter == true else { return "#" }
+            return first
+        }
+        let sections = letters.keys.sorted { $0 == "#" ? false : $1 == "#" ? true : $0 < $1 }.map { letter in
+            CPListSection(items: letters[letter, default: []].map { artist in
+                let item = CPListItem(text: artist.name, detailText: nil)
+                item.accessoryType = .disclosureIndicator
+                loadImage(MusicAPI.artworkURL(artist, width: 200), into: item)
+                item.handler = { [weak self] _, done in
+                    Task {
+                        await self?.openArtist(artist)
+                        done()
+                    }
+                }
+                return item
+            }, header: letter, sectionIndexTitle: letter)
+        }
+        pushList(String(localized: "Artists"), sections)
+    }
+
+    func openArtist(_ artist: MusicArtist) async {
+        pushAlbums(artist.name, await albums(sort: .year, filter: .init(artistId: artist.id)))
+    }
+
+    func openAlbum(_ album: MusicAlbum) async {
+        await pushAlbum(album)
+    }
+
+    func play(_ songs: [MusicSong], from index: Int) {
+        MusicActions.play(songs, from: index)
+        showNowPlaying()
+    }
+
+    private func pushFavorites() async {
+        push(title: String(localized: "Favorite Songs"), songs: await songs(sort: .name, filter: .init(favoritesOnly: true), ascending: true))
+    }
+
+    /// Each genre opens its albums.
+    private func pushGenres() async {
+        let genres = (try? await MusicAPI.call { try await $0.getMusicGenres(credential: $1, authHeader: $2, libraryId: nil) }) ?? []
+        let items = genres.prefix(CPListTemplate.maximumItemCount).map { genre in
+            let item = CPListItem(text: genre.name, detailText: nil, image: UIImage(systemName: "guitars"))
             item.accessoryType = .disclosureIndicator
-            loadImage(MusicAPI.artworkURL(artist, width: 200), into: item)
             item.handler = { [weak self] _, done in
                 Task {
                     guard let self else { return done() }
-                    self.pushAlbums(artist.name, await self.albums(sort: .year, filter: .init(artistId: artist.id)))
+                    self.pushAlbums(genre.name, await self.albums(sort: .name, filter: .init(genreId: genre.id), ascending: true))
                     done()
                 }
             }
             return item
         }
-        pushList(String(localized: "Artists"), [CPListSection(items: items)])
+        pushList(String(localized: "Genres"), [CPListSection(items: Array(items))])
     }
 
     private func pushAlbums(_ title: String, _ albums: [MusicAlbum]) {
@@ -329,7 +395,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func pushAlbum(_ album: MusicAlbum) async {
-        push(title: album.name, songs: await MusicActions.albumSongs(album))
+        push(title: album.name, songs: await MusicActions.albumSongs(album), cover: MusicAPI.artworkURL(album, width: 400),
+             subtitle: album.albumArtist)
     }
 
     /// Saved albums, which play without a connection.
@@ -343,8 +410,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                 item.setImage(image)
             }
             let songs = entry.songs
+            let cover = entry.songs.first?.albumId.flatMap(MusicDownloads.shared.coverURL(albumID:))
             item.handler = { [weak self] _, done in
-                self?.push(title: name, songs: songs)
+                self?.push(title: name, songs: songs, cover: cover, subtitle: entry.album?.albumArtist ?? songs.first?.artistLine)
                 done()
             }
             return item
@@ -352,8 +420,33 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         pushList(String(localized: "Downloaded"), [CPListSection(items: items)])
     }
 
-    /// A list of songs with Shuffle first; choosing a song plays the list from there.
-    private func push(title: String, songs: [MusicSong]) {
+    /// A list of songs; choosing one plays the list from there. An album or playlist has its
+    /// cover, name, artist and Play and Shuffle at the top (iOS 26.4); otherwise Shuffle comes first.
+    private func push(title: String, songs: [MusicSong], cover: URL? = nil, subtitle: String? = nil) {
+        if #available(iOS 26.4, *), cover != nil || subtitle != nil {
+            let play = CPButton(image: UIImage(systemName: "play.fill") ?? UIImage()) { [weak self] _ in
+                guard !songs.isEmpty else { return }
+                self?.play(songs, from: 0)
+            }
+            let shuffle = CPButton(image: UIImage(systemName: "shuffle") ?? UIImage()) { [weak self] _ in
+                guard !songs.isEmpty else { return }
+                MusicActions.shuffle(songs)
+                self?.showNowPlaying()
+            }
+            let header = CPListTemplateDetailsHeader(thumbnail: CPThumbnailImage(image: Self.placeholder), title: title,
+                                                     subtitle: subtitle, actionButtons: [play, shuffle])
+            if let cover {
+                Task {
+                    let data: Data? = cover.isFileURL ? try? Data(contentsOf: cover) : await URLSession.arcfin.imageData(from: cover)
+                    if let data, let image = UIImage(data: data) { header.thumbnail = CPThumbnailImage(image: image) }
+                }
+            }
+            let list = CPListTemplate(title: title, listHeader: header, sections: [CPListSection(items: songItems(songs))],
+                                      assistantCellConfiguration: nil)
+            list.emptyViewTitleVariants = [String(localized: "Nothing Here Yet")]
+            interface?.pushTemplate(list, animated: true, completion: nil)
+            return
+        }
         let shuffle = CPListItem(text: String(localized: "Shuffle"), detailText: nil, image: UIImage(systemName: "shuffle"))
         shuffle.handler = { [weak self] _, done in
             MusicActions.shuffle(songs)
@@ -363,9 +456,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         pushList(title, [CPListSection(items: [shuffle]), CPListSection(items: songItems(songs))])
     }
 
-    private func pushList(_ title: String, _ sections: [CPListSection]) {
+    func pushList(_ title: String, _ sections: [CPListSection], empty: String = String(localized: "Nothing Here Yet")) {
         let list = CPListTemplate(title: title, sections: sections)
-        list.emptyViewTitleVariants = [String(localized: "Nothing Here Yet")]
+        list.emptyViewTitleVariants = [empty]
         interface?.pushTemplate(list, animated: true, completion: nil)
     }
 
@@ -374,6 +467,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         return shown.enumerated().map { index, song in
             let item = CPListItem(text: song.name, detailText: song.artistLine)
             item.isPlaying = player.current?.id == song.id
+            if #available(iOS 26.4, *) {
+                let playing = item.isPlaying && player.isPlaying
+                item.playbackConfiguration = CPPlaybackConfiguration(
+                    preferredPresentation: .audio, playbackAction: playing ? .pause : .play, elapsedTime: .zero,
+                    duration: CMTime(seconds: song.duration ?? 0, preferredTimescale: 600))
+            }
             loadImage(MusicAPI.artworkURL(song, width: 120), into: item)
             item.handler = { [weak self] _, done in
                 MusicActions.play(shown, from: index)
@@ -398,7 +497,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         })?.albums ?? []
     }
 
-    private func loadImage(_ url: URL?, into item: CPListItem) {
+    func loadImage(_ url: URL?, into item: CPListItem) {
         guard let url else { return }
         Task {
             guard let data = await URLSession.arcfin.imageData(from: url), let image = UIImage(data: data) else { return }
@@ -413,6 +512,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         template.isUpNextButtonEnabled = true
         template.upNextTitle = String(localized: "Up Next")
         template.isAlbumArtistButtonEnabled = true
+        // On iOS 27 the song keeps playing in a small player over the app's lists.
+        if #available(iOS 27.0, *) { template.allowsMiniPlayer = true }
         template.add(self)
         updateNowPlayingButtons()
     }
