@@ -40,19 +40,22 @@ private struct Cover: View {
     let fileName: String?
     var cornerRadius: CGFloat = 8
 
+    // The square sets the size and the picture fills it: a filled picture on its own reports
+    // its full size and pushes the layout out of the widget.
     var body: some View {
-        Group {
-            if let image = Self.image(fileName) {
-                image.resizable().widgetAccentedRenderingMode(.fullColor).scaledToFill()
-            } else {
-                ZStack {
-                    Rectangle().fill(.fill.tertiary)
-                    Image(systemName: "music.note").font(.title2).foregroundStyle(.secondary)
+        Color.clear
+            .aspectRatio(1, contentMode: .fit)
+            .overlay {
+                if let image = Self.image(fileName) {
+                    image.resizable().widgetAccentedRenderingMode(.fullColor).scaledToFill()
+                } else {
+                    ZStack {
+                        Rectangle().fill(.fill.tertiary)
+                        Image(systemName: "music.note").font(.title2).foregroundStyle(.secondary)
+                    }
                 }
             }
-        }
-        .aspectRatio(1, contentMode: .fit)
-        .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 
     static func image(_ fileName: String?) -> Image? {
@@ -101,27 +104,35 @@ private struct SongProgress: View {
     }
 }
 
-/// A row of covers; each plays the Recently Played list from that song.
+/// Rows of covers; each plays the Recently Played list from that song. The covers are sized
+/// to the room there is, across and down, so the grid never runs out of the widget.
 private struct RecentGrid: View {
     let songs: [MusicWidgetSnapshot.Song]
     let columns: Int
     let rows: Int
+    private let spacing: CGFloat = 8
 
     var body: some View {
-        let shown = Array(songs.prefix(columns * rows))
-        Grid(horizontalSpacing: 8, verticalSpacing: 8) {
-            ForEach(0..<rows, id: \.self) { row in
-                GridRow {
-                    ForEach(0..<columns, id: \.self) { column in
-                        let index = row * columns + column
-                        if index < shown.count {
-                            Button(intent: PlayRecentSongIntent(songID: shown[index].id)) {
-                                Cover(fileName: shown[index].coverFileName, cornerRadius: 6)
+        GeometryReader { geo in
+            let across = (geo.size.width - spacing * CGFloat(columns - 1)) / CGFloat(columns)
+            let down = (geo.size.height - spacing * CGFloat(rows - 1)) / CGFloat(rows)
+            let side = max(min(across, down), 0)
+            let shown = Array(songs.prefix(columns * rows))
+            Grid(alignment: .topLeading, horizontalSpacing: spacing, verticalSpacing: spacing) {
+                ForEach(0..<rows, id: \.self) { row in
+                    GridRow {
+                        ForEach(0..<columns, id: \.self) { column in
+                            let index = row * columns + column
+                            if index < shown.count {
+                                Button(intent: PlayRecentSongIntent(songID: shown[index].id)) {
+                                    Cover(fileName: shown[index].coverFileName, cornerRadius: 6)
+                                }
+                                .buttonStyle(.plain)
+                                .frame(width: side, height: side)
+                                .accessibilityLabel(Text(verbatim: shown[index].title))
+                            } else {
+                                Color.clear.frame(width: side, height: side)
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel(Text(verbatim: shown[index].title))
-                        } else {
-                            Color.clear.aspectRatio(1, contentMode: .fit)
                         }
                     }
                 }
@@ -255,7 +266,7 @@ struct MusicNowPlayingWidgetView: View {
                 if family == .systemExtraLarge, let next = snapshot?.upNext, !next.isEmpty {
                     VStack(alignment: .leading, spacing: 8) {
                         Text("Up Next").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
-                        ForEach(next) { song in
+                        ForEach(next.prefix(3)) { song in
                             HStack(spacing: 8) {
                                 Cover(fileName: song.coverFileName, cornerRadius: 4).frame(width: 36)
                                 VStack(alignment: .leading, spacing: 0) {
@@ -274,7 +285,7 @@ struct MusicNowPlayingWidgetView: View {
                     }
                 }
             }
-            Spacer(minLength: 0)
+            .frame(maxHeight: .infinity, alignment: .top)
         }
     }
 }
@@ -342,7 +353,6 @@ struct MusicRecentlyPlayedWidgetView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Recently Played").font(.caption.weight(.semibold)).foregroundStyle(.secondary)
             RecentGrid(songs: songs, columns: columns, rows: rows)
-            Spacer(minLength: 0)
         }
     }
 }
