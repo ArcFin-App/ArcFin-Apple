@@ -4,6 +4,8 @@ import AuthCore
 import Foundation
 import Intents
 import JellyfinAPI
+import os
+import Telemetry
 
 /// "Play … in Arcfin" from Siri, in the car or anywhere: a song, album, artist, playlist or
 /// genre found on the server, or everything shuffled when nothing is named. A movie or show
@@ -28,8 +30,10 @@ final class MusicSiriHandler: NSObject, INPlayMediaIntentHandling {
             WatchRoute.open(id: String(identifier.dropFirst("video:".count)))
             return .init(code: .continueInApp, userActivity: nil)
         }
-        let played = await MusicSiriSearch.play(identifier, shuffled: intent.playShuffled == true)
-        return .init(code: played ? .success : .failureNoUnplayedContent, userActivity: nil)
+        // Siri still holds the audio while it answers, so music starts once it hands the
+        // request back to the app.
+        await MusicSiriSearch.hold(identifier, shuffled: intent.playShuffled == true)
+        return .init(code: .handleInApp, userActivity: nil)
     }
 }
 
@@ -71,6 +75,30 @@ enum MusicSiriSearch {
     }
 
     enum Result: Sendable { case found(Found), signedOut, nothing }
+
+    private static let log = Telemetry.logger(category: "Siri")
+    private static var held: (identifier: String, shuffled: Bool)?
+
+    static func hold(_ identifier: String, shuffled: Bool) {
+        log.notice("Siri asked for \(identifier, privacy: .public)")
+        held = (identifier, shuffled)
+        // Played anyway if the request never comes back to the app.
+        Task {
+            try? await Task.sleep(for: .seconds(4))
+            guard held?.identifier == identifier else { return }
+            log.notice("Siri didn't hand back \(identifier, privacy: .public); playing it anyway")
+            _ = await playHeld()
+        }
+    }
+
+    /// What Siri asked for, now that it's done with the audio.
+    static func playHeld() async -> Bool {
+        guard let request = held else { return false }
+        held = nil
+        let played = await play(request.identifier, shuffled: request.shuffled)
+        log.notice("Siri's \(request.identifier, privacy: .public): \(played ? "playing" : "nothing to play", privacy: .public)")
+        return played
+    }
 
     static func find(_ query: Query) async -> Result {
         await AppServices.authManager.checkStoredAuthOnce()

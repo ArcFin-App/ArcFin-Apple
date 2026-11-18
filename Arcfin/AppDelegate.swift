@@ -35,6 +35,19 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         intent is INPlayMediaIntent ? MusicSiriHandler() : nil
     }
 
+    /// Where Siri hands music back once it has finished speaking, so playback can take the audio.
+    func application(_ application: UIApplication, handle intent: INIntent,
+                     completionHandler: @escaping (INIntentResponse) -> Void) {
+        guard intent is INPlayMediaIntent else {
+            completionHandler(INPlayMediaIntentResponse(code: .failure, userActivity: nil))
+            return
+        }
+        Task { @MainActor in
+            let played = await MusicSiriSearch.playHeld()
+            completionHandler(INPlayMediaIntentResponse(code: played ? .success : .failureNoUnplayedContent, userActivity: nil))
+        }
+    }
+
     func applicationDidEnterBackground(_ application: UIApplication) {
         BackgroundRefresh.schedule()
     }

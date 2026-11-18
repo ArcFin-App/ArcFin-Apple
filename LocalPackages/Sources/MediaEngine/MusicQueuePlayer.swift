@@ -695,8 +695,12 @@ public final class MusicQueuePlayer {
     private static func activateAudioSession() {
         #if os(iOS) || os(tvOS)
         Task.detached(priority: .userInitiated) {
-            try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio)
-            try? AVAudioSession.sharedInstance().setActive(true)
+            do {
+                try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio)
+                try AVAudioSession.sharedInstance().setActive(true)
+            } catch {
+                Telemetry.logger(category: "MusicQueuePlayer").error("The audio session didn't start: \(error.localizedDescription, privacy: .public)")
+            }
         }
         #endif
     }
