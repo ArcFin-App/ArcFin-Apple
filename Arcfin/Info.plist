@@ -24,6 +24,7 @@
 	<key>INSupportedMediaCategories</key>
 	<array>
 		<string>INMediaCategoryMusic</string>
+		<string>INMediaCategoryVideo</string>
 	</array>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>

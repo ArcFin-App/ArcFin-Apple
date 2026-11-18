@@ -6,7 +6,8 @@ import Intents
 import JellyfinAPI
 
 /// "Play … in Arcfin" from Siri, in the car or anywhere: a song, album, artist, playlist or
-/// genre found on the server, or everything shuffled when nothing is named.
+/// genre found on the server, or everything shuffled when nothing is named. A movie or show
+/// opens the app and plays there.
 final class MusicSiriHandler: NSObject, INPlayMediaIntentHandling {
     func resolveMediaItems(for intent: INPlayMediaIntent) async -> [INPlayMediaMediaItemResolutionResult] {
         switch await MusicSiriSearch.find(MusicSiriSearch.Query(intent.mediaSearch)) {
@@ -22,6 +23,11 @@ final class MusicSiriHandler: NSObject, INPlayMediaIntentHandling {
 
     func handle(intent: INPlayMediaIntent) async -> INPlayMediaIntentResponse {
         guard let identifier = intent.mediaItems?.first?.identifier else { return .init(code: .failure, userActivity: nil) }
+        // Video can't start in the background: the app comes forward and Home plays it.
+        if identifier.hasPrefix("video:") {
+            WatchRoute.open(id: String(identifier.dropFirst("video:".count)))
+            return .init(code: .continueInApp, userActivity: nil)
+        }
         let played = await MusicSiriSearch.play(identifier, shuffled: intent.playShuffled == true)
         return .init(code: played ? .success : .failureNoUnplayedContent, userActivity: nil)
     }
@@ -29,7 +35,7 @@ final class MusicSiriHandler: NSObject, INPlayMediaIntentHandling {
 
 @MainActor
 enum MusicSiriSearch {
-    enum Kind: Sendable { case any, song, album, artist, playlist, genre }
+    enum Kind: Sendable { case any, song, album, artist, playlist, genre, video }
 
     /// What Siri heard, as plain values so it can cross to the main actor.
     struct Query: Sendable {
@@ -50,6 +56,7 @@ enum MusicSiriSearch {
             case .artist?: kind = .artist
             case .playlist?: kind = .playlist
             case .genre?: kind = .genre
+            case .movie?, .tvShow?, .tvShowEpisode?: kind = .video
             default: kind = .any
             }
         }
@@ -69,6 +76,10 @@ enum MusicSiriSearch {
         await AppServices.authManager.checkStoredAuthOnce()
         guard AppServices.authManager.state.credential != nil else { return .signedOut }
         if query.isEmpty { return .found(Found(identifier: "all", title: String(localized: "Shuffle All"), type: .music)) }
+        if query.kind == .video {
+            guard let name = query.name else { return .nothing }
+            return await video(named: name).map(Result.found) ?? .nothing
+        }
         if query.kind == .genre || (query.name == nil && query.album == nil && query.artist == nil), let name = query.genre ?? query.name {
             let genres = (try? await MusicAPI.call { try await $0.getMusicGenres(credential: $1, authHeader: $2, libraryId: nil) }) ?? []
             if let genre = best(genres, named: name, \.name) {
@@ -78,9 +89,9 @@ enum MusicSiriSearch {
         if query.kind == .playlist, let name = query.name, let playlist = await playlist(named: name) {
             return .found(Found(identifier: "playlist:\(playlist.id)", title: playlist.name, type: .playlist))
         }
-        guard let term = query.name ?? query.album ?? query.artist,
-              let results = try? await MusicAPI.call({ try await $0.searchMusic(credential: $1, authHeader: $2, term: term) })
-        else { return .nothing }
+        guard let term = query.name ?? query.album ?? query.artist else { return .nothing }
+        guard let results = try? await MusicAPI.call({ try await $0.searchMusic(credential: $1, authHeader: $2, term: term) })
+        else { return await video(named: term).map(Result.found) ?? .nothing }
         let songs = query.artist.map { artist in
             results.songs.filter { $0.artistLine?.localizedCaseInsensitiveContains(artist) == true }
         }.flatMap { $0.isEmpty ? nil : $0 } ?? results.songs
@@ -102,11 +113,29 @@ enum MusicSiriSearch {
                 : exact(artist?.title, term) ? artist
                 : song ?? album ?? artist
         }
+        // Asked for by name only: a movie or show called exactly that wins over music that isn't.
+        if query.kind == .any, query.artist == nil, query.album == nil, !exact(picked?.title, term),
+           let video = await video(named: term), exact(video.title, term) || picked == nil {
+            return .found(video)
+        }
         if let picked { return .found(picked) }
         if let playlist = await playlist(named: term) {
             return .found(Found(identifier: "playlist:\(playlist.id)", title: playlist.name, type: .playlist))
         }
         return .nothing
+    }
+
+    /// A movie, show or episode with that name: a show plays its next episode.
+    private static func video(named name: String) async -> Found? {
+        let items = ((try? await MusicAPI.call { try await $0.search(credential: $1, authHeader: $2, query: name, limit: 10) }) ?? [])
+            .filter { $0.type == .movie || $0.type == .series || $0.type == .episode }
+        guard let item = best(items, named: name, \.name) else { return nil }
+        let type: INMediaItemType = switch item.type {
+        case .movie: .movie
+        case .series: .tvShow
+        default: .tvShowEpisode
+        }
+        return Found(identifier: "video:\(item.id)", title: item.name, type: type)
     }
 
     static func play(_ identifier: String, shuffled: Bool) async -> Bool {

@@ -512,67 +512,67 @@
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Siri spielt deine Musik in Arcfin ab, wenn du darum bittest, auf deinem iPhone oder im Auto."
+            "value" : "Siri spielt deine Filme, Serien und Musik in Arcfin ab, wenn du darum bittest, auf iPhone oder iPad oder im Auto."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Siri plays your music in Arcfin when you ask, from your iPhone or in the car."
+            "value" : "Siri plays your movies, shows and music in Arcfin when you ask, on your iPhone or iPad or in the car."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Siri reproduce tu música en Arcfin cuando se lo pides, desde tu iPhone o en el coche."
+            "value" : "Siri reproduce tus películas, series y música en Arcfin cuando se lo pides, en tu iPhone o iPad o en el coche."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Siri lance votre musique dans Arcfin quand vous le demandez, sur votre iPhone ou en voiture."
+            "value" : "Siri lance vos films, séries et musique dans Arcfin quand vous le demandez, sur iPhone ou iPad ou en voiture."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Siri riproduce la tua musica in Arcfin quando lo chiedi, dall’iPhone o in auto."
+            "value" : "Siri riproduce i tuoi film, serie e musica in Arcfin quando lo chiedi, su iPhone o iPad o in auto."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iPhoneや車内で頼むと、SiriがArcfinで音楽を再生します。"
+            "value" : "iPhone、iPad、車内で頼むと、SiriがArcfinで映画、番組、音楽を再生します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "iPhone이나 차에서 요청하면 Siri가 Arcfin에서 음악을 재생합니다."
+            "value" : "iPhone, iPad 또는 차에서 요청하면 Siri가 Arcfin에서 영화, 프로그램, 음악을 재생합니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Siri speelt je muziek af in Arcfin als je erom vraagt, op je iPhone of in de auto."
+            "value" : "Siri speelt je films, series en muziek af in Arcfin als je erom vraagt, op je iPhone of iPad of in de auto."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A Siri toca suas músicas no Arcfin quando você pede, no iPhone ou no carro."
+            "value" : "A Siri reproduz seus filmes, séries e músicas no Arcfin quando você pede, no iPhone ou iPad ou no carro."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Siri включает вашу музыку в Arcfin по вашей просьбе — на iPhone или в машине."
+            "value" : "Siri включает ваши фильмы, сериалы и музыку в Arcfin по вашей просьбе — на iPhone, iPad или в машине."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "在 iPhone 上或车内提出请求时，Siri 会在 Arcfin 中播放你的音乐。"
+            "value" : "在 iPhone、iPad 上或车内提出请求时，Siri 会在 Arcfin 中播放你的电影、剧集和音乐。"
           }
         }
       }
