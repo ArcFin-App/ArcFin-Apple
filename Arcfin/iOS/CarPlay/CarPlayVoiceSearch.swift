@@ -35,7 +35,8 @@ final class CarPlayVoiceSearch {
 
     func start(in interface: CPInterfaceController?) {
         self.interface = interface
-        Task {
+        Task { [weak self] in
+            guard let self else { return }
             guard await Self.allowed() else {
                 showAlert(String(localized: "Allow the microphone and speech recognition for Arcfin on your iPhone"))
                 return
