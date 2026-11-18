@@ -1236,6 +1236,7 @@
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
+				INFOPLIST_KEY_NSSiriUsageDescription = "Siri plays your music in Arcfin when you ask, from your iPhone or in the car.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = NO;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = NO;
@@ -1312,6 +1313,7 @@
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
+				INFOPLIST_KEY_NSSiriUsageDescription = "Siri plays your music in Arcfin when you ask, from your iPhone or in the car.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = NO;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = NO;
