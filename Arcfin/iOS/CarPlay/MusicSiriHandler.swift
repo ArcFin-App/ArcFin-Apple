@@ -13,10 +13,16 @@ import Telemetry
 /// opens the app and plays there.
 final class MusicSiriHandler: NSObject, INPlayMediaIntentHandling {
     func resolveMediaItems(for intent: INPlayMediaIntent) async -> [INPlayMediaMediaItemResolutionResult] {
+        // Back from Siri asking which one: the song picked.
+        if let picked = intent.mediaItems?.first, picked.identifier?.contains(":") == true {
+            return INPlayMediaMediaItemResolutionResult.successes(with: [picked])
+        }
         switch await MusicSiriSearch.find(MusicSiriSearch.Query(intent.mediaSearch)) {
         case .found(let found):
-            let item = INMediaItem(identifier: found.identifier, title: found.title, type: found.type, artwork: nil)
-            return INPlayMediaMediaItemResolutionResult.successes(with: [item])
+            return INPlayMediaMediaItemResolutionResult.successes(with: [found.item])
+        case .choices(let choices):
+            // Not by the artist asked for: Siri reads out the ones there are and asks.
+            return [.disambiguation(with: choices.map(\.item))]
         case .signedOut:
             return [.unsupported(forReason: .loginRequired)]
         case .nothing:
@@ -72,9 +78,14 @@ enum MusicSiriSearch {
         var identifier: String
         var title: String
         var type: INMediaItemType
+        var artist: String?
+
+        var item: INMediaItem {
+            INMediaItem(identifier: identifier, title: title, type: type, artwork: nil, artist: artist)
+        }
     }
 
-    enum Result: Sendable { case found(Found), signedOut, nothing }
+    enum Result: Sendable { case found(Found), choices([Found]), signedOut, nothing }
 
     private static let log = Telemetry.logger(category: "Siri")
     private static var held: (identifier: String, shuffled: Bool)?
@@ -122,12 +133,35 @@ enum MusicSiriSearch {
         guard let term = query.name ?? query.album ?? query.artist else { return .nothing }
         guard let results = try? await MusicAPI.call({ try await $0.searchMusic(credential: $1, authHeader: $2, term: term) })
         else { return await video(named: term).map(Result.found) ?? .nothing }
-        let songs = query.artist.map { artist in
-            results.songs.filter { $0.artistLine?.localizedCaseInsensitiveContains(artist) == true }
-        }.flatMap { $0.isEmpty ? nil : $0 } ?? results.songs
-        let song = songs.first.map { Found(identifier: "song:\($0.id)", title: $0.name, type: .song) }
-        let album = best(results.albums, named: query.album ?? term, \.name)
-            .map { Found(identifier: "album:\($0.id)", title: $0.name, type: .album) }
+        var songs = results.songs
+        var albums = results.albums
+        // "… by <artist>": only theirs. When the name finds none of theirs, their own songs and
+        // albums are looked through too, then Siri is told what there is instead.
+        if let by = query.artist, query.name != nil || query.album != nil {
+            func theirs(_ line: String?) -> Bool { line?.localizedCaseInsensitiveContains(by) == true }
+            songs = results.songs.filter { theirs($0.artistLine) }
+            albums = results.albums.filter { theirs($0.albumArtist) }
+            if songs.isEmpty || albums.isEmpty,
+               let more = try? await MusicAPI.call({ try await $0.searchMusic(credential: $1, authHeader: $2, term: by) }) {
+                if songs.isEmpty, let name = query.name {
+                    songs = more.songs.filter { theirs($0.artistLine) && $0.name.localizedCaseInsensitiveContains(name) }
+                }
+                if albums.isEmpty, let name = query.album ?? query.name {
+                    albums = more.albums.filter { theirs($0.albumArtist) && $0.name.localizedCaseInsensitiveContains(name) }
+                }
+            }
+            let wantsAlbum = query.kind == .album || (query.name == nil && query.album != nil)
+            if wantsAlbum ? albums.isEmpty : songs.isEmpty {
+                let others = wantsAlbum
+                    ? results.albums.prefix(3).map { Found(identifier: "album:\($0.id)", title: $0.name, type: .album, artist: $0.albumArtist) }
+                    : results.songs.prefix(3).map { Found(identifier: "song:\($0.id)", title: $0.name, type: .song, artist: $0.artistLine) }
+                log.notice("Siri: nothing called \(term, privacy: .public) by \(by, privacy: .public); offering \(others.count, privacy: .public)")
+                return others.isEmpty ? .nothing : .choices(others)
+            }
+        }
+        let song = (best(songs, named: query.name ?? term, \.name) ?? songs.first).map { Found(identifier: "song:\($0.id)", title: $0.name, type: .song, artist: $0.artistLine) }
+        let album = best(albums, named: query.album ?? term, \.name)
+            .map { Found(identifier: "album:\($0.id)", title: $0.name, type: .album, artist: $0.albumArtist) }
         let artist = best(results.artists, named: query.artist ?? term, \.name)
             .map { Found(identifier: "artist:\($0.id)", title: $0.name, type: .artist) }
         let picked: Found? = switch query.kind {
@@ -138,7 +172,7 @@ enum MusicSiriSearch {
             // Named only an album or only an artist, that's what's wanted; otherwise the song.
             query.name == nil && query.album != nil ? album ?? song
                 : query.name == nil ? artist ?? song
-                : exact(songs.first?.name, term) ? song
+                : exact(song?.title, term) ? song
                 : exact(album?.title, term) ? album
                 : exact(artist?.title, term) ? artist
                 : song ?? album ?? artist
