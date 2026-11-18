@@ -1927,6 +1927,70 @@
         }
       }
     },
+    "Voice search needs Arcfin open on your iPhone. You can also ask Siri: “Play … in Arcfin”." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Sprachsuche braucht Arcfin geöffnet auf deinem iPhone. Du kannst auch Siri fragen: „Spiele … in Arcfin“."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La búsqueda por voz necesita Arcfin abierta en tu iPhone. También puedes pedírselo a Siri: “Pon … en Arcfin”."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La recherche vocale nécessite qu’Arcfin soit ouvert sur votre iPhone. Vous pouvez aussi demander à Siri : « Joue … dans Arcfin »."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La ricerca vocale richiede Arcfin aperta sull’iPhone. Puoi anche chiedere a Siri: “Riproduci … in Arcfin”."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声検索にはiPhoneでArcfinを開いておく必要があります。Siriに「Arcfinで…を再生して」と頼むこともできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음성 검색을 사용하려면 iPhone에서 Arcfin을 열어 두어야 합니다. Siri에게 “Arcfin에서 … 재생해 줘”라고 말할 수도 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoeken met je stem werkt als Arcfin open is op je iPhone. Je kunt het ook aan Siri vragen: ‘Speel … af in Arcfin’."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A busca por voz precisa do Arcfin aberto no iPhone. Você também pode pedir à Siri: “Toque … no Arcfin”."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Для голосового поиска Arcfin должен быть открыт на iPhone. Можно также попросить Siri: «Включи … в Arcfin»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语音搜索需要在 iPhone 上打开 Arcfin。你也可以对 Siri 说：“在 Arcfin 中播放…”。"
+          }
+        }
+      }
+    },
     "What's playing in Arcfin, with play, pause and skip." : {
       "extractionState" : "stale",
       "localizations" : {

@@ -4,6 +4,7 @@ import AVFoundation
 import CarPlay
 import os
 import Speech
+import UIKit
 import Telemetry
 
 /// Search by Voice in the car: CarPlay's listening screen while the phone's speech recognizer
@@ -44,18 +45,37 @@ final class CarPlayVoiceSearch {
             heard = ""
             resumesMusic = AppServices.music.isPlaying
             if resumesMusic { AppServices.music.pause() }
+            // The microphone first: the listening screen only goes up once it's really listening.
+            let capture = capture
+            let deliver = Self.deliver(to: self)
+            let started: Error? = await Task.detached {
+                do {
+                    try capture.start(deliver)
+                    return nil
+                } catch {
+                    return error
+                }
+            }.value
+            if let started {
+                // iOS doesn't let an app start the microphone from the background, which is
+                // where Arcfin usually is in the car: Siri is the way to ask then.
+                let state = UIApplication.shared.applicationState
+                Self.log.error("Voice search couldn't listen (app \(state == .active ? "open" : "in the background", privacy: .public)): \(started.localizedDescription, privacy: .public)")
+                if resumesMusic { AppServices.music.resume() }
+                showAlert(String(localized: "Voice search needs Arcfin open on your iPhone. You can also ask Siri: “Play … in Arcfin”."))
+                return
+            }
             interface?.presentTemplate(template, animated: true, completion: nil)
             template.activateVoiceControlState(withIdentifier: "listening")
-            do {
-                try capture.start { [weak self] text, isFinal in
-                    Task { @MainActor [weak self] in self?.heard(text, isFinal: isFinal) }
-                }
-                // Nothing said at all: give up after a while.
-                schedule(after: .seconds(8))
-            } catch {
-                Self.log.error("Voice search couldn't listen: \(error.localizedDescription, privacy: .public)")
-                stop(search: false)
-            }
+            // Nothing said at all: give up after a while.
+            schedule(after: .seconds(8))
+        }
+    }
+
+    /// What's heard, back on the main actor. Held only while listening: stopping lets go of it.
+    private static func deliver(to search: CarPlayVoiceSearch) -> @Sendable (String, Bool) -> Void {
+        { text, isFinal in
+            Task { @MainActor in search.heard(text, isFinal: isFinal) }
         }
     }
 
@@ -77,7 +97,10 @@ final class CarPlayVoiceSearch {
     private func stop(search: Bool) {
         finish?.cancel()
         finish = nil
-        guard capture.isRunning else { return }
+        guard capture.isRunning else {
+            interface?.dismissTemplate(animated: true, completion: nil)
+            return
+        }
         capture.stop()
         let term = heard.trimmingCharacters(in: .whitespaces)
         Self.log.notice("Voice search heard \(term, privacy: .public)")
@@ -123,7 +146,7 @@ final class CarPlayVoiceSearch {
 
 /// The microphone into the speech recognizer, off the main actor: the audio arrives on its own
 /// thread.
-private final class SpeechCapture: @unchecked Sendable {
+nonisolated private final class SpeechCapture: @unchecked Sendable {
     private let engine = AVAudioEngine()
     private let recognizer = SFSpeechRecognizer()
     private var request: SFSpeechAudioBufferRecognitionRequest?
@@ -133,18 +156,25 @@ private final class SpeechCapture: @unchecked Sendable {
     func start(_ onText: @escaping @Sendable (String, Bool) -> Void) throws {
         guard let recognizer, recognizer.isAvailable else { throw URLError(.notConnectedToInternet) }
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .measurement, options: [.duckOthers, .allowBluetoothHFP])
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
         let request = SFSpeechAudioBufferRecognitionRequest()
         request.shouldReportPartialResults = true
         request.taskHint = .search
-        self.request = request
-        let input = engine.inputNode
-        input.installTap(onBus: 0, bufferSize: 1024, format: input.outputFormat(forBus: 0)) { buffer, _ in
-            request.append(buffer)
+        do {
+            try session.setCategory(.playAndRecord, mode: .measurement, options: [.duckOthers, .allowBluetoothHFP])
+            try session.setActive(true, options: .notifyOthersOnDeactivation)
+            let input = engine.inputNode
+            input.installTap(onBus: 0, bufferSize: 1024, format: input.outputFormat(forBus: 0)) { buffer, _ in
+                request.append(buffer)
+            }
+            engine.prepare()
+            try engine.start()
+        } catch {
+            // Back to how music had it.
+            engine.inputNode.removeTap(onBus: 0)
+            try? session.setCategory(.playback, mode: .default, policy: .longFormAudio)
+            throw error
         }
-        engine.prepare()
-        try engine.start()
+        self.request = request
         isRunning = true
         task = recognizer.recognitionTask(with: request) { result, error in
             if let result { onText(result.bestTranscription.formattedString, result.isFinal) }
