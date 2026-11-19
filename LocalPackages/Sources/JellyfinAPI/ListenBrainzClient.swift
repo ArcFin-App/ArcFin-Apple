@@ -259,10 +259,15 @@ extension ListenBrainzClient {
         async let artists = stats("artists")
         async let albums = stats("releases")
         async let activity = stats("listening-activity")
-        return try Self.year(songs: await songs, artists: await artists, albums: await albums, activity: await activity)
+        let startOfYear = Calendar.current.date(from: Calendar.current.dateComponents([.year], from: .now)) ?? .distantPast
+        return try Self.year(songs: await songs, artists: await artists, albums: await albums, activity: await activity,
+                             since: startOfYear)
     }
 
-    static func year(songs: Data?, artists: Data?, albums: Data?, activity: Data?) throws -> ListenBrainzYear {
+    /// `since` leaves out earlier months: ListenBrainz works out the previous period too, and
+    /// its docs don't say whether this year's activity comes with last year's.
+    static func year(songs: Data?, artists: Data?, albums: Data?, activity: Data?,
+                     since: Date = .distantPast) throws -> ListenBrainzYear {
         func entries(_ data: Data?, list: String, name: String) throws -> [ListenBrainzYear.Entry] {
             guard let data, let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let payload = object["payload"] as? [String: Any], let items = payload[list] as? [[String: Any]]
@@ -281,7 +286,7 @@ extension ListenBrainzClient {
            let payload = object["payload"] as? [String: Any],
            let items = payload["listening_activity"] as? [[String: Any]] {
             year.months = items.compactMap { item in
-                guard let from = item["from_ts"] as? Int else { return nil }
+                guard let from = item["from_ts"] as? Int, Date(timeIntervalSince1970: TimeInterval(from)) >= since else { return nil }
                 return .init(start: Date(timeIntervalSince1970: TimeInterval(from)), listens: item["listen_count"] as? Int ?? 0)
             }
         }

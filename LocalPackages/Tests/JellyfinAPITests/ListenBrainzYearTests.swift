@@ -18,5 +18,8 @@ struct ListenBrainzYearTests {
         #expect(year.albums.isEmpty)
         #expect(year.totalListens == 40)
         #expect(year.busiestMonth?.listens == 30)
+        let februaryOn = try ListenBrainzClient.year(songs: nil, artists: nil, albums: nil, activity: Data(activity.utf8),
+                                                     since: Date(timeIntervalSince1970: 1706745600))
+        #expect(februaryOn.totalListens == 30)
     }
 }
