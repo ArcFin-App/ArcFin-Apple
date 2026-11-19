@@ -26,9 +26,12 @@ struct MusicHero<Art: View, Info: View>: View {
                     GeometryReader { proxy in
                         let side = proxy.size.width
                         ZStack(alignment: .top) {
+                            // Larger than the space, so the blur's soft edges fall outside it.
                             art(proxy.size)
                                 .frame(width: side, height: proxy.size.height)
+                                .scaleEffect(1.3)
                                 .blur(radius: 40)
+                                .frame(width: side, height: proxy.size.height)
                                 .clipped()
                             art(CGSize(width: side, height: side))
                                 .frame(width: side, height: side)

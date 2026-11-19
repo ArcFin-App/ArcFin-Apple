@@ -177,9 +177,12 @@ struct MusicNowPlayingView: View {
                     let side = proxy.size.width
                     ZStack(alignment: .top) {
                         // The cover again, blurred, filling the extra space below.
+                        // Larger than the space, so the blur's soft edges fall outside it.
                         MusicHeroImage(url: url)
                             .frame(width: side, height: proxy.size.height)
+                            .scaleEffect(1.3)
                             .blur(radius: 40)
+                            .frame(width: side, height: proxy.size.height)
                             .clipped()
                         MusicHeroImage(url: url)
                             .frame(width: side, height: side)
@@ -367,7 +370,7 @@ struct MusicNowPlayingView: View {
                     .tint(.white)
                     .accessibilityLabel("Volume")
             } else {
-                MusicVolumeSlider().frame(height: 34)
+                MusicVolumeSlider()
             }
             Image(systemName: "speaker.wave.3.fill").accessibilityHidden(true)
         }
@@ -690,27 +693,34 @@ private struct MusicQueuePanel: View {
     }
 }
 
-/// The system volume slider, which also follows the volume buttons. It draws its track at
-/// the top of its own frame, so it's made exactly as tall as the slider inside and centred
-/// in a holder, which puts the track level with the speaker icons.
-private struct MusicVolumeSlider: UIViewRepresentable {
-    func makeUIView(context: Context) -> UIView {
-        let holder = UIView()
-        let slider = MPVolumeView()
-        slider.tintColor = .white
-        slider.translatesAutoresizingMaskIntoConstraints = false
-        holder.addSubview(slider)
-        let inner = slider.subviews.first { $0 is UISlider }
-        let height = inner.map(\.intrinsicContentSize.height).flatMap { $0 > 0 ? $0 : nil } ?? 31
-        NSLayoutConstraint.activate([
-            slider.leadingAnchor.constraint(equalTo: holder.leadingAnchor),
-            slider.trailingAnchor.constraint(equalTo: holder.trailingAnchor),
-            slider.centerYAnchor.constraint(equalTo: holder.centerYAnchor),
-            slider.heightAnchor.constraint(equalToConstant: height),
-        ])
-        return holder
+/// The system volume as an ordinary slider, so it lines up with the speaker icons like any
+/// other control. It follows the volume buttons, and sets the volume through the system
+/// volume view's own slider, mounted out of sight (there's no other way to set it).
+private struct MusicVolumeSlider: View {
+    @State private var volume = Double(AVAudioSession.sharedInstance().outputVolume)
+    @State private var controller: SystemVolumeController?
+    @State private var observation: NSKeyValueObservation?
+
+    var body: some View {
+        Slider(value: Binding(get: { volume }, set: { value in
+            volume = value
+            controller?.setVolume(Float(value))
+        }), in: 0...1)
+        .tint(.white)
+        .accessibilityLabel("Volume")
+        .onAppear {
+            controller = SystemVolumeController()
+            observation = AVAudioSession.sharedInstance().observe(\.outputVolume) { session, _ in
+                let level = Double(session.outputVolume)
+                Task { @MainActor in volume = level }
+            }
+        }
+        .onDisappear {
+            observation = nil
+            controller?.teardown()
+            controller = nil
+        }
     }
-    func updateUIView(_ uiView: UIView, context: Context) {}
 }
 
 /// AirPlay, offering speakers first.
