@@ -10,6 +10,7 @@ struct NotificationsSettingsView: View {
     @AppStorage("notifyServerEvents") private var notifyServerEvents = false
     @AppStorage(StreamBadge.key) private var showsStreamBadge = false
     @AppStorage("notifyDownload")   private var notifyDownload   = true
+    @AppStorage(MusicSettings.notifyDownloadsKey) private var notifyMusicDownloads = true
     @AppStorage("notifyRequestUpdates") private var notifyRequestUpdates = true
     @AppStorage("notifyWatchlistAvailable") private var notifyWatchlistAvailable = true
     @AppStorage(QuietHours.enabledKey) private var quietHoursEnabled = false
@@ -52,6 +53,10 @@ struct NotificationsSettingsView: View {
                     TVRowLabelText(title: "Download Complete", detail: "When a download finishes.")
                 }
                 .syncLocked("notifyDownload", authManager)
+                Toggle(isOn: $notifyMusicDownloads) {
+                    TVRowLabelText(title: "Music Downloads", detail: "Tells you when songs you're downloading are ready to play offline.")
+                }
+                .syncLocked(MusicSettings.notifyDownloadsKey, authManager)
             }
 
             if authManager.isAdmin {

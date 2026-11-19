@@ -18,7 +18,6 @@ struct MusicSettingsView: View {
             }
             MusicAppearanceSection()
             MusicLyricsSection()
-            MusicNotificationsSection()
         }
         .arcfinListStyle()
         .screenBackground()
