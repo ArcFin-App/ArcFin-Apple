@@ -154,11 +154,12 @@ private enum SystemSidebarToggle {
         if let toolbar = window?.toolbar { removeItems(from: toolbar) }
         guard observer == nil else { return }
         observer = NotificationCenter.default.addObserver(forName: NSToolbar.willAddItemNotification, object: nil, queue: .main) { note in
-            guard let item = note.userInfo?["item"] as? NSToolbarItem, isSystemToggle(item),
-                  let toolbar = note.object as? NSToolbar
-            else { return }
-            // Still being added at this point; take it off once it's in.
+            // Delivered on the main queue: the toolbar and its items are the main actor's.
             MainActor.assumeIsolated {
+                guard let item = note.userInfo?["item"] as? NSToolbarItem, isSystemToggle(item),
+                      let toolbar = note.object as? NSToolbar
+                else { return }
+                // Still being added at this point; take it off once it's in.
                 DispatchQueue.main.async { removeItems(from: toolbar) }
             }
         }
@@ -170,7 +171,7 @@ private enum SystemSidebarToggle {
         }
     }
 
-    private nonisolated static func isSystemToggle(_ item: NSToolbarItem) -> Bool {
+    private static func isSystemToggle(_ item: NSToolbarItem) -> Bool {
         item.itemIdentifier == .toggleSidebar
             || item.itemIdentifier.rawValue.localizedCaseInsensitiveContains("togglesidebar")
             || item.itemIdentifier.rawValue.localizedCaseInsensitiveContains("sidebartoggle")
