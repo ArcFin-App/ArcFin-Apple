@@ -22,6 +22,9 @@ public final class CastManager: NSObject {
     public static let shared = CastManager()
 
     public private(set) var isCastAvailable = false
+    /// A Cast device is on this network (or one is connected). Off on mobile data, where the
+    /// Cast button hides itself.
+    public private(set) var hasDevices = false
     public private(set) var isConnected = false
     public private(set) var isConnecting = false
     public private(set) var isPaused = false
@@ -62,6 +65,12 @@ public final class CastManager: NSObject {
         GCKCastContext.setSharedInstanceWith(options)
         GCKCastContext.sharedInstance().sessionManager.add(self)
         isCastAvailable = true
+        hasDevices = GCKCastContext.sharedInstance().castState != .noDevicesAvailable
+        NotificationCenter.default.addObserver(forName: .gckCastStateDidChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.hasDevices = GCKCastContext.sharedInstance().castState != .noDevicesAvailable
+            }
+        }
         #endif
     }
 

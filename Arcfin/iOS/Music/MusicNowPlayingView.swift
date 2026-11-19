@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import AVKit
+import CastKit
 import GoogleCast
 import MediaPlayer
 import SwiftUI
@@ -285,10 +286,19 @@ struct MusicNowPlayingView: View {
         .buttonStyle(.plain)
     }
 
+    /// The system volume, or the receiver's while casting: the system slider can't reach a
+    /// Chromecast and hides itself then.
     private var volume: some View {
         HStack(spacing: DT.Spacing.sm) {
             Image(systemName: "speaker.fill").accessibilityHidden(true)
-            MusicVolumeSlider().frame(height: 34)
+            if music.isCasting {
+                Slider(value: Binding(get: { Double(CastManager.shared.volume) },
+                                      set: { CastManager.shared.setVolume(Float($0)) }), in: 0...1)
+                    .tint(.white)
+                    .accessibilityLabel("Volume")
+            } else {
+                MusicVolumeSlider().frame(height: 34)
+            }
             Image(systemName: "speaker.wave.3.fill").accessibilityHidden(true)
         }
         .font(.caption)
@@ -305,10 +315,14 @@ struct MusicNowPlayingView: View {
                 .frame(width: 44, height: 44)
                 .accessibilityLabel("AirPlay")
             Spacer()
-            MusicCastButton()
-                .frame(width: 44, height: 44)
-                .accessibilityLabel("Cast")
-            Spacer()
+            // The Cast button hides itself with no Cast device around (on mobile data, say),
+            // so its place goes too rather than leaving a gap.
+            if CastManager.shared.hasDevices || music.isCasting {
+                MusicCastButton()
+                    .frame(width: 44, height: 44)
+                    .accessibilityLabel("Cast")
+                Spacer()
+            }
             sleepTimerMenu
             Spacer()
             panelButton(.queue, systemImage: "list.bullet", label: "Playing Next")
@@ -531,7 +545,8 @@ private struct MusicQueuePanel: View {
 }
 
 /// The system volume slider, which also follows the volume buttons. It draws its track at
-/// the top of its frame, so it sits centred in a holder to line up with the speaker icons.
+/// the top of its own frame, so it's made exactly as tall as the slider inside and centred
+/// in a holder, which puts the track level with the speaker icons.
 private struct MusicVolumeSlider: UIViewRepresentable {
     func makeUIView(context: Context) -> UIView {
         let holder = UIView()
@@ -539,11 +554,13 @@ private struct MusicVolumeSlider: UIViewRepresentable {
         slider.tintColor = .white
         slider.translatesAutoresizingMaskIntoConstraints = false
         holder.addSubview(slider)
+        let inner = slider.subviews.first { $0 is UISlider }
+        let height = inner.map(\.intrinsicContentSize.height).flatMap { $0 > 0 ? $0 : nil } ?? 31
         NSLayoutConstraint.activate([
             slider.leadingAnchor.constraint(equalTo: holder.leadingAnchor),
             slider.trailingAnchor.constraint(equalTo: holder.trailingAnchor),
             slider.centerYAnchor.constraint(equalTo: holder.centerYAnchor),
-            slider.heightAnchor.constraint(equalToConstant: 34),
+            slider.heightAnchor.constraint(equalToConstant: height),
         ])
         return holder
     }
