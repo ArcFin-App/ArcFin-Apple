@@ -130,12 +130,20 @@ struct ArcfinSyncSection: View {
     }
 }
 
-/// Server Settings' last two sections: custom headers, and which address is in use.
+/// Server Settings' last sections: Server & Connection, custom headers, and which address is
+/// in use.
 struct ServerConnectionSections: View {
     let currentlyUsing: String
+    var localURL = ""
+    var remoteURL = ""
 
     var body: some View {
         Section {
+            NavigationLink {
+                ServerConnectionView(localURL: localURL, remoteURL: remoteURL, currentlyUsing: currentlyUsing).tvSettingsPage()
+            } label: {
+                TVRowLabelText(title: "Server & Connection", detail: "Test your speed to the server, and see what your account and this device can play.")
+            }
             NavigationLink { CustomHeadersView().tvSettingsPage() } label: {
                 TVRowLabelText(title: "Custom Headers", detail: "Extra headers for a server behind an access gateway, such as Cloudflare Access.")
             }

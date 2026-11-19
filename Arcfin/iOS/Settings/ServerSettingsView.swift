@@ -85,7 +85,8 @@ struct ServerSettingsView: View {
             }
 
             ServerConnectionSections(currentlyUsing: ServerSettingsModel.currentlyUsing(
-                activeBaseURL: activeBaseURL, localURL: localURL, remoteURL: remoteURL))
+                activeBaseURL: activeBaseURL, localURL: localURL, remoteURL: remoteURL),
+                                     localURL: localURL, remoteURL: remoteURL)
         }
         .arcfinListStyle()
         .screenBackground()
