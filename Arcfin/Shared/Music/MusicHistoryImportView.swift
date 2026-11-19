@@ -23,6 +23,10 @@ final class MusicHistoryImportModel {
     private(set) var sent = 0
     private(set) var songsChecked = 0
     private(set) var matched = 0
+    /// In the library and played there already, so left as they are.
+    private(set) var alreadyPlayed = 0
+    private(set) var wasCancelled = false
+    @ObservationIgnored private var job: Task<Void, Never>?
     private(set) var notInLibrary: [String] = []
     private(set) var listenBrainzFailed = false
     private let log = Telemetry.logger(category: "HistoryImport")
@@ -61,12 +65,17 @@ final class MusicHistoryImportModel {
         sendsToListenBrainz = listenBrainzToken != nil
     }
 
-    func start() async {
+    func start() {
         phase = .importing
-        if sendsToListenBrainz, let token = listenBrainzToken { await sendToListenBrainz(token: token) }
-        if marksInJellyfin { await markInJellyfin() }
-        phase = .done
+        job = Task {
+            if sendsToListenBrainz, let token = listenBrainzToken { await sendToListenBrainz(token: token) }
+            if marksInJellyfin, !Task.isCancelled { await markInJellyfin() }
+            wasCancelled = Task.isCancelled
+            phase = .done
+        }
     }
+
+    func cancel() { job?.cancel() }
 
     private func sendToListenBrainz(token: String) async {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
@@ -76,7 +85,7 @@ final class MusicHistoryImportModel {
                                release: $0.album, durationMS: $0.playedMS)
         }
         var start = 0
-        while start < listens.count {
+        while start < listens.count, !Task.isCancelled {
             let batch = Array(listens[start..<min(start + ListenBrainzClient.maxListensPerRequest, listens.count)])
             do {
                 try await client.submit(batch)
@@ -98,30 +107,40 @@ final class MusicHistoryImportModel {
     private func markInJellyfin() async {
         let songs = songs
         let chunks = stride(from: 0, to: songs.count, by: 4).map { Array(songs[$0..<min($0 + 4, songs.count)]) }
-        for chunk in chunks {
-            let found = await withTaskGroup(of: (String, Bool).self) { group in
+        for chunk in chunks where !Task.isCancelled {
+            let found = await withTaskGroup(of: (String, Mark).self) { group in
                 for song in chunk {
                     group.addTask { await (Self.label(song.play), Self.mark(song.play, at: song.last)) }
                 }
-                return await group.reduce(into: [(String, Bool)]()) { $0.append($1) }
+                return await group.reduce(into: [(String, Mark)]()) { $0.append($1) }
             }
-            for (label, isFound) in found {
+            for (label, mark) in found {
                 songsChecked += 1
-                if isFound { matched += 1 } else { notInLibrary.append(label) }
+                switch mark {
+                case .marked: matched += 1
+                case .alreadyPlayed: alreadyPlayed += 1
+                case .notFound: notInLibrary.append(label)
+                }
             }
         }
     }
 
     private nonisolated static func label(_ play: ImportedPlay) -> String { "\(play.artist) – \(play.track)" }
 
-    private static func mark(_ play: ImportedPlay, at date: Date) async -> Bool {
+    enum Mark: Sendable { case marked, alreadyPlayed, notFound }
+
+    /// Only a song Jellyfin has never seen played is marked: one played there already keeps
+    /// its own last-played date and count, so a second import doesn't count anything twice.
+    private static func mark(_ play: ImportedPlay, at date: Date) async -> Mark {
         let track = play.track.lowercased(), artist = play.artist.lowercased()
         guard let results = try? await MusicAPI.call({
             try await $0.searchMusic(credential: $1, authHeader: $2, term: play.track, limit: 12)
         }), let song = results.songs.first(where: {
             $0.name.lowercased() == track && ($0.artistLine?.lowercased().contains(artist) ?? false)
-        }) else { return false }
-        return (try? await MusicAPI.call { try await $0.markPlayed(credential: $1, authHeader: $2, itemId: song.id, at: date) }) != nil
+        }) else { return .notFound }
+        guard song.playCount == 0 else { return .alreadyPlayed }
+        let marked = (try? await MusicAPI.call { try await $0.markPlayed(credential: $1, authHeader: $2, itemId: song.id, at: date) }) != nil
+        return marked ? .marked : .notFound
     }
 }
 
@@ -188,11 +207,11 @@ struct MusicHistoryImportView: View {
             }
             .disabled(model.listenBrainzToken == nil || model.phase != .ready)
             Toggle(isOn: $model.marksInJellyfin) {
-                TVRowLabelText(title: "Mark Played in Jellyfin", detail: "Songs found in your library are marked played on the day you last played them. Jellyfin keeps a count and a date, not every play.")
+                TVRowLabelText(title: "Mark Played in Jellyfin", detail: "Songs in your library that you haven't played in Jellyfin yet are marked played on the day you last played them. Songs already played there keep their own count and date.")
             }
             .disabled(model.phase != .ready)
             if model.phase == .ready {
-                Button("Import", systemImage: "square.and.arrow.down") { Task { await model.start() } }
+                Button("Import", systemImage: "square.and.arrow.down") { model.start() }
                     .disabled(!model.sendsToListenBrainz && !model.marksInJellyfin)
             }
         }
@@ -203,7 +222,7 @@ struct MusicHistoryImportView: View {
     private var progress: some View {
         Section {
             if model.sendsToListenBrainz {
-                LabeledContent("Sent to ListenBrainz", value: "\(model.sent.formatted()) of \(model.plays.count.formatted())")
+                LabeledContent("Sent to ListenBrainz", value: String(localized: "\(model.sent.formatted()) of \(model.plays.count.formatted())"))
                 if model.listenBrainzFailed {
                     Text("ListenBrainz stopped taking listens. Try again later; plays already sent aren't counted twice.")
                         .font(.footnote)
@@ -211,14 +230,16 @@ struct MusicHistoryImportView: View {
                 }
             }
             if model.marksInJellyfin {
-                LabeledContent("Checked in Your Library", value: "\(model.songsChecked.formatted()) of \(model.songs.count.formatted())")
+                LabeledContent("Checked in Your Library", value: String(localized: "\(model.songsChecked.formatted()) of \(model.songs.count.formatted())"))
                 LabeledContent("Marked Played", value: model.matched.formatted())
+                LabeledContent("Already Played in Jellyfin", value: model.alreadyPlayed.formatted())
             }
             if model.phase == .importing {
                 HStack { Spacer(); ProgressView(); Spacer() }
+                Button("Cancel", role: .destructive) { model.cancel() }
             }
         } header: {
-            Text(model.phase == .done ? "Done" : "Importing")
+            Text(model.phase == .done ? (model.wasCancelled ? "Cancelled" : "Done") : "Importing")
         } footer: {
             if model.phase == .importing { Text("Keep Arcfin open until it's done.") }
         }

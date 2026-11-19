@@ -961,6 +961,70 @@
         }
       }
     },
+    "Already Played in Jellyfin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bereits in Jellyfin gespielt"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya reproducidas en Jellyfin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déjà écoutés dans Jellyfin"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Già ascoltati in Jellyfin"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jellyfinで再生済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jellyfin에서 이미 재생함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al gespeeld in Jellyfin"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Já tocadas no Jellyfin"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Уже прослушано в Jellyfin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已在 Jellyfin 中播放"
+          }
+        }
+      }
+    },
     "And %lld more" : {
       "localizations" : {
         "de" : {
@@ -1790,6 +1854,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "收听最多的月份"
+          }
+        }
+      }
+    },
+    "Cancelled" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abgebrochen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annulé"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annullato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセルしました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "취소됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geannuleerd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отменено"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消"
           }
         }
       }
@@ -7810,6 +7938,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在资料库中找到的歌曲会标记为在你最后一次播放当天已播放。Jellyfin 只保存次数和日期，不保存每次播放。"
+          }
+        }
+      }
+    },
+    "Songs in your library that you haven't played in Jellyfin yet are marked played on the day you last played them. Songs already played there keep their own count and date." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Titel deiner Mediathek, die du in Jellyfin noch nicht gespielt hast, werden mit dem Tag der letzten Wiedergabe als gespielt markiert. Bereits dort gespielte behalten ihre eigene Anzahl und ihr Datum."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las canciones de tu biblioteca que aún no has escuchado en Jellyfin se marcan como reproducidas el día en que las escuchaste por última vez. Las ya reproducidas allí conservan su recuento y fecha."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les morceaux de votre bibliothèque pas encore écoutés dans Jellyfin sont marqués écoutés au jour de leur dernière écoute. Ceux déjà écoutés gardent leur nombre et leur date."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I brani della libreria non ancora ascoltati in Jellyfin vengono segnati come ascoltati nel giorno dell’ultimo ascolto. Quelli già ascoltati lì mantengono conteggio e data."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jellyfinでまだ再生していないライブラリの曲は、最後に再生した日付で再生済みになります。すでに再生済みの曲は回数と日付がそのまま残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jellyfin에서 아직 재생하지 않은 보관함 노래는 마지막으로 재생한 날짜로 재생함 표시됩니다. 이미 재생한 노래는 기존 횟수와 날짜를 유지합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummers in je bibliotheek die je in Jellyfin nog niet hebt gespeeld, worden als gespeeld gemarkeerd op de dag dat je ze het laatst speelde. Al gespeelde nummers houden hun eigen aantal en datum."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As músicas da biblioteca que você ainda não tocou no Jellyfin são marcadas como tocadas no dia em que você as tocou pela última vez. As já tocadas lá mantêm sua contagem e data."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Песни из медиатеки, которые вы ещё не слушали в Jellyfin, отмечаются прослушанными в день последнего прослушивания. Уже прослушанные там сохраняют свои счётчик и дату."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "资料库中尚未在 Jellyfin 播放过的歌曲，会标记为在你最后一次播放当天已播放。已在其中播放过的歌曲保留原有次数和日期。"
           }
         }
       }
