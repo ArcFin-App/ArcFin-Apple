@@ -739,6 +739,7 @@ struct TVMusicArtistView: View {
     let libraryID: String?
     @State private var artist: MusicArtist
     @State private var albums: MusicPagedList<MusicAlbum>
+    @State private var topSongs: MusicPagedList<MusicSong>
 
     init(artist: MusicArtist, libraryID: String?) {
         self.libraryID = libraryID
@@ -750,6 +751,13 @@ struct TVMusicArtistView: View {
                                             ascending: false, filter: filter, startIndex: start)
             }
             return (page.albums, page.total)
+        })
+        _topSongs = State(initialValue: MusicPagedList { _ in
+            let page = try await MusicAPI.call {
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: .playCount,
+                                            ascending: false, filter: filter, limit: 10)
+            }
+            return (page.tracks, page.tracks.count)
         })
     }
 
@@ -782,6 +790,7 @@ struct TVMusicArtistView: View {
                         .focusSection()
                     }
                 }
+                TVMusicSongShelf(title: "Top Songs", list: topSongs)
                 VStack(alignment: .leading, spacing: 24) {
                     Text("Albums").font(.title3.weight(.semibold))
                     TVMusicLoading(list: albums, empty: "No Albums")
@@ -793,7 +802,9 @@ struct TVMusicArtistView: View {
         }
         .screenBackground()
         .task {
+            async let top: Void = topSongs.loadIfNeeded()
             await albums.loadIfNeeded()
+            _ = await top
             let id = artist.id
             if let full = try? await MusicAPI.call({ try await $0.getMusicArtist(credential: $1, authHeader: $2, artistId: id) }) {
                 artist = full

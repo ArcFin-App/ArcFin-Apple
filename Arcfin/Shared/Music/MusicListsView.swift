@@ -198,14 +198,18 @@ struct MusicGenresView: View {
     }
 }
 
-/// An artist: their picture and name, Play (their most played) and Shuffle, their albums,
-/// and what the server knows about them.
+/// An artist: their picture and name, Play (their most played) and Shuffle, their top songs,
+/// albums, singles and EPs, the albums they're on, what the server knows about them, and
+/// artists like them.
 struct MusicArtistView: View {
     let libraryID: String?
     @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var artist: MusicArtist
     @State private var albums: MusicPagedList<MusicAlbum>
     @State private var showsFullBio = false
+    @State private var topSongs: [MusicSong] = []
+    @State private var appearsOn: [MusicAlbum] = []
+    @State private var similar: [MusicArtist] = []
 
     init(artist: MusicArtist, libraryID: String?) {
         self.libraryID = libraryID
@@ -233,16 +237,30 @@ struct MusicArtistView: View {
                 }
                 .frame(maxWidth: .infinity)
                 MusicPlayShuffleButtons(play: { play(shuffled: false) }, shuffle: { play(shuffled: true) })
-                VStack(alignment: .leading, spacing: DT.Spacing.sm) {
-                    Text("Albums")
-                        .font(DT.Font.sectionTitle)
-                        .foregroundStyle(DT.Color.textPrimary)
-                    MusicListState(list: albums, empty: "No Albums")
-                    LazyVGrid(columns: MusicGrid.columns(sizeClass), alignment: .leading, spacing: DT.Spacing.lg) {
-                        ForEach(albums.items) { album in
-                            MusicAlbumCard(album: album, showsArtist: false)
-                                .task { await albums.rowAppeared(album) }
+                if !topSongs.isEmpty {
+                    VStack(alignment: .leading, spacing: DT.Spacing.xs) {
+                        sectionTitle("Top Songs")
+                        ForEach(Array(topSongs.enumerated()), id: \.element.id) { index, song in
+                            MusicSongRow(song: song) { MusicActions.play(topSongs, from: index) }
                         }
+                    }
+                }
+                VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                    sectionTitle("Albums")
+                    MusicListState(list: albums, empty: "No Albums")
+                    albumGrid(albums.items.filter { !$0.isSingle })
+                }
+                let singles = albums.items.filter(\.isSingle)
+                if !singles.isEmpty {
+                    VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                        sectionTitle("Singles & EPs")
+                        albumGrid(singles)
+                    }
+                }
+                if !appearsOn.isEmpty {
+                    VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                        sectionTitle("Appears On")
+                        albumShelf(appearsOn)
                     }
                 }
                 if let overview = artist.overview, !overview.isEmpty {
@@ -257,6 +275,32 @@ struct MusicArtistView: View {
                         Button(showsFullBio ? "Less" : "More") { withAnimation { showsFullBio.toggle() } }
                             .font(.callout.weight(.semibold))
                             .tint(DT.Color.accent)
+                    }
+                }
+                if !similar.isEmpty {
+                    VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                        sectionTitle("Similar Artists")
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            LazyHStack(alignment: .top, spacing: DT.Spacing.md) {
+                                ForEach(similar) { other in
+                                    NavigationLink { MusicDestination(route: .artist(other, libraryID: libraryID)) } label: {
+                                        VStack(spacing: 6) {
+                                            MusicArtwork(url: MusicAPI.artworkURL(other, width: 300), isCircle: true)
+                                                .frame(width: 120, height: 120)
+                                            Text(verbatim: other.name)
+                                                .font(.footnote.weight(.medium))
+                                                .foregroundStyle(DT.Color.textPrimary)
+                                                .lineLimit(1)
+                                        }
+                                        .frame(width: 120)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        .shelfScrollButtons()
+                        .padding(.horizontal, -DT.Spacing.pagePad)
+                        .contentMargins(.horizontal, DT.Spacing.pagePad, for: .scrollContent)
                     }
                 }
             }
@@ -276,12 +320,50 @@ struct MusicArtistView: View {
             }
         }
         .task {
-            await albums.loadIfNeeded()
-            let id = artist.id
-            if let full = try? await MusicAPI.call({ try await $0.getMusicArtist(credential: $1, authHeader: $2, artistId: id) }) {
-                artist = full
+            let id = artist.id, libraryID = libraryID
+            async let loaded: Void = albums.loadIfNeeded()
+            async let full = try? MusicAPI.call { try await $0.getMusicArtist(credential: $1, authHeader: $2, artistId: id) }
+            async let top = try? MusicAPI.call {
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: .playCount,
+                                            ascending: false, filter: MusicFilter(artistId: id), limit: 5)
+            }
+            async let on = try? MusicAPI.call {
+                try await $0.getAppearsOn(credential: $1, authHeader: $2, artistId: id, libraryId: libraryID)
+            }
+            async let like = try? MusicAPI.call { try await $0.getSimilarArtists(credential: $1, authHeader: $2, artistId: id) }
+            _ = await loaded
+            if let full = await full { artist = full }
+            topSongs = await top?.tracks ?? []
+            appearsOn = await on ?? []
+            similar = await like ?? []
+        }
+    }
+
+    private func sectionTitle(_ title: LocalizedStringKey) -> some View {
+        Text(title)
+            .font(DT.Font.sectionTitle)
+            .foregroundStyle(DT.Color.textPrimary)
+            .accessibilityAddTraits(.isHeader)
+    }
+
+    private func albumGrid(_ items: [MusicAlbum]) -> some View {
+        LazyVGrid(columns: MusicGrid.columns(sizeClass), alignment: .leading, spacing: DT.Spacing.lg) {
+            ForEach(items) { album in
+                MusicAlbumCard(album: album, showsArtist: false)
+                    .task { await albums.rowAppeared(album) }
             }
         }
+    }
+
+    private func albumShelf(_ items: [MusicAlbum]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            LazyHStack(alignment: .top, spacing: DT.Spacing.md) {
+                ForEach(items) { MusicAlbumCard(album: $0).frame(width: 150) }
+            }
+        }
+        .shelfScrollButtons()
+        .padding(.horizontal, -DT.Spacing.pagePad)
+        .contentMargins(.horizontal, DT.Spacing.pagePad, for: .scrollContent)
     }
 
     private func play(shuffled: Bool) {

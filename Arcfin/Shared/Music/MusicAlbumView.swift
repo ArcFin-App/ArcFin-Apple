@@ -10,6 +10,8 @@ struct MusicAlbumView: View {
     @State private var songs: [MusicSong] = []
     @State private var hasLoaded = false
     @State private var hasFailed = false
+    @State private var moreByArtist: [MusicAlbum] = []
+    @State private var showsFullOverview = false
 
     init(album: MusicAlbum) {
         _album = State(initialValue: album)
@@ -30,6 +32,23 @@ struct MusicAlbumView: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                 trackList
                 footer
+                about
+                if !moreByArtist.isEmpty, let artist = album.albumArtist {
+                    VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                        Text("More by \(artist)")
+                            .font(DT.Font.sectionTitle)
+                            .foregroundStyle(DT.Color.textPrimary)
+                            .accessibilityAddTraits(.isHeader)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            LazyHStack(alignment: .top, spacing: DT.Spacing.md) {
+                                ForEach(moreByArtist) { MusicAlbumCard(album: $0, showsArtist: false).frame(width: 150) }
+                            }
+                        }
+                        .shelfScrollButtons()
+                        .contentMargins(.horizontal, DT.Spacing.pagePad, for: .scrollContent)
+                    }
+                    .padding(.leading, DT.Spacing.pagePad)
+                }
             }
             .padding(.bottom, DT.Spacing.xl)
         }
@@ -127,6 +146,46 @@ struct MusicAlbumView: View {
         }
     }
 
+    /// The album's notes and who's credited on it, when the server has them.
+    @ViewBuilder
+    private var about: some View {
+        let credits = (album.credits ?? []).filter { !$0.name.isEmpty }
+        if album.overview?.isEmpty == false || !credits.isEmpty {
+            VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                if let overview = album.overview, !overview.isEmpty {
+                    Text("About")
+                        .font(DT.Font.sectionTitle)
+                        .foregroundStyle(DT.Color.textPrimary)
+                    Text(verbatim: overview)
+                        .font(.callout)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .lineLimit(showsFullOverview ? nil : 4)
+                    Button(showsFullOverview ? "Less" : "More") { withAnimation { showsFullOverview.toggle() } }
+                        .font(.callout.weight(.semibold))
+                        .tint(DT.Color.accent)
+                }
+                if !credits.isEmpty {
+                    Text("Credits")
+                        .font(DT.Font.sectionTitle)
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .padding(.top, DT.Spacing.xs)
+                    ForEach(credits, id: \.self) { credit in
+                        HStack(alignment: .firstTextBaseline) {
+                            Text(verbatim: credit.name).foregroundStyle(DT.Color.textPrimary)
+                            Spacer()
+                            if let role = credit.role {
+                                Text(verbatim: role).foregroundStyle(DT.Color.textSecondary)
+                            }
+                        }
+                        .font(.callout)
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DT.Spacing.pagePad)
+        }
+    }
+
     private func load() async {
         let id = album.id
         do {
@@ -139,6 +198,12 @@ struct MusicAlbumView: View {
             hasFailed = !(error is CancellationError)
         }
         hasLoaded = true
+        guard let artistID = album.albumArtists.first?.id else { return }
+        let others = try? await MusicAPI.call {
+            try await $0.getMusicAlbums(credential: $1, authHeader: $2, libraryId: nil, sort: .year, ascending: false,
+                                        filter: MusicFilter(artistId: artistID), limit: 20)
+        }
+        moreByArtist = (others?.albums ?? []).filter { $0.id != id }
     }
 }
 

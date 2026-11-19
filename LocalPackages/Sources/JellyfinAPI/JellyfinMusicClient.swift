@@ -27,13 +27,32 @@ public struct MusicAlbum: Sendable, Identifiable, Equatable, Hashable, Codable {
     public var runTimeTicks: Int64?
     public var genres: [String]
     public var isFavorite: Bool
+    /// From the album's own page only; lists leave them out.
+    public var overview: String?
+    public var credits: [MusicCredit]?
 
     public init(id: String, name: String, albumArtist: String? = nil, albumArtists: [MusicArtistRef] = [],
                 productionYear: Int? = nil, primaryImageTag: String? = nil, trackCount: Int? = nil,
-                runTimeTicks: Int64? = nil, genres: [String] = [], isFavorite: Bool = false) {
+                runTimeTicks: Int64? = nil, genres: [String] = [], isFavorite: Bool = false,
+                overview: String? = nil, credits: [MusicCredit]? = nil) {
         self.id = id; self.name = name; self.albumArtist = albumArtist; self.albumArtists = albumArtists
         self.productionYear = productionYear; self.primaryImageTag = primaryImageTag; self.trackCount = trackCount
         self.runTimeTicks = runTimeTicks; self.genres = genres; self.isFavorite = isFavorite
+        self.overview = overview; self.credits = credits
+    }
+
+    /// Three songs or fewer: a single or an EP rather than an album.
+    public var isSingle: Bool { (trackCount ?? .max) <= 3 }
+}
+
+/// Someone credited on an album: a composer, producer, performer and the like.
+public struct MusicCredit: Sendable, Equatable, Hashable, Codable {
+    public var name: String
+    /// What they did, e.g. "Composer"; the role when the server has one, else the kind.
+    public var role: String?
+
+    public init(name: String, role: String? = nil) {
+        self.name = name; self.role = role
     }
 }
 
@@ -271,9 +290,24 @@ extension JellyfinMediaClient {
 
     public func getMusicAlbum(credential: ServerCredential, authHeader: String, albumId: String) async throws -> MusicAlbum {
         let item: MusicItemResponse = try await getMusic("Users/\(credential.userID)/Items/\(albumId)",
-                                                         query: [.init(name: "Fields", value: Self.musicFields)],
+                                                         query: [.init(name: "Fields", value: Self.musicFields + ",Overview,People")],
                                                          credential: credential, authHeader: authHeader)
-        return item.asAlbum
+        var album = item.asAlbum
+        album.overview = item.overview
+        album.credits = item.people?.compactMap { person in
+            person.name.map { MusicCredit(name: $0, role: person.role?.isEmpty == false ? person.role : person.type) }
+        }
+        return album
+    }
+
+    /// Albums by others that the artist is on.
+    public func getAppearsOn(credential: ServerCredential, authHeader: String, artistId: String,
+                             libraryId: String?, limit: Int = 30) async throws -> [MusicAlbum] {
+        var query = musicItemsQuery(credential: credential, types: "MusicAlbum", parentId: libraryId, sort: .year,
+                                    ascending: false, filter: .init(), startIndex: 0, limit: limit)
+        query.append(.init(name: "ContributingArtistIds", value: artistId))
+        let page: MusicPage = try await getMusic("Items", query: query, credential: credential, authHeader: authHeader)
+        return page.items.map(\.asAlbum).filter { !$0.albumArtists.contains { $0.id == artistId } }
     }
 
     public func getMusicArtist(credential: ServerCredential, authHeader: String, artistId: String) async throws -> MusicArtist {
@@ -607,6 +641,14 @@ struct MusicItemResponse: Decodable {
     let type: String?
     let playlistItemId: String?
     let normalizationGain: Double?
+    let people: [Person]?
+
+    struct Person: Decodable {
+        let name: String?
+        let role: String?
+        let type: String?
+        enum CodingKeys: String, CodingKey { case name = "Name", role = "Role", type = "Type" }
+    }
 
     enum CodingKeys: String, CodingKey {
         case id = "Id", name = "Name", overview = "Overview", albumArtist = "AlbumArtist"
@@ -617,6 +659,7 @@ struct MusicItemResponse: Decodable {
         case childCount = "ChildCount", genres = "Genres", userData = "UserData", hasLyrics = "HasLyrics"
         case container = "Container", type = "Type", playlistItemId = "PlaylistItemId"
         case normalizationGain = "NormalizationGain"
+        case people = "People"
     }
 
     private static func refs(_ items: [NameId]?) -> [MusicArtistRef] {
