@@ -232,6 +232,26 @@ struct MusicMacNowPlaying: View {
 
     private var queue: some View {
         List {
+            // Earlier in this queue: double-click one to go back to it.
+            if !player.queue.history.isEmpty {
+                Section("Played") {
+                    ForEach(Array(player.queue.history.suffix(20))) { entry in
+                        HStack(spacing: DT.Spacing.sm) {
+                            MusicArtwork(url: MusicAPI.artworkURL(entry.track, width: 100), cornerRadius: DT.Radius.xs)
+                                .frame(width: 36, height: 36)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(verbatim: entry.track.name)
+                                Text(verbatim: entry.track.artistLine ?? "").font(.caption).foregroundStyle(.secondary)
+                            }
+                            .lineLimit(1)
+                        }
+                        .foregroundStyle(.secondary)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) { player.jump(to: entry.id) }
+                        .contextMenu { Button("Play", systemImage: "play") { player.jump(to: entry.id) } }
+                    }
+                }
+            }
             ForEach(Array(player.queue.upNext)) { entry in
                 HStack(spacing: DT.Spacing.sm) {
                     MusicArtwork(url: MusicAPI.artworkURL(entry.track, width: 100), cornerRadius: DT.Radius.xs)

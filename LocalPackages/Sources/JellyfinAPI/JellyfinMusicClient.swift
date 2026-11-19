@@ -186,10 +186,14 @@ public struct MusicFilter: Sendable, Equatable {
     public var artistId: String?
     /// Only what this profile has played.
     public var playedOnly = false
+    /// Only what this profile has never played.
+    public var unplayedOnly = false
 
-    public init(favoritesOnly: Bool = false, genreId: String? = nil, artistId: String? = nil, playedOnly: Bool = false) {
+    public init(favoritesOnly: Bool = false, genreId: String? = nil, artistId: String? = nil, playedOnly: Bool = false,
+                unplayedOnly: Bool = false) {
         self.favoritesOnly = favoritesOnly; self.genreId = genreId; self.artistId = artistId
         self.playedOnly = playedOnly
+        self.unplayedOnly = unplayedOnly
     }
 }
 
@@ -479,6 +483,7 @@ extension JellyfinMediaClient {
         if filter.favoritesOnly { query.append(.init(name: "IsFavorite", value: "true")) }
         if let genreId = filter.genreId { query.append(.init(name: "GenreIds", value: genreId)) }
         if filter.playedOnly { query.append(.init(name: "IsPlayed", value: "true")) }
+        if filter.unplayedOnly { query.append(.init(name: "IsPlayed", value: "false")) }
         return query
     }
 

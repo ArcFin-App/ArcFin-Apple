@@ -139,6 +139,7 @@
 				Shared/Music/MusicLibraryView.swift = (ios, macos, );
 				Shared/Music/MusicListsView.swift = (ios, macos, );
 				Shared/Music/MusicSearchSection.swift = (ios, macos, );
+				Shared/Music/MusicSmartPlaylists.swift = (ios, macos, );
 				Shared/Siri/MusicSiriHandler.swift = (ios, tvos, );
 				iOS/App/AppRootPlatform.swift = (ios, );
 				iOS/App/ArcfinScenes.swift = (ios, );

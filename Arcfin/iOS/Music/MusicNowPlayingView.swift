@@ -457,6 +457,33 @@ private struct MusicQueuePanel: View {
                 }
             }
             List {
+                // Earlier in this queue: tap one to go back to it.
+                if !player.queue.history.isEmpty {
+                    Section {
+                        ForEach(Array(player.queue.history.suffix(20))) { entry in
+                            HStack(spacing: DT.Spacing.sm) {
+                                MusicArtwork(url: MusicAPI.artworkURL(entry.track, width: 120), cornerRadius: DT.Radius.xs)
+                                    .frame(width: 44, height: 44)
+                                    .opacity(0.6)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(verbatim: entry.track.name).foregroundStyle(.white.opacity(0.7))
+                                    Text(verbatim: entry.track.artistLine ?? "")
+                                        .font(.footnote)
+                                        .foregroundStyle(.white.opacity(0.45))
+                                }
+                                .lineLimit(1)
+                            }
+                            .contentShape(Rectangle())
+                            .onTapGesture { music.jump(to: entry.id) }
+                            .listRowBackground(Color.clear)
+                            .listRowSeparatorTint(.white.opacity(0.15))
+                            .moveDisabled(true)
+                            .deleteDisabled(true)
+                        }
+                    } header: {
+                        Text("Played").font(.subheadline.weight(.semibold)).foregroundStyle(.white.opacity(0.6))
+                    }
+                }
                 ForEach(Array(player.queue.upNext)) { entry in
                     HStack(spacing: DT.Spacing.sm) {
                         MusicArtwork(url: MusicAPI.artworkURL(entry.track, width: 120), cornerRadius: DT.Radius.xs)

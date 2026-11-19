@@ -58,6 +58,7 @@ struct MusicLibraryView: View {
                         .buttonStyle(.plain)
                     }
                 }
+                MusicSmartPlaylistShelf(libraryID: library.id)
                 MusicSongShelf(title: "Recently Played", list: recentlyPlayed)
                 MusicSongShelf(title: "Most Played", list: mostPlayed)
                 VStack(alignment: .leading, spacing: DT.Spacing.sm) {

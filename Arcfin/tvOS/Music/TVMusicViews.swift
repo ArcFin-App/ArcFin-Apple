@@ -331,6 +331,7 @@ struct TVMusicLibraryView: View {
                     link("Genres", systemImage: "guitars", route: .genres(libraryID: library.id))
                 }
                 .focusSection()
+                TVMusicSmartPlaylistShelf(libraryID: library.id)
                 TVMusicSongShelf(title: "Recently Played", list: recentlyPlayed)
                 TVMusicSongShelf(title: "Most Played", list: mostPlayed)
                 VStack(alignment: .leading, spacing: 24) {
@@ -359,6 +360,49 @@ struct TVMusicLibraryView: View {
 }
 
 /// A row of songs this profile has played; choosing one plays the row from there.
+/// Made for You: each smart playlist plays as soon as it's picked.
+private struct TVMusicSmartPlaylistShelf: View {
+    let libraryID: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            Text("Made for You").font(.title3.weight(.semibold))
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .top, spacing: 40) {
+                    ForEach(MusicSmartPlaylist.allCases) { playlist in
+                        Button {
+                            Task {
+                                let songs = await playlist.songs(libraryID: libraryID)
+                                if !songs.isEmpty { TVMusicPresenter.shared.play(songs, from: 0) }
+                            }
+                        } label: {
+                            VStack(alignment: .leading, spacing: 12) {
+                                ZStack(alignment: .bottomLeading) {
+                                    LinearGradient(colors: playlist.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+                                    Image(systemName: playlist.systemImage)
+                                        .font(.system(size: 56, weight: .semibold))
+                                        .foregroundStyle(.white.opacity(0.9))
+                                        .padding(24)
+                                }
+                                .frame(width: 240, height: 240)
+                                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
+                                Text(playlist.title).font(.callout.weight(.medium)).lineLimit(1)
+                                Text(playlist.detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                            .frame(width: 240, alignment: .leading)
+                        }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                    }
+                }
+                .padding(.vertical, 20)
+            }
+            .scrollClipDisabled()
+        }
+        .focusSection()
+    }
+}
+
 private struct TVMusicSongShelf: View {
     let title: LocalizedStringKey
     let list: MusicPagedList<MusicSong>
