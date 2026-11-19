@@ -214,3 +214,87 @@ private struct SessionResponse: Decodable {
         }
     }
 }
+
+// MARK: - Music on the watch
+
+struct WatchPlaylist: Identifiable, Hashable, Codable, Sendable {
+    let id: String
+    let name: String
+    let songCount: Int?
+}
+
+struct WatchSong: Identifiable, Hashable, Codable, Sendable {
+    let id: String
+    let name: String
+    let artist: String?
+    let albumID: String?
+    let seconds: Double?
+}
+
+private struct WatchItemsResponse: Decodable {
+    struct Item: Decodable {
+        let id: String
+        let name: String?
+        let albumId: String?
+        let artists: [String]?
+        let albumArtist: String?
+        let runTimeTicks: Int64?
+        let childCount: Int?
+        enum CodingKeys: String, CodingKey {
+            case id = "Id", name = "Name", albumId = "AlbumId", artists = "Artists", albumArtist = "AlbumArtist"
+            case runTimeTicks = "RunTimeTicks", childCount = "ChildCount"
+        }
+    }
+    let items: [Item]
+    enum CodingKeys: String, CodingKey { case items = "Items" }
+}
+
+extension WatchJellyfin {
+    func playlists() async throws -> [WatchPlaylist] {
+        try await items("Users/\(credential.userID)/Items", [
+            .init(name: "IncludeItemTypes", value: "Playlist"), .init(name: "MediaTypes", value: "Audio"),
+            .init(name: "Recursive", value: "true"), .init(name: "SortBy", value: "SortName"),
+        ]).map { WatchPlaylist(id: $0.id, name: $0.name ?? "", songCount: $0.childCount) }
+    }
+
+    func songs(inPlaylist id: String) async throws -> [WatchSong] {
+        try await items("Playlists/\(id)/Items", [.init(name: "UserId", value: credential.userID)]).map(Self.song)
+    }
+
+    /// The profile's favourite songs, shuffled.
+    func favoriteSongs() async throws -> [WatchSong] {
+        try await items("Users/\(credential.userID)/Items", [
+            .init(name: "IncludeItemTypes", value: "Audio"), .init(name: "Recursive", value: "true"),
+            .init(name: "Filters", value: "IsFavorite"), .init(name: "SortBy", value: "Random"),
+            .init(name: "Limit", value: "100"),
+        ]).map(Self.song)
+    }
+
+    private static func song(_ item: WatchItemsResponse.Item) -> WatchSong {
+        WatchSong(id: item.id, name: item.name ?? "", artist: item.artists?.first ?? item.albumArtist,
+                  albumID: item.albumId, seconds: item.runTimeTicks.map { Double($0) / 10_000_000 })
+    }
+
+    private func items(_ path: String, _ query: [URLQueryItem]) async throws -> [WatchItemsResponse.Item] {
+        await Self.waitForNetwork()
+        let (data, response) = try await send { server in
+            var comps = URLComponents(url: server.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+            comps?.queryItems = query
+            return comps?.url.map { URLRequest(url: $0) }
+        }
+        guard (200...299).contains(response.statusCode) else { throw URLError(.badServerResponse) }
+        return try JSONDecoder().decode(WatchItemsResponse.self, from: data).items
+    }
+
+    /// The song converted to 192 kbps MP3, which the watch plays and keeps small.
+    func streamURL(songID: String) -> URL? {
+        guard let server = Self.lastWorking ?? credential.serverURLs.first,
+              var comps = URLComponents(url: server.appendingPathComponent("Audio/\(songID)/stream.mp3"),
+                                        resolvingAgainstBaseURL: false) else { return nil }
+        comps.queryItems = [
+            .init(name: "audioCodec", value: "mp3"), .init(name: "audioBitRate", value: "192000"),
+            .init(name: "api_key", value: credential.accessToken),
+        ]
+        return comps.url
+    }
+}
