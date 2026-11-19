@@ -222,3 +222,69 @@ public struct ListenBrainzPlay: Sendable, Equatable {
         return true
     }
 }
+
+/// A year of listening as ListenBrainz counts it.
+public struct ListenBrainzYear: Sendable, Equatable {
+    public struct Entry: Sendable, Equatable, Hashable {
+        public var name: String
+        public var artist: String?
+        public var listens: Int
+    }
+    public struct Month: Sendable, Equatable {
+        public var start: Date
+        public var listens: Int
+    }
+    public var songs: [Entry] = []
+    public var artists: [Entry] = []
+    public var albums: [Entry] = []
+    public var months: [Month] = []
+
+    public var totalListens: Int { months.reduce(0) { $0 + $1.listens } }
+    public var busiestMonth: Month? { months.max { $0.listens < $1.listens } }
+}
+
+extension ListenBrainzClient {
+    /// This year's top songs, artists and albums and listens per month. ListenBrainz works
+    /// stats out once a day; a part it hasn't worked out yet comes back empty.
+    public func thisYear(userName: String) async throws -> ListenBrainzYear {
+        func stats(_ kind: String, count: Int = 25) async throws -> Data? {
+            var comps = URLComponents(url: baseURL.appendingPathComponent("1/stats/user/\(userName)/\(kind)"),
+                                      resolvingAgainstBaseURL: false)
+            comps?.queryItems = [.init(name: "range", value: "this_year"), .init(name: "count", value: String(count))]
+            guard let url = comps?.url else { throw URLError(.badURL) }
+            let data = try await send(URLRequest(url: url))
+            return data.isEmpty ? nil : data
+        }
+        async let songs = stats("recordings")
+        async let artists = stats("artists")
+        async let albums = stats("releases")
+        async let activity = stats("listening-activity")
+        return try Self.year(songs: await songs, artists: await artists, albums: await albums, activity: await activity)
+    }
+
+    static func year(songs: Data?, artists: Data?, albums: Data?, activity: Data?) throws -> ListenBrainzYear {
+        func entries(_ data: Data?, list: String, name: String) throws -> [ListenBrainzYear.Entry] {
+            guard let data, let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let payload = object["payload"] as? [String: Any], let items = payload[list] as? [[String: Any]]
+            else { return [] }
+            return items.compactMap { item in
+                guard let title = item[name] as? String else { return nil }
+                return .init(name: title, artist: list == "artists" ? nil : item["artist_name"] as? String,
+                             listens: item["listen_count"] as? Int ?? 0)
+            }
+        }
+        var year = ListenBrainzYear()
+        year.songs = try entries(songs, list: "recordings", name: "track_name")
+        year.artists = try entries(artists, list: "artists", name: "artist_name")
+        year.albums = try entries(albums, list: "releases", name: "release_name")
+        if let activity, let object = try JSONSerialization.jsonObject(with: activity) as? [String: Any],
+           let payload = object["payload"] as? [String: Any],
+           let items = payload["listening_activity"] as? [[String: Any]] {
+            year.months = items.compactMap { item in
+                guard let from = item["from_ts"] as? Int else { return nil }
+                return .init(start: Date(timeIntervalSince1970: TimeInterval(from)), listens: item["listen_count"] as? Int ?? 0)
+            }
+        }
+        return year
+    }
+}

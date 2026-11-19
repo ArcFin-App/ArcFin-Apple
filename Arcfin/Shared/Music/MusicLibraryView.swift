@@ -45,6 +45,10 @@ struct MusicLibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                 VStack(spacing: 0) {
+                    NavigationLink { MusicRecapView(libraryID: library.id) } label: {
+                        rowLabel("Year in Music", systemImage: "chart.bar.xaxis", isLast: false)
+                    }
+                    .buttonStyle(.plain)
                     row("Favorites", systemImage: "star", route: .favorites(libraryID: library.id))
                     row("Playlists", systemImage: "music.note.list", route: .playlists)
                     row("Artists", systemImage: "music.microphone", route: .artists(libraryID: library.id))
