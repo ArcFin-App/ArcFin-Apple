@@ -48,7 +48,7 @@ struct AddServerSteps: View {
         }
         .animation(DT.Animation.standard, value: stepTag)
         // Apple TV: another profile can be added from Arcfin on an iPhone or iPad too (#481).
-        .hostsAppleTVSetup(onAdded: { dismiss() }, onPasswordServer: { url in
+        .hostsNearbySetup(onAdded: { dismiss() }, onPasswordServer: { url in
             withAnimation(DT.Animation.standard) {
                 step = .auth(serverURL: url, serverName: url.host() ?? url.absoluteString)
             }

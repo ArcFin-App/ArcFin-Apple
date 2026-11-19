@@ -163,15 +163,15 @@ struct AppRootLifecycle: ViewModifier {
 private struct AppRootPrompts: ViewModifier {
     let model: AppRootModel
     @Environment(\.scenePhase) private var scenePhase
-    private var setupGuide: AppleTVSetupGuide { AppServices.appleTVSetup }
+    private var setupGuide: NearbySetupGuide { AppServices.nearbySetup }
 
     /// Prompts that act for the signed-in profile wait for the launch checks and the PIN lock.
     private var canPrompt: Bool { model.splashDone && model.launchChecked && !model.isAppLocked }
 
     /// Looks for an Apple TV to set up only while it could be offered: signed in, in front,
     /// unlocked and not watching something.
-    private var offersAppleTVSetup: Bool {
-        PlatformMetrics.setsUpAppleTV && canPrompt && scenePhase == .active
+    private var offersNearbySetup: Bool {
+        PlatformMetrics.setsUpNearbyDevices && canPrompt && scenePhase == .active
             && model.authManager.state.credential != nil && !PlayerActivity.shared.isPlayerOpen
     }
 
@@ -213,12 +213,12 @@ private struct AppRootPrompts: ViewModifier {
             }
         }
         // A signed-out Apple TV on the network, offered for setup with this profile (#481).
-        .task(id: offersAppleTVSetup) {
-            if offersAppleTVSetup { setupGuide.start(authManager: model.authManager) } else { setupGuide.stop() }
+        .task(id: offersNearbySetup) {
+            if offersNearbySetup { setupGuide.start(authManager: model.authManager) } else { setupGuide.stop() }
         }
         .sheet(isPresented: Binding(get: { setupGuide.phase != .idle && canPrompt },
                                     set: { if !$0 { setupGuide.notNow() } })) {
-            AppleTVSetupCard(guide: setupGuide, authManager: model.authManager)
+            NearbySetupCard(guide: setupGuide, authManager: model.authManager)
                     .environment(model.authManager)
         }
         // A message from the dashboard while nothing is playing; the player shows its own.

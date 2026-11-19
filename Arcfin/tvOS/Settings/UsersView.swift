@@ -246,7 +246,7 @@ private struct TVAddProfileFlowView: View {
             )
             .toolbar(.hidden, for: .navigationBar)
             // Another profile can be added from Arcfin on an iPhone or iPad too (#481).
-            .hostsAppleTVSetup(onAdded: onProfileAdded)
+            .hostsNearbySetup(onAdded: onProfileAdded)
         }
     }
 }

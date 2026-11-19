@@ -73,7 +73,7 @@ struct ServerURLView: View {
             if let onBack { LoginBackButton(title: String(localized: "Back"), action: onBack) }
             LoginSplitHeader(title: "Connect to Your Server",
                              message: Text("Enter the address of your Jellyfin server, or pick one found on your network."))
-            AppleTVSetupHint()
+            NearbySetupHint()
             VStack(alignment: .leading, spacing: 12) { helpLinks }
                 .font(.callout)
                 .foregroundStyle(DT.Color.accent)

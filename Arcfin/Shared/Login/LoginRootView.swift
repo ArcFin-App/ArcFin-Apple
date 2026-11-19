@@ -45,7 +45,7 @@ struct LoginRootView: View {
             }
         }
         .animation(DT.Animation.standard, value: stepTag)
-        .hostsAppleTVSetup(onPasswordServer: { url in
+        .hostsNearbySetup(onPasswordServer: { url in
             withAnimation(DT.Animation.standard) {
                 step = .auth(serverURL: url, serverName: url.host() ?? url.absoluteString)
             }
