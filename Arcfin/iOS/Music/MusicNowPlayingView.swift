@@ -162,32 +162,52 @@ struct MusicNowPlayingView: View {
         .accessibilityLabel("Close")
     }
 
-    /// The whole square cover across the width from the top of the sheet, only its last edge
-    /// fading into the backdrop, like an album page. The visualizer stands on its foot and
-    /// blurs into the page there. Paused, it dims rather than shrinks: smaller, its edges
-    /// would show. On a short screen the square gives way to the controls.
+    /// The whole square cover across the width from the top of the sheet, carrying on below
+    /// as a blurred continuation of itself that fades into the backdrop, so nothing ends in a
+    /// line. The visualizer stands just below the cover's edge and melts into that blur.
+    /// Paused, it dims rather than shrinks: smaller, its edges would show. On a short screen
+    /// it gives way to the controls.
     private func bigArtwork(_ song: MusicSong) -> some View {
-        Color.clear
+        let url = MusicAPI.artworkURL(song, width: 1200)
+        return Color.clear
             .frame(maxWidth: .infinity)
-            .aspectRatio(1, contentMode: .fit)
-            .overlay { MusicHeroImage(url: MusicAPI.artworkURL(song, width: 1200)) }
-            .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.86),
-                                         .init(color: .clear, location: 1)],
-                                 startPoint: .top, endPoint: .bottom))
+            .aspectRatio(1 / 1.22, contentMode: .fit)
             .overlay {
-                // Sharp, with only their feet softening into the page.
-                ZStack {
-                    MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0)
-                        .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.9),
-                                                     .init(color: .clear, location: 1)],
-                                             startPoint: .top, endPoint: .bottom))
-                    MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0)
-                        .blur(radius: 5)
-                        .mask(LinearGradient(stops: [.init(color: .clear, location: 0.88), .init(color: .black, location: 1)],
-                                             startPoint: .top, endPoint: .bottom))
+                GeometryReader { proxy in
+                    let side = proxy.size.width
+                    ZStack(alignment: .top) {
+                        // The cover again, blurred, filling the extra space below.
+                        MusicHeroImage(url: url)
+                            .frame(width: side, height: proxy.size.height)
+                            .blur(radius: 40)
+                            .clipped()
+                        MusicHeroImage(url: url)
+                            .frame(width: side, height: side)
+                            .clipped()
+                            .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.82),
+                                                         .init(color: .clear, location: 1)],
+                                                 startPoint: .top, endPoint: .bottom))
+                        // Standing a little below the cover's edge, their feet softening away.
+                        ZStack {
+                            MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0)
+                                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.82),
+                                                             .init(color: .clear, location: 1)],
+                                                     startPoint: .top, endPoint: .bottom))
+                            MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0)
+                                .blur(radius: 6)
+                                .mask(LinearGradient(stops: [.init(color: .clear, location: 0.78), .init(color: .black, location: 0.9),
+                                                             .init(color: .clear, location: 1)],
+                                                     startPoint: .top, endPoint: .bottom))
+                        }
+                        .frame(width: side, height: side * 1.1)
+                    }
+                    .frame(width: side, height: proxy.size.height, alignment: .top)
                 }
             }
-            .clipped()
+            // The whole of it fades into the backdrop; nothing is cut off at the foot.
+            .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.7),
+                                         .init(color: .clear, location: 1)],
+                                 startPoint: .top, endPoint: .bottom))
             .frame(maxHeight: .infinity, alignment: .top)
             .opacity(music.isPlaying ? 1 : 0.7)
             .animation(.easeInOut(duration: 0.35), value: music.isPlaying)
