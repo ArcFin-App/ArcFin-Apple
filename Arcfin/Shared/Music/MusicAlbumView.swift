@@ -27,9 +27,6 @@ struct MusicAlbumView: View {
         ScrollView {
             VStack(spacing: DT.Spacing.lg) {
                 header
-                MusicPlayShuffleButtons(play: { MusicActions.play(songs) }, shuffle: { MusicActions.shuffle(songs) })
-                    .disabled(songs.isEmpty)
-                    .padding(.horizontal, DT.Spacing.pagePad)
                 trackList
                 footer
                 about
@@ -73,7 +70,7 @@ struct MusicAlbumView: View {
     }
 
     private var header: some View {
-        MusicHero { _ in
+        MusicHero(play: { MusicActions.play(songs) }, shuffle: { MusicActions.shuffle(songs) }, canPlay: !songs.isEmpty) { _ in
             MusicHeroImage(url: MusicAPI.artworkURL(album, width: 1200))
         } info: {
             titles

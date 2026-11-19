@@ -2,47 +2,68 @@
 
 import SwiftUI
 
-/// The top of an album or playlist page, laid out like a title's detail page: the artwork
-/// across the whole width and the top of the screen, under the navigation bar, softening and
-/// fading into the page at the bottom, with the names over that edge.
+/// The top of an album or playlist page: the whole square cover across the width from the
+/// top of the screen, under the navigation bar, with Play and Shuffle at its foot and only its
+/// last edge fading into the page; the names follow below.
 struct MusicHero<Art: View, Info: View>: View {
+    let play: () -> Void
+    let shuffle: () -> Void
+    var canPlay = true
     @ViewBuilder let art: (CGSize) -> Art
     @ViewBuilder let info: () -> Info
 
-    /// Album art is square, so a little taller than a title's backdrop keeps more of it.
-    private let height: CGFloat = 320
-
     var body: some View {
-        VStack(spacing: 0) {
-            // Sized by the page, not the artwork: a fill-scaled image can't push the page wider.
+        VStack(spacing: DT.Spacing.sm) {
+            // Square to the page's width; sized by the page, so the art can't push it wider.
             Color.clear
                 .frame(maxWidth: .infinity)
-                .frame(height: height)
+                .aspectRatio(1, contentMode: .fit)
                 .overlay {
                     GeometryReader { proxy in
-                        ZStack {
-                            art(proxy.size)
-                                .frame(width: proxy.size.width, height: proxy.size.height)
-                                .clipped()
-                            // The image softens as it leaves the frame rather than ending in a band.
-                            Rectangle()
-                                .fill(.ultraThinMaterial)
-                                .mask(LinearGradient(stops: [.init(color: .clear, location: 0.4), .init(color: .black, location: 1)],
-                                                     startPoint: .top, endPoint: .bottom))
-                        }
+                        art(proxy.size)
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                            .clipped()
                     }
                 }
-                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.55),
+                // Darker toward the foot, so the buttons read on a light cover.
+                .overlay {
+                    LinearGradient(colors: [.clear, .black.opacity(0.5)], startPoint: .center, endPoint: .bottom)
+                }
+                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.88),
                                              .init(color: .clear, location: 1)],
                                      startPoint: .top, endPoint: .bottom))
-                .clipped()
                 .accessibilityHidden(true)
+                .overlay(alignment: .bottom) { buttons.padding(.bottom, 22) }
             info()
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DT.Spacing.pagePad)
-                .padding(.top, -56)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var buttons: some View {
+        HStack(spacing: 12) {
+            Button(action: play) {
+                Label("Play", systemImage: "play.fill")
+                    .font(.headline)
+                    .foregroundStyle(.black)
+                    .padding(.horizontal, 28)
+                    .frame(height: 50)
+                    .background(.white, in: Capsule())
+            }
+            .buttonStyle(.plain)
+            Button(action: shuffle) {
+                Image(systemName: "shuffle")
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .frame(width: 50, height: 50)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Shuffle")
+        }
+        .disabled(!canPlay)
+        .opacity(canPlay ? 1 : 0.5)
     }
 }
 

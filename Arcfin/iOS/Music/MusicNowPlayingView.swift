@@ -161,18 +161,30 @@ struct MusicNowPlayingView: View {
         .accessibilityLabel("Close")
     }
 
-    /// The artwork across the whole width from the top of the sheet, fading into the
-    /// backdrop, like a title's hero. Paused, it dims rather than shrinks: smaller, its edges
-    /// would show.
+    /// The whole square cover across the width from the top of the sheet, only its last edge
+    /// fading into the backdrop, like an album page. The visualizer stands on its foot and
+    /// blurs into the page there. Paused, it dims rather than shrinks: smaller, its edges
+    /// would show. On a short screen the square gives way to the controls.
     private func bigArtwork(_ song: MusicSong) -> some View {
         Color.clear
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
+            .aspectRatio(1, contentMode: .fit)
             .overlay { MusicHeroImage(url: MusicAPI.artworkURL(song, width: 1200)) }
-            .overlay { MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0).padding(.bottom, 56) }
-            .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.7),
+            .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.86),
                                          .init(color: .clear, location: 1)],
                                  startPoint: .top, endPoint: .bottom))
+            .overlay {
+                // Sharp above, softening toward the foot so the bars melt into the page.
+                ZStack {
+                    MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0)
+                        .mask(LinearGradient(colors: [.black, .black, .clear], startPoint: .top, endPoint: .bottom))
+                    MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0)
+                        .blur(radius: 10)
+                        .mask(LinearGradient(colors: [.clear, .black], startPoint: .center, endPoint: .bottom))
+                }
+            }
             .clipped()
+            .frame(maxHeight: .infinity, alignment: .top)
             .opacity(music.isPlaying ? 1 : 0.7)
             .animation(.easeInOut(duration: 0.35), value: music.isPlaying)
             .accessibilityHidden(true)

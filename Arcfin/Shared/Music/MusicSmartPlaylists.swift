@@ -38,9 +38,11 @@ struct MusicSmartPlaylistView: View {
 
     var body: some View {
         List {
-            MusicHero { size in
+            MusicHero(play: { MusicActions.play(songs ?? []) }, shuffle: { MusicActions.shuffle(songs ?? []) },
+                      canPlay: songs?.isEmpty == false) { size in
                 // The four covers, square to the width and cropped to the hero.
-                MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: max(size.width, size.height)) {
+                MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: max(size.width, size.height),
+                                      showsTitle: false) {
                     MusicArtwork(url: $0, cornerRadius: 0)
                 }
             } info: {
@@ -52,10 +54,6 @@ struct MusicSmartPlaylistView: View {
             .listRowInsets(EdgeInsets())
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
-            MusicPlayShuffleButtons(play: { MusicActions.play(songs ?? []) }, shuffle: { MusicActions.shuffle(songs ?? []) })
-                .disabled(songs?.isEmpty != false)
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
             if let songs {
                 if songs.isEmpty {
                     ContentUnavailableView("No Songs", systemImage: playlist.systemImage)

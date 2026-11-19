@@ -83,6 +83,8 @@ struct MusicSmartPlaylistArt<Cover: View>: View {
     let playlist: MusicSmartPlaylist
     let libraryID: String
     var side: CGFloat
+    /// The symbol and name over the covers; a page that shows its name below leaves them off.
+    var showsTitle = true
     @ViewBuilder let cover: (URL) -> Cover
     @State private var covers: [URL] = []
 
@@ -97,9 +99,10 @@ struct MusicSmartPlaylistArt<Cover: View>: View {
             } else if let first = covers.first {
                 cover(first).frame(width: side, height: side).clipped()
             }
-            LinearGradient(colors: [.clear, (playlist.colors.last ?? .black).opacity(0.9)],
-                           startPoint: .center, endPoint: .bottom)
-            VStack(alignment: .leading, spacing: side * 0.03) {
+            if showsTitle {
+                LinearGradient(colors: [.clear, (playlist.colors.last ?? .black).opacity(0.9)],
+                               startPoint: .center, endPoint: .bottom)
+                VStack(alignment: .leading, spacing: side * 0.03) {
                 Image(systemName: playlist.systemImage)
                     .font(.system(size: side * 0.14, weight: .semibold))
                 Text(playlist.title)
@@ -107,8 +110,9 @@ struct MusicSmartPlaylistArt<Cover: View>: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.7)
             }
-            .foregroundStyle(.white)
-            .padding(side * 0.08)
+                .foregroundStyle(.white)
+                .padding(side * 0.08)
+            }
         }
         .frame(width: side, height: side)
         .task(id: libraryID) { covers = await playlist.covers(libraryID: libraryID) }
