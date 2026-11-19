@@ -165,13 +165,13 @@ struct MusicNowPlayingView: View {
     /// The whole square cover across the width from the top of the sheet, carrying on below
     /// as a blurred continuation of itself that fades into the backdrop, so nothing ends in a
     /// line. The visualizer stands just below the cover's edge and melts into that blur.
-    /// Paused, it dims rather than shrinks: smaller, its edges would show. On a short screen
-    /// it gives way to the controls.
+    /// Paused, it dims rather than shrinks: smaller, its edges would show. It's always the
+    /// screen's full width; on a short screen the soft part below is what gives way to the
+    /// controls.
     private func bigArtwork(_ song: MusicSong) -> some View {
         let url = MusicAPI.artworkURL(song, width: 1200)
         return Color.clear
-            .frame(maxWidth: .infinity)
-            .aspectRatio(1 / 1.22, contentMode: .fit)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .overlay {
                 GeometryReader { proxy in
                     let side = proxy.size.width
@@ -205,13 +205,13 @@ struct MusicNowPlayingView: View {
                         .frame(width: side, height: side * 1.1)
                     }
                     .frame(width: side, height: proxy.size.height, alignment: .top)
+                    .clipped()
                 }
             }
             // The whole of it fades into the backdrop; nothing is cut off at the foot.
             .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.7),
                                          .init(color: .clear, location: 1)],
                                  startPoint: .top, endPoint: .bottom))
-            .frame(maxHeight: .infinity, alignment: .top)
             .opacity(music.isPlaying ? 1 : 0.7)
             .animation(.easeInOut(duration: 0.35), value: music.isPlaying)
             .accessibilityHidden(true)
