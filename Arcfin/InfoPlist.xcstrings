@@ -147,18 +147,17 @@
     },
     "NSAppleMusicUsageDescription" : {
       "comment" : "Permission prompt",
-      "extractionState" : "extracted_with_value",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arcfin findet und spielt Apple Music-Titel, die nicht auf deinem Server sind, sobald du das in den Einstellungen aktivierst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings."
           }
         },
         "es" : {
@@ -579,18 +578,17 @@
     },
     "NSMicrophoneUsageDescription" : {
       "comment" : "Permission prompt",
-      "extractionState" : "extracted_with_value",
       "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you."
-          }
-        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arcfin hört zu, wenn du im Auto per Sprache suchst oder einen Titel in deiner Nähe erkennen lässt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you."
           }
         },
         "es" : {
