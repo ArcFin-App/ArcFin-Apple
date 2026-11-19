@@ -618,7 +618,7 @@ private struct TVMusicSongPage<Header: View>: View {
                         ContentUnavailableView("No Songs", systemImage: "music.note")
                     }
                     ForEach(Array(songs.enumerated()), id: \.offset) { index, song in
-                        TVMusicSongRow(song: song, number: numbered ? song.trackNumber : nil, showsArtwork: !numbered,
+                        TVMusicSongRow(song: song, number: numbered ? (song.trackNumber ?? index + 1) : nil, showsArtwork: !numbered,
                                        onRemove: onRemove.map { remove in { remove(song) } }) {
                             TVMusicPresenter.shared.play(songs, from: index)
                         }

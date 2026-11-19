@@ -124,8 +124,10 @@ struct MusicAlbumView: View {
                             .padding(.top, DT.Spacing.md)
                             .padding(.bottom, DT.Spacing.xxs)
                     }
-                    ForEach(disc.songs) { song in
-                        MusicAlbumSongRow(song: song, albumArtist: album.albumArtist) {
+                    ForEach(Array(disc.songs.enumerated()), id: \.element.id) { position, song in
+                        // A file without a track number in its tags is numbered by its place.
+                        MusicAlbumSongRow(song: song, number: song.trackNumber ?? position + 1,
+                                          albumArtist: album.albumArtist) {
                             MusicActions.play(songs, from: songs.firstIndex(of: song) ?? 0)
                         }
                     }
@@ -210,6 +212,7 @@ struct MusicAlbumView: View {
 /// One song on an album: its number (or bars while it plays), name, any guest artist, length.
 private struct MusicAlbumSongRow: View {
     let song: MusicSong
+    let number: Int
     let albumArtist: String?
     let play: () -> Void
     private var player: MusicQueuePlayer { AppServices.music.player }
@@ -221,7 +224,7 @@ private struct MusicAlbumSongRow: View {
                     if player.current?.id == song.id {
                         MusicPlayingIndicator(isPlaying: player.isPlaying)
                     } else {
-                        Text(verbatim: song.trackNumber.map(String.init) ?? "")
+                        Text(verbatim: String(number))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                 }
