@@ -137,14 +137,26 @@ struct MusicAlbumView: View {
     }
 
     @ViewBuilder
+    /// Under the songs, as Apple Music has it: when it came out, how many songs and how long,
+    /// and its label.
     private var footer: some View {
         if !songs.isEmpty {
             let minutes = Int((songs.compactMap(\.duration).reduce(0, +) / 60).rounded())
-            Text("\(songs.count) songs, \(minutes) minutes")
-                .font(.footnote)
-                .foregroundStyle(DT.Color.textSecondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, DT.Spacing.pagePad)
+            VStack(alignment: .leading, spacing: 2) {
+                if let released = album.releaseDate {
+                    Text(released.formatted(date: .long, time: .omitted))
+                } else if let year = album.productionYear {
+                    Text(verbatim: String(year))
+                }
+                Text("\(songs.count) songs, \(minutes) minutes")
+                if let label = album.label {
+                    Text(verbatim: "℗ \(label)")
+                }
+            }
+            .font(.footnote)
+            .foregroundStyle(DT.Color.textSecondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DT.Spacing.pagePad)
         }
     }
 

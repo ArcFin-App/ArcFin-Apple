@@ -30,6 +30,9 @@ public struct MusicAlbum: Sendable, Identifiable, Equatable, Hashable, Codable {
     /// From the album's own page only; lists leave them out.
     public var overview: String?
     public var credits: [MusicCredit]?
+    /// When it came out, and its label, from the album's own page.
+    public var releaseDate: Date?
+    public var label: String?
 
     public init(id: String, name: String, albumArtist: String? = nil, albumArtists: [MusicArtistRef] = [],
                 productionYear: Int? = nil, primaryImageTag: String? = nil, trackCount: Int? = nil,
@@ -290,14 +293,23 @@ extension JellyfinMediaClient {
 
     public func getMusicAlbum(credential: ServerCredential, authHeader: String, albumId: String) async throws -> MusicAlbum {
         let item: MusicItemResponse = try await getMusic("Users/\(credential.userID)/Items/\(albumId)",
-                                                         query: [.init(name: "Fields", value: Self.musicFields + ",Overview,People")],
+                                                         query: [.init(name: "Fields", value: Self.musicFields + ",Overview,People,Studios")],
                                                          credential: credential, authHeader: authHeader)
         var album = item.asAlbum
         album.overview = item.overview
+        album.releaseDate = item.premiereDate.flatMap(Self.date)
+        album.label = item.studios?.first?.name
         album.credits = item.people?.compactMap { person in
             person.name.map { MusicCredit(name: $0, role: person.role?.isEmpty == false ? person.role : person.type) }
         }
         return album
+    }
+
+    /// Jellyfin's dates, with or without fractions of a second.
+    static func date(_ text: String) -> Date? {
+        let withFraction = ISO8601DateFormatter()
+        withFraction.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return withFraction.date(from: text) ?? ISO8601DateFormatter().date(from: text)
     }
 
     /// Albums by others that the artist is on.
@@ -642,6 +654,8 @@ struct MusicItemResponse: Decodable {
     let playlistItemId: String?
     let normalizationGain: Double?
     let people: [Person]?
+    let premiereDate: String?
+    let studios: [NameId]?
 
     struct Person: Decodable {
         let name: String?
@@ -659,7 +673,7 @@ struct MusicItemResponse: Decodable {
         case childCount = "ChildCount", genres = "Genres", userData = "UserData", hasLyrics = "HasLyrics"
         case container = "Container", type = "Type", playlistItemId = "PlaylistItemId"
         case normalizationGain = "NormalizationGain"
-        case people = "People"
+        case people = "People", premiereDate = "PremiereDate", studios = "Studios"
     }
 
     private static func refs(_ items: [NameId]?) -> [MusicArtistRef] {
