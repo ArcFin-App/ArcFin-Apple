@@ -3,6 +3,7 @@
 import AVFoundation
 import Foundation
 import JellyfinAPI
+import Network
 import Observation
 import Telemetry
 import os
@@ -108,6 +109,16 @@ public final class MusicQueuePlayer {
     @ObservationIgnored private var started: MusicQueue.Entry?
     /// Songs that failed in a row; a whole queue of them stops instead of looping.
     @ObservationIgnored private var failures = 0
+    /// The streamed song the connection dropped under, where it got to and whether it was
+    /// playing: it carries on from there once the connection is back.
+    @ObservationIgnored private var heldForNetwork: (entry: MusicQueue.Entry.ID, at: Double, plays: Bool)?
+    /// A held song being tried again, until it's playing past where it stopped.
+    @ObservationIgnored private var retrying: (entry: MusicQueue.Entry.ID, at: Double, plays: Bool)?
+    /// The next song couldn't be lined up for want of a connection.
+    @ObservationIgnored private var upcomingNeedsNetwork = false
+    @ObservationIgnored private var networkRetry: Task<Void, Never>?
+    @ObservationIgnored private let pathMonitor = NWPathMonitor()
+    @ObservationIgnored private var stallObserver: NSObjectProtocol?
 
     public init(streamURL: @escaping (MusicSong, Double, Source) -> URL?) {
         self.streamURL = streamURL
@@ -118,6 +129,16 @@ public final class MusicQueuePlayer {
             let ended = (note.object as? AVPlayerItem).map(ObjectIdentifier.init)
             MainActor.assumeIsolated { self?.itemEnded(ended) }
         }
+        stallObserver = NotificationCenter.default.addObserver(forName: AVPlayerItem.playbackStalledNotification,
+                                                               object: nil, queue: .main) { [weak self] note in
+            let stalled = (note.object as? AVPlayerItem).map(ObjectIdentifier.init)
+            MainActor.assumeIsolated { self?.itemStalled(stalled) }
+        }
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            Task { @MainActor [weak self] in self?.connectionBack() }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "arcfin.music.path"))
     }
 
     private static func makeDeck() -> AVQueuePlayer {
@@ -180,6 +201,10 @@ public final class MusicQueuePlayer {
 
     public func resume() {
         guard let entry = queue.current else { return }
+        if heldForNetwork != nil {
+            heldForNetwork?.plays = true
+            return retryHeld()
+        }
         if let start = pendingStart {
             reload()
             if start > 0 { seek(to: start) }
@@ -191,6 +216,8 @@ public final class MusicQueuePlayer {
 
     public func pause() {
         finishCrossfade()
+        heldForNetwork?.plays = false
+        retrying?.plays = false
         player.pause()
     }
 
@@ -531,9 +558,21 @@ public final class MusicQueuePlayer {
 
     private func itemFailed(_ item: ObjectIdentifier, path: String, saved: Bool) {
         guard let failed = entryIDs[item] else { return }
-        let error = player.items().first { ObjectIdentifier($0) == item }?.error as NSError?
+        let failedItem = player.items().first { ObjectIdentifier($0) == item }
+        let error = failedItem?.error as NSError?
         let reason = error.map { "\($0.domain) \($0.code): \($0.localizedDescription)" } ?? "unknown"
         log.error("Song failed (\(path, privacy: .public)): \(reason, privacy: .public)")
+        // The connection, not the song: it waits for the connection instead of being skipped.
+        if !saved, Self.isNetworkError(error), let entry = queue.entries.first(where: { $0.id == failed }) {
+            if failed == queue.current?.id {
+                holdForNetwork(entry)
+            } else if let failedItem {
+                forget(failedItem)
+                player.remove(failedItem)
+                upcomingNeedsNetwork = true
+            }
+            return
+        }
         // A saved file that won't open is tried from the server, and a file played as it is
         // that won't open once more, converted.
         if let entry = queue.entries.first(where: { $0.id == failed }), let retry = retry(entry.track.id, path: path, saved: saved) {
@@ -568,6 +607,91 @@ public final class MusicQueuePlayer {
         }
     }
 
+    // MARK: A dropped connection
+
+    /// The playing song lost its stream: its saved copy carries on from the same point if it
+    /// has one by now, otherwise it waits there for the connection.
+    private func holdForNetwork(_ entry: MusicQueue.Entry) {
+        let held = [heldForNetwork, retrying].compactMap { $0 }.first { $0.entry == entry.id }
+        retrying = nil
+        let at = max(held?.at ?? 0, position)
+        let plays = held?.plays ?? (isPlaying || player.rate != 0)
+        if let url = streamURL(entry.track, 0, .best), url.isFileURL {
+            log.notice("Connection lost; \(entry.track.id, privacy: .public) carries on from its saved file at \(at, privacy: .public)s")
+            heldForNetwork = nil
+            return restart(at: at, plays: plays)
+        }
+        log.notice("Connection lost; \(entry.track.id, privacy: .public) waits at \(at, privacy: .public)s")
+        heldForNetwork = (entry.id, at, plays)
+        position = at
+        // A connection that's up but can't reach the server yet doesn't announce itself.
+        networkRetry?.cancel()
+        networkRetry = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(10))
+            guard !Task.isCancelled else { return }
+            self?.retryHeld()
+        }
+    }
+
+    private func connectionBack() {
+        retryHeld()
+        if upcomingNeedsNetwork {
+            upcomingNeedsNetwork = false
+            refreshUpcoming()
+        }
+    }
+
+    private func retryHeld() {
+        networkRetry?.cancel()
+        networkRetry = nil
+        guard let held = heldForNetwork else { return }
+        // Moved on to something else meanwhile.
+        guard queue.current?.id == held.entry else {
+            heldForNetwork = nil
+            return
+        }
+        log.notice("Trying the stream again at \(held.at, privacy: .public)s")
+        heldForNetwork = nil
+        retrying = held
+        restart(at: held.at, plays: held.plays)
+    }
+
+    private func restart(at seconds: Double, plays: Bool) {
+        reload()
+        if seconds > 0 { seek(to: seconds) }
+        if plays { resume() }
+    }
+
+    /// A stream that stops for want of data while its song has been saved since: the file
+    /// takes over.
+    private func itemStalled(_ item: ObjectIdentifier?) {
+        guard let item, let current = player.currentItem, ObjectIdentifier(current) == item,
+              entryIDs[item] == queue.current?.id, (current.asset as? AVURLAsset)?.url.isFileURL == false,
+              let entry = queue.current, !skipsSaved.contains(entry.track.id),
+              let url = streamURL(entry.track, 0, .best), url.isFileURL else { return }
+        log.notice("Stream stalled; \(entry.track.id, privacy: .public) carries on from its saved file")
+        restart(at: position, plays: true)
+    }
+
+    private static let networkCodes: Set<Int> = [
+        NSURLErrorTimedOut, NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost, NSURLErrorNetworkConnectionLost,
+        NSURLErrorDNSLookupFailed, NSURLErrorNotConnectedToInternet, NSURLErrorInternationalRoamingOff,
+        NSURLErrorCallIsActive, NSURLErrorDataNotAllowed, NSURLErrorCannotLoadFromNetwork,
+    ]
+
+    /// Whether the connection is behind it, anywhere down the chain of underlying errors:
+    /// AVFoundation wraps the URL error, and CoreMedia sometimes passes its code on as a status.
+    private static func isNetworkError(_ error: NSError?) -> Bool {
+        var next = error
+        while let error = next {
+            if error.domain == NSURLErrorDomain || error.domain == NSOSStatusErrorDomain, networkCodes.contains(error.code) {
+                return true
+            }
+            next = error.userInfo[NSUnderlyingErrorKey] as? NSError
+        }
+        return false
+    }
+
     private func tick(_ time: CMTime) {
         guard let item = player.currentItem, entryIDs[ObjectIdentifier(item)] == queue.current?.id else { return }
         // A conversion started part-way through counts from where it began.
@@ -576,6 +700,7 @@ public final class MusicQueuePlayer {
         guard !isSeeking else { return }
         if time.isNumeric { position = (start ?? 0) + time.seconds }
         if position > 0 { failures = 0 }
+        if let held = retrying, isPlaying, position > held.at + 1 { retrying = nil }
         // The server's length wins: AVFoundation only estimates an Ogg file's (a 60-second
         // Opus file read as 304), and a conversion's is only what it has made so far.
         if queue.current?.track.duration == nil, item.duration.isNumeric, item.duration.seconds > 0 {
