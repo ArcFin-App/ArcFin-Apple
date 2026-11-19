@@ -55,22 +55,23 @@ struct MusicLibraryView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                 VStack(spacing: 0) {
-                    NavigationLink { MusicRecapView(libraryID: library.id) } label: {
-                        rowLabel("Year in Music", systemImage: "chart.bar.xaxis", isLast: false)
-                    }
-                    .buttonStyle(.plain)
-                    row("Favorites", systemImage: "star", route: .favorites(libraryID: library.id))
+                    // Apple Music's order: what's in the library first, then the ways into it.
                     row("Playlists", systemImage: "music.note.list", route: .playlists)
                     row("Artists", systemImage: "music.microphone", route: .artists(libraryID: library.id))
                     row("Albums", systemImage: "square.stack", route: .albums(libraryID: library.id, title: String(localized: "Albums")))
                     row("Songs", systemImage: "music.note", route: .songs(libraryID: library.id))
-                    row("Genres", systemImage: "guitars", route: .genres(libraryID: library.id), isLast: MusicDownloads.shared.isEmpty)
+                    row("Genres", systemImage: "guitars", route: .genres(libraryID: library.id))
+                    row("Favorites", systemImage: "star", route: .favorites(libraryID: library.id))
                     if !MusicDownloads.shared.isEmpty {
                         NavigationLink { MusicDownloadsView() } label: {
-                            rowLabel("Downloaded", systemImage: "arrow.down.circle", isLast: true)
+                            rowLabel("Downloaded", systemImage: "arrow.down.circle", isLast: false)
                         }
                         .buttonStyle(.plain)
                     }
+                    NavigationLink { MusicRecapView(libraryID: library.id) } label: {
+                        rowLabel("Year in Music", systemImage: "chart.bar.xaxis", isLast: true)
+                    }
+                    .buttonStyle(.plain)
                 }
                 MusicSmartPlaylistShelf(libraryID: library.id)
                 MusicSongShelf(title: "Recently Played", list: recentlyPlayed)
