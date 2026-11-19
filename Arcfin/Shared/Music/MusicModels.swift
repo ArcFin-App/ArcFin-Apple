@@ -87,6 +87,12 @@ final class MusicPagedList<Item: Identifiable & Sendable> {
     }
 
     /// Call from each row's onAppear.
+    /// The next page, when there's more: for jumping to something not loaded yet.
+    func loadMore() async {
+        guard hasLoaded, !isLoading, items.count < total else { return }
+        await loadPage()
+    }
+
     func rowAppeared(_ item: Item) async {
         guard !isLoading, items.count < total,
               let index = items.lastIndex(where: { $0.id == item.id }), index >= items.count - 20 else { return }

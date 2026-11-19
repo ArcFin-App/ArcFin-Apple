@@ -106,7 +106,7 @@ struct MusicSongRow: View {
                         }
                     }
                     .lineLimit(1)
-                    .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
                     Spacer(minLength: DT.Spacing.xs)
                     MusicDownloadedMark(songID: song.id)
                     if player.current?.id == song.id {
@@ -159,52 +159,91 @@ struct MusicArtistsView: View {
         })
     }
 
-    /// The artists under the letter they start with; anything else under #.
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    private var columns: [GridItem] {
+        sizeClass == .regular
+            ? [GridItem(.adaptive(minimum: 130), spacing: DT.Spacing.md)]
+            : Array(repeating: GridItem(.flexible(), spacing: DT.Spacing.md), count: 3)
+    }
+
+    /// The artists under the letter they start with, # first as in the other libraries.
     private var sections: [(letter: String, artists: [MusicArtist])] {
-        let grouped = Dictionary(grouping: list.items) { artist -> String in
-            let first = artist.name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
-                .trimmingCharacters(in: .whitespaces).prefix(1).uppercased()
-            return first.first?.isLetter == true ? first : "#"
-        }
-        return grouped.keys.sorted { $0 == "#" ? false : $1 == "#" ? true : $0 < $1 }
-            .map { ($0, grouped[$0] ?? []) }
+        let grouped = Dictionary(grouping: list.items) { Self.letter(of: $0.name) }
+        return LibraryLetterIndex.letters.compactMap { letter in grouped[letter].map { (letter, $0) } }
+    }
+
+    private static func letter(of name: String) -> String {
+        let first = name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+            .trimmingCharacters(in: .whitespaces).prefix(1).uppercased()
+        return first.first.map { ("A"..."Z").contains(String($0)) } == true ? first : "#"
     }
 
     var body: some View {
-        List {
-            MusicListState(list: list, empty: "No Artists")
-                .listRowBackground(Color.clear)
-            ForEach(sections, id: \.letter) { section in
-                Section {
-                    ForEach(section.artists) { artist in
-                        NavigationLink { MusicDestination(route: MusicRoute.artist(artist, libraryID: libraryID)) } label: {
-                            HStack(spacing: DT.Spacing.sm) {
-                                MusicArtwork(url: MusicAPI.artworkURL(artist, width: 160), isCircle: true)
-                                    .frame(width: 44, height: 44)
-                                Text(verbatim: artist.name)
-                                    .foregroundStyle(DT.Color.textPrimary)
-                                    .lineLimit(1)
-                                    .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+        ScrollViewReader { proxy in
+            ScrollView {
+                MusicListState(list: list, empty: "No Artists")
+                LazyVStack(alignment: .leading, spacing: DT.Spacing.lg, pinnedViews: [.sectionHeaders]) {
+                    ForEach(sections, id: \.letter) { section in
+                        Section {
+                            LazyVGrid(columns: columns, alignment: .center, spacing: DT.Spacing.lg) {
+                                ForEach(section.artists) { artist in
+                                    NavigationLink { MusicDestination(route: MusicRoute.artist(artist, libraryID: libraryID)) } label: {
+                                        VStack(spacing: DT.Spacing.xs) {
+                                            MusicArtwork(url: MusicAPI.artworkURL(artist, width: 300), isCircle: true)
+                                                .shadow(color: .black.opacity(0.25), radius: 8, y: 4)
+                                            Text(verbatim: artist.name)
+                                                .font(.footnote.weight(.medium))
+                                                .foregroundStyle(DT.Color.textPrimary)
+                                                .multilineTextAlignment(.center)
+                                                .lineLimit(2)
+                                        }
+                                    }
+                                    .buttonStyle(.plain)
+                                    .task { await list.rowAppeared(artist) }
+                                }
                             }
-                            .padding(.vertical, 2)
+                        } header: {
+                            Text(verbatim: section.letter)
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(DT.Color.accent)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, DT.Spacing.xxs)
+                                .background(DT.Color.backgroundPrimary.opacity(0.92))
+                                .accessibilityAddTraits(.isHeader)
                         }
-                        .listRowBackground(Color.clear)
-                        .task { await list.rowAppeared(artist) }
+                        .id(section.letter)
                     }
-                } header: {
-                    Text(verbatim: section.letter)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(DT.Color.textSecondary)
                 }
-                .sectionIndexLabel(section.letter)
+                .padding(.leading, DT.Spacing.pagePad)
+                // Room for the A–Z bar.
+                .padding(.trailing, DT.Spacing.pagePad + 14)
+                .padding(.bottom, DT.Spacing.xl)
+            }
+            .overlay {
+                if list.hasLoaded, !list.items.isEmpty {
+                    LetterIndexBar { letter in Task { await jump(to: letter, proxy) } }
+                }
             }
         }
-        .listStyle(.plain)
-        .sectionIndexShown()
-        .scrollContentBackground(.hidden)
         .screenBackground()
         .navigationTitle("Artists")
         .task { await list.loadIfNeeded() }
+    }
+
+    /// To the letter, or the next one that has artists, loading more until it's there.
+    private func jump(to letter: String, _ proxy: ScrollViewProxy) async {
+        let letters = LibraryLetterIndex.letters
+        guard let start = letters.firstIndex(of: letter) else { return }
+        let wanted = Set(letters[start...])
+        while !list.items.contains(where: { wanted.contains(Self.letter(of: $0.name)) }), list.items.count < list.total {
+            let before = list.items.count
+            await list.loadMore()
+            if list.items.count == before { break }
+        }
+        let present = Set(sections.map(\.letter))
+        guard let target = letters[start...].first(where: present.contains) ?? sections.last?.letter else { return }
+        withAnimation(DT.Animation.standard) { proxy.scrollTo(target, anchor: .top) }
     }
 }
 
@@ -236,17 +275,7 @@ struct MusicGenresView: View {
             LazyVGrid(columns: MusicGrid.columns(sizeClass), spacing: DT.Spacing.md) {
                 ForEach(list.items) { genre in
                     NavigationLink { MusicDestination(route: MusicRoute.albums(libraryID: libraryID, title: genre.name, genreID: genre.id)) } label: {
-                        ZStack(alignment: .bottomLeading) {
-                            LinearGradient(colors: [tint(genre), tint(genre).mix(with: .black, by: 0.45)],
-                                           startPoint: .topLeading, endPoint: .bottomTrailing)
-                            Text(verbatim: genre.name)
-                                .font(.headline)
-                                .foregroundStyle(.white)
-                                .lineLimit(2)
-                                .padding(DT.Spacing.sm)
-                        }
-                        .aspectRatio(1.6, contentMode: .fit)
-                        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md, style: .continuous))
+                        MusicGenreTile(genre: genre, libraryID: libraryID, tint: tint(genre))
                     }
                     .buttonStyle(.plain)
                 }
@@ -468,7 +497,7 @@ struct MusicPlaylistsView: View {
                             }
                         }
                         .lineLimit(1)
-                        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+                        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
                     }
                     .padding(.vertical, 2)
                 }
@@ -538,5 +567,48 @@ struct MusicPlaylistView: View {
             songs = await MusicActions.playlistSongs(playlist)
             hasLoaded = true
         }
+    }
+}
+
+/// A genre as Apple Music shows one: its colour, its name, and a cover from it tilted into the
+/// corner.
+private struct MusicGenreTile: View {
+    let genre: MusicGenre
+    let libraryID: String
+    let tint: Color
+    @State private var cover: URL?
+
+    var body: some View {
+        Color.clear
+            .aspectRatio(1.6, contentMode: .fit)
+            .background(LinearGradient(colors: [tint, tint.mix(with: .black, by: 0.45)],
+                                       startPoint: .topLeading, endPoint: .bottomTrailing))
+            .overlay(alignment: .bottomTrailing) {
+                GeometryReader { proxy in
+                    let side = proxy.size.height * 0.78
+                    MusicArtwork(url: cover, cornerRadius: DT.Radius.xs)
+                        .frame(width: side, height: side)
+                        .rotationEffect(.degrees(22))
+                        .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
+                        .position(x: proxy.size.width - side * 0.32, y: proxy.size.height - side * 0.3)
+                        .opacity(cover == nil ? 0 : 1)
+                }
+            }
+            .overlay(alignment: .topLeading) {
+                Text(verbatim: genre.name)
+                    .font(.headline)
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                    .padding(DT.Spacing.sm)
+            }
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md, style: .continuous))
+            .task(id: genre.id) {
+                let id = genre.id, libraryID = libraryID
+                let albums = try? await MusicAPI.call {
+                    try await $0.getMusicAlbums(credential: $1, authHeader: $2, libraryId: libraryID, sort: .random,
+                                                filter: MusicFilter(genreId: id), limit: 1)
+                }
+                cover = albums?.albums.first.flatMap { MusicAPI.artworkURL($0, width: 300) }
+            }
     }
 }
