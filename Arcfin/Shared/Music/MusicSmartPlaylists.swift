@@ -36,16 +36,11 @@ struct MusicSmartPlaylistView: View {
 
     @State private var backdrop: URL?
 
-    /// One of its songs is playing now, not paused.
-    private var isPlaying: Bool {
-        guard AppServices.music.isPlaying, let current = AppServices.music.player.current else { return false }
-        return songs?.contains { $0.id == current.id } ?? false
-    }
-
     var body: some View {
         List {
-            MusicHero(backdrop: backdrop, isPlaying: isPlaying) {
-                MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: 260) {
+            MusicHero { size in
+                // The four covers, square to the width and cropped to the hero.
+                MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: max(size.width, size.height)) {
                     MusicArtwork(url: $0, cornerRadius: 0)
                 }
             } info: {

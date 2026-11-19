@@ -72,14 +72,9 @@ struct MusicAlbumView: View {
         .task { await load() }
     }
 
-    /// Playing now, not paused: the cover is full size then.
-    private var isPlaying: Bool {
-        AppServices.music.isPlaying && AppServices.music.player.current?.albumId == album.id
-    }
-
     private var header: some View {
-        MusicHero(backdrop: MusicAPI.artworkURL(album, width: 600), isPlaying: isPlaying) {
-            MusicArtwork(url: MusicAPI.artworkURL(album, width: 800), cornerRadius: DT.Radius.md)
+        MusicHero { _ in
+            MusicHeroImage(url: MusicAPI.artworkURL(album, width: 1200))
         } info: {
             titles
         }

@@ -119,7 +119,8 @@ struct MusicNowPlayingView: View {
         Group {
             if let song = player.current {
                 VStack(spacing: DT.Spacing.lg) {
-                    grabber
+                    // Over the artwork, which runs up to the top; above the other panels.
+                    if panel != .artwork { grabber }
                     switch panel {
                     case .artwork: bigArtwork(song)
                     case .lyrics: MusicLyricsPanel(lyrics: lyrics)
@@ -160,13 +161,24 @@ struct MusicNowPlayingView: View {
         .accessibilityLabel("Close")
     }
 
+    /// The artwork across the whole width from the top of the sheet, fading into the
+    /// backdrop, like a title's hero. Paused, it dims rather than shrinks: smaller, its edges
+    /// would show.
     private func bigArtwork(_ song: MusicSong) -> some View {
-        MusicArtwork(url: MusicAPI.artworkURL(song, width: 1000), cornerRadius: DT.Radius.md)
-            .overlay { MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: DT.Radius.md) }
-            .shadow(color: .black.opacity(0.4), radius: 24, y: 12)
-            .scaleEffect(music.isPlaying ? 1 : 0.82)
-            .animation(.spring(response: 0.45, dampingFraction: 0.7), value: music.isPlaying)
-            .frame(maxHeight: .infinity)
+        Color.clear
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .overlay { MusicHeroImage(url: MusicAPI.artworkURL(song, width: 1200)) }
+            .overlay { MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0).padding(.bottom, 56) }
+            .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.7),
+                                         .init(color: .clear, location: 1)],
+                                 startPoint: .top, endPoint: .bottom))
+            .clipped()
+            .opacity(music.isPlaying ? 1 : 0.7)
+            .animation(.easeInOut(duration: 0.35), value: music.isPlaying)
+            .accessibilityHidden(true)
+            .overlay(alignment: .top) { grabber }
+            .padding(.horizontal, -DT.Spacing.lg)
+            .ignoresSafeArea(edges: .top)
     }
 
     private func titleRow(_ song: MusicSong) -> some View {

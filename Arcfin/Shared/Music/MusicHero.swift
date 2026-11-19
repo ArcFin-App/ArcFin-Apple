@@ -2,59 +2,47 @@
 
 import SwiftUI
 
-/// The top of an album or playlist page, like a title's detail page: its artwork blown up and
-/// blurred behind, fading into the page, with the cover in front. The cover is full size while
-/// this album or playlist plays and settles back smaller when it's paused, as in Now Playing.
-struct MusicHero<Cover: View, Info: View>: View {
-    let backdrop: URL?
-    let isPlaying: Bool
-    @ViewBuilder let cover: () -> Cover
+/// The top of an album or playlist page, laid out like a title's detail page: the artwork
+/// across the whole width and the top of the screen, under the navigation bar, softening and
+/// fading into the page at the bottom, with the names over that edge.
+struct MusicHero<Art: View, Info: View>: View {
+    @ViewBuilder let art: (CGSize) -> Art
     @ViewBuilder let info: () -> Info
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private let backdropHeight: CGFloat = 440
-    private let coverSide: CGFloat = 260
+    /// Album art is square, so a little taller than a title's backdrop keeps more of it.
+    private let height: CGFloat = 320
 
     var body: some View {
-        VStack(spacing: DT.Spacing.md) {
-            cover()
-                .frame(width: coverSide, height: coverSide)
-                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md, style: .continuous))
-                .shadow(color: .black.opacity(0.35), radius: 24, y: 12)
-                .scaleEffect(isPlaying || reduceMotion ? 1 : 0.86)
-                .animation(.spring(response: 0.45, dampingFraction: 0.7), value: isPlaying)
-                .padding(.top, 96)
+        VStack(spacing: 0) {
+            // Sized by the page, not the artwork: a fill-scaled image can't push the page wider.
+            Color.clear
+                .frame(maxWidth: .infinity)
+                .frame(height: height)
+                .overlay {
+                    GeometryReader { proxy in
+                        ZStack {
+                            art(proxy.size)
+                                .frame(width: proxy.size.width, height: proxy.size.height)
+                                .clipped()
+                            // The image softens as it leaves the frame rather than ending in a band.
+                            Rectangle()
+                                .fill(.ultraThinMaterial)
+                                .mask(LinearGradient(stops: [.init(color: .clear, location: 0.4), .init(color: .black, location: 1)],
+                                                     startPoint: .top, endPoint: .bottom))
+                        }
+                    }
+                }
+                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.55),
+                                             .init(color: .clear, location: 1)],
+                                     startPoint: .top, endPoint: .bottom))
+                .clipped()
+                .accessibilityHidden(true)
             info()
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DT.Spacing.pagePad)
+                .padding(.top, -56)
         }
         .frame(maxWidth: .infinity)
-        .background(alignment: .top) { backdropView }
-    }
-
-    /// Sized by the page, not the artwork, so the fill-scaled image can't push the page wider.
-    private var backdropView: some View {
-        Color.clear
-            .frame(maxWidth: .infinity)
-            .frame(height: backdropHeight)
-            .overlay {
-                ZStack {
-                    CachedAsyncImage(url: backdrop) { phase in
-                        if case .success(let image) = phase {
-                            image.resizable().scaledToFill().blur(radius: 36).saturation(1.2)
-                        }
-                    }
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                        .mask(LinearGradient(stops: [.init(color: .clear, location: 0.3), .init(color: .black, location: 1)],
-                                             startPoint: .top, endPoint: .bottom))
-                }
-            }
-            .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.45),
-                                         .init(color: .clear, location: 1)],
-                                 startPoint: .top, endPoint: .bottom))
-            .clipped()
-            .accessibilityHidden(true)
     }
 }
 
@@ -84,4 +72,20 @@ struct MusicHeroBackground: ViewModifier {
 
 extension View {
     func musicHeroBackground(_ artwork: URL?) -> some View { modifier(MusicHeroBackground(artwork: artwork)) }
+}
+
+/// Artwork filling the hero, cropped from the middle.
+struct MusicHeroImage: View {
+    let url: URL?
+
+    var body: some View {
+        CachedAsyncImage(url: url) { phase in
+            if case .success(let image) = phase {
+                image.resizable().scaledToFill()
+            } else {
+                LinearGradient(colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            }
+        }
+    }
 }
