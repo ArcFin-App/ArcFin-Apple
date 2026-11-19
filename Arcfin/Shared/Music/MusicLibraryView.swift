@@ -12,6 +12,9 @@ struct MusicLibraryView: View {
     @State private var query = ""
     @State private var search = MusicSearchModel()
     @State private var showsIdentify = false
+    @State private var isEditingRows = false
+    @AppStorage(MusicLibraryRow.orderKey) private var rowOrder = ""
+    @AppStorage(MusicLibraryRow.hiddenKey) private var hiddenRows = ""
     @AppStorage(MusicSettings.identifySongsKey) private var identifiesSongs = false
 
     init(library: JellyfinLibrary) {
@@ -41,6 +44,9 @@ struct MusicLibraryView: View {
         .searchable(text: $query, prompt: "Artists, albums and songs")
         .onChange(of: query) { _, term in search.search(term) }
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Edit") { isEditingRows = true }
+            }
             if identifiesSongs, PlatformMetrics.identifiesSongs {
                 ToolbarItem(placement: .primaryAction) {
                     Button("What's Playing?", systemImage: "shazam.logo") { showsIdentify = true }
@@ -48,29 +54,22 @@ struct MusicLibraryView: View {
             }
         }
         .sheet(isPresented: $showsIdentify) { MusicIdentifyView() }
+        .sheet(isPresented: $isEditingRows) { MusicLibraryRowsEditor(order: $rowOrder, hidden: $hiddenRows) }
     }
 
     private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                 VStack(spacing: 0) {
-                    // Apple Music's order: what's in the library first, then the ways into it.
-                    row("Playlists", systemImage: "music.note.list", route: .playlists)
-                    row("Artists", systemImage: "music.microphone", route: .artists(libraryID: library.id))
-                    row("Albums", systemImage: "square.stack", route: .albums(libraryID: library.id, title: String(localized: "Albums")))
-                    row("Songs", systemImage: "music.note", route: .songs(libraryID: library.id))
-                    row("Genres", systemImage: "guitars", route: .genres(libraryID: library.id))
-                    row("Favorites", systemImage: "star", route: .favorites(libraryID: library.id))
-                    if !MusicDownloads.shared.isEmpty {
-                        NavigationLink { MusicDownloadsView() } label: {
-                            rowLabel("Downloaded", systemImage: "arrow.down.circle", isLast: false)
+                    // In the order picked with Edit; Apple Music's until then.
+                    let rows = MusicLibraryRow.shown(order: rowOrder, hidden: hiddenRows)
+                        .filter { $0 != .downloaded || !MusicDownloads.shared.isEmpty }
+                    ForEach(rows) { row in
+                        NavigationLink { destination(row) } label: {
+                            rowLabel(row.title, systemImage: row.systemImage, isLast: row == rows.last)
                         }
                         .buttonStyle(.plain)
                     }
-                    NavigationLink { MusicRecapView(libraryID: library.id) } label: {
-                        rowLabel("Year in Music", systemImage: "chart.bar.xaxis", isLast: true)
-                    }
-                    .buttonStyle(.plain)
                 }
                 if !recent.items.isEmpty {
                     VStack(alignment: .leading, spacing: DT.Spacing.sm) {
@@ -118,11 +117,18 @@ struct MusicLibraryView: View {
         }
     }
 
-    private func row(_ title: LocalizedStringKey, systemImage: String, route: MusicRoute, isLast: Bool = false) -> some View {
-        NavigationLink { MusicDestination(route: route) } label: {
-            rowLabel(title, systemImage: systemImage, isLast: isLast)
+    @ViewBuilder
+    private func destination(_ row: MusicLibraryRow) -> some View {
+        switch row {
+        case .playlists: MusicDestination(route: .playlists)
+        case .artists: MusicDestination(route: .artists(libraryID: library.id))
+        case .albums: MusicDestination(route: .albums(libraryID: library.id, title: String(localized: "Albums")))
+        case .songs: MusicDestination(route: .songs(libraryID: library.id))
+        case .genres: MusicDestination(route: .genres(libraryID: library.id))
+        case .favorites: MusicDestination(route: .favorites(libraryID: library.id))
+        case .downloaded: MusicDownloadsView()
+        case .yearInMusic: MusicRecapView(libraryID: library.id)
         }
-        .buttonStyle(.plain)
     }
 
     private func rowLabel(_ title: LocalizedStringKey, systemImage: String, isLast: Bool) -> some View {
@@ -288,6 +294,110 @@ struct MusicLibrarySearchResults: View {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ContentUnavailableView.search
+        }
+    }
+}
+
+/// The rows at the top of the music library, in an order and with a set that Edit changes.
+enum MusicLibraryRow: String, CaseIterable, Identifiable {
+    case playlists, artists, albums, songs, genres, favorites, downloaded, yearInMusic
+
+    static let orderKey = "music.libraryRowOrder"
+    static let hiddenKey = "music.libraryRowsHidden"
+
+    var id: String { rawValue }
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .playlists: "Playlists"
+        case .artists: "Artists"
+        case .albums: "Albums"
+        case .songs: "Songs"
+        case .genres: "Genres"
+        case .favorites: "Favorites"
+        case .downloaded: "Downloaded"
+        case .yearInMusic: "Year in Music"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .playlists: "music.note.list"
+        case .artists: "music.microphone"
+        case .albums: "square.stack"
+        case .songs: "music.note"
+        case .genres: "guitars"
+        case .favorites: "star"
+        case .downloaded: "arrow.down.circle"
+        case .yearInMusic: "chart.bar.xaxis"
+        }
+    }
+
+    /// Every row in the saved order; ones it doesn't know yet (new in an update) at the end.
+    static func ordered(_ order: String) -> [MusicLibraryRow] {
+        let saved = order.split(separator: ",").compactMap { MusicLibraryRow(rawValue: String($0)) }
+        return saved + allCases.filter { !saved.contains($0) }
+    }
+
+    static func shown(order: String, hidden: String) -> [MusicLibraryRow] {
+        let hiddenRows = Set(hidden.split(separator: ",").map(String.init))
+        return ordered(order).filter { !hiddenRows.contains($0.rawValue) }
+    }
+}
+
+/// Edit: which rows the library shows, and their order.
+struct MusicLibraryRowsEditor: View {
+    @Binding var order: String
+    @Binding var hidden: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var rows: [MusicLibraryRow] = []
+    @State private var hiddenRows: Set<String> = []
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    ForEach(rows) { row in
+                        Button {
+                            if hiddenRows.contains(row.rawValue) { hiddenRows.remove(row.rawValue) } else { hiddenRows.insert(row.rawValue) }
+                        } label: {
+                            HStack(spacing: DT.Spacing.sm) {
+                                Image(systemName: hiddenRows.contains(row.rawValue) ? "circle" : "checkmark.circle.fill")
+                                    .foregroundStyle(hiddenRows.contains(row.rawValue) ? DT.Color.textSecondary : DT.Color.accent)
+                                    .font(.title3)
+                                Label(row.title, systemImage: row.systemImage)
+                                    .foregroundStyle(DT.Color.textPrimary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(hiddenRows.contains(row.rawValue) ? [] : .isSelected)
+                    }
+                    .onMove { rows.move(fromOffsets: $0, toOffset: $1) }
+                } footer: {
+                    Text("Tick the rows to show, and drag them into the order you like.")
+                }
+            }
+            .alwaysEditing()
+            .navigationTitle("Library")
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Reset") {
+                        rows = MusicLibraryRow.allCases
+                        hiddenRows = []
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        order = rows.map(\.rawValue).joined(separator: ",")
+                        hidden = hiddenRows.sorted().joined(separator: ",")
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            rows = MusicLibraryRow.ordered(order)
+            hiddenRows = Set(hidden.split(separator: ",").map(String.init))
         }
     }
 }

@@ -1665,6 +1665,70 @@
         }
       }
     },
+    "Tick the rows to show, and drag them into the order you like." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hake die Zeilen an, die angezeigt werden sollen, und zieh sie in die gewünschte Reihenfolge."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marca las filas que quieres ver y arrástralas al orden que prefieras."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cochez les lignes à afficher et faites-les glisser dans l’ordre voulu."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleziona le righe da mostrare e trascinale nell’ordine che preferisci."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "表示する行にチェックを入れ、好きな順番にドラッグしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "표시할 행을 선택하고 원하는 순서로 드래그하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vink de rijen aan die je wilt zien en sleep ze in de gewenste volgorde."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marque as linhas que quer mostrar e arraste-as para a ordem que preferir."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отметьте строки, которые нужно показывать, и перетащите их в нужном порядке."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "勾选要显示的行，并将它们拖到你喜欢的顺序。"
+          }
+        }
+      }
+    },
     "What's Playing?" : {
       "localizations" : {
         "de" : {

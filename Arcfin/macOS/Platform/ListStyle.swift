@@ -20,6 +20,9 @@ private struct ArcfinListWidth: ViewModifier {
 }
 
 extension View {
+    /// The Mac drags list rows into order without an editing mode.
+    func alwaysEditing() -> some View { self }
+
     /// The Mac has no index down a list's side.
     func sectionIndexShown() -> some View { self }
 
