@@ -57,20 +57,20 @@ struct MusicDownloadsView: View {
 
     var body: some View {
         Group {
-            if downloads.isEmpty && downloads.queue.isEmpty {
+            if downloads.isEmpty && downloads.queue.isEmpty && downloads.failed.isEmpty {
                 ContentUnavailableView("No Downloaded Music", systemImage: "arrow.down.circle",
                                        description: Text("Download a song, album or playlist from its menu to listen offline."))
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 28) {
                         storageCard
-                        if !downloads.queue.isEmpty { downloadingSection }
+                        if !downloads.queue.isEmpty || !downloads.failed.isEmpty { downloadingSection }
                         if !downloads.isEmpty { albumsSection }
                     }
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.top, 8)
                     .padding(.bottom, 32)
-                    .animation(DT.Animation.standard, value: downloads.queue.map(\.id))
+                    .animation(DT.Animation.standard, value: (downloads.queue + downloads.failed).map(\.id))
                 }
             }
         }
@@ -141,15 +141,22 @@ struct MusicDownloadsView: View {
     private var downloadingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                MusicDownloadsHeader(title: "Downloading", count: downloads.queue.count)
+                MusicDownloadsHeader(title: "Downloading", count: downloads.queue.count + downloads.failed.count)
                 Spacer()
+                if !downloads.failed.isEmpty {
+                    Button("Retry All") { downloads.retryFailed() }
+                        .font(.subheadline.weight(.semibold))
+                        .buttonStyle(.plain)
+                        .foregroundStyle(DT.Color.accent)
+                        .padding(.trailing, 12)
+                }
                 Button("Cancel All", role: .destructive) { downloads.cancelAll() }
                     .font(.subheadline.weight(.semibold))
                     .buttonStyle(.plain)
                     .foregroundStyle(DT.Color.accent)
             }
             VStack(spacing: 0) {
-                ForEach(Array(downloads.queue.enumerated()), id: \.element.id) { index, song in
+                ForEach(Array((downloads.queue + downloads.failed).enumerated()), id: \.element.id) { index, song in
                     if index > 0 {
                         Divider().overlay(DT.Color.textPrimary.opacity(0.06)).padding(.leading, 68)
                     }
@@ -203,13 +210,15 @@ private struct MusicDownloadsHeader: View {
     }
 }
 
-/// A song on its way: how far the one downloading now is, or that it's waiting.
+/// A song on its way: how far it is, that it's waiting, or that it couldn't be saved.
 private struct MusicDownloadingRow: View {
     let song: MusicSong
     private var downloads: MusicDownloads { .shared }
 
     var body: some View {
-        let isCurrent = downloads.current == song.id
+        let progress = downloads.progress[song.id]
+        let isCurrent = progress != nil
+        let hasFailed = downloads.hasFailed(song.id)
         HStack(spacing: 12) {
             MusicArtwork(url: MusicAPI.artworkURL(song, width: 120), cornerRadius: DT.Radius.xs)
                 .frame(width: 44, height: 44)
@@ -218,9 +227,17 @@ private struct MusicDownloadingRow: View {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(isCurrent ? DT.Color.textPrimary : DT.Color.textSecondary)
                     .lineLimit(1)
-                if isCurrent {
-                    ProgressView(value: downloads.progress)
+                if let progress {
+                    ProgressView(value: progress)
                         .tint(DT.Color.accent)
+                } else if hasFailed {
+                    Label("Couldn't download", systemImage: "exclamationmark.circle")
+                        .font(.caption)
+                        .foregroundStyle(DT.Color.palette("F43F5E"))
+                } else if downloads.isWaitingForNetwork {
+                    Text("Waiting for a connection")
+                        .font(.caption)
+                        .foregroundStyle(DT.Color.textSecondary)
                 } else if downloads.isWaitingForWiFi {
                     Text("Waiting for Wi-Fi")
                         .font(.caption)
@@ -231,12 +248,23 @@ private struct MusicDownloadingRow: View {
                         .foregroundStyle(DT.Color.textSecondary)
                 }
             }
-            if isCurrent {
-                Text(downloads.progress, format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
+            if let progress {
+                Text(progress, format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
                     .font(.caption.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(DT.Color.textSecondary)
                     .contentTransition(.numericText())
+            }
+            if hasFailed {
+                Button { downloads.download([song]) } label: {
+                    Image(systemName: "arrow.clockwise.circle.fill")
+                        .font(.title3)
+                        .foregroundStyle(DT.Color.accent)
+                        .frame(minWidth: 44, minHeight: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Retry")
             }
             Button { downloads.cancel([song]) } label: {
                 Image(systemName: "xmark.circle.fill")
