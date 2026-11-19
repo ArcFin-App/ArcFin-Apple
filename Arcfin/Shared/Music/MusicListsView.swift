@@ -227,87 +227,88 @@ struct MusicArtistView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
-                VStack(spacing: DT.Spacing.sm) {
-                    MusicArtwork(url: MusicAPI.artworkURL(artist, width: 600), isCircle: true)
-                        .frame(width: 180, height: 180)
+                // The artist's photo across the top, like an album page, with their name below.
+                MusicHero(play: { play(shuffled: false) }, shuffle: { play(shuffled: true) }) { _ in
+                    MusicHeroImage(url: MusicAPI.artworkURL(artist, width: 1200))
+                } info: {
                     Text(verbatim: artist.name)
-                        .font(.title.weight(.bold))
+                        .font(.largeTitle.weight(.bold))
                         .foregroundStyle(DT.Color.textPrimary)
-                        .multilineTextAlignment(.center)
                 }
-                .frame(maxWidth: .infinity)
-                MusicPlayShuffleButtons(play: { play(shuffled: false) }, shuffle: { play(shuffled: true) })
-                if !topSongs.isEmpty {
-                    VStack(alignment: .leading, spacing: DT.Spacing.xs) {
-                        sectionTitle("Top Songs")
-                        ForEach(Array(topSongs.enumerated()), id: \.element.id) { index, song in
-                            MusicSongRow(song: song) { MusicActions.play(topSongs, from: index) }
-                        }
-                    }
-                }
-                VStack(alignment: .leading, spacing: DT.Spacing.sm) {
-                    sectionTitle("Albums")
-                    MusicListState(list: albums, empty: "No Albums")
-                    albumGrid(albums.items.filter { !$0.isSingle })
-                }
-                let singles = albums.items.filter(\.isSingle)
-                if !singles.isEmpty {
-                    VStack(alignment: .leading, spacing: DT.Spacing.sm) {
-                        sectionTitle("Singles & EPs")
-                        albumGrid(singles)
-                    }
-                }
-                if !appearsOn.isEmpty {
-                    VStack(alignment: .leading, spacing: DT.Spacing.sm) {
-                        sectionTitle("Appears On")
-                        albumShelf(appearsOn)
-                    }
-                }
-                if let overview = artist.overview, !overview.isEmpty {
-                    VStack(alignment: .leading, spacing: DT.Spacing.xs) {
-                        Text("About")
-                            .font(DT.Font.sectionTitle)
-                            .foregroundStyle(DT.Color.textPrimary)
-                        Text(verbatim: overview)
-                            .font(.callout)
-                            .foregroundStyle(DT.Color.textSecondary)
-                            .lineLimit(showsFullBio ? nil : 4)
-                        Button(showsFullBio ? "Less" : "More") { withAnimation { showsFullBio.toggle() } }
-                            .font(.callout.weight(.semibold))
-                            .tint(DT.Color.accent)
-                    }
-                }
-                if !similar.isEmpty {
-                    VStack(alignment: .leading, spacing: DT.Spacing.sm) {
-                        sectionTitle("Similar Artists")
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            LazyHStack(alignment: .top, spacing: DT.Spacing.md) {
-                                ForEach(similar) { other in
-                                    NavigationLink { MusicDestination(route: .artist(other, libraryID: libraryID)) } label: {
-                                        VStack(spacing: 6) {
-                                            MusicArtwork(url: MusicAPI.artworkURL(other, width: 300), isCircle: true)
-                                                .frame(width: 120, height: 120)
-                                            Text(verbatim: other.name)
-                                                .font(.footnote.weight(.medium))
-                                                .foregroundStyle(DT.Color.textPrimary)
-                                                .lineLimit(1)
-                                        }
-                                        .frame(width: 120)
-                                    }
-                                    .buttonStyle(.plain)
-                                }
+                VStack(alignment: .leading, spacing: DT.Spacing.lg) {
+                    if !topSongs.isEmpty {
+                        VStack(alignment: .leading, spacing: DT.Spacing.xs) {
+                            sectionTitle("Top Songs")
+                            ForEach(Array(topSongs.enumerated()), id: \.element.id) { index, song in
+                                MusicSongRow(song: song) { MusicActions.play(topSongs, from: index) }
                             }
                         }
-                        .shelfScrollButtons()
-                        .padding(.horizontal, -DT.Spacing.pagePad)
-                        .contentMargins(.horizontal, DT.Spacing.pagePad, for: .scrollContent)
+                    }
+                    VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                        sectionTitle("Albums")
+                        MusicListState(list: albums, empty: "No Albums")
+                        albumGrid(albums.items.filter { !$0.isSingle })
+                    }
+                    let singles = albums.items.filter(\.isSingle)
+                    if !singles.isEmpty {
+                        VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                            sectionTitle("Singles & EPs")
+                            albumGrid(singles)
+                        }
+                    }
+                    if !appearsOn.isEmpty {
+                        VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                            sectionTitle("Appears On")
+                            albumShelf(appearsOn)
+                        }
+                    }
+                    if let overview = artist.overview, !overview.isEmpty {
+                        VStack(alignment: .leading, spacing: DT.Spacing.xs) {
+                            Text("About")
+                                .font(DT.Font.sectionTitle)
+                                .foregroundStyle(DT.Color.textPrimary)
+                            Text(verbatim: overview)
+                                .font(.callout)
+                                .foregroundStyle(DT.Color.textSecondary)
+                                .lineLimit(showsFullBio ? nil : 4)
+                            Button(showsFullBio ? "Less" : "More") { withAnimation { showsFullBio.toggle() } }
+                                .font(.callout.weight(.semibold))
+                                .tint(DT.Color.accent)
+                        }
+                    }
+                    if !similar.isEmpty {
+                        VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                            sectionTitle("Similar Artists")
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                LazyHStack(alignment: .top, spacing: DT.Spacing.md) {
+                                    ForEach(similar) { other in
+                                        NavigationLink { MusicDestination(route: .artist(other, libraryID: libraryID)) } label: {
+                                            VStack(spacing: 6) {
+                                                MusicArtwork(url: MusicAPI.artworkURL(other, width: 300), isCircle: true)
+                                                    .frame(width: 120, height: 120)
+                                                Text(verbatim: other.name)
+                                                    .font(.footnote.weight(.medium))
+                                                    .foregroundStyle(DT.Color.textPrimary)
+                                                    .lineLimit(1)
+                                            }
+                                            .frame(width: 120)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                            }
+                            .shelfScrollButtons()
+                            .padding(.horizontal, -DT.Spacing.pagePad)
+                            .contentMargins(.horizontal, DT.Spacing.pagePad, for: .scrollContent)
+                        }
                     }
                 }
+                .padding(.horizontal, DT.Spacing.pagePad)
             }
-            .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.bottom, DT.Spacing.xl)
         }
-        .screenBackground()
+        .ignoresSafeArea(edges: .top)
+        .musicHeroBackground(MusicAPI.artworkURL(artist, width: 300))
         .inlineNavigationTitle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
