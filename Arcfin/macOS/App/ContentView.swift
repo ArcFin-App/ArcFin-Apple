@@ -10,6 +10,7 @@ struct ContentView: View {
     @State private var offlinePickedURL: URL?
     @State private var navigateToOfflineLocalPlayer = false
     @State private var bypassSessionCheck = false
+    @State private var showOfflineMusic = false
 
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
 
@@ -59,7 +60,18 @@ struct ContentView: View {
                             .accessibilityLabel("Open local file")
                             .help("Open a video file")
                         }
+                        // Saved songs play without the server too.
+                        if !MusicDownloads.shared.isEmpty {
+                            ToolbarItem(placement: .navigation) {
+                                Button { showOfflineMusic = true } label: {
+                                    Image(systemName: "music.note")
+                                }
+                                .accessibilityLabel("Downloaded Music")
+                                .help("Downloaded Music")
+                            }
+                        }
                     }
+                    .navigationDestination(isPresented: $showOfflineMusic) { MusicDownloadsView() }
                     .fileImporter(isPresented: $showOfflineDocPicker, allowedContentTypes: UTType.playableVideo) { result in
                         guard case .success(let url) = result else { return }
                         offlinePickedURL = url
@@ -68,6 +80,9 @@ struct ContentView: View {
                     .navigationDestination(isPresented: $navigateToOfflineLocalPlayer) {
                         if let url = offlinePickedURL { LocalPlayerView(url: url) }
                     }
+            }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if AppServices.music.isActive { MusicPlayerBar() }
             }
             .transition(.opacity)
         }

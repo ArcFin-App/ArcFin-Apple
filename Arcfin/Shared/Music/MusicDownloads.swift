@@ -58,7 +58,14 @@ final class MusicDownloads {
         }
     }
 
-    private var userID: String? { AppServices.authManager.state.credential?.userID }
+    /// Offline, before the sign-in is confirmed, the last profile's songs are still the ones
+    /// to show.
+    private var userID: String? {
+        let auth = AppServices.authManager
+        if let credential = auth.state.credential { return credential.userID }
+        let active = UserDefaults.standard.string(forKey: "arcfin.activeProfileID")
+        return auth.profiles.first { $0.id.uuidString == active }?.userID
+    }
 
     private var mine: [Saved] { index.songs.values.filter { $0.userID == userID } }
 
