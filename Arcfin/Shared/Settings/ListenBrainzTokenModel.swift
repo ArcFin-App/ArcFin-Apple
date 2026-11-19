@@ -34,6 +34,7 @@ final class ListenBrainzTokenModel {
         MusicScrobbler.setRefused(false, profile: profile)
         isRefused = false
         AppServices.music.scrobbler.flush()
+        NotificationCenter.default.post(name: .listenBrainzTokenChanged, object: nil)
     }
 
     func remove() {

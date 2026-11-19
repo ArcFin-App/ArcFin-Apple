@@ -37,6 +37,7 @@ struct ListenBrainzStatusPill: View {
         }
         .font(.caption2)
         .onAppear(perform: refresh)
+        .onReceive(NotificationCenter.default.publisher(for: .listenBrainzTokenChanged)) { _ in refresh() }
     }
 
     private func refresh() {

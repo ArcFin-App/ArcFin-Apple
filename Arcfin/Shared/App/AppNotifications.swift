@@ -9,6 +9,8 @@ extension Notification.Name {
     static let arcfinShowDownloads = Notification.Name("arcfinShowDownloads")
     /// Browse to the front, for an album or artist opened from Now Playing.
     static let arcfinShowMusic = Notification.Name("arcfinShowMusic")
+    /// A profile's ListenBrainz token was saved or removed.
+    static let listenBrainzTokenChanged = Notification.Name("listenBrainzTokenChanged")
     /// Posted by onOpenURL for arcfin://resume — the Resume Watching control.
     static let arcfinResume = Notification.Name("arcfinResume")
     /// Posted when a notification about a Seerr request or watchlist item is tapped.
