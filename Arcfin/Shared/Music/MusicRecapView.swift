@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import ImageIO
 import AuthCore
 import JellyfinAPI
 
@@ -77,16 +78,36 @@ final class MusicRecapModel {
     func playTopSongs() async {
         isPreparingPlay = true
         defer { isPreparingPlay = false }
-        if source == .playCounts { return MusicActions.play(Array(librarySongs.prefix(25))) }
+        let found = await librarySongs(upTo: 25)
+        if !found.isEmpty { MusicActions.play(found) }
+    }
+
+    /// Covers of the top songs' albums, up to four different ones, for the picture to share.
+    func shareCovers() async -> [CGImage] {
+        var seen = Set<String>()
+        var covers: [CGImage] = []
+        for song in await librarySongs(upTo: 12) where covers.count < 4 && seen.insert(song.albumId ?? song.id).inserted {
+            guard let url = MusicAPI.artworkURL(song, width: 400) else { continue }
+            let data = url.isFileURL ? try? Data(contentsOf: url) : await URLSession.arcfin.imageData(from: url)
+            if let data, let source = CGImageSourceCreateWithData(data as CFData, nil),
+               let image = CGImageSourceCreateImageAtIndex(source, 0, nil) {
+                covers.append(image)
+            }
+        }
+        return covers
+    }
+
+    private func librarySongs(upTo limit: Int) async -> [MusicSong] {
+        if source == .playCounts { return Array(librarySongs.prefix(limit)) }
         var found: [MusicSong] = []
-        for entry in songs.prefix(25) {
+        for entry in songs.prefix(limit) {
             let name = entry.name.lowercased(), artist = entry.detail?.lowercased() ?? ""
             let results = try? await MusicAPI.call { try await $0.searchMusic(credential: $1, authHeader: $2, term: entry.name, limit: 10) }
             if let song = results?.songs.first(where: {
                 $0.name.lowercased() == name && ($0.artistLine?.lowercased().contains(artist) ?? artist.isEmpty)
             }) { found.append(song) }
         }
-        if !found.isEmpty { MusicActions.play(found) }
+        return found
     }
 }
 
@@ -142,7 +163,7 @@ struct MusicRecapView: View {
         .navigationTitle(title)
         .task {
             await model.load(libraryID: libraryID)
-            renderShareImage()
+            await renderShareImage()
         }
     }
 
@@ -200,43 +221,107 @@ struct MusicRecapView: View {
         }
     }
 
-    /// The card to share, drawn once the recap has loaded.
-    private func renderShareImage() {
+    /// The card to share, drawn once the recap and its covers have loaded.
+    private func renderShareImage() async {
         guard !model.songs.isEmpty else { return }
-        let renderer = ImageRenderer(content: MusicRecapCard(title: title, model: model))
+        let covers = await model.shareCovers()
+        let period = model.source == .playCounts ? String(localized: "All Time") : String(model.year)
+        let renderer = ImageRenderer(content: MusicRecapCard(period: period, model: model, covers: covers))
         renderer.scale = 3
         if let image = renderer.cgImage { shareImage = Image(decorative: image, scale: 3) }
     }
 }
 
-/// The recap as a picture for a story.
+/// The recap as a picture for a story: the top cover blurred behind, the top albums' covers,
+/// the year large, the figures, and the top songs and artists.
 private struct MusicRecapCard: View {
-    let title: String
+    let period: String
     let model: MusicRecapModel
+    let covers: [CGImage]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            Text(verbatim: title).font(.system(size: 30, weight: .heavy))
-            Text("\(model.totalListens) plays").font(.title3.weight(.semibold)).opacity(0.85)
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Top Songs").font(.headline).opacity(0.8)
-                ForEach(Array(model.songs.prefix(5).enumerated()), id: \.offset) { index, song in
-                    Text(verbatim: "\(index + 1). \(song.name)").font(.body.weight(.medium)).lineLimit(1)
-                }
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text(verbatim: "Arcfin").font(.system(size: 15, weight: .heavy))
+                Spacer()
+                Text("Year in Music").font(.system(size: 13, weight: .semibold)).opacity(0.8)
             }
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Top Artists").font(.headline).opacity(0.8)
-                ForEach(Array(model.artists.prefix(3).enumerated()), id: \.offset) { index, artist in
-                    Text(verbatim: "\(index + 1). \(artist.name)").font(.body.weight(.medium)).lineLimit(1)
-                }
+            Text(verbatim: period)
+                .font(.system(size: period.count > 4 ? 46 : 72, weight: .black))
+                .minimumScaleFactor(0.5)
+                .lineLimit(1)
+            if !covers.isEmpty { coverGrid }
+            HStack(spacing: 10) {
+                figure(model.totalListens.formatted(), Text("Plays"))
+                if let minutes = model.minutes { figure(minutes.formatted(), Text("Minutes")) }
             }
-            Spacer()
-            Text(verbatim: "Arcfin").font(.headline.weight(.bold)).opacity(0.8)
+            HStack(alignment: .top, spacing: 16) {
+                ranked(Text("Top Songs"), model.songs.prefix(5).map(\.name))
+                ranked(Text("Top Artists"), model.artists.prefix(5).map(\.name))
+            }
+            Spacer(minLength: 0)
         }
         .foregroundStyle(.white)
-        .padding(32)
+        .padding(28)
         .frame(width: 360, height: 640, alignment: .topLeading)
-        .background(LinearGradient(colors: [DT.Color.palette("FF6A4D"), Color(red: 0.35, green: 0.08, blue: 0.05)],
-                                   startPoint: .topLeading, endPoint: .bottomTrailing))
+        .background { background }
+    }
+
+    private var background: some View {
+        ZStack {
+            Color(red: 0.12, green: 0.05, blue: 0.04)
+            if let first = covers.first {
+                Image(decorative: first, scale: 1)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 360, height: 640)
+                    .blur(radius: 50)
+                    .saturation(1.4)
+                    .clipped()
+            } else {
+                LinearGradient(colors: [DT.Color.palette("FF6A4D"), Color(red: 0.35, green: 0.08, blue: 0.05)],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+            }
+            LinearGradient(colors: [.black.opacity(0.15), .black.opacity(0.65)], startPoint: .top, endPoint: .bottom)
+        }
+    }
+
+    private var coverGrid: some View {
+        let side: CGFloat = covers.count >= 4 ? 148 : 304
+        let shown = covers.count >= 4 ? Array(covers.prefix(4)) : [covers[0]]
+        return LazyVGrid(columns: Array(repeating: GridItem(.fixed(side), spacing: 8), count: shown.count >= 4 ? 2 : 1),
+                         spacing: 8) {
+            ForEach(Array(shown.enumerated()), id: \.offset) { _, cover in
+                Image(decorative: cover, scale: 1)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: side, height: covers.count >= 4 ? side : 150)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                    .shadow(color: .black.opacity(0.35), radius: 8, y: 4)
+            }
+        }
+    }
+
+    private func figure(_ value: String, _ label: Text) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(verbatim: value).font(.system(size: 26, weight: .heavy)).minimumScaleFactor(0.6).lineLimit(1)
+            label.font(.system(size: 12, weight: .semibold)).opacity(0.75)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(10)
+        .background(.white.opacity(0.14), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private func ranked(_ title: Text, _ names: [String]) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            title.font(.system(size: 12, weight: .bold)).opacity(0.75)
+            ForEach(Array(names.enumerated()), id: \.offset) { index, name in
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(verbatim: "\(index + 1)").font(.system(size: 13, weight: .heavy)).foregroundStyle(DT.Color.palette("FF6A4D"))
+                    Text(verbatim: name).font(.system(size: 13, weight: .semibold)).lineLimit(1)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
