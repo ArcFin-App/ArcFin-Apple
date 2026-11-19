@@ -458,8 +458,24 @@ private struct MusicArtworkBackdrop: View {
 /// The words, following the song when the server has times for them; tap a line to go there.
 private struct MusicLyricsPanel: View {
     let lyrics: Lyrics?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var player: MusicQueuePlayer { AppServices.music.player }
     private var music: MusicPlayback { AppServices.music }
+
+    /// As Apple Music has them: the line being sung bright and full size, the rest dimmer,
+    /// a touch smaller and softer the further they are from it.
+    private func distance(_ index: Int, from current: Int?) -> Int {
+        guard let current else { return 0 }
+        return abs(index - current)
+    }
+
+    /// A long gap with nothing to sing: dots where the next line will be.
+    private func isInGap(after index: Int, in lyrics: Lyrics, songID: String) -> Bool {
+        guard index + 1 < lyrics.lines.count, let start = lyrics.lines[index].start,
+              let next = lyrics.lines[index + 1].start, next - start > 10 else { return false }
+        let position = music.position - MusicLyricsSource.shared.delay(songID)
+        return position > start + 5 && position < next
+    }
 
     var body: some View {
         Group {
@@ -470,9 +486,13 @@ private struct MusicLyricsPanel: View {
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: DT.Spacing.md) {
                             ForEach(Array(lyrics.lines.enumerated()), id: \.offset) { index, line in
+                                let away = lyrics.isSynced ? distance(index, from: current) : 0
                                 Text(verbatim: line.text)
-                                    .font(.title2.weight(.bold))
-                                    .foregroundStyle(.white.opacity(lyrics.isSynced && index != current ? 0.35 : 1))
+                                    .font(.title.weight(.bold))
+                                    .foregroundStyle(.white.opacity(away == 0 ? 1 : 0.4))
+                                    .scaleEffect(away == 0 ? 1 : 0.96, anchor: .leading)
+                                    .blur(radius: reduceMotion ? 0 : min(Double(away) * 0.7, 2.5))
+                                    .animation(.spring(response: 0.5, dampingFraction: 0.8), value: current)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .id(index)
                                     .onTapGesture {
@@ -485,13 +505,25 @@ private struct MusicLyricsPanel: View {
                                             }
                                         }
                                     }
+                                if lyrics.isSynced, index == current, isInGap(after: index, in: lyrics, songID: songID) {
+                                    Image(systemName: "ellipsis")
+                                        .font(.title.weight(.bold))
+                                        .symbolEffect(.variableColor.iterative, isActive: !reduceMotion)
+                                        .foregroundStyle(.white.opacity(0.8))
+                                        .transition(.opacity)
+                                        .accessibilityHidden(true)
+                                }
                             }
                         }
-                        .padding(.vertical, DT.Spacing.xl)
+                        .padding(.vertical, DT.Spacing.xxl)
                     }
+                    // The lines fade in and out at the edges rather than being cut off.
+                    .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.12),
+                                                 .init(color: .black, location: 0.85), .init(color: .clear, location: 1)],
+                                         startPoint: .top, endPoint: .bottom))
                     .onChange(of: current) { _, line in
                         guard let line else { return }
-                        withAnimation(DT.Animation.standard) { proxy.scrollTo(line, anchor: .center) }
+                        withAnimation(.spring(response: 0.6, dampingFraction: 0.85)) { proxy.scrollTo(line, anchor: UnitPoint(x: 0.5, y: 0.35)) }
                     }
                 }
                 .overlay(alignment: .bottomTrailing) {
