@@ -115,7 +115,7 @@ struct MusicDownloadSettingsSection: View {
         }
         .onChange(of: keepRecent) { Task { await MusicDownloads.shared.refreshSmartDownloads(force: true) } }
         .onChange(of: newAlbums) { Task { await MusicDownloads.shared.refreshSmartDownloads(force: true) } }
-        .onChange(of: storageLimit) { MusicDownloads.shared.enforceStorageLimit() }
+        .onChange(of: storageLimit) { Task { await MusicDownloads.shared.enforceStorageLimit() } }
     }
 }
 

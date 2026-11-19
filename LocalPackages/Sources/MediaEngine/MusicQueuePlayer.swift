@@ -629,6 +629,14 @@ public final class MusicQueuePlayer {
         }
         log.notice("Connection lost; \(entry.track.id, privacy: .public) waits at \(at, privacy: .public)s")
         heldForNetwork = (entry.id, at, plays)
+        // Nothing lined up behind it may move on by itself while it waits.
+        player.pause()
+        dropPrepared()
+        for item in player.items().dropFirst() {
+            forget(item)
+            player.remove(item)
+        }
+        upcomingNeedsNetwork = true
         position = at
         // A connection that's up but can't reach the server yet doesn't announce itself.
         networkRetry?.cancel()

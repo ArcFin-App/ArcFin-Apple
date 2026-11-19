@@ -60,6 +60,8 @@ final class MusicDownloads {
     @ObservationIgnored private var bytes: [String: (written: Int64, total: Int64, since: Date)] = [:]
     /// This run of the queue: how many are done, for "2 of 6".
     @ObservationIgnored private var runSaved = 0
+    /// Saved in this run of the queue: the storage limit leaves them alone until it's done.
+    @ObservationIgnored private var savedThisRun: Set<String> = []
     @ObservationIgnored private var lastActivityUpdate = Date.distantPast
     @ObservationIgnored private let log = Telemetry.logger(category: "MusicDownloads")
 
@@ -274,6 +276,7 @@ final class MusicDownloads {
     private func startIfNeeded() {
         guard worker == nil, !queue.isEmpty else { return }
         runSaved = 0
+        savedThisRun = []
         worker = Task { [weak self] in
             var saved = 0
             while let self, !queue.isEmpty {
@@ -290,6 +293,7 @@ final class MusicDownloads {
             }
             if saved > 0 { MusicDownloadActivity.finish(count: saved) } else { MusicDownloadActivity.end() }
             self?.worker = nil
+            await self?.enforceStorageLimit()
             if saved > 0, MusicSettings.notifiesDownloads {
                 await NotificationManager.notifyMusicDownloaded(songs: saved)
             }
@@ -379,6 +383,11 @@ final class MusicDownloads {
                                                        bitrateCap: MusicSettings.downloadBitrate) else { return nil }
         var request = URLRequest(url: url)
         for (name, value) in CustomHTTPHeaders.current { request.setValue(value, forHTTPHeaderField: name) }
+        // The system carries on with it in the background, where the Wi-Fi check can't run.
+        if !UserDefaults.standard.bool(forKey: MusicSettings.downloadOnMobileDataKey) {
+            request.allowsCellularAccess = false
+            request.allowsExpensiveNetworkAccess = false
+        }
         return request
     }
 
@@ -396,7 +405,7 @@ final class MusicDownloads {
         let size = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
         index.songs[song.id] = Saved(song: song, file: name, userID: userID, bytes: size, savedAt: .now)
         saveIndex()
-        enforceStorageLimit()
+        savedThisRun.insert(song.id)
         await saveCover(for: song)
         if let lyrics = await MusicLyricsSource.shared.lyricsToSave(for: song),
            let data = try? JSONEncoder().encode(lyrics) {
@@ -418,6 +427,7 @@ final class MusicDownloads {
         }
         guard await keep(song, file: file, fileExtension: finished.fileExtension, userID: userID) else { return }
         log.notice("Saved \(song.id, privacy: .public), downloaded in the background")
+        if worker == nil { await enforceStorageLimit() }
         queue.removeAll { $0.id == song.id }
         runSaved += 1
         saveQueue()
@@ -454,7 +464,7 @@ final class MusicDownloads {
         lastSmartRefresh = .now
         await keepRecentlyPlayed()
         if MusicSettings.downloadsNewAlbums { await downloadNewAlbums() }
-        enforceStorageLimit()
+        if worker == nil { await enforceStorageLimit() }
     }
 
     private func keepRecentlyPlayed() async {
@@ -499,15 +509,27 @@ final class MusicDownloads {
     }
 
     /// Over Storage Limit: the least played songs go first, oldest first among equals.
-    /// Favorites and the recently played ones being kept stay.
-    func enforceStorageLimit() {
-        guard let limit = MusicSettings.storageLimitBytes else { return }
+    /// Favorites, the recently played ones being kept and what's downloading now stay. Play
+    /// counts and favorites come fresh from the server, since a saved song's are as they
+    /// were when it downloaded; without the server nothing is removed.
+    func enforceStorageLimit() async {
+        guard let limit = MusicSettings.storageLimitBytes, totalBytes > limit else { return }
+        let ids = mine.map(\.song.id)
+        var fresh: [String: MusicSong] = [:]
+        for start in stride(from: 0, to: ids.count, by: 200) {
+            let chunk = Array(ids[start..<min(start + 200, ids.count)])
+            let answer = try? await MusicAPI.call { try await $0.getSongs(credential: $1, authHeader: $2, ids: chunk) }
+            guard let songs = answer ?? nil else { return }
+            for song in songs { fresh[song.id] = song }
+        }
         var total = totalBytes
         guard total > limit else { return }
-        let kept = keptRecent
+        let protected = keptRecent.union(savedThisRun).union(queue.map(\.id))
         let candidates = mine
-            .filter { !kept.contains($0.song.id) && !MusicFavorites.shared.isFavorite($0.song.id, server: $0.song.isFavorite) }
-            .sorted { ($0.song.playCount, $0.savedAt) < ($1.song.playCount, $1.savedAt) }
+            .map { (saved: $0, song: fresh[$0.song.id] ?? $0.song) }
+            .filter { !protected.contains($0.song.id) && !MusicFavorites.shared.isFavorite($0.song.id, server: $0.song.isFavorite) }
+            .sorted { ($0.song.playCount, $0.saved.savedAt) < ($1.song.playCount, $1.saved.savedAt) }
+            .map(\.saved)
         var removing: [MusicSong] = []
         for saved in candidates where total > limit {
             removing.append(saved.song)
