@@ -1217,6 +1217,134 @@
         }
       }
     },
+    "Shazam's service couldn't be reached. Check your connection and try again in a moment." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Shazam-Dienst war nicht erreichbar. Prüfe deine Verbindung und versuche es gleich noch einmal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo acceder al servicio de Shazam. Comprueba tu conexión e inténtalo de nuevo en un momento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de joindre le service Shazam. Vérifiez votre connexion et réessayez dans un instant."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile raggiungere il servizio Shazam. Controlla la connessione e riprova tra un momento."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shazamのサービスに接続できませんでした。接続を確認して、少し待ってからもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shazam 서비스에 연결할 수 없습니다. 연결을 확인하고 잠시 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De Shazam-dienst kon niet worden bereikt. Controleer je verbinding en probeer het zo meteen opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível acessar o serviço do Shazam. Verifique a conexão e tente de novo em instantes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось связаться с сервисом Shazam. Проверьте подключение и повторите попытку чуть позже."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法连接 Shazam 服务。请检查网络连接并稍后重试。"
+          }
+        }
+      }
+    },
+    "The microphone couldn't start. Try again in a moment." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das Mikrofon konnte nicht starten. Versuche es gleich noch einmal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo iniciar el micrófono. Inténtalo de nuevo en un momento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le micro n’a pas pu démarrer. Réessayez dans un instant."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il microfono non si è avviato. Riprova tra un momento."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "マイクを開始できませんでした。少し待ってからもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "마이크를 시작할 수 없습니다. 잠시 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De microfoon kon niet starten. Probeer het zo meteen opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O microfone não pôde iniciar. Tente de novo em instantes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось включить микрофон. Повторите попытку чуть позже."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "麦克风无法启动。请稍后重试。"
+          }
+        }
+      }
+    },
     "What's Playing?" : {
       "localizations" : {
         "de" : {

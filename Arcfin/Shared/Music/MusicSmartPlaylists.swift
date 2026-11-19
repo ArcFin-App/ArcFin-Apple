@@ -6,29 +6,22 @@ import JellyfinAPI
 /// A smart playlist's tile: its colour, symbol and name.
 struct MusicSmartPlaylistTile: View {
     let playlist: MusicSmartPlaylist
+    let libraryID: String
     var width: CGFloat = 160
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            ZStack(alignment: .bottomLeading) {
-                LinearGradient(colors: playlist.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
-                Image(systemName: playlist.systemImage)
-                    .font(.system(size: width * 0.22, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.9))
-                    .padding(width * 0.1)
+            MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: width) {
+                MusicArtwork(url: $0, cornerRadius: 0)
             }
-            .frame(width: width, height: width)
             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md, style: .continuous))
-            VStack(alignment: .leading, spacing: 1) {
-                Text(playlist.title)
-                    .font(.footnote.weight(.medium))
-                    .foregroundStyle(DT.Color.textPrimary)
-                Text(playlist.detail)
-                    .font(.footnote)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-            .lineLimit(1)
+            Text(playlist.detail)
+                .font(.footnote)
+                .foregroundStyle(DT.Color.textSecondary)
+                .lineLimit(2)
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Text(playlist.title))
         .frame(width: width, alignment: .leading)
         .contentShape(Rectangle())
     }
@@ -81,7 +74,7 @@ struct MusicSmartPlaylistShelf: View {
                 LazyHStack(alignment: .top, spacing: DT.Spacing.md) {
                     ForEach(MusicSmartPlaylist.allCases) { playlist in
                         NavigationLink { MusicSmartPlaylistView(playlist: playlist, libraryID: libraryID) } label: {
-                            MusicSmartPlaylistTile(playlist: playlist)
+                            MusicSmartPlaylistTile(playlist: playlist, libraryID: libraryID)
                         }
                         .buttonStyle(.plain)
                     }

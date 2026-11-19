@@ -377,17 +377,14 @@ private struct TVMusicSmartPlaylistShelf: View {
                             }
                         } label: {
                             VStack(alignment: .leading, spacing: 12) {
-                                ZStack(alignment: .bottomLeading) {
-                                    LinearGradient(colors: playlist.colors, startPoint: .topLeading, endPoint: .bottomTrailing)
-                                    Image(systemName: playlist.systemImage)
-                                        .font(.system(size: 56, weight: .semibold))
-                                        .foregroundStyle(.white.opacity(0.9))
-                                        .padding(24)
+                                // Plain images: the artwork view's own focus ring would light each cover.
+                                MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: 240) { url in
+                                    CachedAsyncImage(url: url) { phase in
+                                        if case .success(let image) = phase { image.resizable().scaledToFill() } else { Color.clear }
+                                    }
                                 }
-                                .frame(width: 240, height: 240)
                                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
-                                Text(playlist.title).font(.callout.weight(.medium)).lineLimit(1)
-                                Text(playlist.detail).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                                Text(playlist.detail).font(.caption).foregroundStyle(.secondary).lineLimit(2)
                             }
                             .frame(width: 240, alignment: .leading)
                         }
