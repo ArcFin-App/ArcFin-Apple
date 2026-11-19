@@ -6,7 +6,6 @@ import JellyfinAPI
 /// A music library: Artists, Albums, Songs and Genres, then what was added lately.
 struct MusicLibraryView: View {
     let library: JellyfinLibrary
-    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var recent: MusicPagedList<MusicAlbum>
     @State private var recentlyPlayed: MusicPagedList<MusicSong>
     @State private var mostPlayed: MusicPagedList<MusicSong>
@@ -73,18 +72,34 @@ struct MusicLibraryView: View {
                     }
                     .buttonStyle(.plain)
                 }
+                if !recent.items.isEmpty {
+                    VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("Recently Added")
+                                .font(DT.Font.sectionTitle)
+                                .foregroundStyle(DT.Color.textPrimary)
+                                .accessibilityAddTraits(.isHeader)
+                            Spacer()
+                            NavigationLink("See All") {
+                                MusicAlbumsView(libraryID: library.id, title: String(localized: "Recently Added"),
+                                                genreID: nil, fixedSort: .dateAdded)
+                            }
+                            .font(.body.weight(.medium))
+                            .tint(DT.Color.accent)
+                        }
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            LazyHStack(alignment: .top, spacing: DT.Spacing.md) {
+                                ForEach(recent.items) { MusicAlbumCard(album: $0).frame(width: 160) }
+                            }
+                        }
+                        .shelfScrollButtons()
+                        .padding(.horizontal, -DT.Spacing.pagePad)
+                        .contentMargins(.horizontal, DT.Spacing.pagePad, for: .scrollContent)
+                    }
+                }
                 MusicSmartPlaylistShelf(libraryID: library.id)
                 MusicSongShelf(title: "Recently Played", list: recentlyPlayed)
                 MusicSongShelf(title: "Most Played", list: mostPlayed)
-                VStack(alignment: .leading, spacing: DT.Spacing.sm) {
-                    Text("Recently Added")
-                        .font(DT.Font.sectionTitle)
-                        .foregroundStyle(DT.Color.textPrimary)
-                    MusicListState(list: recent, empty: "No Albums")
-                    LazyVGrid(columns: MusicGrid.columns(sizeClass), alignment: .leading, spacing: DT.Spacing.lg) {
-                        ForEach(recent.items) { MusicAlbumCard(album: $0) }
-                    }
-                }
             }
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.bottom, DT.Spacing.xl)
@@ -197,8 +212,11 @@ struct MusicAlbumsView: View {
     let libraryID: String
     let title: String
     let genreID: String?
+    /// Recently Added's See All: newest first, without the sort menu or touching the saved sort.
+    var fixedSort: MusicSort?
     @Environment(\.horizontalSizeClass) private var sizeClass
-    @AppStorage("music.albumSort") private var sort: MusicSort = .name
+    @AppStorage("music.albumSort") private var savedSort: MusicSort = .name
+    private var sort: MusicSort { fixedSort ?? savedSort }
     @State private var favoritesOnly = false
     @State private var list: MusicPagedList<MusicAlbum>?
 
@@ -221,11 +239,13 @@ struct MusicAlbumsView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
-                    Picker("Sort By", selection: $sort) {
+                    if fixedSort == nil {
+                        Picker("Sort By", selection: $savedSort) {
                         Text("Title").tag(MusicSort.name)
                         Text("Artist").tag(MusicSort.artist)
                         Text("Year").tag(MusicSort.year)
                         Text("Recently Added").tag(MusicSort.dateAdded)
+                        }
                     }
                     Toggle("Favorites Only", systemImage: "star", isOn: $favoritesOnly)
                 } label: {
