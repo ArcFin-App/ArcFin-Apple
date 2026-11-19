@@ -2,9 +2,10 @@
 
 import SwiftUI
 
-/// The top of an album or playlist page: the whole square cover across the width from the
-/// top of the screen, under the navigation bar, with Play and Shuffle at its foot and only its
-/// last edge fading into the page; the names follow below.
+/// The top of an album, artist or playlist page: the whole square cover across the width from
+/// the top of the screen, under the navigation bar, carrying on below as a blurred copy of
+/// itself that fades into the page, as Now Playing does. Play and Shuffle sit at the foot of
+/// the cover, and the names over the soft part below it.
 struct MusicHero<Art: View, Info: View>: View {
     let play: () -> Void
     let shuffle: () -> Void
@@ -12,31 +13,53 @@ struct MusicHero<Art: View, Info: View>: View {
     @ViewBuilder let art: (CGSize) -> Art
     @ViewBuilder let info: () -> Info
 
+    /// How much taller than wide: the blurred part below the square.
+    private let extent: CGFloat = 1.16
+
     var body: some View {
-        VStack(spacing: DT.Spacing.sm) {
-            // Square to the page's width; sized by the page, so the art can't push it wider.
+        VStack(spacing: 0) {
+            // Sized by the page, so the art can't push it wider.
             Color.clear
                 .frame(maxWidth: .infinity)
-                .aspectRatio(1, contentMode: .fit)
+                .aspectRatio(1 / extent, contentMode: .fit)
                 .overlay {
                     GeometryReader { proxy in
-                        art(proxy.size)
-                            .frame(width: proxy.size.width, height: proxy.size.height)
-                            .clipped()
+                        let side = proxy.size.width
+                        ZStack(alignment: .top) {
+                            art(proxy.size)
+                                .frame(width: side, height: proxy.size.height)
+                                .blur(radius: 40)
+                                .clipped()
+                            art(CGSize(width: side, height: side))
+                                .frame(width: side, height: side)
+                                .clipped()
+                                // Darker toward the foot, so the buttons read on a light cover.
+                                .overlay {
+                                    LinearGradient(colors: [.clear, .black.opacity(0.45)], startPoint: .center, endPoint: .bottom)
+                                }
+                                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.84),
+                                                             .init(color: .clear, location: 1)],
+                                                     startPoint: .top, endPoint: .bottom))
+                        }
+                        .frame(width: side, height: proxy.size.height, alignment: .top)
                     }
                 }
-                // Darker toward the foot, so the buttons read on a light cover.
-                .overlay {
-                    LinearGradient(colors: [.clear, .black.opacity(0.5)], startPoint: .center, endPoint: .bottom)
-                }
-                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.88),
+                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.72),
                                              .init(color: .clear, location: 1)],
                                      startPoint: .top, endPoint: .bottom))
                 .accessibilityHidden(true)
-                .overlay(alignment: .bottom) { buttons.padding(.bottom, 22) }
+                .overlay(alignment: .top) {
+                    GeometryReader { proxy in
+                        buttons
+                            .frame(width: proxy.size.width)
+                            .position(x: proxy.size.width / 2, y: proxy.size.width - 47)
+                    }
+                }
             info()
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DT.Spacing.pagePad)
+                // Over the soft part below the cover.
+                .padding(.top, -36)
         }
         .frame(maxWidth: .infinity)
     }
