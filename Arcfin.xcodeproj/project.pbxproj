@@ -180,6 +180,7 @@
 				iOS/Lock/AppLockView.swift = (ios, );
 				iOS/Login/LoginPlatform.swift = (ios, );
 				iOS/Login/SetupGuideSheet.swift = (ios, );
+				iOS/Music/MusicDownloadActivity.swift = (ios, );
 				iOS/Music/MusicNowPlayingView.swift = (ios, );
 				iOS/Onboarding/OnboardingView.swift = (ios, );
 				iOS/Onboarding/WhatsNew.swift = (ios, );
@@ -284,6 +285,7 @@
 				macOS/Lock/AppLockView.swift = (macos, );
 				macOS/Login/LoginPlatform.swift = (macos, );
 				macOS/Login/SetupGuideSheet.swift = (macos, );
+				macOS/Music/MusicDownloadActivity.swift = (macos, );
 				macOS/Music/MusicPlayerBar.swift = (macos, );
 				macOS/Onboarding/OnboardingView.swift = (macos, );
 				macOS/Onboarding/WhatsNew.swift = (macos, );
@@ -383,6 +385,7 @@
 				tvOS/Lock/AppLockView.swift = (tvos, );
 				tvOS/Login/LoginPlatform.swift = (tvos, );
 				tvOS/Login/SetupGuideSheet.swift = (tvos, );
+				tvOS/Music/MusicDownloadActivity.swift = (tvos, );
 				tvOS/Music/TVMusicNowPlaying.swift = (tvos, );
 				tvOS/Music/TVMusicViews.swift = (tvos, );
 				tvOS/Onboarding/OnboardingView.swift = (tvos, );

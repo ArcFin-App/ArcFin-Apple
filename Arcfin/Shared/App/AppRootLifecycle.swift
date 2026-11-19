@@ -73,6 +73,8 @@ struct AppRootLifecycle: ViewModifier {
                 if newPhase == .active {
                     Task { await model.loadProfileRules() }
                 }
+                // Music still to download goes to the system, which carries on with it.
+                if newPhase == .background { MusicDownloads.shared.handOff() }
             }
             .onChange(of: model.authManager.state) { _, _ in Task { await model.refreshLockRequirement() } }
             .onAppear { configureSeerr() }

@@ -10,8 +10,9 @@ import Telemetry
 
 /// Songs saved for listening offline: each one's file (as it is where this device plays it,
 /// MP3 otherwise), its details and its album's cover, kept in Application Support per
-/// profile. Two download at a time while the app is open; the queue is kept across launches,
-/// waits out a lost connection, and a song that keeps failing waits for Retry.
+/// profile. Two download at a time while the app is open, and the rest go to the system as it
+/// leaves the foreground, so they carry on in the background. The queue is kept across
+/// launches, waits out a lost connection, and a song that keeps failing waits for Retry.
 @MainActor @Observable
 final class MusicDownloads {
     static let shared = MusicDownloads()
@@ -55,7 +56,11 @@ final class MusicDownloads {
     /// Where a dropped download got to, so the next try picks up from there.
     @ObservationIgnored private var resumeData: [String: Data] = [:]
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
-    @ObservationIgnored private var session: (headers: [String: String], session: URLSession)?
+    /// Bytes so far and in all for each song downloading now, for the Live Activity.
+    @ObservationIgnored private var bytes: [String: (written: Int64, total: Int64, since: Date)] = [:]
+    /// This run of the queue: how many are done, for "2 of 6".
+    @ObservationIgnored private var runSaved = 0
+    @ObservationIgnored private var lastActivityUpdate = Date.distantPast
     @ObservationIgnored private let log = Telemetry.logger(category: "MusicDownloads")
 
     private static let folder: URL = {
@@ -93,6 +98,10 @@ final class MusicDownloads {
             Task { @MainActor in MusicDownloads.shared.isOnline = online }
         }
         pathMonitor.start(queue: DispatchQueue(label: "arcfin.musicDownloads.path"))
+        MusicTransfers.shared.connect { finished in
+            Task { @MainActor in await MusicDownloads.shared.claim(finished) }
+        }
+        if queue.isEmpty { MusicDownloadActivity.endStale() }
         // Left from last time: it carries on once the app is up.
         if !queue.isEmpty { Task { @MainActor in MusicDownloads.shared.startIfNeeded() } }
     }
@@ -264,10 +273,12 @@ final class MusicDownloads {
 
     private func startIfNeeded() {
         guard worker == nil, !queue.isEmpty else { return }
+        runSaved = 0
         worker = Task { [weak self] in
             var saved = 0
             while let self, !queue.isEmpty {
                 await waitUntilAllowed()
+                refreshActivity(force: true)
                 let batch = Array(queue.prefix(Self.parallel))
                 guard !batch.isEmpty else { break }
                 let started = batch.map { song in
@@ -277,6 +288,7 @@ final class MusicDownloads {
                 }
                 for transfer in started where await transfer.value { saved += 1 }
             }
+            if saved > 0 { MusicDownloadActivity.finish(count: saved) } else { MusicDownloadActivity.end() }
             self?.worker = nil
             if saved > 0, MusicSettings.notifiesDownloads {
                 await NotificationManager.notifyMusicDownloaded(songs: saved)
@@ -290,8 +302,11 @@ final class MusicDownloads {
         while !queue.isEmpty, !Task.isCancelled {
             let offline = !isOnline || AppServices.authManager.state.credential == nil
             let wifi = !offline && MusicSettings.downloadsWaitForWiFi
-            isWaitingForNetwork = offline
-            isWaitingForWiFi = wifi
+            if isWaitingForNetwork != offline || isWaitingForWiFi != wifi {
+                isWaitingForNetwork = offline
+                isWaitingForWiFi = wifi
+                refreshActivity(force: true)
+            }
             guard offline || wifi else { return }
             try? await Task.sleep(for: .seconds(3))
         }
@@ -318,7 +333,9 @@ final class MusicDownloads {
             if outcome != .retry { break }
         }
         progress[song.id] = nil
+        bytes[song.id] = nil
         transfers[song.id] = nil
+        if outcome == .saved { runSaved += 1 }
         let wasQueued = isQueued(song.id)
         queue.removeAll { $0.id == song.id }
         if outcome != .saved { resumeData[song.id] = nil }
@@ -328,74 +345,116 @@ final class MusicDownloads {
     }
 
     private func fetch(_ song: MusicSong) async -> Outcome {
-        guard let credential = AppServices.authManager.state.credential,
-              let url = MusicAPI.client.audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
-                                                       container: song.container,
-                                                       bitrateCap: MusicSettings.downloadBitrate) else { return .retry }
-        let reporter = ProgressReporter { fraction in
-            Task { @MainActor in MusicDownloads.shared.reportProgress(fraction, for: song.id) }
+        guard let credential = AppServices.authManager.state.credential, let request = request(for: song, credential) else {
+            return .retry
         }
-        do {
-            let (temp, response) = if let resume = resumeData.removeValue(forKey: song.id) {
-                try await downloadSession.download(resumeFrom: resume, delegate: reporter)
-            } else {
-                try await downloadSession.download(from: url, delegate: reporter)
-            }
-            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-                try? FileManager.default.removeItem(at: temp)
-                let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-                log.error("Couldn't save \(song.id, privacy: .public): the server answered \(status, privacy: .public)")
-                return status >= 500 || status == 429 ? .retry : .failed
-            }
-            // Cancelled while it downloaded.
-            guard isQueued(song.id) else {
-                try? FileManager.default.removeItem(at: temp)
-                return .cancelled
-            }
-            let file = "\(song.id).\(url.pathExtension)"
-            let destination = Self.folder.appendingPathComponent(file)
-            try? FileManager.default.removeItem(at: destination)
-            try FileManager.default.moveItem(at: temp, to: destination)
-            let bytes = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
-            index.songs[song.id] = Saved(song: song, file: file, userID: credential.userID, bytes: bytes, savedAt: .now)
-            saveIndex()
-            await saveCover(for: song)
-            if let lyrics = await MusicLyricsSource.shared.lyricsToSave(for: song),
-               let data = try? JSONEncoder().encode(lyrics) {
-                try? data.write(to: Self.lyricsURL(song.id))
-            }
-            return .saved
-        } catch let error as URLError {
+        let id = song.id
+        bytes[id] = (0, 0, .now)
+        refreshActivity(force: true)
+        let finished = await MusicTransfers.shared.download(request, songID: id, resumeData: resumeData.removeValue(forKey: id)) { written, total in
+            Task { @MainActor in MusicDownloads.shared.reportProgress(written: written, total: total, for: id) }
+        }
+        if let error = finished.error {
             if error.code == .cancelled { return .cancelled }
-            if let resume = error.downloadTaskResumeData { resumeData[song.id] = resume }
-            log.error("Couldn't save \(song.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            if let resume = error.downloadTaskResumeData { resumeData[id] = resume }
+            log.error("Couldn't save \(id, privacy: .public): \(error.localizedDescription, privacy: .public)")
             return Self.retryable.contains(error.code) ? .retry : .failed
+        }
+        guard let file = finished.file, (200...299).contains(finished.status) else {
+            finished.file.map { try? FileManager.default.removeItem(at: $0) }
+            log.error("Couldn't save \(id, privacy: .public): the server answered \(finished.status, privacy: .public)")
+            return finished.status >= 500 || finished.status == 429 ? .retry : .failed
+        }
+        // Cancelled while it downloaded.
+        guard isQueued(id) else {
+            try? FileManager.default.removeItem(at: file)
+            return .cancelled
+        }
+        return await keep(song, file: file, fileExtension: finished.fileExtension, userID: credential.userID) ? .saved : .failed
+    }
+
+    private func request(for song: MusicSong, _ credential: ServerCredential) -> URLRequest? {
+        guard let url = MusicAPI.client.audioStreamURL(credential: credential, deviceId: Self.deviceID, trackId: song.id,
+                                                       container: song.container,
+                                                       bitrateCap: MusicSettings.downloadBitrate) else { return nil }
+        var request = URLRequest(url: url)
+        for (name, value) in CustomHTTPHeaders.current { request.setValue(value, forHTTPHeaderField: name) }
+        return request
+    }
+
+    /// Moves a downloaded file into place with the song's cover and lyrics.
+    private func keep(_ song: MusicSong, file: URL, fileExtension: String, userID: String) async -> Bool {
+        let name = "\(song.id).\(fileExtension)"
+        let destination = Self.folder.appendingPathComponent(name)
+        try? FileManager.default.removeItem(at: destination)
+        do {
+            try FileManager.default.moveItem(at: file, to: destination)
         } catch {
-            if error is CancellationError { return .cancelled }
             log.error("Couldn't save \(song.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            return .failed
+            return false
+        }
+        let size = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
+        index.songs[song.id] = Saved(song: song, file: name, userID: userID, bytes: size, savedAt: .now)
+        saveIndex()
+        await saveCover(for: song)
+        if let lyrics = await MusicLyricsSource.shared.lyricsToSave(for: song),
+           let data = try? JSONEncoder().encode(lyrics) {
+            try? data.write(to: Self.lyricsURL(song.id))
+        }
+        return true
+    }
+
+    /// A song that finished with nothing waiting for it: handed over in the background, or
+    /// from before the app was closed.
+    private func claim(_ finished: MusicTransfers.Finished) async {
+        guard let file = finished.file else { return }
+        // At launch the profile is still being read.
+        for _ in 0..<30 where userID == nil { try? await Task.sleep(for: .seconds(1)) }
+        guard (200...299).contains(finished.status), let song = queue.first(where: { $0.id == finished.songID }),
+              let userID = userID else {
+            try? FileManager.default.removeItem(at: file)
+            return
+        }
+        guard await keep(song, file: file, fileExtension: finished.fileExtension, userID: userID) else { return }
+        log.notice("Saved \(song.id, privacy: .public), downloaded in the background")
+        queue.removeAll { $0.id == song.id }
+        runSaved += 1
+        saveQueue()
+        refreshActivity(force: true)
+    }
+
+    /// Leaving the foreground: every song still waiting goes to the system to download, so
+    /// the queue carries on while the app is suspended.
+    func handOff() {
+        guard !queue.isEmpty, isOnline, !MusicSettings.downloadsWaitForWiFi,
+              let credential = AppServices.authManager.state.credential else { return }
+        for song in queue where progress[song.id] == nil {
+            if let request = request(for: song, credential) { MusicTransfers.shared.handOff(request, songID: song.id) }
         }
     }
 
-    /// Its own session: the shared one gives a whole request 30 seconds, which a long song on
-    /// a slow connection doesn't fit in.
-    private var downloadSession: URLSession {
-        let headers = CustomHTTPHeaders.current
-        if let session, session.headers == headers { return session.session }
-        session?.session.finishTasksAndInvalidate()
-        let config = URLSessionConfiguration.default
-        config.waitsForConnectivity = true
-        config.timeoutIntervalForRequest = 60
-        config.timeoutIntervalForResource = 60 * 60
-        config.httpAdditionalHeaders = headers.isEmpty ? nil : headers
-        let made = URLSession(configuration: config)
-        session = (headers, made)
-        return made
+    // MARK: Live Activity
+
+    private func refreshActivity(force: Bool = false) {
+        guard force || Date.now.timeIntervalSince(lastActivityUpdate) >= 1 else { return }
+        lastActivityUpdate = .now
+        guard let song = queue.first(where: { progress[$0.id] != nil }) ?? queue.first else { return }
+        let transfer = bytes[song.id]
+        let elapsed = transfer.map { Date.now.timeIntervalSince($0.since) } ?? 0
+        let speed = elapsed > 1 ? Double(transfer?.written ?? 0) / elapsed : 0
+        MusicDownloadActivity.update(
+            .init(title: song.name, artist: song.artistLine, next: queue.first { $0.id != song.id }?.name,
+                  written: transfer?.written ?? 0, total: transfer?.total ?? 0, bytesPerSecond: speed,
+                  saved: runSaved, count: runSaved + queue.count,
+                  waitingForWiFi: isWaitingForWiFi, waitingForNetwork: isWaitingForNetwork,
+                  coverURL: MusicAPI.artworkURL(song, width: 120), albumID: song.albumId))
     }
 
-    private func reportProgress(_ fraction: Double, for songID: String) {
+    private func reportProgress(written: Int64, total: Int64, for songID: String) {
         guard progress[songID] != nil else { return }
-        progress[songID] = fraction
+        if total > 0 { progress[songID] = Double(written) / Double(total) }
+        bytes[songID] = (written, max(total, 0), bytes[songID]?.since ?? .now)
+        refreshActivity()
     }
 
     private func saveCover(for song: MusicSong) async {
@@ -416,25 +475,4 @@ final class MusicDownloads {
     }
 
     private static let deviceID = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
-}
-
-/// Passes on a download's progress, a percent at a time.
-private final class ProgressReporter: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
-    private let report: @Sendable (Double) -> Void
-    private var observation: NSKeyValueObservation?
-    private var last = -1
-
-    init(_ report: @escaping @Sendable (Double) -> Void) {
-        self.report = report
-    }
-
-    func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
-        observation = task.progress.observe(\.fractionCompleted) { [weak self] progress, _ in
-            guard let self else { return }
-            let percent = Int(progress.fractionCompleted * 100)
-            guard percent != last else { return }
-            last = percent
-            report(progress.fractionCompleted)
-        }
-    }
 }

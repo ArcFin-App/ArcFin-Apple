@@ -38,6 +38,10 @@ public struct DownloadActivityAttributes: ActivityAttributes {
         public var estimatedFinish: Date?
         /// Held because Wi-Fi Only is on and the connection is mobile data.
         public var isWaitingForWiFi: Bool?
+        /// Songs rather than films and episodes: a square cover, and "Ready to Play".
+        public var isMusic: Bool?
+        /// Held until there's a connection again.
+        public var isWaitingForNetwork: Bool?
 
         public init(
             currentItemTitle: String, bytesWritten: Int64, totalBytes: Int64, bytesPerSecond: Double,
@@ -45,7 +49,7 @@ public struct DownloadActivityAttributes: ActivityAttributes {
             posterImageData: Data? = nil, seasonNumber: Int? = nil, episodeNumber: Int? = nil,
             isPaused: Bool = false, nextItemTitle: String? = nil,
             estimateStart: Date? = nil, estimatedFinish: Date? = nil,
-            isWaitingForWiFi: Bool = false
+            isWaitingForWiFi: Bool = false, isMusic: Bool = false, isWaitingForNetwork: Bool = false
         ) {
             self.currentItemTitle = currentItemTitle
             self.bytesWritten = bytesWritten
@@ -62,6 +66,8 @@ public struct DownloadActivityAttributes: ActivityAttributes {
             self.estimateStart = estimateStart
             self.estimatedFinish = estimatedFinish
             self.isWaitingForWiFi = isWaitingForWiFi
+            self.isMusic = isMusic
+            self.isWaitingForNetwork = isWaitingForNetwork
         }
 
         /// The estimated span, when the transfer is moving.

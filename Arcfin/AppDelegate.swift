@@ -52,6 +52,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         handleEventsForBackgroundURLSession identifier: String,
         completionHandler: @escaping () -> Void
     ) {
+        if identifier == MusicTransfers.identifier {
+            MusicTransfers.pendingCompletionHandler = completionHandler
+            // Reconnects the session, which hands over the songs that finished.
+            _ = MusicDownloads.shared
+            return
+        }
         guard identifier == DownloadManager.backgroundSessionIdentifier else {
             completionHandler()
             return
