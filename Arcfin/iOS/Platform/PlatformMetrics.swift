@@ -16,6 +16,10 @@ enum PlatformMetrics {
     /// Can be set up from Arcfin on an iPhone or iPad on the same network while signed out
     /// (#481): Apple TV, iPad and Mac.
     static var hostsNearbySetup: Bool { UIDevice.current.userInterfaceIdiom == .pad }
+    /// What's Playing? with ShazamKit, and Apple Music for songs not on the server. The Mac
+    /// would need a microphone entitlement, and its MusicKit can't play the catalog.
+    static let identifiesSongs = true
+    static let playsAppleMusic = true
     /// What it says it is to the phone setting it up.
     static let nearbySetupKind = DeviceSetup.DeviceKind.iPad
     /// Offers to set up a signed-out Apple TV, iPad or Mac on the same network (#481).

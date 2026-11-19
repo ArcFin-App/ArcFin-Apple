@@ -129,1858 +129,1282 @@
         }
       }
     },
-    "All your profiles are already signed in there." : {
+    "A button in Music that listens with Shazam and finds the song in your library." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alle deine Profile sind dort bereits angemeldet."
+            "value" : "Eine Taste in Musik, die mit Shazam zuhört und den Titel in deiner Mediathek findet."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todos tus perfiles ya tienen la sesión iniciada allí."
+            "value" : "Un botón en Música que escucha con Shazam y busca la canción en tu biblioteca."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tous vos profils y sont déjà connectés."
+            "value" : "Un bouton dans Musique qui écoute avec Shazam et trouve le morceau dans votre bibliothèque."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tutti i tuoi profili hanno già effettuato l’accesso lì."
+            "value" : "Un pulsante in Musica che ascolta con Shazam e trova il brano nella libreria."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "すべてのプロファイルがすでにサインインしています。"
+            "value" : "Shazamで聞き取り、ライブラリで曲を探すボタンを「ミュージック」に表示します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "모든 프로필이 이미 로그인되어 있습니다."
+            "value" : "Shazam으로 듣고 보관함에서 노래를 찾는 버튼을 음악에 표시합니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Al je profielen zijn daar al ingelogd."
+            "value" : "Een knop in Muziek die met Shazam luistert en het nummer in je bibliotheek zoekt."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todos os seus perfis já estão conectados lá."
+            "value" : "Um botão em Música que ouve com o Shazam e encontra a música na sua biblioteca."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Все ваши профили там уже вошли."
+            "value" : "Кнопка в разделе «Музыка», которая слушает через Shazam и находит песню в медиатеке."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的所有配置文件都已在那里登录。"
+            "value" : "在“音乐”中显示一个按钮，用 Shazam 聆听并在你的资料库中查找歌曲。"
           }
         }
       }
     },
-    "Allow on %@" : {
+    "Allow the microphone for Arcfin in Settings to name songs." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Auf „%@“ erlauben"
+            "value" : "Erlaube Arcfin in den Einstellungen den Zugriff auf das Mikrofon, um Titel zu erkennen."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Permitir en %@"
+            "value" : "Permite el micrófono para Arcfin en Ajustes para identificar canciones."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Autoriser sur %@"
+            "value" : "Autorisez le micro pour Arcfin dans Réglages pour identifier les morceaux."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Consenti su %@"
+            "value" : "Consenti il microfono ad Arcfin in Impostazioni per riconoscere i brani."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@で許可"
+            "value" : "曲を調べるには、「設定」でArcfinのマイクを許可してください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@에서 허용"
+            "value" : "노래를 찾으려면 설정에서 Arcfin의 마이크 접근을 허용하세요."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toestaan op %@"
+            "value" : "Sta de microfoon toe voor Arcfin in Instellingen om nummers te herkennen."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Permitir em %@"
+            "value" : "Permita o microfone para o Arcfin em Ajustes para identificar músicas."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Разрешите на «%@»"
+            "value" : "Разрешите Arcfin доступ к микрофону в Настройках, чтобы узнавать песни."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在“%@”上允许"
+            "value" : "在“设置”中允许 Arcfin 使用麦克风以识别歌曲。"
           }
         }
       }
     },
-    "Already signed in there." : {
+    "Apple Music" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dort bereits angemeldet."
+            "value" : "Apple Music"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ya tiene la sesión iniciada allí."
+            "value" : "Apple Music"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Déjà connecté."
+            "value" : "Apple Music"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accesso già effettuato lì."
+            "value" : "Apple Music"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "すでにサインインしています。"
+            "value" : "Apple Music"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이미 로그인되어 있습니다."
+            "value" : "Apple Music"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Daar al ingelogd."
+            "value" : "Apple Music"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Já conectado lá."
+            "value" : "Apple Music"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Там уже выполнен вход."
+            "value" : "Apple Music"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已在那里登录。"
+            "value" : "Apple Music"
           }
         }
       }
     },
-    "An iPhone or iPad on this network wants to set up this device. Allow it only if it shows this code." : {
+    "Apple Music couldn't be reached. %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ein iPhone oder iPad in diesem Netzwerk möchte dieses Gerät einrichten. Erlaube es nur, wenn es diesen Code zeigt."
+            "value" : "Apple Music war nicht erreichbar. %@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un iPhone o iPad de esta red quiere configurar este dispositivo. Permítelo solo si muestra este código."
+            "value" : "No se pudo acceder a Apple Music. %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un iPhone ou un iPad de ce réseau veut configurer cet appareil. Autorisez-le seulement s’il affiche ce code."
+            "value" : "Impossible de joindre Apple Music. %@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un iPhone o iPad su questa rete vuole configurare questo dispositivo. Consentilo solo se mostra questo codice."
+            "value" : "Impossibile raggiungere Apple Music. %@"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このネットワーク上のiPhoneまたはiPadがこのデバイスを設定しようとしています。このコードが表示されている場合のみ許可してください。"
+            "value" : "Apple Musicに接続できませんでした。%@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 네트워크의 iPhone 또는 iPad가 이 기기를 설정하려고 합니다. 이 코드가 표시될 때만 허용하세요."
+            "value" : "Apple Music에 연결할 수 없습니다. %@"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Een iPhone of iPad op dit netwerk wil dit apparaat instellen. Sta het alleen toe als het deze code toont."
+            "value" : "Apple Music kon niet worden bereikt. %@"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Um iPhone ou iPad nesta rede quer configurar este dispositivo. Permita apenas se ele mostrar este código."
+            "value" : "Não foi possível acessar o Apple Music. %@"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "iPhone или iPad в этой сети хочет настроить это устройство. Разрешите, только если на нём этот код."
+            "value" : "Не удалось подключиться к Apple Music. %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此网络上的 iPhone 或 iPad 想要设置此设备。只有在其显示此代码时才允许。"
+            "value" : "无法连接 Apple Music。%@"
           }
         }
       }
     },
-    "Another iPhone or iPad is already setting this device up." : {
+    "Apple Music couldn't play it. %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ein anderes iPhone oder iPad richtet dieses Gerät bereits ein."
+            "value" : "Apple Music konnte es nicht abspielen. %@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Otro iPhone o iPad ya está configurando este dispositivo."
+            "value" : "Apple Music no pudo reproducirla. %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un autre iPhone ou iPad configure déjà cet appareil."
+            "value" : "Apple Music n’a pas pu le lire. %@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un altro iPhone o iPad sta già configurando questo dispositivo."
+            "value" : "Apple Music non è riuscito a riprodurlo. %@"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "別のiPhoneまたはiPadがすでにこのデバイスを設定しています。"
+            "value" : "Apple Musicで再生できませんでした。%@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "다른 iPhone 또는 iPad가 이미 이 기기를 설정하고 있습니다."
+            "value" : "Apple Music에서 재생할 수 없습니다. %@"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Een andere iPhone of iPad stelt dit apparaat al in."
+            "value" : "Apple Music kon het niet afspelen. %@"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Outro iPhone ou iPad já está configurando este dispositivo."
+            "value" : "O Apple Music não conseguiu tocá-la. %@"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Другой iPhone или iPad уже настраивает это устройство."
+            "value" : "Apple Music не смог воспроизвести. %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "另一台 iPhone 或 iPad 已在设置此设备。"
+            "value" : "Apple Music 无法播放。%@"
           }
         }
       }
     },
-    "Couldn't Set It Up" : {
+    "Arcfin isn't allowed to use Apple Music. Allow it in Settings › Privacy & Security › Media & Apple Music." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Einrichten fehlgeschlagen"
+            "value" : "Arcfin darf Apple Music nicht verwenden. Erlaube es unter Einstellungen › Datenschutz & Sicherheit › Medien & Apple Music."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se pudo configurar"
+            "value" : "Arcfin no tiene permiso para usar Apple Music. Permítelo en Ajustes › Privacidad y seguridad › Multimedia y Apple Music."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configuration impossible"
+            "value" : "Arcfin n’est pas autorisé à utiliser Apple Music. Autorisez-le dans Réglages › Confidentialité et sécurité › Contenus multimédias et Apple Music."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossibile configurarlo"
+            "value" : "Arcfin non può usare Apple Music. Consentilo in Impostazioni › Privacy e sicurezza › Contenuti multimediali e Apple Music."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "設定できませんでした"
+            "value" : "ArcfinはApple Musicの使用を許可されていません。「設定」›「プライバシーとセキュリティ」›「メディアとApple Music」で許可してください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "설정할 수 없음"
+            "value" : "Arcfin이 Apple Music을 사용할 수 없습니다. 설정 › 개인정보 보호 및 보안 › 미디어 및 Apple Music에서 허용하세요."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Instellen mislukt"
+            "value" : "Arcfin mag Apple Music niet gebruiken. Sta het toe in Instellingen › Privacy en beveiliging › Media en Apple Music."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Não foi possível configurar"
+            "value" : "O Arcfin não tem permissão para usar o Apple Music. Permita em Ajustes › Privacidade e Segurança › Mídia e Apple Music."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Не удалось настроить"
+            "value" : "Arcfin не разрешено использовать Apple Music. Разрешите в «Настройки» › «Конфиденциальность и безопасность» › «Медиа и Apple Music»."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法设置"
+            "value" : "Arcfin 无权使用 Apple Music。请在“设置”›“隐私与安全性”›“媒体与 Apple Music”中允许。"
           }
         }
       }
     },
-    "Couldn't Set Up This Device" : {
+    "Couldn't Listen" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dieses Gerät konnte nicht eingerichtet werden"
+            "value" : "Zuhören fehlgeschlagen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se pudo configurar este dispositivo"
+            "value" : "No se pudo escuchar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible de configurer cet appareil"
+            "value" : "Écoute impossible"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossibile configurare questo dispositivo"
+            "value" : "Impossibile ascoltare"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このデバイスを設定できませんでした"
+            "value" : "聞き取れませんでした"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 기기를 설정할 수 없음"
+            "value" : "들을 수 없음"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kan dit apparaat niet instellen"
+            "value" : "Luisteren mislukt"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Não foi possível configurar este dispositivo"
+            "value" : "Não foi possível ouvir"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Не удалось настроить это устройство"
+            "value" : "Не удалось прослушать"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法设置此设备"
+            "value" : "无法聆听"
           }
         }
       }
     },
-    "It's signed in as %@." : {
+    "From Apple Music" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Es ist als %@ angemeldet."
+            "value" : "Aus Apple Music"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tiene la sesión iniciada como %@."
+            "value" : "De Apple Music"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Il est connecté en tant que %@."
+            "value" : "D’Apple Music"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ha effettuato l’accesso come %@."
+            "value" : "Da Apple Music"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@ としてサインインしました。"
+            "value" : "Apple Musicから"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@(으)로 로그인되었습니다."
+            "value" : "Apple Music에서"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Het is ingelogd als %@."
+            "value" : "Uit Apple Music"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Está conectado como %@."
+            "value" : "Do Apple Music"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вход выполнен как %@."
+            "value" : "Из Apple Music"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已作为 %@ 登录。"
+            "value" : "来自 Apple Music"
           }
         }
       }
     },
-    "It's signed in with %lld profiles." : {
+    "Hold your iPhone near the music." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Es ist mit %lld Profilen angemeldet."
+            "value" : "Halte dein iPhone in die Nähe der Musik."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tiene la sesión iniciada con %lld perfiles."
+            "value" : "Acerca el iPhone a la música."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Il est connecté avec %lld profils."
+            "value" : "Approchez votre iPhone de la musique."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ha effettuato l’accesso con %lld profili."
+            "value" : "Avvicina l’iPhone alla musica."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld件のプロファイルでサインインしました。"
+            "value" : "iPhoneを音楽の近くにかざしてください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld개의 프로필로 로그인되었습니다."
+            "value" : "iPhone을 음악 가까이에 두세요."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Het is ingelogd met %lld profielen."
+            "value" : "Houd je iPhone dicht bij de muziek."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Está conectado com %lld perfis."
+            "value" : "Aproxime o iPhone da música."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Вход выполнен с %lld профилями."
+            "value" : "Поднесите iPhone ближе к музыке."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已使用 %lld 个配置文件登录。"
+            "value" : "将 iPhone 靠近音乐。"
           }
         }
       }
     },
-    "Looking for Devices" : {
+    "It isn't in your library." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Suche nach Geräten"
+            "value" : "Er ist nicht in deiner Mediathek."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Buscando dispositivos"
+            "value" : "No está en tu biblioteca."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recherche d’appareils"
+            "value" : "Il n’est pas dans votre bibliothèque."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ricerca di dispositivi"
+            "value" : "Non è nella tua libreria."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "デバイスを探しています"
+            "value" : "ライブラリにありません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "기기 찾는 중"
+            "value" : "보관함에 없습니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apparaten zoeken"
+            "value" : "Het staat niet in je bibliotheek."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Procurando dispositivos"
+            "value" : "Não está na sua biblioteca."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Поиск устройств"
+            "value" : "Её нет в медиатеке."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在查找设备"
+            "value" : "它不在你的资料库中。"
           }
         }
       }
     },
-    "No device to set up was found. Open Arcfin on the Apple TV, iPad or Mac, go to its sign-in page, and make sure both are on the same network." : {
+    "Listen Again" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kein einzurichtendes Gerät gefunden. Öffne Arcfin auf dem Apple TV, iPad oder Mac, geh zur Anmeldeseite und achte darauf, dass beide im selben Netzwerk sind."
+            "value" : "Erneut zuhören"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se encontró ningún dispositivo para configurar. Abre Arcfin en el Apple TV, iPad o Mac, ve a su página de inicio de sesión y asegúrate de que ambos estén en la misma red."
+            "value" : "Volver a escuchar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aucun appareil à configurer n’a été trouvé. Ouvrez Arcfin sur l’Apple TV, l’iPad ou le Mac, allez à sa page de connexion et vérifiez que les deux sont sur le même réseau."
+            "value" : "Écouter à nouveau"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nessun dispositivo da configurare trovato. Apri Arcfin sull’Apple TV, iPad o Mac, vai alla pagina di accesso e assicurati che siano sulla stessa rete."
+            "value" : "Ascolta di nuovo"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "設定するデバイスが見つかりませんでした。Apple TV、iPad、またはMacでArcfinを開いてサインインページに移動し、両方が同じネットワークにあることを確認してください。"
+            "value" : "もう一度聞く"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "설정할 기기를 찾을 수 없습니다. Apple TV, iPad 또는 Mac에서 Arcfin을 열고 로그인 페이지로 이동한 다음 둘 다 같은 네트워크에 있는지 확인하세요."
+            "value" : "다시 듣기"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geen apparaat gevonden om in te stellen. Open Arcfin op de Apple TV, iPad of Mac, ga naar de inlogpagina en zorg dat beide op hetzelfde netwerk zitten."
+            "value" : "Opnieuw luisteren"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nenhum dispositivo para configurar foi encontrado. Abra o Arcfin no Apple TV, iPad ou Mac, vá à página de início de sessão e verifique se ambos estão na mesma rede."
+            "value" : "Ouvir de novo"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Устройство для настройки не найдено. Откройте Arcfin на Apple TV, iPad или Mac, перейдите на страницу входа и убедитесь, что оба в одной сети."
+            "value" : "Слушать снова"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "未找到要设置的设备。在 Apple TV、iPad 或 Mac 上打开 Arcfin，前往其登录页面，并确保两者在同一网络中。"
+            "value" : "再次聆听"
           }
         }
       }
     },
-    "Open Arcfin on the Apple TV, iPad or Mac and go to its sign-in page. It needs to be on the same network as this device." : {
+    "No Match" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Öffne Arcfin auf dem Apple TV, iPad oder Mac und geh zur Anmeldeseite. Es muss im selben Netzwerk wie dieses Gerät sein."
+            "value" : "Kein Treffer"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abre Arcfin en el Apple TV, iPad o Mac y ve a su página de inicio de sesión. Debe estar en la misma red que este dispositivo."
+            "value" : "Sin coincidencias"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ouvrez Arcfin sur l’Apple TV, l’iPad ou le Mac et allez à sa page de connexion. Il doit être sur le même réseau que cet appareil."
+            "value" : "Aucun résultat"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apri Arcfin sull’Apple TV, iPad o Mac e vai alla pagina di accesso. Deve essere sulla stessa rete di questo dispositivo."
+            "value" : "Nessuna corrispondenza"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple TV、iPad、またはMacでArcfinを開き、サインインページに移動してください。このデバイスと同じネットワークにある必要があります。"
+            "value" : "一致なし"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apple TV, iPad 또는 Mac에서 Arcfin을 열고 로그인 페이지로 이동하세요. 이 기기와 같은 네트워크에 있어야 합니다."
+            "value" : "일치 항목 없음"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Open Arcfin op de Apple TV, iPad of Mac en ga naar de inlogpagina. Het moet op hetzelfde netwerk zitten als dit apparaat."
+            "value" : "Geen overeenkomst"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abra o Arcfin no Apple TV, iPad ou Mac e vá à página de início de sessão. Ele precisa estar na mesma rede que este dispositivo."
+            "value" : "Nenhuma correspondência"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Откройте Arcfin на Apple TV, iPad или Mac и перейдите на страницу входа. Устройство должно быть в той же сети, что и это."
+            "value" : "Не найдено"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在 Apple TV、iPad 或 Mac 上打开 Arcfin 并前往其登录页面。它需要与此设备在同一网络中。"
+            "value" : "无匹配"
           }
         }
       }
     },
-    "Press Allow on %@." : {
+    "Open in Apple Music" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Drück auf „%@“ auf „Erlauben“."
+            "value" : "In Apple Music öffnen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pulsa Permitir en %@."
+            "value" : "Abrir en Apple Music"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Appuyez sur Autoriser sur %@."
+            "value" : "Ouvrir dans Apple Music"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Premi Consenti su %@."
+            "value" : "Apri in Apple Music"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@で「許可」を押してください。"
+            "value" : "Apple Musicで開く"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%@에서 허용을 누르세요."
+            "value" : "Apple Music에서 열기"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Druk op Toestaan op %@."
+            "value" : "Openen in Apple Music"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toque em Permitir em %@."
+            "value" : "Abrir no Apple Music"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Нажмите «Разрешить» на «%@»."
+            "value" : "Открыть в Apple Music"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在“%@”上按“允许”。"
+            "value" : "在 Apple Music 中打开"
           }
         }
       }
     },
-    "Quick Connect is off on your server, so the other device is showing its password page instead." : {
+    "Other Services" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quick Connect ist auf deinem Server aus, daher zeigt das andere Gerät stattdessen die Passwortseite."
+            "value" : "Weitere Dienste"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quick Connect está desactivado en tu servidor, así que el otro dispositivo muestra la página de contraseña."
+            "value" : "Otros servicios"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quick Connect est désactivé sur votre serveur : l’autre appareil affiche donc sa page de mot de passe."
+            "value" : "Autres services"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quick Connect è disattivato sul server, quindi l’altro dispositivo mostra la pagina della password."
+            "value" : "Altri servizi"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "サーバでQuick Connectがオフのため、もう一方のデバイスにはパスワードページが表示されています。"
+            "value" : "その他のサービス"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "서버에서 Quick Connect가 꺼져 있어 다른 기기에 암호 페이지가 표시됩니다."
+            "value" : "기타 서비스"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quick Connect staat uit op je server, dus het andere apparaat toont de wachtwoordpagina."
+            "value" : "Andere diensten"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "O Quick Connect está desativado no servidor, então o outro dispositivo mostra a página de senha."
+            "value" : "Outros serviços"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quick Connect на сервере выключен, поэтому другое устройство показывает страницу пароля."
+            "value" : "Другие сервисы"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "服务器上的 Quick Connect 已关闭，因此另一台设备显示的是密码页面。"
+            "value" : "其他服务"
           }
         }
       }
     },
-    "Set Up Nearby Device" : {
+    "Play from Your Library" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gerät in der Nähe einrichten"
+            "value" : "Aus deiner Mediathek abspielen"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurar dispositivo cercano"
+            "value" : "Reproducir desde tu biblioteca"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurer un appareil à proximité"
+            "value" : "Lire depuis votre bibliothèque"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configura dispositivo vicino"
+            "value" : "Riproduci dalla libreria"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "近くのデバイスを設定"
+            "value" : "ライブラリから再生"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "주변 기기 설정"
+            "value" : "보관함에서 재생"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apparaat in de buurt instellen"
+            "value" : "Afspelen uit je bibliotheek"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurar dispositivo próximo"
+            "value" : "Tocar da sua biblioteca"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Настроить устройство поблизости"
+            "value" : "Воспроизвести из медиатеки"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "设置附近的设备"
+            "value" : "从资料库播放"
           }
         }
       }
     },
-    "Set Up Nearby Device?" : {
+    "Shazam couldn't listen. %@" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gerät in der Nähe einrichten?"
+            "value" : "Shazam konnte nicht zuhören. %@"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿Configurar dispositivo cercano?"
+            "value" : "Shazam no pudo escuchar. %@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurer l’appareil à proximité ?"
+            "value" : "Shazam n’a pas pu écouter. %@"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurare il dispositivo vicino?"
+            "value" : "Shazam non è riuscito ad ascoltare. %@"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "近くのデバイスを設定しますか？"
+            "value" : "Shazamで聞き取れませんでした。%@"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "주변 기기를 설정하시겠습니까?"
+            "value" : "Shazam이 들을 수 없습니다. %@"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apparaat in de buurt instellen?"
+            "value" : "Shazam kon niet luisteren. %@"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurar dispositivo próximo?"
+            "value" : "O Shazam não conseguiu ouvir. %@"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Настроить устройство поблизости?"
+            "value" : "Shazam не смог прослушать. %@"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "设置附近的设备？"
+            "value" : "Shazam 无法聆听。%@"
           }
         }
       }
     },
-    "Set Up Nearby Devices?" : {
+    "Shazam couldn't name it. Try again closer to the music." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geräte in der Nähe einrichten?"
+            "value" : "Shazam konnte ihn nicht erkennen. Versuche es näher an der Musik."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿Configurar dispositivos cercanos?"
+            "value" : "Shazam no pudo identificarla. Inténtalo más cerca de la música."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurer les appareils à proximité ?"
+            "value" : "Shazam n’a pas pu l’identifier. Réessayez plus près de la musique."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurare i dispositivi vicini?"
+            "value" : "Shazam non l’ha riconosciuto. Riprova più vicino alla musica."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "近くのデバイスを設定しますか？"
+            "value" : "Shazamで曲名がわかりませんでした。音楽にもっと近づけてもう一度お試しください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "주변 기기를 설정하시겠습니까?"
+            "value" : "Shazam이 노래를 찾지 못했습니다. 음악 가까이에서 다시 시도하세요."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Apparaten in de buurt instellen?"
+            "value" : "Shazam kon het niet herkennen. Probeer het dichter bij de muziek."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurar dispositivos próximos?"
+            "value" : "O Shazam não conseguiu identificar. Tente mais perto da música."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Настроить устройства поблизости?"
+            "value" : "Shazam не смог узнать песню. Попробуйте ближе к музыке."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "设置附近的设备？"
+            "value" : "Shazam 无法识别。请靠近音乐再试一次。"
           }
         }
       }
     },
-    "Set Up This Device?" : {
+    "What's Playing?" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dieses Gerät einrichten?"
+            "value" : "Was läuft gerade?"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿Configurar este dispositivo?"
+            "value" : "¿Qué está sonando?"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurer cet appareil ?"
+            "value" : "Qu’est-ce qui passe ?"
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurare questo dispositivo?"
+            "value" : "Cosa sta suonando?"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このデバイスを設定しますか？"
+            "value" : "この曲は？"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 기기를 설정하시겠습니까?"
+            "value" : "무슨 노래일까요?"
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dit apparaat instellen?"
+            "value" : "Wat speelt er?"
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Configurar este dispositivo?"
+            "value" : "O que está tocando?"
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Настроить это устройство?"
+            "value" : "Что играет?"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "设置此设备？"
+            "value" : "正在播放什么？"
           }
         }
       }
     },
-    "Setup was cancelled on the other device." : {
+    "With an Apple Music subscription, search also finds songs that aren't on your server, and plays them from Apple Music." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Einrichtung wurde auf dem anderen Gerät abgebrochen."
+            "value" : "Mit einem Apple Music-Abo findet die Suche auch Titel, die nicht auf deinem Server sind, und spielt sie aus Apple Music."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La configuración se canceló en el otro dispositivo."
+            "value" : "Con una suscripción a Apple Music, la búsqueda también encuentra canciones que no están en tu servidor y las reproduce desde Apple Music."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La configuration a été annulée sur l’autre appareil."
+            "value" : "Avec un abonnement Apple Music, la recherche trouve aussi les morceaux absents de votre serveur et les lit depuis Apple Music."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La configurazione è stata annullata sull’altro dispositivo."
+            "value" : "Con un abbonamento ad Apple Music, la ricerca trova anche i brani che non sono sul server e li riproduce da Apple Music."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "もう一方のデバイスで設定がキャンセルされました。"
+            "value" : "Apple Musicに登録していれば、サーバにない曲も検索で見つかり、Apple Musicから再生できます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "다른 기기에서 설정이 취소되었습니다."
+            "value" : "Apple Music 구독이 있으면 서버에 없는 노래도 검색되고 Apple Music에서 재생됩니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "De instelling is op het andere apparaat geannuleerd."
+            "value" : "Met een Apple Music-abonnement vindt zoeken ook nummers die niet op je server staan, en speelt ze af uit Apple Music."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "A configuração foi cancelada no outro dispositivo."
+            "value" : "Com uma assinatura do Apple Music, a busca também encontra músicas que não estão no seu servidor e as toca pelo Apple Music."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Настройка отменена на другом устройстве."
+            "value" : "С подпиской Apple Music поиск находит и песни, которых нет на вашем сервере, и воспроизводит их из Apple Music."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "已在另一台设备上取消设置。"
+            "value" : "有 Apple Music 订阅时，搜索也会找到服务器上没有的歌曲，并从 Apple Music 播放。"
           }
         }
       }
     },
-    "Sign it in with your profile from here." : {
+    "Your Apple ID doesn't have an Apple Music subscription that plays songs." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Melde es von hier aus mit deinem Profil an."
+            "value" : "Deine Apple-ID hat kein Apple Music-Abo, das Titel abspielt."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inicia sesión allí con tu perfil desde aquí."
+            "value" : "Tu Apple ID no tiene una suscripción a Apple Music que reproduzca canciones."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Connectez-le avec votre profil depuis ici."
+            "value" : "Votre identifiant Apple n’a pas d’abonnement Apple Music permettant la lecture."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accedi con il tuo profilo da qui."
+            "value" : "Il tuo ID Apple non ha un abbonamento ad Apple Music che riproduca i brani."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ここからあなたのプロファイルでサインインします。"
+            "value" : "お使いのApple IDには、曲を再生できるApple Musicのサブスクリプションがありません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "여기에서 내 프로필로 로그인하세요."
+            "value" : "Apple ID에 노래를 재생할 수 있는 Apple Music 구독이 없습니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Log het van hieruit in met je profiel."
+            "value" : "Je Apple ID heeft geen Apple Music-abonnement dat nummers afspeelt."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Conecte-o com seu perfil daqui."
+            "value" : "Seu ID Apple não tem uma assinatura do Apple Music que toque músicas."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Выполните вход с вашим профилем отсюда."
+            "value" : "У вашего Apple ID нет подписки Apple Music для воспроизведения песен."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "从这里用你的配置文件登录它。"
-          }
-        }
-      }
-    },
-    "Signed In" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Angemeldet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sesión iniciada"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Connecté"
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accesso effettuato"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "サインインしました"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "로그인됨"
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ingelogd"
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Conectado"
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Вход выполнен"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "已登录"
-          }
-        }
-      }
-    },
-    "The code has expired or was already used. Start again from the other device's sign-in page." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Code ist abgelaufen oder wurde bereits verwendet. Beginne erneut auf der Anmeldeseite des anderen Geräts."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El código ha caducado o ya se usó. Vuelve a empezar desde la página de inicio de sesión del otro dispositivo."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le code a expiré ou a déjà été utilisé. Recommencez depuis la page de connexion de l’autre appareil."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il codice è scaduto o è già stato usato. Ricomincia dalla pagina di accesso dell’altro dispositivo."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コードの有効期限が切れたか、すでに使用されています。もう一方のデバイスのサインインページからやり直してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "코드가 만료되었거나 이미 사용되었습니다. 다른 기기의 로그인 페이지에서 다시 시작하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "De code is verlopen of al gebruikt. Begin opnieuw vanaf de inlogpagina van het andere apparaat."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O código expirou ou já foi usado. Recomece na página de início de sessão do outro dispositivo."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Срок действия кода истёк, или он уже использован. Начните заново со страницы входа другого устройства."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "代码已过期或已被使用。请从另一台设备的登录页面重新开始。"
-          }
-        }
-      }
-    },
-    "The code ran out before it was confirmed. Start again from the other device's sign-in page." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Der Code ist abgelaufen, bevor er bestätigt wurde. Beginne erneut auf der Anmeldeseite des anderen Geräts."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El código caducó antes de confirmarse. Vuelve a empezar desde la página de inicio de sesión del otro dispositivo."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Le code a expiré avant d’être confirmé. Recommencez depuis la page de connexion de l’autre appareil."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Il codice è scaduto prima della conferma. Ricomincia dalla pagina di accesso dell’altro dispositivo."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "確認される前にコードの有効期限が切れました。もう一方のデバイスのサインインページからやり直してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "확인 전에 코드가 만료되었습니다. 다른 기기의 로그인 페이지에서 다시 시작하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "De code verliep voordat hij werd bevestigd. Begin opnieuw vanaf de inlogpagina van het andere apparaat."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O código expirou antes de ser confirmado. Recomece na página de início de sessão do outro dispositivo."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Срок действия кода истёк до подтверждения. Начните заново со страницы входа другого устройства."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "代码在确认前已过期。请从另一台设备的登录页面重新开始。"
-          }
-        }
-      }
-    },
-    "The other device couldn't reach your server. It needs to be on a network that can reach it." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das andere Gerät konnte deinen Server nicht erreichen. Es muss in einem Netzwerk sein, das ihn erreicht."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El otro dispositivo no pudo acceder a tu servidor. Debe estar en una red que pueda acceder a él."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’autre appareil n’a pas pu joindre votre serveur. Il doit être sur un réseau qui y a accès."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’altro dispositivo non ha raggiunto il server. Deve essere su una rete che lo raggiunge."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "もう一方のデバイスがサーバに接続できませんでした。サーバに接続できるネットワーク上にある必要があります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다른 기기가 서버에 연결할 수 없습니다. 서버에 연결 가능한 네트워크에 있어야 합니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Het andere apparaat kon je server niet bereiken. Het moet op een netwerk zitten dat hem kan bereiken."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O outro dispositivo não conseguiu acessar o servidor. Ele precisa estar numa rede que o alcance."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Другое устройство не смогло подключиться к серверу. Оно должно быть в сети, откуда сервер доступен."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "另一台设备无法访问你的服务器。它需要在能访问服务器的网络中。"
-          }
-        }
-      }
-    },
-    "The other device stopped answering before it confirmed. Check whether it's signed in." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das andere Gerät hat vor der Bestätigung nicht mehr geantwortet. Prüfe, ob es angemeldet ist."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El otro dispositivo dejó de responder antes de confirmar. Comprueba si tiene la sesión iniciada."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’autre appareil a cessé de répondre avant de confirmer. Vérifiez s’il est connecté."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’altro dispositivo ha smesso di rispondere prima di confermare. Controlla se ha effettuato l’accesso."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "もう一方のデバイスが確認前に応答しなくなりました。サインインしているか確認してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다른 기기가 확인 전에 응답을 멈췄습니다. 로그인되었는지 확인하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Het andere apparaat reageerde niet meer voordat het bevestigde. Controleer of het is ingelogd."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O outro dispositivo parou de responder antes de confirmar. Verifique se ele está conectado."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Другое устройство перестало отвечать до подтверждения. Проверьте, выполнен ли вход."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "另一台设备在确认前停止响应。请检查它是否已登录。"
-          }
-        }
-      }
-    },
-    "The other device stopped answering. Try again from its sign-in page." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Das andere Gerät antwortet nicht mehr. Versuche es erneut über seine Anmeldeseite."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El otro dispositivo dejó de responder. Vuelve a intentarlo desde su página de inicio de sesión."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’autre appareil ne répond plus. Réessayez depuis sa page de connexion."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L’altro dispositivo ha smesso di rispondere. Riprova dalla sua pagina di accesso."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "もう一方のデバイスが応答しなくなりました。そのサインインページからもう一度お試しください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다른 기기가 응답을 멈췄습니다. 해당 로그인 페이지에서 다시 시도하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Het andere apparaat reageert niet meer. Probeer het opnieuw vanaf de inlogpagina."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "O outro dispositivo parou de responder. Tente de novo na página de início de sessão dele."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Другое устройство перестало отвечать. Повторите попытку со страницы входа на нём."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "另一台设备已停止响应。请从其登录页面重试。"
-          }
-        }
-      }
-    },
-    "There's more than one device waiting to be set up on this network. Set them up one at a time." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "In diesem Netzwerk warten mehrere Geräte auf die Einrichtung. Richte sie nacheinander ein."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hay más de un dispositivo esperando configuración en esta red. Configúralos de uno en uno."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Plusieurs appareils attendent d’être configurés sur ce réseau. Configurez-les un par un."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Più di un dispositivo è in attesa di configurazione su questa rete. Configurali uno alla volta."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このネットワークには設定を待っているデバイスが複数あります。1台ずつ設定してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이 네트워크에 설정을 기다리는 기기가 여러 대 있습니다. 한 번에 하나씩 설정하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Er wacht meer dan één apparaat op dit netwerk om ingesteld te worden. Stel ze één voor één in."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Há mais de um dispositivo esperando configuração nesta rede. Configure um de cada vez."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "В этой сети несколько устройств ждут настройки. Настраивайте их по одному."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此网络上有多台设备等待设置。请逐一设置。"
-          }
-        }
-      }
-    },
-    "This device couldn't reach %@. Check it's on the same network as your server. If your server needs custom headers, add them here under Custom Headers first." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dieses Gerät konnte %@ nicht erreichen. Prüfe, ob es im selben Netzwerk wie dein Server ist. Braucht dein Server eigene Header, füge sie zuerst hier unter „Eigene Header“ hinzu."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este dispositivo no pudo acceder a %@. Comprueba que esté en la misma red que tu servidor. Si tu servidor necesita encabezados personalizados, añádelos primero aquí en Encabezados personalizados."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cet appareil n’a pas pu joindre %@. Vérifiez qu’il est sur le même réseau que votre serveur. Si votre serveur exige des en-têtes personnalisés, ajoutez-les d’abord ici sous En-têtes personnalisés."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Questo dispositivo non ha raggiunto %@. Controlla che sia sulla stessa rete del server. Se il server richiede intestazioni personalizzate, aggiungile prima qui in Intestazioni personalizzate."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このデバイスは%@に接続できませんでした。サーバと同じネットワークにあるか確認してください。サーバにカスタムヘッダが必要な場合は、まずここの「カスタムヘッダ」で追加してください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이 기기가 %@에 연결할 수 없습니다. 서버와 같은 네트워크에 있는지 확인하세요. 서버에 사용자 지정 헤더가 필요하면 먼저 여기의 사용자 지정 헤더에서 추가하세요."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dit apparaat kon %@ niet bereiken. Controleer of het op hetzelfde netwerk zit als je server. Heeft je server aangepaste headers nodig, voeg ze dan eerst hier toe onder Aangepaste headers."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Este dispositivo não conseguiu acessar %@. Verifique se está na mesma rede do servidor. Se o servidor precisa de cabeçalhos personalizados, adicione-os primeiro aqui em Cabeçalhos personalizados."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Это устройство не смогло подключиться к %@. Проверьте, что оно в той же сети, что и сервер. Если серверу нужны свои заголовки, сначала добавьте их здесь в разделе «Свои заголовки»."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "此设备无法访问 %@。请检查它是否与服务器在同一网络中。如果服务器需要自定义标头，请先在此处的“自定义标头”中添加。"
-          }
-        }
-      }
-    },
-    "You can also set this device up from Arcfin on an iPhone or iPad on this network." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du kannst dieses Gerät auch über Arcfin auf einem iPhone oder iPad in diesem Netzwerk einrichten."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "También puedes configurar este dispositivo desde Arcfin en un iPhone o iPad de esta red."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous pouvez aussi configurer cet appareil depuis Arcfin sur un iPhone ou un iPad de ce réseau."
-          }
-        },
-        "it" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Puoi anche configurare questo dispositivo da Arcfin su un iPhone o iPad su questa rete."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "このネットワーク上のiPhoneまたはiPadのArcfinから、このデバイスを設定することもできます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "이 네트워크의 iPhone 또는 iPad에 있는 Arcfin에서 이 기기를 설정할 수도 있습니다."
-          }
-        },
-        "nl" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Je kunt dit apparaat ook instellen vanuit Arcfin op een iPhone of iPad op dit netwerk."
-          }
-        },
-        "pt-BR" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Você também pode configurar este dispositivo pelo Arcfin num iPhone ou iPad nesta rede."
-          }
-        },
-        "ru" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Это устройство также можно настроить из Arcfin на iPhone или iPad в этой сети."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你也可以通过此网络上 iPhone 或 iPad 中的 Arcfin 设置此设备。"
+            "value" : "你的 Apple ID 没有可以播放歌曲的 Apple Music 订阅。"
           }
         }
       }
@@ -15408,6 +14832,7 @@
       }
     },
     "All your profiles are already on this Apple TV." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -15467,6 +14892,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "你的所有个人资料都已在这台 Apple TV 上。"
+          }
+        }
+      }
+    },
+    "All your profiles are already signed in there." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle deine Profile sind dort bereits angemeldet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todos tus perfiles ya tienen la sesión iniciada allí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous vos profils y sont déjà connectés."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tutti i tuoi profili hanno già effettuato l’accesso lì."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのプロファイルがすでにサインインしています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 프로필이 이미 로그인되어 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Al je profielen zijn daar al ingelogd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todos os seus perfis já estão conectados lá."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Все ваши профили там уже вошли."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的所有配置文件都已在那里登录。"
           }
         }
       }
@@ -15855,7 +15344,72 @@
         }
       }
     },
+    "Allow on %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auf „%@“ erlauben"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permitir en %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Autoriser sur %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consenti su %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@で許可"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@에서 허용"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toestaan op %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Permitir em %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Разрешите на «%@»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“%@”上允许"
+          }
+        }
+      }
+    },
     "Allow on the Apple TV" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16560,6 +16114,7 @@
       }
     },
     "Already on this Apple TV." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16747,6 +16302,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "已登录"
+          }
+        }
+      }
+    },
+    "Already signed in there." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dort bereits angemeldet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya tiene la sesión iniciada allí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Déjà connecté."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso già effettuato lì."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すでにサインインしています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이미 로그인되어 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daar al ingelogd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Já conectado lá."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Там уже выполнен вход."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已在那里登录。"
           }
         }
       }
@@ -17008,6 +16627,7 @@
       }
     },
     "An iPhone or iPad on this network wants to set up this Apple TV. Allow it only if it shows this code." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -17067,6 +16687,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "此网络中的一台 iPhone 或 iPad 想设置这台 Apple TV。仅当它显示此代码时才允许。"
+          }
+        }
+      }
+    },
+    "An iPhone or iPad on this network wants to set up this device. Allow it only if it shows this code." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein iPhone oder iPad in diesem Netzwerk möchte dieses Gerät einrichten. Erlaube es nur, wenn es diesen Code zeigt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un iPhone o iPad de esta red quiere configurar este dispositivo. Permítelo solo si muestra este código."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un iPhone ou un iPad de ce réseau veut configurer cet appareil. Autorisez-le seulement s’il affiche ce code."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un iPhone o iPad su questa rete vuole configurare questo dispositivo. Consentilo solo se mostra questo codice."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このネットワーク上のiPhoneまたはiPadがこのデバイスを設定しようとしています。このコードが表示されている場合のみ許可してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 네트워크의 iPhone 또는 iPad가 이 기기를 설정하려고 합니다. 이 코드가 표시될 때만 허용하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een iPhone of iPad op dit netwerk wil dit apparaat instellen. Sta het alleen toe als het deze code toont."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um iPhone ou iPad nesta rede quer configurar este dispositivo. Permita apenas se ele mostrar este código."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone или iPad в этой сети хочет настроить это устройство. Разрешите, только если на нём этот код."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此网络上的 iPhone 或 iPad 想要设置此设备。只有在其显示此代码时才允许。"
           }
         }
       }
@@ -17200,6 +16884,7 @@
       }
     },
     "Another device is already setting up this Apple TV." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -17259,6 +16944,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "另一台设备正在设置这台 Apple TV。"
+          }
+        }
+      }
+    },
+    "Another iPhone or iPad is already setting this device up." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein anderes iPhone oder iPad richtet dieses Gerät bereits ein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Otro iPhone o iPad ya está configurando este dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un autre iPhone ou iPad configure déjà cet appareil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un altro iPhone o iPad sta già configurando questo dispositivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "別のiPhoneまたはiPadがすでにこのデバイスを設定しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 iPhone 또는 iPad가 이미 이 기기를 설정하고 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een andere iPhone of iPad stelt dit apparaat al in."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outro iPhone ou iPad já está configurando este dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Другой iPhone или iPad уже настраивает это устройство."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "另一台 iPhone 或 iPad 已在设置此设备。"
           }
         }
       }
@@ -33008,7 +32757,72 @@
         }
       }
     },
+    "Couldn't Set It Up" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einrichten fehlgeschlagen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo configurar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuration impossible"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile configurarlo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定できませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정할 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Instellen mislukt"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível configurar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось настроить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法设置"
+          }
+        }
+      }
+    },
     "Couldn't Set Up Apple TV" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -33073,6 +32887,7 @@
       }
     },
     "Couldn't Set Up This Apple TV" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -33132,6 +32947,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "无法设置这台 Apple TV"
+          }
+        }
+      }
+    },
+    "Couldn't Set Up This Device" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Gerät konnte nicht eingerichtet werden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo configurar este dispositivo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de configurer cet appareil"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossibile configurare questo dispositivo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデバイスを設定できませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 기기를 설정할 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kan dit apparaat niet instellen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível configurar este dispositivo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не удалось настроить это устройство"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法设置此设备"
           }
         }
       }
@@ -54064,6 +53943,134 @@
         }
       }
     },
+    "It's signed in as %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es ist als %@ angemeldet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiene la sesión iniciada como %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il est connecté en tant que %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ha effettuato l’accesso come %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ としてサインインしました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@(으)로 로그인되었습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Het is ingelogd als %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Está conectado como %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вход выполнен как %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已作为 %@ 登录。"
+          }
+        }
+      }
+    },
+    "It's signed in with %lld profiles." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es ist mit %lld Profilen angemeldet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiene la sesión iniciada con %lld perfiles."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il est connecté avec %lld profils."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ha effettuato l’accesso con %lld profili."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld件のプロファイルでサインインしました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld개의 프로필로 로그인되었습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Het is ingelogd met %lld profielen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Está conectado com %lld perfis."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вход выполнен с %lld профилями."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已使用 %lld 个配置文件登录。"
+          }
+        }
+      }
+    },
     "Its settings go with it." : {
       "localizations" : {
         "de" : {
@@ -59059,6 +59066,7 @@
     },
     "Looking for Apple TVs" : {
       "comment" : "A heading displayed when searching for Apple TVs.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "de" : {
@@ -59119,6 +59127,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "正在查找 Apple TV"
+          }
+        }
+      }
+    },
+    "Looking for Devices" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suche nach Geräten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscando dispositivos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recherche d’appareils"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ricerca di dispositivi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デバイスを探しています"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기기 찾는 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apparaten zoeken"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Procurando dispositivos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поиск устройств"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在查找设备"
           }
         }
       }
@@ -67319,6 +67391,7 @@
     },
     "No Apple TV to set up was found. Open Arcfin on the Apple TV, go to its sign-in page, and make sure both are on the same network." : {
       "comment" : "Error message when the Apple TV setup process times out.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "de" : {
@@ -67699,6 +67772,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "此描述文件未设置内容限制。"
+          }
+        }
+      }
+    },
+    "No device to set up was found. Open Arcfin on the Apple TV, iPad or Mac, go to its sign-in page, and make sure both are on the same network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kein einzurichtendes Gerät gefunden. Öffne Arcfin auf dem Apple TV, iPad oder Mac, geh zur Anmeldeseite und achte darauf, dass beide im selben Netzwerk sind."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se encontró ningún dispositivo para configurar. Abre Arcfin en el Apple TV, iPad o Mac, ve a su página de inicio de sesión y asegúrate de que ambos estén en la misma red."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun appareil à configurer n’a été trouvé. Ouvrez Arcfin sur l’Apple TV, l’iPad ou le Mac, allez à sa page de connexion et vérifiez que les deux sont sur le même réseau."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nessun dispositivo da configurare trovato. Apri Arcfin sull’Apple TV, iPad o Mac, vai alla pagina di accesso e assicurati che siano sulla stessa rete."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定するデバイスが見つかりませんでした。Apple TV、iPad、またはMacでArcfinを開いてサインインページに移動し、両方が同じネットワークにあることを確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정할 기기를 찾을 수 없습니다. Apple TV, iPad 또는 Mac에서 Arcfin을 열고 로그인 페이지로 이동한 다음 둘 다 같은 네트워크에 있는지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geen apparaat gevonden om in te stellen. Open Arcfin op de Apple TV, iPad of Mac, ga naar de inlogpagina en zorg dat beide op hetzelfde netwerk zitten."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhum dispositivo para configurar foi encontrado. Abra o Arcfin no Apple TV, iPad ou Mac, vá à página de início de sessão e verifique se ambos estão na mesma rede."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Устройство для настройки не найдено. Откройте Arcfin на Apple TV, iPad или Mac, перейдите на страницу входа и убедитесь, что оба в одной сети."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未找到要设置的设备。在 Apple TV、iPad 或 Mac 上打开 Arcfin，前往其登录页面，并确保两者在同一网络中。"
           }
         }
       }
@@ -73148,6 +73285,7 @@
     },
     "Open Arcfin on the Apple TV and go to its sign-in page. It needs to be on the same network as this device." : {
       "comment" : "A note explaining how to set up an Apple TV.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "de" : {
@@ -73208,6 +73346,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在 Apple TV 上打开 Arcfin 并前往登录页面。它需要与此设备在同一网络中。"
+          }
+        }
+      }
+    },
+    "Open Arcfin on the Apple TV, iPad or Mac and go to its sign-in page. It needs to be on the same network as this device." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne Arcfin auf dem Apple TV, iPad oder Mac und geh zur Anmeldeseite. Es muss im selben Netzwerk wie dieses Gerät sein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre Arcfin en el Apple TV, iPad o Mac y ve a su página de inicio de sesión. Debe estar en la misma red que este dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrez Arcfin sur l’Apple TV, l’iPad ou le Mac et allez à sa page de connexion. Il doit être sur le même réseau que cet appareil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri Arcfin sull’Apple TV, iPad o Mac e vai alla pagina di accesso. Deve essere sulla stessa rete di questo dispositivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple TV、iPad、またはMacでArcfinを開き、サインインページに移動してください。このデバイスと同じネットワークにある必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple TV, iPad 또는 Mac에서 Arcfin을 열고 로그인 페이지로 이동하세요. 이 기기와 같은 네트워크에 있어야 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Arcfin op de Apple TV, iPad of Mac en ga naar de inlogpagina. Het moet op hetzelfde netwerk zitten als dit apparaat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abra o Arcfin no Apple TV, iPad ou Mac e vá à página de início de sessão. Ele precisa estar na mesma rede que este dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Откройте Arcfin на Apple TV, iPad или Mac и перейдите на страницу входа. Устройство должно быть в той же сети, что и это."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 Apple TV、iPad 或 Mac 上打开 Arcfin 并前往其登录页面。它需要与此设备在同一网络中。"
           }
         }
       }
@@ -82944,6 +83146,70 @@
         }
       }
     },
+    "Press Allow on %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Drück auf „%@“ auf „Erlauben“."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pulsa Permitir en %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appuyez sur Autoriser sur %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Premi Consenti su %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@で「許可」を押してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@에서 허용을 누르세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Druk op Toestaan op %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Toque em Permitir em %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нажмите «Разрешить» на «%@»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“%@”上按“允许”。"
+          }
+        }
+      }
+    },
     "Press and hold the clickpad to play at this speed until you let go." : {
       "localizations" : {
         "de" : {
@@ -84481,6 +84747,7 @@
       }
     },
     "Quick Connect is off on your server, so the Apple TV is showing its password page instead." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -84540,6 +84807,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "你的服务器关闭了 Quick Connect，因此 Apple TV 显示了密码页面。"
+          }
+        }
+      }
+    },
+    "Quick Connect is off on your server, so the other device is showing its password page instead." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect ist auf deinem Server aus, daher zeigt das andere Gerät stattdessen die Passwortseite."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect está desactivado en tu servidor, así que el otro dispositivo muestra la página de contraseña."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect est désactivé sur votre serveur : l’autre appareil affiche donc sa page de mot de passe."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect è disattivato sul server, quindi l’altro dispositivo mostra la pagina della password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバでQuick Connectがオフのため、もう一方のデバイスにはパスワードページが表示されています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서버에서 Quick Connect가 꺼져 있어 다른 기기에 암호 페이지가 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect staat uit op je server, dus het andere apparaat toont de wachtwoordpagina."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Quick Connect está desativado no servidor, então o outro dispositivo mostra a página de senha."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quick Connect на сервере выключен, поэтому другое устройство показывает страницу пароля."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器上的 Quick Connect 已关闭，因此另一台设备显示的是密码页面。"
           }
         }
       }
@@ -99585,6 +99916,7 @@
       }
     },
     "Set Up Apple TV?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -99649,6 +99981,7 @@
       }
     },
     "Set Up Apple TVs?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -99713,6 +100046,7 @@
       }
     },
     "Set Up Nearby Apple TV" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -99776,7 +100110,200 @@
         }
       }
     },
+    "Set Up Nearby Device" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gerät in der Nähe einrichten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurar dispositivo cercano"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurer un appareil à proximité"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configura dispositivo vicino"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "近くのデバイスを設定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "주변 기기 설정"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apparaat in de buurt instellen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurar dispositivo próximo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настроить устройство поблизости"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置附近的设备"
+          }
+        }
+      }
+    },
+    "Set Up Nearby Device?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gerät in der Nähe einrichten?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Configurar dispositivo cercano?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurer l’appareil à proximité ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurare il dispositivo vicino?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "近くのデバイスを設定しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "주변 기기를 설정하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apparaat in de buurt instellen?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurar dispositivo próximo?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настроить устройство поблизости?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置附近的设备？"
+          }
+        }
+      }
+    },
+    "Set Up Nearby Devices?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geräte in der Nähe einrichten?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Configurar dispositivos cercanos?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurer les appareils à proximité ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurare i dispositivi vicini?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "近くのデバイスを設定しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "주변 기기를 설정하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apparaten in de buurt instellen?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurar dispositivos próximos?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настроить устройства поблизости?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置附近的设备？"
+          }
+        }
+      }
+    },
     "Set Up This Apple TV?" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -99836,6 +100363,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "要设置这台 Apple TV 吗？"
+          }
+        }
+      }
+    },
+    "Set Up This Device?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Gerät einrichten?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Configurar este dispositivo?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurer cet appareil ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurare questo dispositivo?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデバイスを設定しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 기기를 설정하시겠습니까?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dit apparaat instellen?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurar este dispositivo?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настроить это устройство?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置此设备？"
           }
         }
       }
@@ -100225,6 +100816,7 @@
       }
     },
     "Setup was cancelled on the Apple TV." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -100284,6 +100876,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Apple TV 上已取消设置。"
+          }
+        }
+      }
+    },
+    "Setup was cancelled on the other device." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Einrichtung wurde auf dem anderen Gerät abgebrochen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La configuración se canceló en el otro dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La configuration a été annulée sur l’autre appareil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La configurazione è stata annullata sull’altro dispositivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一方のデバイスで設定がキャンセルされました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 기기에서 설정이 취소되었습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De instelling is op het andere apparaat geannuleerd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A configuração foi cancelada no outro dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настройка отменена на другом устройстве."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已在另一台设备上取消设置。"
           }
         }
       }
@@ -104708,6 +105364,70 @@
         }
       }
     },
+    "Sign it in with your profile from here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Melde es von hier aus mit deinem Profil an."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia sesión allí con tu perfil desde aquí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez-le avec votre profil depuis ici."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accedi con il tuo profilo da qui."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ここからあなたのプロファイルでサインインします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "여기에서 내 프로필로 로그인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Log het van hieruit in met je profiel."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conecte-o com seu perfil daqui."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выполните вход с вашим профилем отсюда."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从这里用你的配置文件登录它。"
+          }
+        }
+      }
+    },
     "Sign Out" : {
       "localizations" : {
         "de" : {
@@ -105030,6 +105750,7 @@
     },
     "Sign this Apple TV in with your profile from here." : {
       "comment" : "A note displayed in the Apple TV setup card.",
+      "extractionState" : "stale",
       "isCommentAutoGenerated" : true,
       "localizations" : {
         "de" : {
@@ -105154,6 +105875,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "登录方式"
+          }
+        }
+      }
+    },
+    "Signed In" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Angemeldet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sesión iniciada"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connecté"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accesso effettuato"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サインインしました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ingelogd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Conectado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вход выполнен"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已登录"
           }
         }
       }
@@ -105287,6 +106072,7 @@
       }
     },
     "Signing In the Apple TV" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -115657,6 +116443,7 @@
       }
     },
     "The Apple TV couldn't reach your server. It needs to be on a network that can reach it." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -115721,6 +116508,7 @@
       }
     },
     "The Apple TV is signed in as %@." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -115785,6 +116573,7 @@
       }
     },
     "The Apple TV is signed in with %lld profiles." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -115977,6 +116766,7 @@
       }
     },
     "The Apple TV stopped answering before it confirmed. Check whether it's signed in." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -116041,6 +116831,7 @@
       }
     },
     "The Apple TV stopped answering. Try again from its sign-in page." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -116617,6 +117408,7 @@
       }
     },
     "The code has expired or was already used. Start again from the Apple TV's sign-in page." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -116680,7 +117472,72 @@
         }
       }
     },
+    "The code has expired or was already used. Start again from the other device's sign-in page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Code ist abgelaufen oder wurde bereits verwendet. Beginne erneut auf der Anmeldeseite des anderen Geräts."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El código ha caducado o ya se usó. Vuelve a empezar desde la página de inicio de sesión del otro dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le code a expiré ou a déjà été utilisé. Recommencez depuis la page de connexion de l’autre appareil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il codice è scaduto o è già stato usato. Ricomincia dalla pagina di accesso dell’altro dispositivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コードの有効期限が切れたか、すでに使用されています。もう一方のデバイスのサインインページからやり直してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "코드가 만료되었거나 이미 사용되었습니다. 다른 기기의 로그인 페이지에서 다시 시작하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De code is verlopen of al gebruikt. Begin opnieuw vanaf de inlogpagina van het andere apparaat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O código expirou ou já foi usado. Recomece na página de início de sessão do outro dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Срок действия кода истёк, или он уже использован. Начните заново со страницы входа другого устройства."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "代码已过期或已被使用。请从另一台设备的登录页面重新开始。"
+          }
+        }
+      }
+    },
     "The code ran out before it was confirmed. Start again from the Apple TV's sign-in page." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -116740,6 +117597,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "代码在确认前已过期。请从 Apple TV 的登录页面重新开始。"
+          }
+        }
+      }
+    },
+    "The code ran out before it was confirmed. Start again from the other device's sign-in page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Code ist abgelaufen, bevor er bestätigt wurde. Beginne erneut auf der Anmeldeseite des anderen Geräts."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El código caducó antes de confirmarse. Vuelve a empezar desde la página de inicio de sesión del otro dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le code a expiré avant d’être confirmé. Recommencez depuis la page de connexion de l’autre appareil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il codice è scaduto prima della conferma. Ricomincia dalla pagina di accesso dell’altro dispositivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認される前にコードの有効期限が切れました。もう一方のデバイスのサインインページからやり直してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "확인 전에 코드가 만료되었습니다. 다른 기기의 로그인 페이지에서 다시 시작하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De code verliep voordat hij werd bevestigd. Begin opnieuw vanaf de inlogpagina van het andere apparaat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O código expirou antes de ser confirmado. Recomece na página de início de sessão do outro dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Срок действия кода истёк до подтверждения. Начните заново со страницы входа другого устройства."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "代码在确认前已过期。请从另一台设备的登录页面重新开始。"
           }
         }
       }
@@ -117828,6 +118749,198 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "原始文件保留所有音轨。选择较低画质即可挑选要保留的音轨。"
+          }
+        }
+      }
+    },
+    "The other device couldn't reach your server. It needs to be on a network that can reach it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das andere Gerät konnte deinen Server nicht erreichen. Es muss in einem Netzwerk sein, das ihn erreicht."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El otro dispositivo no pudo acceder a tu servidor. Debe estar en una red que pueda acceder a él."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’autre appareil n’a pas pu joindre votre serveur. Il doit être sur un réseau qui y a accès."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’altro dispositivo non ha raggiunto il server. Deve essere su una rete che lo raggiunge."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一方のデバイスがサーバに接続できませんでした。サーバに接続できるネットワーク上にある必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 기기가 서버에 연결할 수 없습니다. 서버에 연결 가능한 네트워크에 있어야 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Het andere apparaat kon je server niet bereiken. Het moet op een netwerk zitten dat hem kan bereiken."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O outro dispositivo não conseguiu acessar o servidor. Ele precisa estar numa rede que o alcance."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Другое устройство не смогло подключиться к серверу. Оно должно быть в сети, откуда сервер доступен."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "另一台设备无法访问你的服务器。它需要在能访问服务器的网络中。"
+          }
+        }
+      }
+    },
+    "The other device stopped answering before it confirmed. Check whether it's signed in." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das andere Gerät hat vor der Bestätigung nicht mehr geantwortet. Prüfe, ob es angemeldet ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El otro dispositivo dejó de responder antes de confirmar. Comprueba si tiene la sesión iniciada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’autre appareil a cessé de répondre avant de confirmer. Vérifiez s’il est connecté."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’altro dispositivo ha smesso di rispondere prima di confermare. Controlla se ha effettuato l’accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一方のデバイスが確認前に応答しなくなりました。サインインしているか確認してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 기기가 확인 전에 응답을 멈췄습니다. 로그인되었는지 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Het andere apparaat reageerde niet meer voordat het bevestigde. Controleer of het is ingelogd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O outro dispositivo parou de responder antes de confirmar. Verifique se ele está conectado."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Другое устройство перестало отвечать до подтверждения. Проверьте, выполнен ли вход."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "另一台设备在确认前停止响应。请检查它是否已登录。"
+          }
+        }
+      }
+    },
+    "The other device stopped answering. Try again from its sign-in page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das andere Gerät antwortet nicht mehr. Versuche es erneut über seine Anmeldeseite."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El otro dispositivo dejó de responder. Vuelve a intentarlo desde su página de inicio de sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’autre appareil ne répond plus. Réessayez depuis sa page de connexion."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’altro dispositivo ha smesso di rispondere. Riprova dalla sua pagina di accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一方のデバイスが応答しなくなりました。そのサインインページからもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 기기가 응답을 멈췄습니다. 해당 로그인 페이지에서 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Het andere apparaat reageert niet meer. Probeer het opnieuw vanaf de inlogpagina."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O outro dispositivo parou de responder. Tente de novo na página de início de sessão dele."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Другое устройство перестало отвечать. Повторите попытку со страницы входа на нём."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "另一台设备已停止响应。请从其登录页面重试。"
           }
         }
       }
@@ -120265,6 +121378,7 @@
       }
     },
     "There's more than one Apple TV waiting to be set up on this network. Set them up one at a time." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -120324,6 +121438,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "此网络中有多台 Apple TV 等待设置。请逐台设置。"
+          }
+        }
+      }
+    },
+    "There's more than one device waiting to be set up on this network. Set them up one at a time." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In diesem Netzwerk warten mehrere Geräte auf die Einrichtung. Richte sie nacheinander ein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hay más de un dispositivo esperando configuración en esta red. Configúralos de uno en uno."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Plusieurs appareils attendent d’être configurés sur ce réseau. Configurez-les un par un."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Più di un dispositivo è in attesa di configurazione su questa rete. Configurali uno alla volta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このネットワークには設定を待っているデバイスが複数あります。1台ずつ設定してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 네트워크에 설정을 기다리는 기기가 여러 대 있습니다. 한 번에 하나씩 설정하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Er wacht meer dan één apparaat op dit netwerk om ingesteld te worden. Stel ze één voor één in."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Há mais de um dispositivo esperando configuração nesta rede. Configure um de cada vez."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В этой сети несколько устройств ждут настройки. Настраивайте их по одному."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此网络上有多台设备等待设置。请逐一设置。"
           }
         }
       }
@@ -120841,6 +122019,7 @@
       }
     },
     "This Apple TV couldn't reach %@. Check it's on the same network as your server. If your server needs custom headers, add them here under Custom Headers first." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -121284,6 +122463,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "此连接对高清视频来说较慢。服务器可能会将视频转换为较低画质。"
+          }
+        }
+      }
+    },
+    "This device couldn't reach %@. Check it's on the same network as your server. If your server needs custom headers, add them here under Custom Headers first." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dieses Gerät konnte %@ nicht erreichen. Prüfe, ob es im selben Netzwerk wie dein Server ist. Braucht dein Server eigene Header, füge sie zuerst hier unter „Eigene Header“ hinzu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este dispositivo no pudo acceder a %@. Comprueba que esté en la misma red que tu servidor. Si tu servidor necesita encabezados personalizados, añádelos primero aquí en Encabezados personalizados."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cet appareil n’a pas pu joindre %@. Vérifiez qu’il est sur le même réseau que votre serveur. Si votre serveur exige des en-têtes personnalisés, ajoutez-les d’abord ici sous En-têtes personnalisés."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Questo dispositivo non ha raggiunto %@. Controlla che sia sulla stessa rete del server. Se il server richiede intestazioni personalizzate, aggiungile prima qui in Intestazioni personalizzate."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このデバイスは%@に接続できませんでした。サーバと同じネットワークにあるか確認してください。サーバにカスタムヘッダが必要な場合は、まずここの「カスタムヘッダ」で追加してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 기기가 %@에 연결할 수 없습니다. 서버와 같은 네트워크에 있는지 확인하세요. 서버에 사용자 지정 헤더가 필요하면 먼저 여기의 사용자 지정 헤더에서 추가하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dit apparaat kon %@ niet bereiken. Controleer of het op hetzelfde netwerk zit als je server. Heeft je server aangepaste headers nodig, voeg ze dan eerst hier toe onder Aangepaste headers."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Este dispositivo não conseguiu acessar %@. Verifique se está na mesma rede do servidor. Se o servidor precisa de cabeçalhos personalizados, adicione-os primeiro aqui em Cabeçalhos personalizados."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Это устройство не смогло подключиться к %@. Проверьте, что оно в той же сети, что и сервер. Если серверу нужны свои заголовки, сначала добавьте их здесь в разделе «Свои заголовки»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此设备无法访问 %@。请检查它是否与服务器在同一网络中。如果服务器需要自定义标头，请先在此处的“自定义标头”中添加。"
           }
         }
       }
@@ -133963,7 +135206,72 @@
         }
       }
     },
+    "You can also set this device up from Arcfin on an iPhone or iPad on this network." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du kannst dieses Gerät auch über Arcfin auf einem iPhone oder iPad in diesem Netzwerk einrichten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "También puedes configurar este dispositivo desde Arcfin en un iPhone o iPad de esta red."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous pouvez aussi configurer cet appareil depuis Arcfin sur un iPhone ou un iPad de ce réseau."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puoi anche configurare questo dispositivo da Arcfin su un iPhone o iPad su questa rete."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このネットワーク上のiPhoneまたはiPadのArcfinから、このデバイスを設定することもできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 네트워크의 iPhone 또는 iPad에 있는 Arcfin에서 이 기기를 설정할 수도 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je kunt dit apparaat ook instellen vanuit Arcfin op een iPhone of iPad op dit netwerk."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você também pode configurar este dispositivo pelo Arcfin num iPhone ou iPad nesta rede."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Это устройство также можно настроить из Arcfin на iPhone или iPad в этой сети."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你也可以通过此网络上 iPhone 或 iPad 中的 Arcfin 设置此设备。"
+          }
+        }
+      }
+    },
     "You can also set up this Apple TV from Arcfin on an iPhone or iPad on this network." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

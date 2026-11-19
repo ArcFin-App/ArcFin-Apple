@@ -162,3 +162,36 @@ struct MusicLyricsSection: View {
         }
     }
 }
+
+/// Settings › Music › Other Services: ShazamKit and Apple Music, both off until turned on.
+struct MusicServicesSection: View {
+    @Environment(AuthManager.self) private var authManager
+    @AppStorage(MusicSettings.identifySongsKey) private var identifiesSongs = false
+    @AppStorage(MusicSettings.appleMusicKey) private var appleMusic = false
+
+    var body: some View {
+        if PlatformMetrics.identifiesSongs || PlatformMetrics.playsAppleMusic {
+            Section {
+                if PlatformMetrics.identifiesSongs {
+                    Toggle(isOn: $identifiesSongs) {
+                        TVRowLabelText(title: "What's Playing?", detail: "A button in Music that listens with Shazam and finds the song in your library.")
+                    }
+                    .syncLocked(MusicSettings.identifySongsKey, authManager)
+                }
+                if PlatformMetrics.playsAppleMusic {
+                    Toggle(isOn: $appleMusic) {
+                        TVRowLabelText(title: "Apple Music", detail: "With an Apple Music subscription, search also finds songs that aren't on your server, and plays them from Apple Music.")
+                    }
+                    .syncLocked(MusicSettings.appleMusicKey, authManager)
+                }
+            } header: {
+                Text("Other Services")
+            } footer: {
+                if appleMusic, let problem = AppleMusicCatalog.shared.problem { Text(problem) }
+            }
+            .onChange(of: appleMusic) { _, on in
+                if on { Task { await AppleMusicCatalog.shared.requestAccess() } }
+            }
+        }
+    }
+}

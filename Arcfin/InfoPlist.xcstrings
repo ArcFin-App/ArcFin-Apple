@@ -145,6 +145,78 @@
         }
       }
     },
+    "NSAppleMusicUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin findet und spielt Apple Music-Titel, die nicht auf deinem Server sind, sobald du das in den Einstellungen aktivierst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin busca y reproduce canciones de Apple Music que no están en tu servidor, cuando lo activas en Ajustes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin trouve et lit les morceaux Apple Music absents de votre serveur, une fois l’option activée dans Réglages."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin trova e riproduce i brani di Apple Music che non sono sul server, dopo che lo attivi in Impostazioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「設定」でオンにすると、サーバにないApple Musicの曲をArcfinが見つけて再生します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정에서 켜면 서버에 없는 Apple Music 노래를 Arcfin이 찾아 재생합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin vindt en speelt Apple Music-nummers die niet op je server staan, zodra je dit aanzet in Instellingen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Arcfin encontra e toca músicas do Apple Music que não estão no seu servidor, quando você ativa isso em Ajustes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin находит и воспроизводит песни из Apple Music, которых нет на вашем сервере, после включения в Настройках."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“设置”中开启后，Arcfin 会查找并播放你的服务器上没有的 Apple Music 歌曲。"
+          }
+        }
+      }
+    },
     "NSBluetoothAlwaysUsageDescription" : {
       "comment" : "Permission prompt",
       "extractionState" : "extracted_with_value",
@@ -509,70 +581,70 @@
       "comment" : "Permission prompt",
       "extractionState" : "extracted_with_value",
       "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin hört zu, wenn du im Auto per Sprache suchst, um Musik auf deinem Server zu finden."
-          }
-        },
         "en" : {
           "stringUnit" : {
-            "state" : "new",
-            "value" : "Arcfin listens when you search by voice in the car, to find music on your server."
+            "state" : "translated",
+            "value" : "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you."
+          }
+        },
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin hört zu, wenn du im Auto per Sprache suchst oder einen Titel in deiner Nähe erkennen lässt."
           }
         },
         "es" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin escucha cuando buscas por voz en el coche, para encontrar música en tu servidor."
+            "state" : "translated",
+            "value" : "Arcfin escucha cuando buscas por voz en el coche o le pides que identifique una canción que suena cerca."
           }
         },
         "fr" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin vous écoute quand vous cherchez à la voix en voiture, pour trouver de la musique sur votre serveur."
+            "state" : "translated",
+            "value" : "Arcfin écoute quand vous cherchez à la voix en voiture ou lui demandez d’identifier un morceau qui passe près de vous."
           }
         },
         "it" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin ascolta quando cerchi con la voce in auto, per trovare musica sul tuo server."
+            "state" : "translated",
+            "value" : "Arcfin ascolta quando cerchi con la voce in auto o gli chiedi di riconoscere un brano che suona vicino a te."
           }
         },
         "ja" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "車内で音声検索するとき、サーバ上の音楽を探すためにArcfinが音声を聞き取ります。"
+            "state" : "translated",
+            "value" : "車内で音声検索するときや、近くで流れている曲を調べるときに、Arcfinが音声を聞き取ります。"
           }
         },
         "ko" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "차에서 음성으로 검색할 때 Arcfin이 서버에서 음악을 찾기 위해 듣습니다."
+            "state" : "translated",
+            "value" : "차에서 음성으로 검색하거나 주변에서 재생 중인 노래를 찾아 달라고 할 때 Arcfin이 듣습니다."
           }
         },
         "nl" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin luistert als je in de auto met je stem zoekt, om muziek op je server te vinden."
+            "state" : "translated",
+            "value" : "Arcfin luistert als je in de auto met je stem zoekt of een nummer in de buurt laat herkennen."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "O Arcfin escuta quando você busca por voz no carro, para encontrar músicas no seu servidor."
+            "state" : "translated",
+            "value" : "O Arcfin ouve quando você busca por voz no carro ou pede para identificar uma música tocando perto de você."
           }
         },
         "ru" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "Arcfin слушает, когда вы ищете голосом в машине, чтобы найти музыку на вашем сервере."
+            "state" : "translated",
+            "value" : "Arcfin слушает, когда вы ищете голосом в машине или просите узнать песню, играющую рядом."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
-            "state" : "needs_review",
-            "value" : "在车内用语音搜索时，Arcfin 会聆听以在你的服务器上查找音乐。"
+            "state" : "translated",
+            "value" : "当你在车内用语音搜索，或让 Arcfin 识别附近播放的歌曲时，Arcfin 会聆听。"
           }
         }
       }

@@ -334,6 +334,8 @@ extension TimeInterval {
 @MainActor @Observable
 final class MusicSearchModel {
     private(set) var results = MusicSearchResults()
+    /// Songs the server doesn't have, from Apple Music, when that's turned on.
+    private(set) var appleMusic: [AppleMusicCatalog.Song] = []
     private(set) var isSearching = false
     @ObservationIgnored private var task: Task<Void, Never>?
 
@@ -342,6 +344,7 @@ final class MusicSearchModel {
         let term = term.trimmingCharacters(in: .whitespaces)
         guard term.count >= 2 else {
             results = MusicSearchResults()
+            appleMusic = []
             isSearching = false
             return
         }
@@ -353,6 +356,9 @@ final class MusicSearchModel {
             guard !Task.isCancelled else { return }
             results = found ?? MusicSearchResults()
             isSearching = false
+            let catalog = await AppleMusicCatalog.shared.search(term, excluding: results.songs)
+            guard !Task.isCancelled else { return }
+            appleMusic = catalog
         }
     }
 }

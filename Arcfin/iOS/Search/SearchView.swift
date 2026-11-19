@@ -38,7 +38,7 @@ struct SearchView: View {
     private var searchesMusic: Bool { mediaRepo.libraries.contains { $0.collectionType == .music } }
 
     private var foundNothing: Bool {
-        model.foundNothing && !liveTV.isSearching && !liveTV.hasSearchResults && !music.isSearching && music.results.isEmpty
+        model.foundNothing && !liveTV.isSearching && !liveTV.hasSearchResults && !music.isSearching && music.results.isEmpty && music.appleMusic.isEmpty
     }
 
     private func saveRecentSearch() {
@@ -73,8 +73,8 @@ struct SearchView: View {
                         ForEach(model.libraryGroups, id: \.title) { group in
                             libraryShelf(group)
                         }
-                        if !music.results.isEmpty {
-                            MusicSearchSection(results: music.results)
+                        if !music.results.isEmpty || !music.appleMusic.isEmpty {
+                            MusicSearchSection(results: music.results, appleMusic: music.appleMusic)
                                 .simultaneousGesture(TapGesture().onEnded { saveRecentSearch() })
                         }
                         if liveTV.hasSearchResults {
@@ -160,8 +160,8 @@ struct SearchView: View {
                 } else if model.isSearchingLibrary {
                     ProgressView().frame(maxWidth: .infinity)
                 }
-                if !music.results.isEmpty {
-                    MusicSearchSection(results: music.results)
+                if !music.results.isEmpty || !music.appleMusic.isEmpty {
+                    MusicSearchSection(results: music.results, appleMusic: music.appleMusic)
                         .padding(.horizontal, -DT.Spacing.pagePad)
                 }
                 if liveTV.hasSearchResults {

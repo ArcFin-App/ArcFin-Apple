@@ -12,6 +12,8 @@ struct MusicLibraryView: View {
     @State private var mostPlayed: MusicPagedList<MusicSong>
     @State private var query = ""
     @State private var search = MusicSearchModel()
+    @State private var showsIdentify = false
+    @AppStorage(MusicSettings.identifySongsKey) private var identifiesSongs = false
 
     init(library: JellyfinLibrary) {
         self.library = library
@@ -39,6 +41,14 @@ struct MusicLibraryView: View {
         .navigationTitle(Text(verbatim: library.name))
         .searchable(text: $query, prompt: "Artists, albums and songs")
         .onChange(of: query) { _, term in search.search(term) }
+        .toolbar {
+            if identifiesSongs, PlatformMetrics.identifiesSongs {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("What's Playing?", systemImage: "shazam.logo") { showsIdentify = true }
+                }
+            }
+        }
+        .sheet(isPresented: $showsIdentify) { MusicIdentifyView() }
     }
 
     private var content: some View {
@@ -248,9 +258,9 @@ struct MusicLibrarySearchResults: View {
     let model: MusicSearchModel
 
     var body: some View {
-        if !model.results.isEmpty {
+        if !model.results.isEmpty || !model.appleMusic.isEmpty {
             ScrollView {
-                MusicSearchSection(results: model.results)
+                MusicSearchSection(results: model.results, appleMusic: model.appleMusic)
                     .padding(.bottom, DT.Spacing.xl)
             }
         } else if model.isSearching {

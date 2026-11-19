@@ -6,6 +6,7 @@ import JellyfinAPI
 /// Music in Browse search, below the library's results: artists, albums, then songs.
 struct MusicSearchSection: View {
     let results: MusicSearchResults
+    var appleMusic: [AppleMusicCatalog.Song] = []
 
     var body: some View {
         VStack(alignment: .leading, spacing: DT.Spacing.xl) {
@@ -42,6 +43,34 @@ struct MusicSearchSection: View {
                         ForEach(Array(results.songs.prefix(8).enumerated()), id: \.element.id) { index, song in
                             MusicSongRow(song: song) { MusicActions.play(results.songs, from: index) }
                                 .padding(.vertical, 6)
+                        }
+                    }
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                }
+            }
+            if !appleMusic.isEmpty {
+                VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                    SearchSectionHeader(title: String(localized: "From Apple Music"), count: appleMusic.count)
+                        .padding(.horizontal, DT.Spacing.pagePad)
+                    VStack(spacing: 0) {
+                        ForEach(appleMusic) { song in
+                            Button { Task { await AppleMusicCatalog.shared.play(song) } } label: {
+                                HStack(spacing: DT.Spacing.sm) {
+                                    MusicArtwork(url: song.artworkURL, cornerRadius: DT.Radius.xs)
+                                        .frame(width: 44, height: 44)
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(verbatim: song.title).foregroundStyle(DT.Color.textPrimary)
+                                        Text(verbatim: song.artist).font(.footnote).foregroundStyle(DT.Color.textSecondary)
+                                    }
+                                    .lineLimit(1)
+                                    Spacer()
+                                    Image(systemName: "applelogo").foregroundStyle(DT.Color.textSecondary)
+                                        .accessibilityLabel("Apple Music")
+                                }
+                                .padding(.vertical, 6)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
                         }
                     }
                     .padding(.horizontal, DT.Spacing.pagePad)

@@ -18,6 +18,7 @@ struct MusicSettingsView: View {
             }
             MusicAppearanceSection()
             MusicLyricsSection()
+            MusicServicesSection()
             Section {
                 NavigationLink {
                     MusicHistoryImportView()

@@ -38,6 +38,13 @@ enum MusicSettings {
     static let storageLimitOptions = [0, 1, 2, 5, 10, 20, 50]
     static let notifyDownloadsKey = "musicNotifyDownloads"
     static let findsLyricsOnlineKey = "musicFindLyricsOnline"
+    static let identifySongsKey = "musicIdentifySongs"
+    static let appleMusicKey = "musicAppleMusic"
+
+    /// What's Playing? in Music, with ShazamKit. Off until it's turned on.
+    static var identifiesSongs: Bool { PlatformMetrics.identifiesSongs && defaults.bool(forKey: identifySongsKey) }
+    /// Apple Music songs alongside the library's, for a subscriber. Off until it's turned on.
+    static var usesAppleMusic: Bool { PlatformMetrics.playsAppleMusic && defaults.bool(forKey: appleMusicKey) }
 
     static var findsLyricsOnline: Bool { defaults.bool(forKey: findsLyricsOnlineKey) }
 

@@ -137,6 +137,7 @@
 				Shared/Music/MusicComponents.swift = (ios, macos, );
 				Shared/Music/MusicDownloadsView.swift = (ios, macos, );
 				Shared/Music/MusicHistoryImportView.swift = (ios, macos, );
+				Shared/Music/MusicIdentifyView.swift = (ios, macos, );
 				Shared/Music/MusicLibraryView.swift = (ios, macos, );
 				Shared/Music/MusicListsView.swift = (ios, macos, );
 				Shared/Music/MusicRecapView.swift = (ios, macos, );
@@ -183,6 +184,7 @@
 				iOS/Lock/AppLockView.swift = (ios, );
 				iOS/Login/LoginPlatform.swift = (ios, );
 				iOS/Login/SetupGuideSheet.swift = (ios, );
+				iOS/Music/AppleMusicCatalog.swift = (ios, );
 				iOS/Music/MusicDownloadActivity.swift = (ios, );
 				iOS/Music/MusicNowPlayingView.swift = (ios, );
 				iOS/Onboarding/OnboardingView.swift = (ios, );
@@ -288,6 +290,7 @@
 				macOS/Lock/AppLockView.swift = (macos, );
 				macOS/Login/LoginPlatform.swift = (macos, );
 				macOS/Login/SetupGuideSheet.swift = (macos, );
+				macOS/Music/AppleMusicCatalog.swift = (macos, );
 				macOS/Music/MusicDownloadActivity.swift = (macos, );
 				macOS/Music/MusicPlayerBar.swift = (macos, );
 				macOS/Onboarding/OnboardingView.swift = (macos, );
@@ -388,6 +391,7 @@
 				tvOS/Lock/AppLockView.swift = (tvos, );
 				tvOS/Login/LoginPlatform.swift = (tvos, );
 				tvOS/Login/SetupGuideSheet.swift = (tvos, );
+				tvOS/Music/AppleMusicCatalog.swift = (tvos, );
 				tvOS/Music/MusicDownloadActivity.swift = (tvos, );
 				tvOS/Music/TVMusicNowPlaying.swift = (tvos, );
 				tvOS/Music/TVMusicViews.swift = (tvos, );
@@ -1241,12 +1245,13 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Arcfin listens when you search by voice in the car, to find music on your server.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you.";
 				INFOPLIST_KEY_NSSiriUsageDescription = "Siri plays your movies, shows and music in Arcfin when you ask, on your iPhone or iPad or in the car.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Arcfin turns what you say into a search when you search by voice in the car.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -1322,12 +1327,13 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Arcfin listens when you search by voice in the car, to find music on your server.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you.";
 				INFOPLIST_KEY_NSSiriUsageDescription = "Siri plays your movies, shows and music in Arcfin when you ask, on your iPhone or iPad or in the car.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Arcfin turns what you say into a search when you search by voice in the car.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;

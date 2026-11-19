@@ -218,6 +218,8 @@ public enum SettingsSyncRegistry {
         .init("musicStorageLimitGB", .int),
         .init("musicNotifyDownloads", .bool),
         .init("musicFindLyricsOnline", .bool),
+        .init("musicIdentifySongs", .bool),
+        .init("musicAppleMusic", .bool),
         // Downloads
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),
