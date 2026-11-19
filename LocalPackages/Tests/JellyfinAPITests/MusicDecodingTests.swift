@@ -156,4 +156,15 @@ struct MusicDecodingTests {
         let mixed = #"{"Items":[{"Id":"a","Name":"A","Type":"Audio"},{"Id":"m","Name":"M","Type":"Movie"}]}"#
         #expect(JellyfinMediaClient.songs(try JellyfinMediaClient.decodeMusicPage(Data(mixed.utf8)).items, inOrder: ["a", "m"]) == nil)
     }
+
+    @Test("A song's audio format comes from its audio stream, and hi-res means lossless past 16 bit or 48 kHz")
+    func audioFormat() throws {
+        let json = #"{"MediaSources":[{"Container":"flac","Bitrate":2400000,"MediaStreams":[{"Type":"Image","Codec":"mjpeg"},{"Type":"Audio","Codec":"flac","BitRate":2300000,"SampleRate":96000,"BitDepth":24,"Channels":2}]}]}"#
+        let format = try JSONDecoder().decode(AudioItemResponse.self, from: Data(json.utf8)).format
+        #expect(format == MusicAudioFormat(codec: "flac", container: "flac", bitrate: 2_300_000, sampleRate: 96_000, bitDepth: 24, channels: 2))
+        #expect(format?.isLossless == true)
+        #expect(format?.isHighResolution == true)
+        #expect(MusicAudioFormat(codec: "flac", sampleRate: 44_100, bitDepth: 16).isHighResolution == false)
+        #expect(MusicAudioFormat(codec: "mp3", bitrate: 320_000).isLossless == false)
+    }
 }

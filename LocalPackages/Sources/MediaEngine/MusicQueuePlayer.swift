@@ -81,6 +81,11 @@ public final class MusicQueuePlayer {
     /// is, else a conversion; `.server` and `.converted` skip what didn't work.
     public enum Source: Sendable { case best, server, converted }
 
+    /// How the playing song reaches the player: its saved file, the server's file as it is, or
+    /// converted as it streams, at this many kbps.
+    public enum Stream: Equatable, Sendable { case saved, original, converted(kilobits: Int?) }
+    public private(set) var stream: Stream?
+
     @ObservationIgnored private let streamURL: (MusicSong, Double, Source) -> URL?
     /// Songs whose file wouldn't open as it is (Ogg Vorbis, say), streamed converted instead.
     @ObservationIgnored private var mustConvert: Set<String> = []
@@ -350,6 +355,7 @@ public final class MusicQueuePlayer {
         queue = MusicQueue()
         position = 0
         duration = 0
+        stream = nil
         Self.deactivateAudioSession()
     }
 
@@ -673,6 +679,14 @@ public final class MusicQueuePlayer {
         restart(at: position, plays: true)
     }
 
+    private static func stream(of item: AVPlayerItem) -> Stream? {
+        guard let url = (item.asset as? AVURLAsset)?.url else { return nil }
+        if url.isFileURL { return .saved }
+        let query = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        if query.contains(where: { $0.name == "static" && $0.value == "true" }) { return .original }
+        return .converted(kilobits: query.first { $0.name == "audioBitRate" }?.value.flatMap(Int.init).map { $0 / 1000 })
+    }
+
     private static let networkCodes: Set<Int> = [
         NSURLErrorTimedOut, NSURLErrorCannotFindHost, NSURLErrorCannotConnectToHost, NSURLErrorNetworkConnectionLost,
         NSURLErrorDNSLookupFailed, NSURLErrorNotConnectedToInternet, NSURLErrorInternationalRoamingOff,
@@ -694,6 +708,8 @@ public final class MusicQueuePlayer {
 
     private func tick(_ time: CMTime) {
         guard let item = player.currentItem, entryIDs[ObjectIdentifier(item)] == queue.current?.id else { return }
+        let now = Self.stream(of: item)
+        if now != stream { stream = now }
         // A conversion started part-way through counts from where it began.
         let start = convertedStarts[ObjectIdentifier(item)]
         // Mid-seek the old time still ticks in; the scrubber would jump back to it.

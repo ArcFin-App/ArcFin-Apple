@@ -120,6 +120,7 @@ struct MusicPlayerBar: View {
             .tint(DT.Color.accent)
             .accessibilityLabel("Position")
             Text(verbatim: "-" + max(duration - position, 0).musicTime)
+            if let song = player.current { MusicQualityBadge(song: song, tint: .primary) }
         }
         .font(.caption2.monospacedDigit())
         .foregroundStyle(.secondary)

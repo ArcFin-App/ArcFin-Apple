@@ -335,6 +335,13 @@ extension JellyfinMediaClient {
         return Self.songs(page.items, inOrder: ids)
     }
 
+    /// The song's file and its audio: format, bit depth, sample rate and bitrate.
+    public func getAudioFormat(credential: ServerCredential, authHeader: String, songId: String) async throws -> MusicAudioFormat? {
+        let item: AudioItemResponse = try await getMusic("Users/\(credential.userID)/Items/\(songId)", query: [],
+                                                         credential: credential, authHeader: authHeader)
+        return item.format
+    }
+
     static func songs(_ items: [MusicItemResponse], inOrder ids: [String]) -> [MusicSong]? {
         guard !items.isEmpty, items.allSatisfy({ $0.type == "Audio" }) else { return nil }
         let byID = Dictionary(items.map { ($0.id, $0.asTrack) }, uniquingKeysWith: { first, _ in first })
@@ -492,6 +499,66 @@ extension JellyfinMediaClient {
 }
 
 // MARK: - Responses
+
+/// What a song's file holds, as the server read it.
+public struct MusicAudioFormat: Sendable, Equatable {
+    public var codec: String?
+    public var container: String?
+    public var bitrate: Int?
+    public var sampleRate: Int?
+    public var bitDepth: Int?
+    public var channels: Int?
+
+    public init(codec: String? = nil, container: String? = nil, bitrate: Int? = nil, sampleRate: Int? = nil,
+                bitDepth: Int? = nil, channels: Int? = nil) {
+        self.codec = codec; self.container = container; self.bitrate = bitrate
+        self.sampleRate = sampleRate; self.bitDepth = bitDepth; self.channels = channels
+    }
+
+    /// Kept bit for bit: FLAC, ALAC, WAV, AIFF and the like.
+    public var isLossless: Bool {
+        guard let codec = codec?.lowercased() else { return false }
+        return ["flac", "alac", "wav", "wavpack", "ape", "tta", "truehd", "mlp"].contains(codec)
+            || codec.hasPrefix("pcm") || codec.hasPrefix("dsd")
+    }
+
+    /// Past CD quality: more than 16 bits or 48 kHz.
+    public var isHighResolution: Bool {
+        isLossless && ((bitDepth ?? 0) > 16 || (sampleRate ?? 0) > 48_000)
+    }
+}
+
+struct AudioItemResponse: Decodable {
+    struct Source: Decodable {
+        let container: String?
+        let bitrate: Int?
+        let mediaStreams: [Stream]?
+        enum CodingKeys: String, CodingKey {
+            case container = "Container", bitrate = "Bitrate", mediaStreams = "MediaStreams"
+        }
+    }
+    struct Stream: Decodable {
+        let type: String?
+        let codec: String?
+        let bitRate: Int?
+        let sampleRate: Int?
+        let bitDepth: Int?
+        let channels: Int?
+        enum CodingKeys: String, CodingKey {
+            case type = "Type", codec = "Codec", bitRate = "BitRate", sampleRate = "SampleRate",
+                 bitDepth = "BitDepth", channels = "Channels"
+        }
+    }
+    let mediaSources: [Source]?
+    enum CodingKeys: String, CodingKey { case mediaSources = "MediaSources" }
+
+    var format: MusicAudioFormat? {
+        guard let source = mediaSources?.first else { return nil }
+        let audio = source.mediaStreams?.first { $0.type == "Audio" }
+        return MusicAudioFormat(codec: audio?.codec, container: source.container, bitrate: audio?.bitRate ?? source.bitrate,
+                                sampleRate: audio?.sampleRate, bitDepth: audio?.bitDepth, channels: audio?.channels)
+    }
+}
 
 struct MusicPage: Decodable {
     let items: [MusicItemResponse]

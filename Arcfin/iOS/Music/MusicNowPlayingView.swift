@@ -246,14 +246,17 @@ struct MusicNowPlayingView: View {
             .tint(.white)
             .accessibilityLabel("Position")
             .accessibilityValue(Text(verbatim: position.musicTime))
-            HStack {
-                Text(verbatim: position.musicTime)
-                Spacer()
-                Text(verbatim: "-" + max(duration - position, 0).musicTime)
+            ZStack {
+                HStack {
+                    Text(verbatim: position.musicTime)
+                    Spacer()
+                    Text(verbatim: "-" + max(duration - position, 0).musicTime)
+                }
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.white.opacity(0.6))
+                .accessibilityHidden(true)
+                if let song = player.current { MusicQualityBadge(song: song) }
             }
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(.white.opacity(0.6))
-            .accessibilityHidden(true)
         }
     }
 

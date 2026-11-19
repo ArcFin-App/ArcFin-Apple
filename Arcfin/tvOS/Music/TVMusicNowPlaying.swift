@@ -35,6 +35,7 @@ struct TVMusicNowPlaying: View {
                                 if let album = song.albumName {
                                     Text(verbatim: album).font(.callout).foregroundStyle(.white.opacity(0.5))
                                 }
+                                MusicQualityBadge(song: song)
                             }
                             progress
                             controls(song)
