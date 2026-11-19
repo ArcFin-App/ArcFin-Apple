@@ -285,6 +285,8 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         let headers = CustomHTTPHeaders.current
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
+        // Stereo films get spatial audio too when the listener has Spatialize Stereo on.
+        item.allowedAudioSpatializationFormats = .monoStereoAndMultichannel
         // Left at 0, AVPlayer keeps a short lead chosen for it. Asking for three minutes lets it
         // keep loading ahead, paused too, while the connection has room, so scrubbing nearby and
         // a dip in bandwidth play from what's already here.

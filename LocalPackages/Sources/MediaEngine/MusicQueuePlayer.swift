@@ -438,6 +438,8 @@ public final class MusicQueuePlayer {
         let source: Source = mustConvert.contains(id) ? .converted : skipsSaved.contains(id) ? .server : .best
         guard let url = streamURL(entry.track, start, source) else { return nil }
         let item = AVPlayerItem(url: url)
+        // Lets stereo songs take Spatialize Stereo and head tracking when the listener has them on.
+        item.allowedAudioSpatializationFormats = .monoStereoAndMultichannel
         entryIDs[ObjectIdentifier(item)] = entry.id
         if !url.isFileURL, url.query?.contains("static=true") != true { convertedStarts[ObjectIdentifier(item)] = start }
         let path = url.path
