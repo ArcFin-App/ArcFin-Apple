@@ -239,6 +239,21 @@ struct MusicNowPlayingView: View {
             }
             MusicAddToPlaylistButton { [song] }
             MusicDownloadButton(songs: { [song] }, known: [song])
+            Section {
+                if let albumID = song.albumId {
+                    Button("Go to Album", systemImage: "square.stack") {
+                        go(to: .album(MusicAlbum(id: albumID, name: song.albumName ?? "", albumArtist: song.albumArtist)))
+                    }
+                }
+                if let artist = song.artists.first {
+                    Button("Go to Artist", systemImage: "music.microphone") {
+                        go(to: .artist(MusicArtist(id: artist.id, name: artist.name), libraryID: nil))
+                    }
+                }
+                ShareLink(item: [song.name, song.artistLine, song.albumName].compactMap { $0 }.joined(separator: " – ")) {
+                    Label("Share Song", systemImage: "square.and.arrow.up")
+                }
+            }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.body.weight(.semibold))
@@ -246,6 +261,13 @@ struct MusicNowPlayingView: View {
                 .background(.white.opacity(0.15), in: Circle())
         }
         .accessibilityLabel("More")
+    }
+
+    /// Closes Now Playing and opens the page in Browse.
+    private func go(to route: MusicRoute) {
+        music.isNowPlayingOpen = false
+        dismiss()
+        MusicNavigator.shared.open(route)
     }
 
     private func finishScrub() {

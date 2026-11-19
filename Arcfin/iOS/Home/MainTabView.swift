@@ -80,6 +80,9 @@ struct MainTabView: View {
             }
             .modifier(CastMiniControllerAccessory())
             // arcfin://downloads — from the download Live Activity's tap target.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinShowMusic)) { _ in
+                selectedTab = .browse
+            }
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
                 selectedTab = .browse
             }

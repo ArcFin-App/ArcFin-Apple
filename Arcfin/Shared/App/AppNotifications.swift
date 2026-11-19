@@ -7,6 +7,8 @@ extension Notification.Name {
     static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
     /// Posted by onOpenURL for arcfin://downloads — tapping the download Live Activity.
     static let arcfinShowDownloads = Notification.Name("arcfinShowDownloads")
+    /// Browse to the front, for an album or artist opened from Now Playing.
+    static let arcfinShowMusic = Notification.Name("arcfinShowMusic")
     /// Posted by onOpenURL for arcfin://resume — the Resume Watching control.
     static let arcfinResume = Notification.Name("arcfinResume")
     /// Posted when a notification about a Seerr request or watchlist item is tapped.

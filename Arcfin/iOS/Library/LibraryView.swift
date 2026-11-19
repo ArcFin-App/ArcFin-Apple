@@ -34,6 +34,11 @@ struct LibraryView: View {
                 }
             }
             .screenBackground()
+            // An album or artist opened from Now Playing.
+            .navigationDestination(item: Binding(get: { MusicNavigator.shared.route },
+                                                 set: { MusicNavigator.shared.route = $0 })) { route in
+                MusicDestination(route: route)
+            }
             .navigationTitle("Browse")
             .searchable(text: $model.searchQuery, prompt: "Movies, shows, music, live TV, people…")
             .navigationBarTitleDisplayMode(.large)

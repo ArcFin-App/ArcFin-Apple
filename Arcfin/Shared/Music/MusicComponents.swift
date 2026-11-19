@@ -149,7 +149,7 @@ struct MusicSongMenu: View {
                     Label("Go to Artist", systemImage: "music.microphone")
                 }
             }
-            ShareLink(item: [song.name, song.artistLine].compactMap { $0 }.joined(separator: " – ")) {
+            ShareLink(item: [song.name, song.artistLine, song.albumName].compactMap { $0 }.joined(separator: " – ")) {
                 Label("Share Song", systemImage: "square.and.arrow.up")
             }
         }
