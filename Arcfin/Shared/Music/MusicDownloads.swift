@@ -396,6 +396,7 @@ final class MusicDownloads {
         let size = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
         index.songs[song.id] = Saved(song: song, file: name, userID: userID, bytes: size, savedAt: .now)
         saveIndex()
+        enforceStorageLimit()
         await saveCover(for: song)
         if let lyrics = await MusicLyricsSource.shared.lyricsToSave(for: song),
            let data = try? JSONEncoder().encode(lyrics) {
@@ -431,6 +432,90 @@ final class MusicDownloads {
         for song in queue where progress[song.id] == nil {
             if let request = request(for: song, credential) { MusicTransfers.shared.handOff(request, songID: song.id) }
         }
+    }
+
+    // MARK: Smart downloads
+
+    private static let recentKey = "music.autoRecent"
+    private static let seenAlbumsKey = "music.seenNewAlbums"
+    @ObservationIgnored private var lastSmartRefresh = Date.distantPast
+
+    /// Songs downloaded because they were played lately, so they can go once they aren't.
+    private var keptRecent: Set<String> {
+        get { Set(UserDefaults.standard.stringArray(forKey: Self.recentKey) ?? []) }
+        set { UserDefaults.standard.set(Array(newValue), forKey: Self.recentKey) }
+    }
+
+    /// Keep Recently Played and New Albums from Favorite Artists, at most every half hour
+    /// unless a setting just changed.
+    func refreshSmartDownloads(force: Bool = false) async {
+        guard force || Date.now.timeIntervalSince(lastSmartRefresh) > 30 * 60,
+              AppServices.authManager.state.credential != nil, PlatformStorage.keepsMusicDownloads else { return }
+        lastSmartRefresh = .now
+        await keepRecentlyPlayed()
+        if MusicSettings.downloadsNewAlbums { await downloadNewAlbums() }
+        enforceStorageLimit()
+    }
+
+    private func keepRecentlyPlayed() async {
+        let count = MusicSettings.keepRecentCount
+        var recent: [MusicSong] = []
+        if count > 0 {
+            guard let page = try? await MusicAPI.call({
+                try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: nil, sort: .datePlayed,
+                                            ascending: false, filter: .init(playedOnly: true), limit: count)
+            }) else { return }
+            recent = page.tracks
+        }
+        let wanted = Set(recent.map(\.id))
+        // Ones that dropped off the list go, unless they're favorites.
+        let dropped = keptRecent.subtracting(wanted).compactMap { index.songs[$0]?.song }
+            .filter { !MusicFavorites.shared.isFavorite($0.id, server: $0.isFavorite) }
+        if !dropped.isEmpty { remove(dropped) }
+        let missing = recent.filter { !isDownloaded($0.id) && !isQueued($0.id) }
+        keptRecent = keptRecent.intersection(wanted).union(missing.map(\.id))
+        if !missing.isEmpty { download(missing) }
+    }
+
+    /// Albums by favorite artists that weren't there the last time it looked. The first look
+    /// only notes what's there, so turning it on doesn't download every album they have.
+    private func downloadNewAlbums() async {
+        guard let artists = try? await MusicAPI.call({
+            try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: nil, filter: .init(favoritesOnly: true), limit: 200)
+        }).artists, !artists.isEmpty else { return }
+        let ids = artists.map(\.id).joined(separator: ",")
+        guard let albums = try? await MusicAPI.call({
+            try await $0.getMusicAlbums(credential: $1, authHeader: $2, libraryId: nil, sort: .dateAdded, ascending: false,
+                                        filter: MusicFilter(artistId: ids), limit: 50)
+        }).albums else { return }
+        let defaults = UserDefaults.standard
+        let firstLook = defaults.object(forKey: Self.seenAlbumsKey) == nil
+        var seen = Set(defaults.stringArray(forKey: Self.seenAlbumsKey) ?? [])
+        for album in albums where !seen.contains(album.id) {
+            seen.insert(album.id)
+            if !firstLook { download(await MusicActions.albumSongs(album), album: album) }
+        }
+        defaults.set(Array(seen), forKey: Self.seenAlbumsKey)
+    }
+
+    /// Over Storage Limit: the least played songs go first, oldest first among equals.
+    /// Favorites and the recently played ones being kept stay.
+    func enforceStorageLimit() {
+        guard let limit = MusicSettings.storageLimitBytes else { return }
+        var total = totalBytes
+        guard total > limit else { return }
+        let kept = keptRecent
+        let candidates = mine
+            .filter { !kept.contains($0.song.id) && !MusicFavorites.shared.isFavorite($0.song.id, server: $0.song.isFavorite) }
+            .sorted { ($0.song.playCount, $0.savedAt) < ($1.song.playCount, $1.savedAt) }
+        var removing: [MusicSong] = []
+        for saved in candidates where total > limit {
+            removing.append(saved.song)
+            total -= saved.bytes
+        }
+        guard !removing.isEmpty else { return }
+        log.notice("Over the storage limit: removing \(removing.count, privacy: .public) songs")
+        remove(removing)
     }
 
     // MARK: Live Activity

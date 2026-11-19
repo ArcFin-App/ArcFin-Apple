@@ -72,6 +72,7 @@ struct AppRootLifecycle: ViewModifier {
                 // gate now only ever applies at cold launch (see the initial .task above).
                 if newPhase == .active {
                     Task { await model.loadProfileRules() }
+                    Task { await MusicDownloads.shared.refreshSmartDownloads() }
                 }
                 // Music still to download goes to the system, which carries on with it.
                 if newPhase == .background { MusicDownloads.shared.handOff() }

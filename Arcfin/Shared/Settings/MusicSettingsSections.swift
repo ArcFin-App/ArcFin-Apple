@@ -76,6 +76,9 @@ struct MusicDownloadSettingsSection: View {
     @AppStorage(MusicSettings.downloadQualityKey) private var quality = MusicQuality.original
     @AppStorage(MusicSettings.downloadOnMobileDataKey) private var onMobileData = false
     @AppStorage(MusicSettings.keepFavoritesDownloadedKey) private var keepFavorites = false
+    @AppStorage(MusicSettings.keepRecentCountKey) private var keepRecent = 0
+    @AppStorage(MusicSettings.downloadNewAlbumsKey) private var newAlbums = false
+    @AppStorage(MusicSettings.storageLimitKey) private var storageLimit = 0
 
     var body: some View {
         Section {
@@ -90,12 +93,29 @@ struct MusicDownloadSettingsSection: View {
                 TVRowLabelText(title: "Keep Favorites Downloaded", detail: "Songs and albums you favorite download by themselves. Turning this on downloads the favorites you already have.")
             }
             .syncLocked(MusicSettings.keepFavoritesDownloadedKey, authManager)
+            SettingsPicker("Keep Recently Played", detail: "The songs you played last stay downloaded, and ones that drop off the list go.",
+                           selection: $keepRecent, options: MusicSettings.keepRecentOptions) {
+                $0 == 0 ? Text("Off") : Text("\($0) Songs")
+            }
+            .syncLocked(MusicSettings.keepRecentCountKey, authManager)
+            Toggle(isOn: $newAlbums) {
+                TVRowLabelText(title: "New Albums from Favorite Artists", detail: "Albums added to your library by artists you favorite download by themselves.")
+            }
+            .syncLocked(MusicSettings.downloadNewAlbumsKey, authManager)
+            SettingsPicker("Storage Limit", detail: "Past the limit, the songs you play least are removed first. Favorites stay.",
+                           selection: $storageLimit, options: MusicSettings.storageLimitOptions) {
+                $0 == 0 ? Text("No Limit") : Text("\($0) GB")
+            }
+            .syncLocked(MusicSettings.storageLimitKey, authManager)
         } header: {
             Text("Downloads")
         }
         .onChange(of: keepFavorites) { _, on in
             if on { Task { await MusicDownloads.shared.downloadAllFavorites() } }
         }
+        .onChange(of: keepRecent) { Task { await MusicDownloads.shared.refreshSmartDownloads(force: true) } }
+        .onChange(of: newAlbums) { Task { await MusicDownloads.shared.refreshSmartDownloads(force: true) } }
+        .onChange(of: storageLimit) { MusicDownloads.shared.enforceStorageLimit() }
     }
 }
 

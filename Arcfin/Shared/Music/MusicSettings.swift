@@ -31,6 +31,11 @@ enum MusicSettings {
     static let autoplayKey = "musicAutoplay"
     static let rememberQueueKey = "musicRememberQueue"
     static let keepFavoritesDownloadedKey = "musicKeepFavoritesDownloaded"
+    static let keepRecentCountKey = "musicKeepRecentCount"
+    static let downloadNewAlbumsKey = "musicDownloadNewAlbums"
+    static let storageLimitKey = "musicStorageLimitGB"
+    static let keepRecentOptions = [0, 25, 50, 100, 200]
+    static let storageLimitOptions = [0, 1, 2, 5, 10, 20, 50]
     static let notifyDownloadsKey = "musicNotifyDownloads"
     static let findsLyricsOnlineKey = "musicFindLyricsOnline"
 
@@ -41,6 +46,21 @@ enum MusicSettings {
     /// Off where music isn't downloaded, even when the setting arrives synced from elsewhere.
     static var keepsFavoritesDownloaded: Bool {
         PlatformStorage.keepsMusicDownloads && defaults.bool(forKey: keepFavoritesDownloadedKey)
+    }
+
+    /// How many of the songs played last stay downloaded; 0 for none.
+    static var keepRecentCount: Int {
+        PlatformStorage.keepsMusicDownloads ? defaults.integer(forKey: keepRecentCountKey) : 0
+    }
+
+    static var downloadsNewAlbums: Bool {
+        PlatformStorage.keepsMusicDownloads && defaults.bool(forKey: downloadNewAlbumsKey)
+    }
+
+    /// The most music downloads may take, nil for no limit.
+    static var storageLimitBytes: Int64? {
+        let gigabytes = defaults.integer(forKey: storageLimitKey)
+        return gigabytes > 0 ? Int64(gigabytes) * 1_000_000_000 : nil
     }
 
     static var isAutoplayOn: Bool { defaults.object(forKey: autoplayKey) as? Bool ?? true }

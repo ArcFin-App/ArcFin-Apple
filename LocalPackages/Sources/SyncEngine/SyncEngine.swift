@@ -213,6 +213,9 @@ public enum SettingsSyncRegistry {
         .init("musicAutoplay", .bool),
         .init("musicRememberQueue", .bool),
         .init("musicKeepFavoritesDownloaded", .bool),
+        .init("musicKeepRecentCount", .int),
+        .init("musicDownloadNewAlbums", .bool),
+        .init("musicStorageLimitGB", .int),
         .init("musicNotifyDownloads", .bool),
         .init("musicFindLyricsOnline", .bool),
         // Downloads
