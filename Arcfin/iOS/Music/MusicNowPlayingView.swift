@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import AVKit
+import ImageIO
 import CastKit
 import GoogleCast
 import MediaPlayer
@@ -391,22 +392,66 @@ struct MusicNowPlayingView: View {
 /// The cover blown up and blurred behind everything, darkened so white text reads on it.
 private struct MusicArtworkBackdrop: View {
     let url: URL?
+    @State private var palette: [Color] = []
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
-        Color.black
-            .overlay {
-                CachedAsyncImage(url: url) { phase in
-                    if case .success(let image) = phase {
-                        image.resizable().scaledToFill()
-                    }
+        Group {
+            if palette.count == 9 {
+                TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
+                    MeshGradient(width: 3, height: 3, points: Self.points(at: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate),
+                                 colors: palette, smoothsColors: true)
                 }
-                .blur(radius: 60)
-                .scaleEffect(1.4)
+            } else {
+                Color.black
             }
-            .overlay(.black.opacity(0.45))
-            .clipped()
-            .ignoresSafeArea()
-            .accessibilityHidden(true)
+        }
+        .overlay(.black.opacity(0.35))
+        .ignoresSafeArea()
+        .accessibilityHidden(true)
+        .animation(.easeInOut(duration: 0.8), value: palette)
+        .task(id: url) {
+            guard let url else { return }
+            let data = url.isFileURL ? try? Data(contentsOf: url) : await URLSession.arcfin.imageData(from: url)
+            guard let data else { return }
+            let found = await Task.detached(priority: .utility) { Self.palette(from: data) }.value
+            if !found.isEmpty { palette = found }
+        }
+    }
+
+    /// The middle points drift slowly on their own circles; the corners and edges stay put.
+    private static func points(at time: Double) -> [SIMD2<Float>] {
+        let t = Float(time)
+        func drift(_ x: Float, _ y: Float, _ speed: Float, _ phase: Float) -> SIMD2<Float> {
+            SIMD2(x + 0.12 * sin(t * speed + phase), y + 0.12 * cos(t * speed * 0.8 + phase))
+        }
+        return [
+            [0, 0], [0.5 + 0.1 * sin(t * 0.21), 0], [1, 0],
+            [0, 0.5 + 0.1 * cos(t * 0.17)], drift(0.5, 0.5, 0.23, 0), [1, 0.5 + 0.1 * sin(t * 0.19 + 1)],
+            [0, 1], [0.5 + 0.1 * cos(t * 0.15 + 2), 1], [1, 1],
+        ]
+    }
+
+    /// Nine colours from the cover, one for each point of the mesh: the cover shrunk to 3 by 3,
+    /// a little richer.
+    nonisolated private static func palette(from data: Data) -> [Color] {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let image = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                  kCGImageSourceCreateThumbnailFromImageAlways: true,
+                  kCGImageSourceThumbnailMaxPixelSize: 48,
+              ] as CFDictionary)
+        else { return [] }
+        var pixels = [UInt8](repeating: 0, count: 3 * 3 * 4)
+        guard let context = CGContext(data: &pixels, width: 3, height: 3, bitsPerComponent: 8, bytesPerRow: 12,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return [] }
+        context.interpolationQuality = .medium
+        context.draw(image, in: CGRect(x: 0, y: 0, width: 3, height: 3))
+        return (0..<9).map { index in
+            let i = index * 4
+            return Color(red: Double(pixels[i]) / 255, green: Double(pixels[i + 1]) / 255, blue: Double(pixels[i + 2]) / 255)
+                .mix(with: .black, by: 0.15)
+        }
     }
 }
 
