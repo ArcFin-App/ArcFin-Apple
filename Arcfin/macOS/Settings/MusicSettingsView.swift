@@ -18,6 +18,13 @@ struct MusicSettingsView: View {
             }
             MusicAppearanceSection()
             MusicLyricsSection()
+            Section {
+                NavigationLink {
+                    MusicHistoryImportView()
+                } label: {
+                    TVRowLabelText(title: "Import Listening History", detail: "Bring your plays from Spotify, Apple Music or YouTube Music to ListenBrainz and Jellyfin.")
+                }
+            }
         }
         .arcfinListStyle()
         .screenBackground()

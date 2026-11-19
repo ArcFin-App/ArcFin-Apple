@@ -193,6 +193,70 @@
         }
       }
     },
+    "%@ isn't a history this can read" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ ist kein lesbarer Verlauf"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ no es un historial que se pueda leer"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ n’est pas un historique lisible"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ non è una cronologia leggibile"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ は読み込める履歴ではありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@은(는) 읽을 수 있는 기록이 아닙니다"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ is geen geschiedenis die gelezen kan worden"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ não é um histórico que possa ser lido"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ — не поддерживаемая история"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 不是可读取的记录"
+          }
+        }
+      }
+    },
     "%@ kHz" : {
       "localizations" : {
         "de" : {
@@ -577,6 +641,70 @@
         }
       }
     },
+    "Add your ListenBrainz token in Settings › Integrations first." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge zuerst deinen ListenBrainz-Token unter Einstellungen › Integrationen hinzu."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primero añade tu token de ListenBrainz en Ajustes › Integraciones."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajoutez d’abord votre jeton ListenBrainz dans Réglages › Intégrations."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aggiungi prima il token ListenBrainz in Impostazioni › Integrazioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先に「設定」›「連携」でListenBrainzトークンを追加してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "먼저 설정 › 통합에서 ListenBrainz 토큰을 추가하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voeg eerst je ListenBrainz-token toe in Instellingen › Integraties."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Adicione primeiro seu token do ListenBrainz em Ajustes › Integrações."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сначала добавьте токен ListenBrainz в «Настройки» › «Интеграции»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先在“设置”›“集成”中添加你的 ListenBrainz 令牌。"
+          }
+        }
+      }
+    },
     "Albums added to your library by artists you favorite download by themselves." : {
       "localizations" : {
         "de" : {
@@ -701,6 +829,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请在 iPhone 上允许 Arcfin 使用麦克风和语音识别"
+          }
+        }
+      }
+    },
+    "And %lld more" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Und %lld weitere"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Y %lld más"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Et %lld autres"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E altri %lld"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ほか %lld 件"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "외 %lld개"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En nog %lld"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E mais %lld"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "И ещё %lld"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还有 %lld 个"
           }
         }
       }
@@ -1346,6 +1538,70 @@
         }
       }
     },
+    "Bring your plays from Spotify, Apple Music or YouTube Music to ListenBrainz and Jellyfin." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übertrage deine Wiedergaben von Spotify, Apple Music oder YouTube Music zu ListenBrainz und Jellyfin."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lleva tus reproducciones de Spotify, Apple Music o YouTube Music a ListenBrainz y Jellyfin."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importez vos écoutes Spotify, Apple Music ou YouTube Music dans ListenBrainz et Jellyfin."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Porta i tuoi ascolti da Spotify, Apple Music o YouTube Music su ListenBrainz e Jellyfin."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spotify、Apple Music、YouTube Musicの再生履歴をListenBrainzとJellyfinに取り込みます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spotify, Apple Music 또는 YouTube Music의 재생 기록을 ListenBrainz와 Jellyfin으로 가져옵니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Breng je afspeelgeschiedenis van Spotify, Apple Music of YouTube Music naar ListenBrainz en Jellyfin."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traga suas reproduções do Spotify, Apple Music ou YouTube Music para o ListenBrainz e o Jellyfin."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Перенесите прослушивания из Spotify, Apple Music или YouTube Music в ListenBrainz и Jellyfin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将你在 Spotify、Apple Music 或 YouTube Music 的播放记录导入 ListenBrainz 和 Jellyfin。"
+          }
+        }
+      }
+    },
     "Check" : {
       "localizations" : {
         "de" : {
@@ -1406,6 +1662,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "检查"
+          }
+        }
+      }
+    },
+    "Checked in Your Library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In der Mediathek geprüft"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprobado en tu biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifié dans votre bibliothèque"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controllati nella libreria"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ライブラリで確認済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보관함에서 확인함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gecontroleerd in je bibliotheek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verificado na biblioteca"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверено в медиатеке"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已在资料库中检查"
+          }
+        }
+      }
+    },
+    "Choose Files…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dateien auswählen …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elegir archivos…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisir des fichiers…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli file…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ファイルを選択…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "파일 선택…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kies bestanden…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolher arquivos…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выбрать файлы…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择文件…"
           }
         }
       }
@@ -1922,6 +2306,134 @@
         }
       }
     },
+    "Each service emails a link when the file is ready, which can take a few days. Open the zip in Files, then pick the files inside." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeder Dienst schickt einen Link per E-Mail, wenn die Datei fertig ist; das kann einige Tage dauern. Öffne die ZIP-Datei in Dateien und wähle die Dateien darin."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada servicio envía un enlace por correo cuando el archivo está listo, lo que puede tardar unos días. Abre el zip en Archivos y elige los archivos que contiene."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque service envoie un lien par e-mail quand le fichier est prêt, ce qui peut prendre quelques jours. Ouvrez le zip dans Fichiers, puis choisissez les fichiers qu’il contient."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni servizio invia un link via email quando il file è pronto, il che può richiedere qualche giorno. Apri lo zip in File, poi scegli i file al suo interno."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "各サービスからファイルの準備ができるとリンクがメールで届きます（数日かかる場合があります）。「ファイル」でzipを開き、中のファイルを選びます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "각 서비스는 파일이 준비되면 링크를 이메일로 보내며, 며칠 걸릴 수 있습니다. 파일 앱에서 zip을 연 다음 안의 파일을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elke dienst mailt een link als het bestand klaar is, wat een paar dagen kan duren. Open de zip in Bestanden en kies de bestanden erin."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada serviço envia um link por e-mail quando o arquivo fica pronto, o que pode levar alguns dias. Abra o zip no app Arquivos e escolha os arquivos dentro dele."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Каждый сервис присылает ссылку по почте, когда файл готов, — это может занять несколько дней. Откройте zip в «Файлах» и выберите файлы внутри."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文件准备好后，各服务会通过电子邮件发送链接，可能需要几天时间。在“文件”中打开 zip，然后选择其中的文件。"
+          }
+        }
+      }
+    },
+    "Every play, with the time it was played." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jede Wiedergabe mit ihrem Zeitpunkt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada reproducción, con la hora en que se escuchó."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque écoute, avec son heure."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni ascolto, con l’ora in cui è avvenuto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべての再生を、再生した日時とともに送信します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 재생을 재생 시각과 함께 보냅니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elke afspeelbeurt, met het tijdstip."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada reprodução, com o horário em que tocou."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Каждое прослушивание с его временем."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每次播放及其播放时间。"
+          }
+        }
+      }
+    },
     "Favorite Songs" : {
       "localizations" : {
         "de" : {
@@ -2178,6 +2690,70 @@
         }
       }
     },
+    "Found" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gefunden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encontrado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trouvé"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trovati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "見つかった内容"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "찾은 항목"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gevonden"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Encontrado"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Найдено"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已找到"
+          }
+        }
+      }
+    },
     "Genre Station" : {
       "localizations" : {
         "de" : {
@@ -2242,6 +2818,70 @@
         }
       }
     },
+    "Get Your History" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verlauf anfordern"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consigue tu historial"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obtenir votre historique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ottieni la cronologia"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "履歴を入手する"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기록 받기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je geschiedenis opvragen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Obtenha seu histórico"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Получите историю"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "获取你的记录"
+          }
+        }
+      }
+    },
     "Hi-Res Lossless" : {
       "localizations" : {
         "de" : {
@@ -2302,6 +2942,198 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "高解析度无损"
+          }
+        }
+      }
+    },
+    "Import" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読み込む"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가져오기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importeren"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Импортировать"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入"
+          }
+        }
+      }
+    },
+    "Import Listening History" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörverlauf importieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar historial de escucha"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importer l’historique d’écoute"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importa cronologia di ascolto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生履歴を読み込む"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "청취 기록 가져오기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Luistergeschiedenis importeren"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importar histórico de audição"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Импорт истории прослушивания"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "导入收听记录"
+          }
+        }
+      }
+    },
+    "Importing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wird importiert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importando"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importation"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "読み込み中"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "가져오는 중"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bezig met importeren"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Importando"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Импорт"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在导入"
           }
         }
       }
@@ -2430,6 +3262,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Jellyfin %@ 早于 10.9：歌词、音量平衡和 trickplay 需要 10.9 或更高版本。"
+          }
+        }
+      }
+    },
+    "Keep Arcfin open until it's done." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lass Arcfin geöffnet, bis es fertig ist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantén Arcfin abierto hasta que termine."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gardez Arcfin ouvert jusqu’à la fin."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tieni Arcfin aperto finché non ha finito."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完了するまでArcfinを開いたままにしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "완료될 때까지 Arcfin을 열어 두세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Houd Arcfin open tot het klaar is."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mantenha o Arcfin aberto até terminar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Не закрывайте Arcfin, пока импорт не завершится."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请保持 Arcfin 打开，直到完成。"
           }
         }
       }
@@ -2691,6 +3587,70 @@
         }
       }
     },
+    "ListenBrainz stopped taking listens. Try again later; plays already sent aren't counted twice." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz nimmt keine Wiedergaben mehr an. Versuche es später erneut; bereits gesendete werden nicht doppelt gezählt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz dejó de aceptar reproducciones. Inténtalo más tarde; las ya enviadas no se cuentan dos veces."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz n’accepte plus d’écoutes. Réessayez plus tard ; celles déjà envoyées ne sont pas comptées deux fois."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz ha smesso di accettare ascolti. Riprova più tardi; quelli già inviati non vengono contati due volte."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainzが受け付けを停止しました。後でもう一度お試しください。送信済みの再生が二重に数えられることはありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz가 재생 기록을 더 받지 않습니다. 나중에 다시 시도하세요. 이미 보낸 재생은 중복으로 집계되지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz neemt geen afspeelbeurten meer aan. Probeer het later opnieuw; al verstuurde worden niet dubbel geteld."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O ListenBrainz parou de aceitar reproduções. Tente mais tarde; as já enviadas não são contadas duas vezes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz перестал принимать прослушивания. Повторите позже — уже отправленные не будут учтены дважды."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz 已停止接收播放记录。请稍后重试；已发送的记录不会重复计算。"
+          }
+        }
+      }
+    },
     "Listening…" : {
       "localizations" : {
         "de" : {
@@ -2879,6 +3839,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "为你推荐"
+          }
+        }
+      }
+    },
+    "Mark Played in Jellyfin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Jellyfin als gespielt markieren"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como reproducido en Jellyfin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marquer comme écouté dans Jellyfin"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segna come ascoltato in Jellyfin"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jellyfinで再生済みにする"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jellyfin에서 재생함으로 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als gespeeld markeren in Jellyfin"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcar como tocada no Jellyfin"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отметить прослушанным в Jellyfin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 Jellyfin 中标记为已播放"
+          }
+        }
+      }
+    },
+    "Marked Played" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als gespielt markiert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcado como reproducido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marqués écoutés"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Segnati come ascoltati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生済みにした曲"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재생함으로 표시됨"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Als gespeeld gemarkeerd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Marcadas como tocadas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отмечено прослушанным"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已标记为已播放"
           }
         }
       }
@@ -3779,6 +4867,70 @@
         }
       }
     },
+    "Not in Your Library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nicht in deiner Mediathek"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No está en tu biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Absent de votre bibliothèque"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Non nella libreria"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ライブラリにない曲"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보관함에 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Niet in je bibliotheek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fora da sua biblioteca"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Нет в медиатеке"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "不在你的资料库中"
+          }
+        }
+      }
+    },
     "Not Played in a While" : {
       "localizations" : {
         "de" : {
@@ -4550,6 +5702,70 @@
         }
       }
     },
+    "Plays" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergaben"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproducciones"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écoutes"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ascolti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生回数"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "재생"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afspeelbeurten"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproduções"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Прослушивания"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "播放次数"
+          }
+        }
+      }
+    },
     "Plays as It Is on This Device" : {
       "localizations" : {
         "de" : {
@@ -4614,6 +5830,70 @@
         }
       }
     },
+    "Plays under 30 seconds count as skips and are left out." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wiedergaben unter 30 Sekunden gelten als übersprungen und werden ausgelassen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las reproducciones de menos de 30 segundos cuentan como saltos y se omiten."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les écoutes de moins de 30 secondes comptent comme des sauts et sont ignorées."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli ascolti sotto i 30 secondi contano come salti e vengono esclusi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30秒未満の再生はスキップとみなされ、除外されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30초 미만 재생은 건너뛰기로 간주되어 제외됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Afspeelbeurten korter dan 30 seconden tellen als overgeslagen en worden weggelaten."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproduções com menos de 30 segundos contam como pulos e ficam de fora."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Прослушивания короче 30 секунд считаются пропусками и не учитываются."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "少于 30 秒的播放视为跳过，不计入。"
+          }
+        }
+      }
+    },
     "Previous Song" : {
       "localizations" : {
         "de" : {
@@ -4674,6 +5954,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "上一首"
+          }
+        }
+      }
+    },
+    "privacy.apple.com › Get a copy of your data › Apple Media Services. Pick Apple Music Play Activity.csv, or Play History Daily Tracks.csv." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › Kopie deiner Daten anfordern › Apple Media Services. Wähle Apple Music Play Activity.csv oder Play History Daily Tracks.csv."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › Obtener una copia de tus datos › Apple Media Services. Elige Apple Music Play Activity.csv o Play History Daily Tracks.csv."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › Obtenir une copie de vos données › Apple Media Services. Choisissez Apple Music Play Activity.csv ou Play History Daily Tracks.csv."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › Ottieni una copia dei tuoi dati › Apple Media Services. Scegli Apple Music Play Activity.csv o Play History Daily Tracks.csv."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › データのコピーを入手 › Apple Media Services。Apple Music Play Activity.csv または Play History Daily Tracks.csv を選びます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › 데이터 사본 받기 › Apple Media Services. Apple Music Play Activity.csv 또는 Play History Daily Tracks.csv를 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › Een kopie van je gegevens opvragen › Apple Media Services. Kies Apple Music Play Activity.csv of Play History Daily Tracks.csv."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › Obter uma cópia dos seus dados › Apple Media Services. Escolha Apple Music Play Activity.csv ou Play History Daily Tracks.csv."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › Получить копию данных › Apple Media Services. Выберите Apple Music Play Activity.csv или Play History Daily Tracks.csv."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "privacy.apple.com › 获取你的数据副本 › Apple Media Services。选择 Apple Music Play Activity.csv 或 Play History Daily Tracks.csv。"
           }
         }
       }
@@ -5318,6 +6662,134 @@
         }
       }
     },
+    "Send to ListenBrainz" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An ListenBrainz senden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar a ListenBrainz"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envoyer à ListenBrainz"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Invia a ListenBrainz"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainzに送信"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz로 보내기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naar ListenBrainz sturen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviar ao ListenBrainz"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отправить в ListenBrainz"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发送到 ListenBrainz"
+          }
+        }
+      }
+    },
+    "Sent to ListenBrainz" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "An ListenBrainz gesendet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviado a ListenBrainz"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Envoyé à ListenBrainz"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inviati a ListenBrainz"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainzに送信済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ListenBrainz로 보냄"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Naar ListenBrainz gestuurd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enviado ao ListenBrainz"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Отправлено в ListenBrainz"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已发送到 ListenBrainz"
+          }
+        }
+      }
+    },
     "Server & Connection" : {
       "localizations" : {
         "de" : {
@@ -5702,6 +7174,70 @@
         }
       }
     },
+    "Songs found in your library are marked played on the day you last played them. Jellyfin keeps a count and a date, not every play." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In deiner Mediathek gefundene Titel werden mit dem Tag der letzten Wiedergabe als gespielt markiert. Jellyfin speichert eine Anzahl und ein Datum, nicht jede Wiedergabe."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las canciones de tu biblioteca se marcan como reproducidas el día en que las escuchaste por última vez. Jellyfin guarda un recuento y una fecha, no cada reproducción."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les morceaux trouvés dans la bibliothèque sont marqués écoutés au jour de leur dernière écoute. Jellyfin garde un nombre et une date, pas chaque écoute."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I brani trovati nella libreria vengono segnati come ascoltati nel giorno dell’ultimo ascolto. Jellyfin conserva un conteggio e una data, non ogni ascolto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ライブラリで見つかった曲は、最後に再生した日付で再生済みになります。Jellyfinが保持するのは回数と日付で、すべての再生ではありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "보관함에서 찾은 노래는 마지막으로 재생한 날짜로 재생함 표시됩니다. Jellyfin은 모든 재생이 아니라 횟수와 날짜를 저장합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummers in je bibliotheek worden als gespeeld gemarkeerd op de dag dat je ze het laatst speelde. Jellyfin bewaart een aantal en een datum, niet elke afspeelbeurt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As músicas encontradas na biblioteca são marcadas como tocadas no dia em que você as tocou pela última vez. O Jellyfin guarda uma contagem e uma data, não cada reprodução."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Найденные в медиатеке песни отмечаются прослушанными в день последнего прослушивания. Jellyfin хранит количество и дату, а не каждое прослушивание."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在资料库中找到的歌曲会标记为在你最后一次播放当天已播放。Jellyfin 只保存次数和日期，不保存每次播放。"
+          }
+        }
+      }
+    },
     "Songs you haven't played yet" : {
       "localizations" : {
         "de" : {
@@ -5955,6 +7491,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "速度测试"
+          }
+        }
+      }
+    },
+    "spotify.com › Account › Privacy settings › Download your data: Extended streaming history. Pick the Streaming_History_Audio files." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › Konto › Datenschutzeinstellungen › Daten herunterladen: Erweiterter Streamingverlauf. Wähle die Streaming_History_Audio-Dateien."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › Cuenta › Configuración de privacidad › Descarga tus datos: Historial de reproducción ampliado. Elige los archivos Streaming_History_Audio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › Compte › Paramètres de confidentialité › Télécharger vos données : historique de streaming étendu. Choisissez les fichiers Streaming_History_Audio."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › Account › Impostazioni privacy › Scarica i tuoi dati: cronologia di streaming estesa. Scegli i file Streaming_History_Audio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › アカウント › プライバシー設定 › データをダウンロード：拡張ストリーミング履歴。Streaming_History_Audio ファイルを選びます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › 계정 › 개인정보 설정 › 데이터 다운로드: 확장 스트리밍 기록. Streaming_History_Audio 파일을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › Account › Privacyinstellingen › Je gegevens downloaden: uitgebreide streamgeschiedenis. Kies de Streaming_History_Audio-bestanden."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › Conta › Configurações de privacidade › Baixar seus dados: histórico de streaming estendido. Escolha os arquivos Streaming_History_Audio."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › Аккаунт › Настройки конфиденциальности › Скачать данные: расширенная история прослушивания. Выберите файлы Streaming_History_Audio."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "spotify.com › 账户 › 隐私设置 › 下载你的数据：扩展流媒体历史记录。选择 Streaming_History_Audio 文件。"
           }
         }
       }
@@ -6275,6 +7875,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "同时流数"
+          }
+        }
+      }
+    },
+    "takeout.google.com › YouTube and YouTube Music › history, as JSON. Pick watch-history.json." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube und YouTube Music › Verlauf, als JSON. Wähle watch-history.json."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube y YouTube Music › historial, en JSON. Elige watch-history.json."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube et YouTube Music › historique, au format JSON. Choisissez watch-history.json."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube e YouTube Music › cronologia, in JSON. Scegli watch-history.json."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube と YouTube Music › 履歴（JSON形式）。watch-history.json を選びます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube 및 YouTube Music › 기록(JSON). watch-history.json을 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube en YouTube Music › geschiedenis, als JSON. Kies watch-history.json."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube e YouTube Music › histórico, em JSON. Escolha watch-history.json."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube и YouTube Music › история в формате JSON. Выберите watch-history.json."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "takeout.google.com › YouTube 和 YouTube Music › 历史记录（JSON 格式）。选择 watch-history.json。"
           }
         }
       }
