@@ -3,6 +3,9 @@
 import SwiftUI
 
 extension View {
+    /// A web address field: the URL keyboard, no capitals.
+    func urlFieldKeyboard() -> some View { self.keyboardType(.URL).textInputAutocapitalization(.never) }
+
     func arcfinListStyle() -> some View {
         self.listStyle(.plain)
     }

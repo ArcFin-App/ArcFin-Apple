@@ -159,3 +159,98 @@ struct ServerConnectionSections: View {
         }
     }
 }
+
+/// A Local or Remote URL: what's typed is checked against the server before it's saved. An
+/// address that doesn't answer, or reaches a different server, can be tried again or saved
+/// anyway, since a local one only answers on its own network.
+struct ServerURLField: View {
+    enum Kind { case local, remote }
+    enum Check: Equatable {
+        case idle, checking
+        case reached(String)
+        case failed(String)
+    }
+
+    let placeholder: String
+    let kind: Kind
+    @Binding var saved: String
+    /// The signed-in server's id, to tell a different server apart.
+    let serverID: String?
+    @State private var draft = ""
+    @State private var check = Check.idle
+
+    var body: some View {
+        TextField(placeholder, text: $draft)
+            .textContentType(.URL)
+            .autocorrectionDisabled()
+            .urlFieldKeyboard()
+            .onSubmit { Task { await test() } }
+            .onAppear { draft = saved }
+            .onChange(of: draft) { if check != .checking { check = .idle } }
+        if draft.trimmingCharacters(in: .whitespaces) != saved || check != .idle {
+            status
+        }
+    }
+
+    @ViewBuilder
+    private var status: some View {
+        switch check {
+        case .idle:
+            Button(draft.trimmingCharacters(in: .whitespaces).isEmpty ? "Clear" : "Test and Save") { Task { await test() } }
+                .formRowButton()
+        case .checking:
+            HStack(spacing: 8) {
+                ProgressView()
+                Text("Checking…").foregroundStyle(DT.Color.textSecondary)
+            }
+            .tvReadOnlyRow()
+        case .reached(let name):
+            Label("Saved. It reaches \(name).", systemImage: "checkmark.circle")
+                .foregroundStyle(DT.Color.palette("10B981"))
+                .tvReadOnlyRow()
+        case .failed(let reason):
+            VStack(alignment: .leading, spacing: 8) {
+                Label(reason, systemImage: "exclamationmark.triangle")
+                    .foregroundStyle(DT.Color.palette("F59E0B"))
+                    .font(.callout)
+                HStack(spacing: 16) {
+                    Button("Try Again") { Task { await test() } }
+                    Button("Save Anyway") {
+                        saved = draft.trimmingCharacters(in: .whitespaces)
+                        check = .idle
+                    }
+                }
+                .buttonStyle(.borderless)
+            }
+            .tvReadOnlyRow()
+        }
+    }
+
+    private func test() async {
+        let text = draft.trimmingCharacters(in: .whitespaces)
+        guard !text.isEmpty else {
+            saved = ""
+            check = .idle
+            return
+        }
+        guard let url = URL(string: text), let scheme = url.scheme?.lowercased(), ["http", "https"].contains(scheme),
+              url.host?.isEmpty == false else {
+            check = .failed(String(localized: "That isn't a web address. Start it with http:// or https://."))
+            return
+        }
+        check = .checking
+        let info = try? await JellyfinMediaClient().getPublicInfo(baseURL: url)
+        guard let info else {
+            check = .failed(kind == .local
+                ? String(localized: "No answer from this address. A local address only answers on its own network.")
+                : String(localized: "No answer from this address. Check it, and that the server is reachable from outside."))
+            return
+        }
+        if let serverID, info.id != serverID {
+            check = .failed(String(localized: "This address reaches a different server, \(info.serverName ?? "—")."))
+            return
+        }
+        saved = text
+        check = .reached(info.serverName ?? String(localized: "your server"))
+    }
+}

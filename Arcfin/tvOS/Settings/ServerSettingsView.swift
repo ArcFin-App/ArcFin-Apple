@@ -2,6 +2,7 @@
 
 import SwiftUI
 import AuthCore
+import JellyfinAPI
 
 struct ServerSettingsView: View {
     @Environment(AuthManager.self) private var authManager
@@ -31,9 +32,8 @@ struct ServerSettingsView: View {
             ArcfinSyncSection()
 
             Section {
-                TextField("https://your-server.example.com", text: $remoteURL)
-                    .textContentType(.URL)
-                    .autocorrectionDisabled()
+                ServerURLField(placeholder: "https://your-server.example.com", kind: .remote, saved: $remoteURL,
+                               serverID: model.publicInfo?.id)
             } header: {
                 Label("Remote URL", systemImage: "globe")
                     .font(.system(.caption, design: .default, weight: .semibold))
@@ -46,9 +46,8 @@ struct ServerSettingsView: View {
             }
 
             Section {
-                TextField("http://10.0.1.50:8096", text: $localURL)
-                    .textContentType(.URL)
-                    .autocorrectionDisabled()
+                ServerURLField(placeholder: "http://10.0.1.50:8096", kind: .local, saved: $localURL,
+                               serverID: model.publicInfo?.id)
 
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {

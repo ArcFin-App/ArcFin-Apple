@@ -20,6 +20,9 @@ private struct ArcfinListWidth: ViewModifier {
 }
 
 extension View {
+    /// A web address field: the URL keyboard, no capitals.
+    func urlFieldKeyboard() -> some View { self }
+
     func arcfinListStyle() -> some View {
         self.scrollContentBackground(.hidden)
             .modifier(ArcfinListWidth())
