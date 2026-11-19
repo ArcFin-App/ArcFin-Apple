@@ -174,13 +174,16 @@ struct MusicNowPlayingView: View {
                                          .init(color: .clear, location: 1)],
                                  startPoint: .top, endPoint: .bottom))
             .overlay {
-                // Sharp above, softening toward the foot so the bars melt into the page.
+                // Sharp, with only their feet softening into the page.
                 ZStack {
                     MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0)
-                        .mask(LinearGradient(colors: [.black, .black, .clear], startPoint: .top, endPoint: .bottom))
+                        .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.9),
+                                                     .init(color: .clear, location: 1)],
+                                             startPoint: .top, endPoint: .bottom))
                     MusicArtworkVisualizer(bars: 32, spacing: 2, cornerRadius: 0)
-                        .blur(radius: 10)
-                        .mask(LinearGradient(colors: [.clear, .black], startPoint: .center, endPoint: .bottom))
+                        .blur(radius: 5)
+                        .mask(LinearGradient(stops: [.init(color: .clear, location: 0.88), .init(color: .black, location: 1)],
+                                             startPoint: .top, endPoint: .bottom))
                 }
             }
             .clipped()
