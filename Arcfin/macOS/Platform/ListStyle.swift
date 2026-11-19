@@ -20,6 +20,9 @@ private struct ArcfinListWidth: ViewModifier {
 }
 
 extension View {
+    /// The Mac has no index down a list's side.
+    func sectionIndexShown() -> some View { self }
+
     /// A web address field: the URL keyboard, no capitals.
     func urlFieldKeyboard() -> some View { self }
 

@@ -3,6 +3,9 @@
 import SwiftUI
 
 extension View {
+    /// The A–Z index down the side of a long list, as the system draws it.
+    func sectionIndexShown() -> some View { listSectionIndexVisibility(.visible) }
+
     /// A web address field: the URL keyboard, no capitals.
     func urlFieldKeyboard() -> some View { self.keyboardType(.URL).textInputAutocapitalization(.never) }
 

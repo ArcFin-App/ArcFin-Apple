@@ -81,38 +81,58 @@ struct MusicSongRow: View {
     let play: () -> Void
     private var player: MusicQueuePlayer { AppServices.music.player }
 
+    @ViewBuilder
+    private var menu: some View {
+        MusicSongMenu(song: song)
+        if let onRemove {
+            Divider()
+            Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive, action: onRemove)
+        }
+    }
+
     var body: some View {
-        Button(action: play) {
-            HStack(spacing: DT.Spacing.sm) {
-                MusicArtwork(url: MusicAPI.artworkURL(song, width: 120), cornerRadius: DT.Radius.xs)
-                    .frame(width: 48, height: 48)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(verbatim: song.name)
-                        .foregroundStyle(DT.Color.textPrimary)
-                    if let artist = song.artistLine {
-                        Text(verbatim: artist)
-                            .font(.footnote)
-                            .foregroundStyle(DT.Color.textSecondary)
+        HStack(spacing: DT.Spacing.xs) {
+            Button(action: play) {
+                HStack(spacing: DT.Spacing.sm) {
+                    MusicArtwork(url: MusicAPI.artworkURL(song, width: 120), cornerRadius: DT.Radius.xs)
+                        .frame(width: 44, height: 44)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(verbatim: song.name)
+                            .foregroundStyle(DT.Color.textPrimary)
+                        if let artist = song.artistLine {
+                            Text(verbatim: artist)
+                                .font(.subheadline)
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+                    }
+                    .lineLimit(1)
+                    .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+                    Spacer(minLength: DT.Spacing.xs)
+                    MusicDownloadedMark(songID: song.id)
+                    if player.current?.id == song.id {
+                        MusicPlayingIndicator(isPlaying: player.isPlaying)
                     }
                 }
-                .lineLimit(1)
-                Spacer(minLength: DT.Spacing.xs)
-                MusicDownloadedMark(songID: song.id)
-                if player.current?.id == song.id {
-                    MusicPlayingIndicator(isPlaying: player.isPlaying)
-                }
+                .padding(.vertical, 2)
+                .contentShape(Rectangle())
             }
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            // The song's menu, in reach without a long press, as in Apple Music; beside the
+            // row's button, which would otherwise take its taps.
+            Menu {
+                menu
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.body.weight(.semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .frame(width: 32, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("More")
         }
-        .buttonStyle(.plain)
         .listRowBackground(Color.clear)
-        .contextMenu {
-            MusicSongMenu(song: song)
-            if let onRemove {
-                Divider()
-                Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive, action: onRemove)
-            }
-        }
+        .contextMenu { menu }
         .swipeActions(edge: .leading) {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") { MusicActions.playNext([song]) }
                 .tint(DT.Color.accent)
@@ -133,31 +153,54 @@ struct MusicArtistsView: View {
         self.libraryID = libraryID
         _list = State(initialValue: MusicPagedList { start in
             let page = try await MusicAPI.call {
-                try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: libraryID, startIndex: start)
+                try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: libraryID, startIndex: start, limit: 500)
             }
             return (page.artists, page.total)
         })
+    }
+
+    /// The artists under the letter they start with; anything else under #.
+    private var sections: [(letter: String, artists: [MusicArtist])] {
+        let grouped = Dictionary(grouping: list.items) { artist -> String in
+            let first = artist.name.folding(options: [.diacriticInsensitive, .caseInsensitive], locale: nil)
+                .trimmingCharacters(in: .whitespaces).prefix(1).uppercased()
+            return first.first?.isLetter == true ? first : "#"
+        }
+        return grouped.keys.sorted { $0 == "#" ? false : $1 == "#" ? true : $0 < $1 }
+            .map { ($0, grouped[$0] ?? []) }
     }
 
     var body: some View {
         List {
             MusicListState(list: list, empty: "No Artists")
                 .listRowBackground(Color.clear)
-            ForEach(list.items) { artist in
-                NavigationLink { MusicDestination(route: MusicRoute.artist(artist, libraryID: libraryID)) } label: {
-                    HStack(spacing: DT.Spacing.sm) {
-                        MusicArtwork(url: MusicAPI.artworkURL(artist, width: 160), isCircle: true)
-                            .frame(width: 48, height: 48)
-                        Text(verbatim: artist.name)
-                            .foregroundStyle(DT.Color.textPrimary)
-                            .lineLimit(1)
+            ForEach(sections, id: \.letter) { section in
+                Section {
+                    ForEach(section.artists) { artist in
+                        NavigationLink { MusicDestination(route: MusicRoute.artist(artist, libraryID: libraryID)) } label: {
+                            HStack(spacing: DT.Spacing.sm) {
+                                MusicArtwork(url: MusicAPI.artworkURL(artist, width: 160), isCircle: true)
+                                    .frame(width: 44, height: 44)
+                                Text(verbatim: artist.name)
+                                    .foregroundStyle(DT.Color.textPrimary)
+                                    .lineLimit(1)
+                                    .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
+                            }
+                            .padding(.vertical, 2)
+                        }
+                        .listRowBackground(Color.clear)
+                        .task { await list.rowAppeared(artist) }
                     }
+                } header: {
+                    Text(verbatim: section.letter)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(DT.Color.textSecondary)
                 }
-                .listRowBackground(Color.clear)
-                .task { await list.rowAppeared(artist) }
+                .sectionIndexLabel(section.letter)
             }
         }
         .listStyle(.plain)
+        .sectionIndexShown()
         .scrollContentBackground(.hidden)
         .screenBackground()
         .navigationTitle("Artists")
@@ -178,20 +221,39 @@ struct MusicGenresView: View {
         })
     }
 
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// A colour for each genre, the same every time, from the app's palette.
+    private static let hues = ["FF6A4D", "60A5FA", "10B981", "F59E0B", "F43F5E", "B83A25", "1D4ED8", "047857"]
+    private func tint(_ genre: MusicGenre) -> Color {
+        let index = genre.name.unicodeScalars.reduce(0) { ($0 &* 31 &+ Int($1.value)) & 0x7FFF_FFFF } % Self.hues.count
+        return DT.Color.palette(Self.hues[index])
+    }
+
     var body: some View {
-        List {
+        ScrollView {
             MusicListState(list: list, empty: "No Genres")
-                .listRowBackground(Color.clear)
-            ForEach(list.items) { genre in
-                NavigationLink { MusicDestination(route: MusicRoute.albums(libraryID: libraryID, title: genre.name, genreID: genre.id)) } label: {
-                    Text(verbatim: genre.name)
-                        .foregroundStyle(DT.Color.textPrimary)
+            LazyVGrid(columns: MusicGrid.columns(sizeClass), spacing: DT.Spacing.md) {
+                ForEach(list.items) { genre in
+                    NavigationLink { MusicDestination(route: MusicRoute.albums(libraryID: libraryID, title: genre.name, genreID: genre.id)) } label: {
+                        ZStack(alignment: .bottomLeading) {
+                            LinearGradient(colors: [tint(genre), tint(genre).mix(with: .black, by: 0.45)],
+                                           startPoint: .topLeading, endPoint: .bottomTrailing)
+                            Text(verbatim: genre.name)
+                                .font(.headline)
+                                .foregroundStyle(.white)
+                                .lineLimit(2)
+                                .padding(DT.Spacing.sm)
+                        }
+                        .aspectRatio(1.6, contentMode: .fit)
+                        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
                 }
-                .listRowBackground(Color.clear)
             }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.bottom, DT.Spacing.xl)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
         .screenBackground()
         .navigationTitle("Genres")
         .task { await list.loadIfNeeded() }
@@ -393,19 +455,22 @@ struct MusicPlaylistsView: View {
             ForEach(list.items) { playlist in
                 NavigationLink { MusicDestination(route: MusicRoute.playlist(playlist)) } label: {
                     HStack(spacing: DT.Spacing.sm) {
-                        MusicArtwork(url: MusicAPI.artworkURL(playlist, width: 160), cornerRadius: DT.Radius.xs)
-                            .frame(width: 56, height: 56)
+                        MusicArtwork(url: MusicAPI.artworkURL(playlist, width: 200), cornerRadius: DT.Radius.sm)
+                            .frame(width: 64, height: 64)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(verbatim: playlist.name)
+                                .font(.body.weight(.medium))
                                 .foregroundStyle(DT.Color.textPrimary)
                             if let count = playlist.songCount {
                                 Text("\(count) songs")
-                                    .font(.footnote)
+                                    .font(.subheadline)
                                     .foregroundStyle(DT.Color.textSecondary)
                             }
                         }
                         .lineLimit(1)
+                        .alignmentGuide(.listRowSeparatorLeading) { $0[.leading] }
                     }
+                    .padding(.vertical, 2)
                 }
                 .listRowBackground(Color.clear)
                 .contextMenu {
