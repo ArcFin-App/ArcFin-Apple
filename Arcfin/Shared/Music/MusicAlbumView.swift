@@ -52,7 +52,8 @@ struct MusicAlbumView: View {
             }
             .padding(.bottom, DT.Spacing.xl)
         }
-        .screenBackground()
+        .ignoresSafeArea(edges: .top)
+        .musicHeroBackground(MusicAPI.artworkURL(album, width: 300))
         .inlineNavigationTitle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -71,12 +72,21 @@ struct MusicAlbumView: View {
         .task { await load() }
     }
 
+    /// Playing now, not paused: the cover is full size then.
+    private var isPlaying: Bool {
+        AppServices.music.isPlaying && AppServices.music.player.current?.albumId == album.id
+    }
+
     private var header: some View {
-        VStack(spacing: DT.Spacing.xs) {
+        MusicHero(backdrop: MusicAPI.artworkURL(album, width: 600), isPlaying: isPlaying) {
             MusicArtwork(url: MusicAPI.artworkURL(album, width: 800), cornerRadius: DT.Radius.md)
-                .frame(maxWidth: 280)
-                .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
-                .padding(.bottom, DT.Spacing.xs)
+        } info: {
+            titles
+        }
+    }
+
+    private var titles: some View {
+        VStack(spacing: DT.Spacing.xs) {
             Text(verbatim: album.name)
                 .font(.title2.weight(.bold))
                 .foregroundStyle(DT.Color.textPrimary)
@@ -93,8 +103,6 @@ struct MusicAlbumView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, DT.Spacing.xs)
     }
 
     /// Genre · year, as far as the server knows them.

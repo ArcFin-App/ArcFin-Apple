@@ -2,6 +2,7 @@
 
 import SwiftUI
 import JellyfinAPI
+import MediaEngine
 
 /// A smart playlist's tile: its colour, symbol and name.
 struct MusicSmartPlaylistTile: View {
@@ -33,8 +34,29 @@ struct MusicSmartPlaylistView: View {
     let libraryID: String
     @State private var songs: [MusicSong]?
 
+    @State private var backdrop: URL?
+
+    /// One of its songs is playing now, not paused.
+    private var isPlaying: Bool {
+        guard AppServices.music.isPlaying, let current = AppServices.music.player.current else { return false }
+        return songs?.contains { $0.id == current.id } ?? false
+    }
+
     var body: some View {
         List {
+            MusicHero(backdrop: backdrop, isPlaying: isPlaying) {
+                MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: 260) {
+                    MusicArtwork(url: $0, cornerRadius: 0)
+                }
+            } info: {
+                VStack(spacing: DT.Spacing.xs) {
+                    Text(playlist.title).font(.title2.weight(.bold)).foregroundStyle(DT.Color.textPrimary)
+                    Text(playlist.detail).font(.subheadline).foregroundStyle(DT.Color.textSecondary)
+                }
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
             MusicPlayShuffleButtons(play: { MusicActions.play(songs ?? []) }, shuffle: { MusicActions.shuffle(songs ?? []) })
                 .disabled(songs?.isEmpty != false)
                 .listRowSeparator(.hidden)
@@ -53,9 +75,13 @@ struct MusicSmartPlaylistView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
-        .screenBackground()
-        .navigationTitle(playlist.title)
-        .task { songs = await playlist.songs(libraryID: libraryID) }
+        .ignoresSafeArea(edges: .top)
+        .musicHeroBackground(backdrop)
+        .inlineNavigationTitle()
+        .task {
+            songs = await playlist.songs(libraryID: libraryID)
+            backdrop = await playlist.covers(libraryID: libraryID).first
+        }
         .refreshable { songs = await playlist.songs(libraryID: libraryID) }
     }
 }

@@ -137,6 +137,7 @@
 				Shared/Music/MusicComponents.swift = (ios, macos, );
 				Shared/Music/MusicDownloadsView.swift = (ios, macos, );
 				Shared/Music/MusicHistoryImportView.swift = (ios, macos, );
+				Shared/Music/MusicHero.swift = (ios, macos, );
 				Shared/Music/MusicIdentifyView.swift = (ios, macos, );
 				Shared/Music/MusicLibraryView.swift = (ios, macos, );
 				Shared/Music/MusicListsView.swift = (ios, macos, );
