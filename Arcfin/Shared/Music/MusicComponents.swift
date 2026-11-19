@@ -100,7 +100,7 @@ struct MusicAlbumMenu: View {
         Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
             Task { MusicActions.playNext(await MusicActions.albumSongs(album)) }
         }
-        Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") {
+        Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") {
             Task { MusicActions.addToQueue(await MusicActions.albumSongs(album)) }
         }
         MusicAddToPlaylistButton { await MusicActions.albumSongs(album) }
@@ -115,18 +115,43 @@ struct MusicAlbumMenu: View {
 }
 
 /// Play next, add to queue and a station for one song.
+/// A song's menu, the same everywhere, in Apple Music's order: what plays it, where it's
+/// kept, then where it's from and sharing it.
 struct MusicSongMenu: View {
     let song: MusicSong
 
     var body: some View {
-        Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") { MusicActions.playNext([song]) }
-        Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
-        MusicAddToPlaylistButton { [song] }
-        MusicDownloadButton(songs: { [song] }, known: [song])
-        Divider()
-        MusicFavoriteButton(id: song.id, server: song.isFavorite)
-        Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
-            Task { await MusicActions.instantMix(from: song.id) }
+        Section {
+            Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") { MusicActions.playNext([song]) }
+            Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
+        }
+        Section {
+            MusicAddToPlaylistButton { [song] }
+            MusicDownloadButton(songs: { [song] }, known: [song])
+            MusicFavoriteButton(id: song.id, server: song.isFavorite)
+        }
+        Section {
+            Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
+                Task { await MusicActions.instantMix(from: song.id) }
+            }
+            if let albumID = song.albumId {
+                NavigationLink {
+                    MusicDestination(route: .album(MusicAlbum(id: albumID, name: song.albumName ?? "",
+                                                              albumArtist: song.albumArtist)))
+                } label: {
+                    Label("Go to Album", systemImage: "square.stack")
+                }
+            }
+            if let artist = song.artists.first {
+                NavigationLink {
+                    MusicDestination(route: .artist(MusicArtist(id: artist.id, name: artist.name), libraryID: nil))
+                } label: {
+                    Label("Go to Artist", systemImage: "music.microphone")
+                }
+            }
+            ShareLink(item: [song.name, song.artistLine].compactMap { $0 }.joined(separator: " – ")) {
+                Label("Share Song", systemImage: "square.and.arrow.up")
+            }
         }
     }
 }

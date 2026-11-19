@@ -118,7 +118,7 @@ struct MusicSongRow: View {
                 .tint(DT.Color.accent)
         }
         .swipeActions(edge: .trailing) {
-            Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
+            Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
                 .tint(.indigo)
         }
     }

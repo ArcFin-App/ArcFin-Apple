@@ -156,7 +156,7 @@ private struct TVMusicSongRow: View {
             .focusEffectDisabled()
             .contextMenu {
                 Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") { MusicActions.playNext([song]) }
-                Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
+                Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
                 MusicFavoriteButton(id: song.id, server: song.isFavorite)
                 MusicAddToPlaylistButton { [song] }
                 if let onRemove {
@@ -258,7 +258,7 @@ private struct TVAlbumGrid: View {
                     Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                         Task { MusicActions.playNext(await MusicActions.albumSongs(album)) }
                     }
-                    Button("Add to Queue", systemImage: "text.line.last.and.arrowtriangle.forward") {
+                    Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") {
                         Task { MusicActions.addToQueue(await MusicActions.albumSongs(album)) }
                     }
                     MusicAddToPlaylistButton { await MusicActions.albumSongs(album) }
