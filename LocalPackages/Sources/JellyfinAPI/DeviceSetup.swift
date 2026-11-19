@@ -3,6 +3,7 @@
 import CryptoKit
 import Foundation
 import Network
+import os
 
 /// Setting up an Apple TV, iPad or Mac from an iPhone or iPad on the same network (#481).
 ///
@@ -432,8 +433,20 @@ public final class DeviceSetupListener: @unchecked Sendable {
                 gate.leave()
             }
         }
+        let log = Logger(subsystem: "com.psmattas.arcfin", category: "DeviceSetup")
         listener.stateUpdateHandler = { [continuation] state in
-            if case .failed = state { continuation.finish() }
+            switch state {
+            case .ready: log.notice("Waiting to be set up, as \(kind.rawValue, privacy: .public)")
+            // Usually the Local Network permission: nothing on the network can find it then.
+            case .waiting(let error): log.error("Can't wait to be set up yet: \(String(describing: error), privacy: .public)")
+            case .failed(let error):
+                log.error("Can't wait to be set up: \(String(describing: error), privacy: .public)")
+                continuation.finish()
+            default: break
+            }
+        }
+        listener.serviceRegistrationUpdateHandler = { change in
+            if case .add(let endpoint) = change { log.notice("Advertised as \(String(describing: endpoint), privacy: .public)") }
         }
         listener.start(queue: DispatchQueue(label: "arcfin.device-setup.listener"))
     }

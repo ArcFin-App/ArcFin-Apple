@@ -386,7 +386,8 @@ final class NearbySetupGuide {
 
     private(set) var phase: Phase = .idle
     /// What's being set up, or offered when it's one, for its icon and wording.
-    private(set) var kind = DeviceSetup.DeviceKind.appleTV
+    /// Nil until one is found: the icon is for any device till then.
+    private(set) var kind: DeviceSetup.DeviceKind?
     /// The profiles to sign the other device in with, the active one first.
     var selected: Set<UUID> = []
     /// Profiles with a PIN, which can only be added after switching to them.
@@ -452,6 +453,7 @@ final class NearbySetupGuide {
     func findNearby(authManager: AuthManager) {
         declined = []
         phase = .searching
+        kind = nil
         stop()
         phase = .searching
         start(authManager: authManager)
@@ -626,6 +628,7 @@ final class NearbySetupGuide {
         session?.close()
         session = nil
         phase = .idle
+        kind = nil
         if let authManager { Task { await offer(authManager: authManager) } }
     }
 
@@ -673,7 +676,7 @@ struct NearbySetupCard: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                Image(systemName: guide.kind.filledSymbol)
+                Image(systemName: guide.kind?.filledSymbol ?? "laptopcomputer.and.iphone")
                     .font(.system(size: 56))
                     .foregroundStyle(DT.Color.accent)
                     .padding(.top, 8)
