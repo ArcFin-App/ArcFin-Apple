@@ -3,7 +3,9 @@
 import SwiftUI
 import AVFoundation
 import JellyfinAPI
+import os
 import ShazamKit
+import Telemetry
 
 /// What's Playing?: listens with ShazamKit, names the song, and finds it in the library to
 /// play here, or says it isn't there.
@@ -19,6 +21,7 @@ final class MusicIdentifyModel {
     private(set) var phase = Phase.listening
     private(set) var inLibrary: [MusicSong] = []
     @ObservationIgnored private var session: SHManagedSession?
+    @ObservationIgnored private let log = Telemetry.logger(category: "Shazam")
 
     func listen() async {
         phase = .listening
@@ -27,14 +30,24 @@ final class MusicIdentifyModel {
             phase = .failed(String(localized: "Allow the microphone for Arcfin in Settings to name songs."))
             return
         }
-        let session = SHManagedSession()
-        self.session = session
         // What plays here would drown out the song in the room.
         let wasPlaying = AppServices.music.isPlaying
         if wasPlaying { AppServices.music.pause() }
+        do {
+            try await ListeningSession.begin()
+        } catch {
+            log.error("The microphone didn't start: \(error.localizedDescription, privacy: .public)")
+            await ListeningSession.end()
+            if wasPlaying { AppServices.music.resume() }
+            phase = .failed(String(localized: "The microphone couldn't start. Try again in a moment."))
+            return
+        }
+        let session = SHManagedSession()
+        self.session = session
         let result = await session.result()
-        if wasPlaying { AppServices.music.resume() }
         self.session = nil
+        await ListeningSession.end()
+        if wasPlaying { AppServices.music.resume() }
         switch result {
         case .match(let match):
             guard let item = match.mediaItems.first, let title = item.title else { return phase = .noMatch }
@@ -43,7 +56,13 @@ final class MusicIdentifyModel {
         case .noMatch:
             phase = .noMatch
         case .error(let error, _):
-            phase = .failed(String(localized: "Shazam couldn't listen. \(error.localizedDescription)"))
+            let code = (error as NSError).code
+            log.error("Shazam failed (\((error as NSError).domain, privacy: .public) \(code, privacy: .public)): \(error.localizedDescription, privacy: .public)")
+            // matchAttemptFailed: Shazam's service didn't take the request, usually the
+            // connection, or ShazamKit not yet active for the app.
+            phase = .failed(code == SHError.Code.matchAttemptFailed.rawValue
+                ? String(localized: "Shazam's service couldn't be reached. Check your connection and try again in a moment.")
+                : String(localized: "Shazam couldn't listen. \(error.localizedDescription)"))
         }
     }
 

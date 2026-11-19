@@ -185,6 +185,7 @@
 				iOS/Login/LoginPlatform.swift = (ios, );
 				iOS/Login/SetupGuideSheet.swift = (ios, );
 				iOS/Music/AppleMusicCatalog.swift = (ios, );
+				iOS/Music/ListeningSession.swift = (ios, );
 				iOS/Music/MusicDownloadActivity.swift = (ios, );
 				iOS/Music/MusicNowPlayingView.swift = (ios, );
 				iOS/Onboarding/OnboardingView.swift = (ios, );
@@ -291,6 +292,7 @@
 				macOS/Login/LoginPlatform.swift = (macos, );
 				macOS/Login/SetupGuideSheet.swift = (macos, );
 				macOS/Music/AppleMusicCatalog.swift = (macos, );
+				macOS/Music/ListeningSession.swift = (macos, );
 				macOS/Music/MusicDownloadActivity.swift = (macos, );
 				macOS/Music/MusicPlayerBar.swift = (macos, );
 				macOS/Onboarding/OnboardingView.swift = (macos, );
