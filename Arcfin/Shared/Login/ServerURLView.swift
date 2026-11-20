@@ -51,6 +51,7 @@ struct ServerURLView: View {
             )
             .padding(.top, onBack == nil ? 24 : 0)
 
+            NearbySetupHint()
             addressField
             serverLists
 
