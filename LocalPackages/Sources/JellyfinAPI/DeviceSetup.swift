@@ -19,6 +19,12 @@ import os
 /// After that every message is sealed with ChaCha20-Poly1305, with a key for each direction
 /// and a counter as the nonce, so a changed, replayed or reordered message ends the session.
 public enum DeviceSetup {
+    /// NoAuth or PolicyDenied from Bonjour: Local Network is off for the app.
+    public static func isLocalNetworkRefusal(_ error: NWError) -> Bool {
+        guard case .dns(let code) = error else { return false }
+        return code == -65555 || code == -65570
+    }
+
     public static let serviceType = "_arcfin-setup._tcp"
     /// The advertisement's TXT key for what kind of device is waiting.
     static let kindKey = "kind"
@@ -403,7 +409,10 @@ public final class DeviceSetupListener: @unchecked Sendable {
     public let sessions: AsyncStream<DeviceSetupSession>
 
     /// `port` is only for tests; the real listener takes any free port and is found by name.
-    public init(kind: DeviceSetup.DeviceKind = .appleTV, advertised: Bool = true, port: NWEndpoint.Port = .any) throws {
+    /// `onBlocked` runs when the system won't let it on the local network (Local Network off for
+    /// the app), so nothing nearby can find it.
+    public init(kind: DeviceSetup.DeviceKind = .appleTV, advertised: Bool = true, port: NWEndpoint.Port = .any,
+                onBlocked: @escaping @Sendable () -> Void = {}) throws {
         listener = try NWListener(using: .tcp, on: port)
         (sessions, continuation) = AsyncStream.makeStream(of: DeviceSetupSession.self)
         if advertised {
@@ -437,10 +446,12 @@ public final class DeviceSetupListener: @unchecked Sendable {
         listener.stateUpdateHandler = { [continuation] state in
             switch state {
             case .ready: log.notice("Waiting to be set up, as \(kind.rawValue, privacy: .public)")
-            // Usually the Local Network permission: nothing on the network can find it then.
-            case .waiting(let error): log.error("Can't wait to be set up yet: \(String(describing: error), privacy: .public)")
+            case .waiting(let error):
+                log.error("Can't wait to be set up yet: \(String(describing: error), privacy: .public)")
+                if DeviceSetup.isLocalNetworkRefusal(error) { onBlocked() }
             case .failed(let error):
                 log.error("Can't wait to be set up: \(String(describing: error), privacy: .public)")
+                if DeviceSetup.isLocalNetworkRefusal(error) { onBlocked() }
                 continuation.finish()
             default: break
             }

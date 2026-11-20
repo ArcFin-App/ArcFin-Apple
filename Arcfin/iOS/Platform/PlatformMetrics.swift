@@ -22,6 +22,8 @@ enum PlatformMetrics {
     static let playsAppleMusic = true
     /// What it says it is to the phone setting it up.
     static let nearbySetupKind = DeviceSetup.DeviceKind.iPad
+    /// Where Local Network is turned on for the app, for setup from a phone.
+    static let localNetworkSettings = URL(string: UIApplication.openSettingsURLString)
     /// Offers to set up a signed-out Apple TV, iPad or Mac on the same network (#481).
     static let setsUpNearbyDevices = true
     /// Sheets with a lot in them lay it out in two columns across the screen (TVs are landscape).

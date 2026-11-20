@@ -35,7 +35,11 @@ final class NearbySetupHost {
     @ObservationIgnored private var answer: CheckedContinuation<Bool, Never>?
 
     func start(authManager: AuthManager) {
-        guard listener == nil, let listener = try? DeviceSetupListener(kind: PlatformMetrics.nearbySetupKind) else { return }
+        guard listener == nil else { return }
+        NearbySetupAccess.shared.blocked = false
+        guard let listener = try? DeviceSetupListener(kind: PlatformMetrics.nearbySetupKind, onBlocked: {
+            Task { @MainActor in NearbySetupAccess.shared.blocked = true }
+        }) else { return }
         self.listener = listener
         listenTask = Task { [weak self] in
             for await session in listener.sessions {
@@ -248,15 +252,39 @@ extension View {
     }
 }
 
-/// The line on the other device's sign-in pages saying a phone can set it up too.
+/// Whether the system keeps this device off the local network, so no phone can find it.
+@MainActor @Observable
+final class NearbySetupAccess {
+    static let shared = NearbySetupAccess()
+    var blocked = false
+}
+
+/// The line on the other device's sign-in pages saying a phone can set it up too, or, when
+/// Local Network is off for the app, why it can't and where to turn it on. The system asks
+/// only once, so after a No it stays silent and only this can say so.
 struct NearbySetupHint: View {
+    @Environment(\.openURL) private var openURL
+
     var body: some View {
         if PlatformMetrics.hostsNearbySetup {
-            Label("You can also set this device up from Arcfin on an iPhone or iPad on this network.",
-                  systemImage: "iphone")
-                .font(.callout)
-                .foregroundStyle(DT.Color.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            if NearbySetupAccess.shared.blocked {
+                VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                    Label("An iPhone or iPad can't find this device: Local Network is off for Arcfin. Turn it on in Privacy & Security settings, then quit and reopen Arcfin.",
+                          systemImage: "network.slash")
+                        .font(.callout)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let settings = PlatformMetrics.localNetworkSettings {
+                        Button("Open Settings") { openURL(settings) }
+                    }
+                }
+            } else {
+                Label("You can also set this device up from Arcfin on an iPhone or iPad on this network.",
+                      systemImage: "iphone")
+                    .font(.callout)
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }

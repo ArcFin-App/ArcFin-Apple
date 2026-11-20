@@ -321,6 +321,70 @@
         }
       }
     },
+    "An iPhone or iPad can't find this device: Local Network is off for Arcfin. Turn it on in Privacy & Security settings, then quit and reopen Arcfin." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein iPhone oder iPad findet dieses Gerät nicht: „Lokales Netzwerk“ ist für Arcfin deaktiviert. Aktiviere es in den Einstellungen unter „Datenschutz & Sicherheit“ und beende und öffne Arcfin dann erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un iPhone o iPad no puede encontrar este dispositivo: Red local está desactivada para Arcfin. Actívala en los ajustes de Privacidad y seguridad y, después, cierra y vuelve a abrir Arcfin."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un iPhone ou un iPad ne peut pas trouver cet appareil : Réseau local est désactivé pour Arcfin. Activez-le dans les réglages Confidentialité et sécurité, puis quittez et rouvrez Arcfin."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un iPhone o iPad non riesce a trovare questo dispositivo: Rete locale è disattivata per Arcfin. Attivala nelle impostazioni Privacy e sicurezza, poi chiudi e riapri Arcfin."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhoneやiPadからこのデバイスが見つかりません：Arcfinの“ローカルネットワーク”がオフです。“プライバシーとセキュリティ”設定でオンにしてから、Arcfinを終了して開き直してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone 또는 iPad에서 이 기기를 찾을 수 없습니다: Arcfin의 로컬 네트워크가 꺼져 있습니다. 개인정보 보호 및 보안 설정에서 켠 다음 Arcfin을 종료했다가 다시 여세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een iPhone of iPad kan dit apparaat niet vinden: Lokaal netwerk staat uit voor Arcfin. Zet het aan in de instellingen voor Privacy en beveiliging en stop en open Arcfin daarna opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um iPhone ou iPad não consegue encontrar este dispositivo: Rede Local está desativada para o Arcfin. Ative-a nos ajustes de Privacidade e Segurança e, depois, encerre e abra o Arcfin novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone или iPad не может найти это устройство: для Arcfin выключена «Локальная сеть». Включите её в настройках «Конфиденциальность и безопасность», затем закройте и снова откройте Arcfin."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone 或 iPad 找不到此设备：Arcfin 的“本地网络”已关闭。请在“隐私与安全性”设置中将其打开，然后退出并重新打开 Arcfin。"
+          }
+        }
+      }
+    },
     "Apple Music" : {
       "localizations" : {
         "de" : {
@@ -1149,6 +1213,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在 Apple Music 中打开"
+          }
+        }
+      }
+    },
+    "Open Settings" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen öffnen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir Ajustes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrir les réglages"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri Impostazioni"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定を開く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정 열기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Instellingen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abrir Ajustes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Открыть настройки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开设置"
           }
         }
       }

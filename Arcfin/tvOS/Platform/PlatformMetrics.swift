@@ -22,6 +22,8 @@ enum PlatformMetrics {
     static let playsAppleMusic = false
     /// What it says it is to the phone setting it up.
     static let nearbySetupKind = DeviceSetup.DeviceKind.appleTV
+    /// Apple TV has no settings link; the hint says where to look.
+    static let localNetworkSettings: URL? = nil
     /// Offers to set up a signed-out Apple TV, iPad or Mac on the same network (#481).
     static let setsUpNearbyDevices = false
     /// Sheets with a lot in them lay it out in two columns across the screen (TVs are landscape).
