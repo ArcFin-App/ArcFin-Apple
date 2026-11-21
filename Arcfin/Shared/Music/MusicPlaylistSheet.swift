@@ -95,7 +95,7 @@ struct MusicAddToPlaylistSheet: View {
                     }
                 }
                 if let errorMessage {
-                    Text(verbatim: errorMessage).font(.footnote).foregroundStyle(.red)
+                    Text(verbatim: errorMessage).font(.footnote).foregroundStyle(DT.Color.palette("F43F5E"))
                 }
             }
             .sheetTitle("Add to Playlist")

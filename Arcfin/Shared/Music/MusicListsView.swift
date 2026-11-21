@@ -139,7 +139,7 @@ struct MusicSongRow: View {
         }
         .swipeActions(edge: .trailing) {
             Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
-                .tint(.indigo)
+                .tint(DT.Color.textSecondary)
         }
     }
 }
