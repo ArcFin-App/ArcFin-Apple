@@ -34,6 +34,14 @@ struct LiveTVGuideView: View {
                 if model.hasGuide == true { categoryBar }
                 if model.isLoadingCategory {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if model.categoryFailed {
+                    ContentUnavailableView {
+                        Label("Couldn't Load Channels", systemImage: "antenna.radiowaves.left.and.right.slash")
+                    } description: {
+                        Text("Check your connection and try again.")
+                    } actions: {
+                        Button("Try Again") { model.retryCategory(authManager: authManager) }
+                    }
                 } else if model.guideChannels.isEmpty, let category = model.guideCategory {
                     ContentUnavailableView("Nothing Found", systemImage: category.systemImage,
                                            description: Text("Nothing of this kind is in the guide right now."))

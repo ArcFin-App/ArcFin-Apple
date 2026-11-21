@@ -100,6 +100,7 @@ final class LiveTVModel {
     /// The channels showing that kind of programme, as the server finds them.
     private(set) var categoryChannels: [LiveTVChannel] = []
     private(set) var isLoadingCategory = false
+    private(set) var categoryFailed = false
 
     var guideChannels: [LiveTVChannel] {
         guard guideCategory != nil else { return visibleChannels }
@@ -111,13 +112,26 @@ final class LiveTVModel {
         guideCategory = category
         categoryChannels = []
         reloadGuide()
-        guard let category, let (credential, header) = session(authManager) else { return }
+        loadCategory(authManager: authManager)
+    }
+
+    func retryCategory(authManager: AuthManager) {
+        loadCategory(authManager: authManager)
+    }
+
+    private func loadCategory(authManager: AuthManager) {
+        categoryFailed = false
+        guard let category = guideCategory, let (credential, header) = session(authManager) else {
+            isLoadingCategory = false
+            return
+        }
         isLoadingCategory = true
         Task {
             let page = try? await client.getLiveTVChannels(credential: credential, authHeader: header,
                                                            limit: 500, category: category)
             guard guideCategory == category else { return }
             categoryChannels = page?.channels ?? []
+            categoryFailed = page == nil
             isLoadingCategory = false
         }
     }
