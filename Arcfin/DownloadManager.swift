@@ -975,6 +975,7 @@ final class DownloadManager: NSObject {
             wakeQueue()
         }
         isProcessingQueue = false
+        sendDownloadNoticeIfIdle()
         if pendingQueue.isEmpty { holdOverridden = false }
         // A show just got a downloaded episode, so Smart Downloads can line up the ones after
         // it. Only once the queue has drained: running it mid-queue would reenter this loop
@@ -1007,6 +1008,7 @@ final class DownloadManager: NSObject {
         #endif
 
         var keptForRetry = false
+        var savedTitle: String?
         do {
             async let detailTask = client.getItemDetailData(credential: credential, authHeader: authHeader, itemId: item.id)
             async let playbackTask = client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id)
@@ -1123,7 +1125,7 @@ final class DownloadManager: NSObject {
             downloaded.castPhotoFileNames = fetched.castPhotoFileNames
             modelContext.insert(downloaded)
             try? modelContext.save()
-            Task { await NotificationManager.notifyDownloadComplete(title: detail.item.name) }
+            savedTitle = detail.item.name
 
             if let seriesId = detail.item.seriesId {
                 await ensureSeriesMetadata(seriesId: seriesId, credential: credential, authHeader: authHeader)
@@ -1204,6 +1206,8 @@ final class DownloadManager: NSObject {
         stats[item.id] = nil
         speedSamples[item.id] = nil
         endBackgroundTaskIfIdle()
+        if let savedTitle { noteFinishedForNotice(savedTitle) }
+        sendDownloadNoticeIfIdle()
         #if canImport(ActivityKit) && os(iOS)
         liveActivityItemMeta[item.id] = nil
         queueCompletedCount += 1
@@ -1224,6 +1228,25 @@ final class DownloadManager: NSObject {
 
     private func checkStillWanted(_ itemId: String, run: UUID) throws {
         guard runTokens[itemId] == run else { throw CancellationError() }
+    }
+
+    /// Titles finished in this run of the queue, told about together once it's empty.
+    @ObservationIgnored private var finishedSinceNotice: [String] = []
+
+    /// Settings › Notifications › Download Complete: one notice per queue run, naming the title
+    /// when it's only one, rather than one per episode of a season.
+    private func noteFinishedForNotice(_ title: String) {
+        guard UserDefaults.standard.object(forKey: "notifyDownload") as? Bool ?? true else { return }
+        finishedSinceNotice.append(title)
+    }
+
+    /// Sent once nothing is downloading or waiting, however the last title ended.
+    private func sendDownloadNoticeIfIdle() {
+        guard !finishedSinceNotice.isEmpty, pendingQueue.isEmpty, activeItemIds.isEmpty else { return }
+        let titles = finishedSinceNotice
+        finishedSinceNotice = []
+        let body = titles.count == 1 ? titles[0] : String(localized: "\(titles.count) downloads are ready to watch offline.")
+        Task { await NotificationManager.notifyDownloadComplete(title: body) }
     }
 
     private struct DownloadExtras: Sendable {
@@ -1451,6 +1474,7 @@ final class DownloadManager: NSObject {
         endBackgroundTaskIfIdle()
         removePendingDescriptor(itemId: itemId)
         removeSavedQueueEntry(itemId: itemId)
+        sendDownloadNoticeIfIdle()
         #if canImport(ActivityKit) && os(iOS)
         if wasQueued {
             queueTotalCount = max(queueTotalCount - 1, queueCompletedCount)
