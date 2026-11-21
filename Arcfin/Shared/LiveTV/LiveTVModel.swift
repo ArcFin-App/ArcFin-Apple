@@ -298,13 +298,17 @@ final class LiveTVModel {
             .map(\.id).filter { !requestedGuideChannels.contains($0) }
         guard !block.isEmpty else { return }
         requestedGuideChannels.formUnion(block)
+        // A reload while this was out has already asked again for the new category or window.
+        let generation = guideGeneration
         do {
             let found = try await client.getLiveTVPrograms(credential: credential, authHeader: header,
                                                            channelIds: block, from: guideStart, to: guideEnd,
                                                            category: guideCategory)
+            guard generation == guideGeneration else { return }
             let grouped = Dictionary(grouping: found, by: \.channelId)
             for id in block { programs[id] = grouped[id] ?? [] }
         } catch {
+            guard generation == guideGeneration else { return }
             requestedGuideChannels.subtract(block)
         }
     }
