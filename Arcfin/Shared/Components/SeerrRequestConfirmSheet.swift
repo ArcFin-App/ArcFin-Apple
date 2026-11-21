@@ -247,7 +247,7 @@ struct SeerrRequestConfirmSheet: View {
                         Image(systemName: "star.fill")
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.palette("f59e0b"))
-                        Text(String(format: "%.1f", rating))
+                        Text(rating.formatted(.number.precision(.fractionLength(1))))
                             .font(.system(.caption, design: .default, weight: .semibold))
                             .foregroundStyle(DT.Color.textPrimary)
                     }
