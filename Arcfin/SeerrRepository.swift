@@ -317,9 +317,9 @@ final class SeerrRepository {
                 for item in requests where item.requestedByID == nil || item.requestedByID == currentUser?.id {
                     guard let previous = known[item.id] else { continue }
                     if previous.status != .approved, item.status == .approved {
-                        Task { await NotificationManager.notifyRequestApproved(title: item.mediaTitle) }
+                        Task { await NotificationManager.notifyRequestApproved(title: item.mediaTitle, requestID: item.id) }
                     } else if previous.mediaStatus != .available, item.mediaStatus == .available {
-                        Task { await NotificationManager.notifyRequestAvailable(title: item.mediaTitle) }
+                        Task { await NotificationManager.notifyRequestAvailable(title: item.mediaTitle, requestID: item.id) }
                     }
                 }
             }
