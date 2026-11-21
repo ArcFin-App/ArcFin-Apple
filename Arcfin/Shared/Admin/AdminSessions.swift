@@ -191,7 +191,7 @@ struct AdminSessionRow: View {
             guard let transcode = session.transcode else { return "Transcoding" }
             var parts = ["Transcoding"]
             if let bitrate = transcode.bitrate {
-                parts.append(String(format: "%.1f Mb/s", Double(bitrate) / 1_000_000))
+                parts.append(String(localized: "\((Double(bitrate) / 1_000_000).formatted(.number.precision(.fractionLength(1)))) Mb/s"))
             }
             let converted = [
                 transcode.isVideoDirect ? nil : transcode.videoCodec.map { "video → \($0.uppercased())" },

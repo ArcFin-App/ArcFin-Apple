@@ -284,7 +284,7 @@ struct SeerrRequestDetailView: View {
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(.caption2))
-                            Text(String(format: "%.1f", rating))
+                            Text(rating.formatted(.number.precision(.fractionLength(1))))
                         }
                         .font(.system(.caption2))
                         .foregroundStyle(DT.Color.palette("f59e0b"))

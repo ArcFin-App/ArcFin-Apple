@@ -131,13 +131,13 @@ struct SeerrItemDetailView: View {
             }
             if let runtime = detail?.runtimeMinutes {
                 dot
-                Text("\(runtime)m")
+                Text(Duration.seconds(runtime * 60).formatted(.units(allowed: [.minutes], width: .narrow)))
             }
             if let rating = detail?.voteAverage, rating > 0 {
                 dot
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16))
-                    Text(String(format: "%.1f", rating)).font(.system(size: 23, weight: .bold))
+                    Text(rating.formatted(.number.precision(.fractionLength(1)))).font(.system(size: 23, weight: .bold))
                 }
                 .foregroundStyle(DT.Color.palette("f59e0b"))
             }

@@ -89,7 +89,7 @@ struct TitleInsights: View {
                 }
                 if let imdb = ratings.imdbScore {
                     scoreChip(systemImage: "star.fill", tint: DT.Color.palette("f5c518"),
-                              value: String(format: "%.1f", imdb), label: "IMDb", url: ratings.imdbURL)
+                              value: imdb.formatted(.number.precision(.fractionLength(1))), label: "IMDb", url: ratings.imdbURL)
                 }
             }
             .padding(.horizontal, rowInset)
@@ -231,7 +231,7 @@ struct TitleInsights: View {
             var parts: [String] = []
             if let container = file.container { parts.append(container.uppercased()) }
             if let size = file.sizeBytes, size > 0 { parts.append(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
-            if let bitrate = file.bitrate, bitrate > 0 { parts.append("\(bitrate / 1_000_000) Mb/s") }
+            if let bitrate = file.bitrate, bitrate > 0 { parts.append(String(localized: "\(bitrate / 1_000_000) Mb/s")) }
             if !parts.isEmpty {
                 let label = (detail?.files.count ?? 0) > 1 ? (file.name ?? String(localized: "File")) : String(localized: "File")
                 rows.append((label, parts.joined(separator: " · ")))
