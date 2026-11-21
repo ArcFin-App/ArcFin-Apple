@@ -30,6 +30,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import time
 import urllib.request
 import zipfile
 from html.parser import HTMLParser
@@ -198,6 +199,18 @@ def pins():
     return json.load(open(RESOLVED))["pins"]
 
 
+def retrying(step, attempts=4):
+    """GitHub drops the odd fetch on CI; a few tries a few seconds apart get past it."""
+    for attempt in range(1, attempts + 1):
+        try:
+            return step()
+        except (subprocess.CalledProcessError, OSError) as error:
+            if attempt == attempts:
+                raise
+            print(f"Retrying after: {error}", file=sys.stderr)
+            time.sleep(5 * attempt)
+
+
 def fetch_sources(root):
     """Each pinned package at its exact revision, plus the Google Cast SDK's binary (its
     bundled open-source licences are inside), laid out like Xcode's SourcePackages."""
@@ -211,13 +224,14 @@ def fetch_sources(root):
         dest = checkouts / name
         git = ["git", "-C", str(dest), "-c", "advice.detachedHead=false"]
         subprocess.run(["git", "init", "-q", str(dest)], check=True)
-        subprocess.run(git + ["fetch", "-q", "--depth", "1", pin["location"], pin["state"]["revision"]], check=True)
+        retrying(lambda: subprocess.run(git + ["fetch", "-q", "--depth", "1", pin["location"], pin["state"]["revision"]],
+                                        check=True))
         subprocess.run(git + ["checkout", "-q", "FETCH_HEAD"], check=True)
         if pin["identity"] == "google-cast-sdk":
             version = pin["state"]["version"]
             url = f"https://github.com/SRGSSR/google-cast-sdk/releases/download/{version}/GoogleCast.xcframework.zip"
             zipped = artifacts / "GoogleCast.zip"
-            urllib.request.urlretrieve(url, zipped)
+            retrying(lambda: urllib.request.urlretrieve(url, zipped))
             with zipfile.ZipFile(zipped) as archive:
                 for member in archive.namelist():
                     if "/OpenSourceLicenses/" in member and not member.endswith("/"):
