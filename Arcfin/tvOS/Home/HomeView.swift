@@ -548,7 +548,7 @@ struct HomeView: View {
                     .opacity(heroChromeOpacity)
 
                 ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 16) {
+                    HStack(spacing: 16) {
                         ForEach(items) { item in
                             Button {
                                 if heroChromeHidden { showHeroChrome(); return }
@@ -760,7 +760,7 @@ struct HomeView: View {
             .padding(.bottom, 14)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 16) { content() }
+                HStack(spacing: 16) { content() }
                     .padding(.horizontal, 80)
                     .padding(.top, 20)
                     .focusSection()

@@ -460,7 +460,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle(title).padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 16) {
+                HStack(spacing: 16) {
                     ForEach(items) { rec in
                         NavigationLink(value: rec) {
                             PosterCard(
@@ -487,7 +487,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle(title).padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 16) {
+                HStack(spacing: 16) {
                     ForEach(sets) { set in
                         Button { open(set) } label: {
                             PosterCard(title: set.name, imageURL: mediaRepo.tvImageURL(for: set, fillWidth: 640))
@@ -539,7 +539,7 @@ struct MediaDetailView: View {
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(spacing: 16) {
+                    HStack(spacing: 16) {
                         ForEach(model.episodes) { ep in
                             let watched = ep.userData?.played == true
                             Button { selectedEpisode = ep } label: {
@@ -613,7 +613,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Trailers").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 16) {
+                HStack(spacing: 16) {
                     ForEach(model.trailers) { trailer in
                         Button {
                             playbackRequest = Arcfin.PlaybackRequest(item: trailer, startTicks: 0)
@@ -640,7 +640,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Cast").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(alignment: .top, spacing: 16) {
+                HStack(alignment: .top, spacing: 16) {
                     ForEach(d.cast) { person in
                         Button { selectedPerson = person } label: {
                             TVCastPersonCard(
@@ -677,7 +677,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("More Like This").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 16) {
+                HStack(spacing: 16) {
                     ForEach(model.similarItems) { sim in
                         NavigationLink(value: sim) {
                             PosterCard(
@@ -703,7 +703,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Recommended").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 16) {
+                HStack(spacing: 16) {
                     ForEach(model.seerrRelatedItems) { sim in
                         Button { openSeerrRelated(sim) } label: {
                             PosterCard(
