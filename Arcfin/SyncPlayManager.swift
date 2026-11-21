@@ -69,13 +69,12 @@ final class SyncPlayManager {
         }
     }
 
-    func joinGroup(
-        _ group: SyncPlayGroupInfo, credential: ServerCredential, authHeader: String,
-        itemId: String, startPositionTicks: Int64
-    ) async {
+    /// Joins without setting the queue: SetNewQueue is a new queue for the whole group, which
+    /// sent everyone back to wherever the joiner happened to be. The group's own commands
+    /// bring the joiner in line instead.
+    func joinGroup(_ group: SyncPlayGroupInfo, credential: ServerCredential, authHeader: String) async {
         do {
             try await client.syncPlayJoinGroup(credential: credential, authHeader: authHeader, groupId: group.id)
-            try await client.syncPlaySetQueue(credential: credential, authHeader: authHeader, itemId: itemId, startPositionTicks: startPositionTicks)
             currentGroupId = group.id
             groupName = group.groupName
             connectSocket(credential: credential, authHeader: authHeader)

@@ -973,10 +973,7 @@ final class PlayerModel {
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         isSyncPlayBusy = true
         Task {
-            await syncPlayManager.joinGroup(
-                group, credential: credential, authHeader: authHeader,
-                itemId: item.id, startPositionTicks: player.positionTicks
-            )
+            await syncPlayManager.joinGroup(group, credential: credential, authHeader: authHeader)
             isSyncPlayBusy = false
         }
     }
