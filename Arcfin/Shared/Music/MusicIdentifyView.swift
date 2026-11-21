@@ -21,11 +21,14 @@ final class MusicIdentifyModel {
     private(set) var phase = Phase.listening
     private(set) var inLibrary: [MusicSong] = []
     @ObservationIgnored private var session: SHManagedSession?
+    /// Closed while the microphone was still starting: it stops as soon as it has.
+    @ObservationIgnored private var isCancelled = false
     @ObservationIgnored private let log = Telemetry.logger(category: "Shazam")
 
     func listen() async {
         phase = .listening
         inLibrary = []
+        isCancelled = false
         guard await AVAudioApplication.requestRecordPermission() else {
             phase = .failed(String(localized: "Allow the microphone for Arcfin in Settings to name songs."))
             return
@@ -35,6 +38,11 @@ final class MusicIdentifyModel {
         if wasPlaying { AppServices.music.pause() }
         do {
             try await ListeningSession.begin()
+            if isCancelled { throw CancellationError() }
+        } catch is CancellationError {
+            await ListeningSession.end()
+            if wasPlaying { AppServices.music.resume() }
+            return
         } catch {
             log.error("The microphone didn't start: \(error.localizedDescription, privacy: .public)")
             await ListeningSession.end()
@@ -66,7 +74,10 @@ final class MusicIdentifyModel {
         }
     }
 
-    func cancel() { session?.cancel() }
+    func cancel() {
+        isCancelled = true
+        session?.cancel()
+    }
 
     private func findInLibrary(title: String, artist: String?) async {
         let name = title.lowercased(), artist = artist?.lowercased() ?? ""
@@ -147,5 +158,8 @@ struct MusicIdentifyView: View {
             }
         }
         .task { await model.listen() }
+        // Swiped away as well as Done: the session doesn't stop with the view's task, and
+        // would keep the microphone on and the music paused until it timed out.
+        .onDisappear { model.cancel() }
     }
 }
