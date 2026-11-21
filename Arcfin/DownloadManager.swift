@@ -238,7 +238,10 @@ final class DownloadManager: NSObject {
         reconcileStaleActivitiesOnLaunch()
         #endif
         retryUnfinishedDownloads()
-        Task { await restoreSavedQueue() }
+        Task {
+            await restoreSavedQueue()
+            await removeLeftoverFolders()
+        }
         runSmartDownloadsOnLaunch()
         removeExpiredDownloads()
         purgeWatchedDownloads()
@@ -1640,7 +1643,37 @@ final class DownloadManager: NSObject {
                 restored = true
             }
         }
-        if restored { await processQueue() }
+        if restored { Task { await processQueue() } }
+    }
+
+    /// Folders under Downloads nothing points to any more, left by a transfer cut off, a range
+    /// that failed or a recovery that gave up: space Manage Storage can't show or free. Not
+    /// while a store that couldn't be opened is set aside, whose downloads are still listed in it.
+    private func removeLeftoverFolders() async {
+        guard let modelContext,
+              !modelContext.container.configurations.contains(where: \.isStoredInMemoryOnly),
+              !Persistence.hasSetAsideStore()
+        else { return }
+        let liveTasks = await session.allTasks
+        guard let items = try? modelContext.fetch(FetchDescriptor<DownloadedItem>()),
+              let series = try? modelContext.fetch(FetchDescriptor<DownloadedSeries>())
+        else { return }
+        var keep = Set(items.map(\.itemId) + items.compactMap(\.seriesId) + series.map(\.seriesId))
+        keep.formUnion(loadPendingDescriptors().map(\.itemId))
+        keep.formUnion(loadSavedQueue().map(\.itemId))
+        keep.formUnion(activeItemIds)
+        keep.formUnion(pendingQueue.map(\.item.id))
+        keep.formUnion(handedOffItemIds)
+        keep.formUnion(liveTasks.compactMap { $0.taskDescription.map { URL(fileURLWithPath: $0).deletingLastPathComponent().lastPathComponent } })
+        let root = DownloadStore.rootDirectory()
+        guard let folders = try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.isDirectoryKey]) else { return }
+        var removed = 0
+        for folder in folders where !keep.contains(folder.lastPathComponent) {
+            guard (try? folder.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { continue }
+            try? FileManager.default.removeItem(at: folder)
+            removed += 1
+        }
+        if removed > 0 { Self.smartLog.notice("Removed \(removed, privacy: .public) leftover download folder(s)") }
     }
 
     // MARK: - Background continuation

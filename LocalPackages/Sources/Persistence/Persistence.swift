@@ -39,6 +39,14 @@ public enum Persistence: Sendable {
         }
     }
 
+    /// A store set aside by makeContainerRecoveringFromFailure is still beside the new one: the
+    /// downloads it listed are on disk with no record here, and shouldn't be cleared as unknown.
+    public static func hasSetAsideStore() -> Bool {
+        let store = ModelConfiguration(schema: Schema(currentModels)).url
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: store.deletingLastPathComponent().path)) ?? []
+        return names.contains { $0.hasPrefix(store.lastPathComponent) && $0.contains(".unreadable-") }
+    }
+
     // Register new SwiftData models here as they are created.
     static var currentModels: [any PersistentModel.Type] {
         [DownloadedItem.self, DownloadedSeries.self]
