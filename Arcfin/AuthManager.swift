@@ -150,7 +150,8 @@ final class AuthManager {
             var updated = cred
             updated.userImageTag = tag
             self.upsert(updated)
-            self.state = .authenticated(updated)
+            // Another profile may have been picked while this ran; it stays.
+            if self.state.credential?.id == cred.id { self.state = .authenticated(updated) }
         }
         BottomNavPrefs.switchLayout(toProfile: cred.id.uuidString)
         refreshIsAdmin(for: cred)
