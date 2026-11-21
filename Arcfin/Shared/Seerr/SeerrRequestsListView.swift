@@ -10,7 +10,7 @@ struct SeerrRequestsListView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     let filter: RequestMediaType?
-    let title: String
+    let title: LocalizedStringKey
 
     @State private var selectedRequest: SeerrRequestItem? = nil
     @State private var statusFilter: RequestStatus? = nil
