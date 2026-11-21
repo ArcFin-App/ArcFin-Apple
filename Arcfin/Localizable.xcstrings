@@ -129,6 +129,134 @@
         }
       }
     },
+    "Listening history, loves and Year in Music use ListenBrainz, a MetaBrainz Foundation project." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hörverlauf, Lieblingssongs und Musikjahr nutzen ListenBrainz, ein Projekt der MetaBrainz Foundation."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El historial de escucha, los favoritos y Año en música usan ListenBrainz, un proyecto de la MetaBrainz Foundation."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L’historique d’écoute, les coups de cœur et Année en musique utilisent ListenBrainz, un projet de la MetaBrainz Foundation."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La cronologia degli ascolti, i brani amati e Anno in musica usano ListenBrainz, un progetto della MetaBrainz Foundation."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再生履歴、ラブ、今年の音楽には、MetaBrainz FoundationのプロジェクトであるListenBrainzを使用しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "청취 기록, 좋아요 및 올해의 음악은 MetaBrainz Foundation 프로젝트인 ListenBrainz를 사용합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Luistergeschiedenis, favorieten en Muziekjaar gebruiken ListenBrainz, een project van de MetaBrainz Foundation."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O histórico de audição, as músicas amadas e Ano em música usam o ListenBrainz, um projeto da MetaBrainz Foundation."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "История прослушиваний, любимые треки и «Год в музыке» используют ListenBrainz — проект MetaBrainz Foundation."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收听记录、喜爱和年度音乐使用 ListenBrainz，这是 MetaBrainz Foundation 的项目。"
+          }
+        }
+      }
+    },
+    "Lyrics not on your server come from LRCLIB." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songtexte, die nicht auf deinem Server sind, stammen von LRCLIB."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las letras que no están en tu servidor proceden de LRCLIB."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les paroles absentes de votre serveur proviennent de LRCLIB."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I testi che non sono sul tuo server provengono da LRCLIB."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバにない歌詞はLRCLIBから取得しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서버에 없는 가사는 LRCLIB에서 가져옵니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songteksten die niet op je server staan, komen van LRCLIB."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As letras que não estão no seu servidor vêm do LRCLIB."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Тексты песен, которых нет на вашем сервере, берутся из LRCLIB."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器上没有的歌词来自 LRCLIB。"
+          }
+        }
+      }
+    },
     "·" : {
       "localizations" : {
         "de" : {

@@ -61,6 +61,10 @@ struct LicensesView: View {
                     .tvReadOnlyRow()
                 Text("Awards come from Wikidata.")
                     .tvReadOnlyRow()
+                Text("Lyrics not on your server come from LRCLIB.")
+                    .tvReadOnlyRow()
+                Text("Listening history, loves and Year in Music use ListenBrainz, a MetaBrainz Foundation project.")
+                    .tvReadOnlyRow()
             }
             Section {
                 ForEach(licenses.filter(\.isArcfin)) { entry in
