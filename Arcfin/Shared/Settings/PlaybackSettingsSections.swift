@@ -67,13 +67,16 @@ struct PlaybackAutomationSection: View {
             .tvListRow()
             .syncLocked("skipCommercials", authManager)
             if autoPlayNext || skipRecap || skipIntro || skipCredits || skipCommercials {
-                SettingsPicker("Countdown", detail: "How long the button fills before an automatic skip or the next episode.", selection: $upNextCountdownSeconds,
+                // Earlier versions offered up to 15 s. Clamped for display only, as the player
+                // clamps when it reads it: writing it here would push a synced, maybe locked,
+                // setting just for opening the page.
+                SettingsPicker("Countdown", detail: "How long the button fills before an automatic skip or the next episode.",
+                               selection: Binding(get: { min(max(upNextCountdownSeconds, 3), 5) },
+                                                  set: { upNextCountdownSeconds = $0 }),
                                options: [3, 4, 5]) { seconds in
                     Text("\(seconds)s")
                 }
                 .syncLocked("upNextCountdownSeconds", authManager)
-                // Earlier versions offered up to 15 s.
-                .onAppear { upNextCountdownSeconds = min(max(upNextCountdownSeconds, 3), 5) }
             }
             Toggle(isOn: $subtitleDefault) {
                 TVRowLabelText(title: "Show Subtitles by Default", detail: "Turns on a subtitle track when a video starts.")
