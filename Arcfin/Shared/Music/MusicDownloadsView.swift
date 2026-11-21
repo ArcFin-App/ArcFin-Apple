@@ -179,7 +179,8 @@ struct MusicDownloadsView: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(DT.Color.accent)
             }
-            VStack(spacing: 0) {
+            // Lazy: Download All Albums can queue thousands of songs.
+            LazyVStack(spacing: 0) {
                 ForEach(Array((downloads.queue + downloads.failed).enumerated()), id: \.element.id) { index, song in
                     if index > 0 {
                         Divider().overlay(DT.Color.textPrimary.opacity(0.06)).padding(.leading, 68)
