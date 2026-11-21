@@ -62,8 +62,8 @@ final class AuthManager {
     var expiredCredential: ServerCredential?
     @ObservationIgnored private var lastSignInCheck: Date?
 
-    /// nil until the first check completes, or if the server has no Arcfin Sync plugin /
-    /// isn't reachable — both look identical on purpose, see ArcfinSyncClient.fetchStatus.
+    /// nil until the first check completes, or if the server has no Arcfin Sync plugin or
+    /// isn't reachable, see ArcfinSyncClient.fetchStatus.
     var arcfinSyncStatus: ArcfinSyncStatus?
     /// Keys the admin has locked server-side, as the server last said for the active profile.
     /// Kept through a sync, a failed one and launches offline; empty when the server has never
@@ -388,13 +388,13 @@ final class AuthManager {
             guard let self else { return }
             // A switch since has started its own sync; this one leaves that alone.
             defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
-            // An unreachable server looks the same as one without the plugin, so the locks last
-            // seen stay; only a server that answers that it doesn't have it clears them.
-            let fetched = await self.syncClient.fetchStatus(baseURL: credential.baseURL)
+            // The locks last seen stay while the server can't be reached; only a server that
+            // answers without the plugin clears them.
+            let presence = await self.syncClient.fetchStatus(baseURL: credential.baseURL)
             guard self.isActive(credential) else { return }
-            guard let status = fetched, status.installed else {
+            guard case .installed(let status) = presence else {
                 Self.syncLog.notice("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
-                if fetched != nil {
+                if presence == .notInstalled {
                     SettingsSyncEngine.forgetLockedKeys(profile: credential.id.uuidString)
                     self.arcfinSyncLockedKeys = []
                 }
