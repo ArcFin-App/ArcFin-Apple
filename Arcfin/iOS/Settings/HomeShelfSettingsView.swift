@@ -9,6 +9,7 @@ struct HomeShelfSettingsView: View {
     @AppStorage(HomeShelfPrefs.orderKey) private var orderString = ""
     @AppStorage(HomeShelfPrefs.activeKey) private var activeString = ""
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleShelves = false
+    @State private var showsStreamingServices = false
 
     private var order: [HomeShelf] { HomeShelfPrefs.order(from: orderString) }
     private var shown: [HomeShelf] {
@@ -68,13 +69,27 @@ struct HomeShelfSettingsView: View {
 
             if seerrRepo.hasCatalog {
                 Section {
-                    NavigationLink("Popular Elsewhere") { StreamingServicesView().tvSettingsPage() }
+                    // A NavigationLink row can't be selected while the list is in edit mode for
+                    // reordering; a button still takes the tap.
+                    Button { showsStreamingServices = true } label: {
+                        HStack {
+                            Text("Popular Elsewhere")
+                                .foregroundStyle(DT.Color.textPrimary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundStyle(DT.Color.textSecondary)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 } footer: {
                     Text("Pick the services you use for a row of what's popular on each. Arcfin doesn't play these services: open a title to find it in your library or request it with Seerr.")
                 }
             }
         }
         .environment(\.editMode, Binding<EditMode>.constant(editMode))
+        .navigationDestination(isPresented: $showsStreamingServices) { StreamingServicesView().tvSettingsPage() }
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("Home Shelves")
