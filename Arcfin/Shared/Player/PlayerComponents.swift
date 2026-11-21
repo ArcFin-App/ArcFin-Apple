@@ -45,7 +45,7 @@ struct PlayerSeekFeedbackView: View {
             VStack(spacing: 4) {
                 Image(systemName: skipIconName(seconds: feedback.seconds, forward: feedback.forward))
                     .font(.system(.title))
-                Text("\(feedback.seconds)s")
+                Text(Duration.seconds(feedback.seconds).formatted(.units(allowed: [.seconds], width: .narrow)))
                     .font(.system(.caption2, design: .default, weight: .semibold))
             }
             .foregroundStyle(.white)

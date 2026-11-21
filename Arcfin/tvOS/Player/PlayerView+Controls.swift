@@ -99,7 +99,7 @@ extension PlayerView {
     private var subtitleTimingEntry: TVMenuEntry {
         let title = model.subtitleDelay == 0
             ? String(localized: "Subtitle Timing")
-            : String(localized: "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)")
+            : String(localized: "Subtitle Timing (\(model.subtitleDelay.formatted(.number.precision(.fractionLength(1)).sign(strategy: .always()))) s)")
         return TVMenuEntry(title: title, systemImage: "clock.arrow.2.circlepath", children: [
             TVMenuEntry(title: String(localized: "Later by 0.5 s")) { model.subtitleDelay += 0.5 },
             TVMenuEntry(title: String(localized: "Earlier by 0.5 s")) { model.subtitleDelay -= 0.5 },

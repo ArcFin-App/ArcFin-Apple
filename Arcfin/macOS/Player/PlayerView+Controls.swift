@@ -241,7 +241,7 @@ extension PlayerView {
                     .disabled(model.subtitleDelay == 0)
             } label: {
                 Label(
-                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)",
+                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(model.subtitleDelay.formatted(.number.precision(.fractionLength(1)).sign(strategy: .always()))) s)",
                     systemImage: "clock.arrow.2.circlepath")
             }
         }
