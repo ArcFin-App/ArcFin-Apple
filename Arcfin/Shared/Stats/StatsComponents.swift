@@ -247,11 +247,12 @@ struct StatsHero: View {
                 .contentTransition(.numericText())
                 .minimumScaleFactor(0.6)
                 .lineLimit(1)
-            // Headings over the counts, so no plural has to agree with the number above.
+            // Headings under the counts, singular for one ("1 Movie"); no other plural form has to
+            // agree with the number.
             HStack(spacing: 10) {
-                HeroCount(value: stats.movies, label: String(localized: "Movies"))
-                HeroCount(value: stats.episodes, label: String(localized: "Episodes"))
-                HeroCount(value: stats.shows, label: String(localized: "Shows"))
+                HeroCount(value: stats.movies, label: stats.movies == 1 ? String(localized: "Movie") : String(localized: "Movies"))
+                HeroCount(value: stats.episodes, label: stats.episodes == 1 ? String(localized: "Episode") : String(localized: "Episodes"))
+                HeroCount(value: stats.shows, label: stats.shows == 1 ? String(localized: "Show") : String(localized: "Shows"))
             }
         }
         .padding(22)

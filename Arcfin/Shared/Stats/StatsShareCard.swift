@@ -125,9 +125,9 @@ struct StatsShareCard: View {
 
     private var counts: some View {
         HStack(spacing: 8) {
-            count(stats.movies, String(localized: "Movies"))
-            count(stats.episodes, String(localized: "Episodes"))
-            count(stats.shows, String(localized: "Shows"))
+            count(stats.movies, stats.movies == 1 ? String(localized: "Movie") : String(localized: "Movies"))
+            count(stats.episodes, stats.episodes == 1 ? String(localized: "Episode") : String(localized: "Episodes"))
+            count(stats.shows, stats.shows == 1 ? String(localized: "Show") : String(localized: "Shows"))
         }
     }
 
