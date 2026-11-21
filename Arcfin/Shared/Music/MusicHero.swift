@@ -15,21 +15,19 @@ struct MusicHero<Art: View, Info: View>: View {
 
     /// How much taller than the art: the blurred part below it.
     private let extent: CGFloat = 1.16
-    @State private var width: CGFloat = 0
-
-    /// The art's height: the whole square, or on a wide window a strip across it, as the
-    /// title pages' backdrop is.
-    private var artHeight: CGFloat { min(width, PlatformMetrics.musicHeroMaxHeight) }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Sized by the page, so the art can't push it wider.
+            // Square to the page's width up to the cap, then the full width at the cap, all in
+            // one layout pass: a width read back into state moved the glass Shuffle button a
+            // second time in the same frame.
             Color.clear
+                .aspectRatio(1 / extent, contentMode: .fit)
+                .frame(maxHeight: PlatformMetrics.musicHeroMaxHeight * extent)
                 .frame(maxWidth: .infinity)
-                .frame(height: artHeight * extent)
                 .overlay {
                     GeometryReader { proxy in
-                        let side = proxy.size.width, artHeight = artHeight
+                        let side = proxy.size.width, artHeight = proxy.size.height / extent
                         ZStack(alignment: .top) {
                             // Larger than the space, so the blur's soft edges fall outside it.
                             art(proxy.size)
@@ -56,10 +54,12 @@ struct MusicHero<Art: View, Info: View>: View {
                                              .init(color: .clear, location: 1)],
                                      startPoint: .top, endPoint: .bottom))
                 .accessibilityHidden(true)
-                .overlay(alignment: .top) {
-                    buttons
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, max(artHeight - 72, 0))
+                .overlay {
+                    GeometryReader { proxy in
+                        buttons
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, max(proxy.size.height / extent - 72, 0))
+                    }
                 }
             info()
                 .multilineTextAlignment(.center)
@@ -68,7 +68,6 @@ struct MusicHero<Art: View, Info: View>: View {
                 .padding(.top, -36)
         }
         .frame(maxWidth: .infinity)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     }
 
     private var buttons: some View {
