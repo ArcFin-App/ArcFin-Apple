@@ -21,7 +21,8 @@ final class PlaylistStore {
     private let client = JellyfinMediaClient()
 
     func load(credential: ServerCredential, authHeader: String) async {
-        guard let fetched = try? await client.getPlaylists(credential: credential, authHeader: authHeader) else { return }
+        guard let fetched = try? await client.getPlaylists(credential: credential, authHeader: authHeader),
+              AppServices.authManager.state.credential?.id == credential.id else { return }
         playlists = fetched
         hasLoaded = true
     }
