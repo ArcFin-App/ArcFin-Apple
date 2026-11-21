@@ -375,6 +375,7 @@
 				tvOS/Components/TVFocusLabels.swift = (tvos, );
 				tvOS/Components/TVFoldSnappingBehavior.swift = (tvos, );
 				tvOS/Components/TVLetterLabel.swift = (tvos, );
+				tvOS/Components/TVMenuButton.swift = (tvos, );
 				tvOS/Components/TitleInsightsPlatform.swift = (tvos, );
 				tvOS/Detail/MediaDetailView.swift = (tvos, );
 				tvOS/Detail/PersonDetailView.swift = (tvos, );
