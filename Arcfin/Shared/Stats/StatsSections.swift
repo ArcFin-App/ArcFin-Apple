@@ -66,7 +66,7 @@ struct StatsSections: View {
     // MARK: - Activity
 
     private func activityCard(_ stats: WatchStats) -> some View {
-        StatsCard(title: "Activity", subtitle: activitySubtitle(stats)) {
+        StatsCard(title: String(localized: "Activity"), subtitle: activitySubtitle(stats)) {
             Chart(stats.buckets) { bucket in
                 BarMark(
                     x: .value("Date", bucket.start, unit: chartUnit(stats.bucketUnit)),
@@ -87,7 +87,7 @@ struct StatsSections: View {
                 }
             }
             .frame(height: 170 * StatsMetrics.scale)
-            .accessibilityLabel("Watch time, \(stats.name)")
+            .accessibilityLabel("Watch time, \(stats.periodName)")
             .accessibilityValue(activitySubtitle(stats))
         }
     }
@@ -95,7 +95,7 @@ struct StatsSections: View {
     private func activitySubtitle(_ stats: WatchStats) -> String {
         guard let busiest = stats.busiestDay else { return "" }
         let day = busiest.start.formatted(.dateTime.weekday(.wide).day().month(.wide))
-        return "Busiest day: \(day), \(StatsFormat.duration(busiest.seconds))"
+        return String(localized: "Busiest day: \(day), \(StatsFormat.duration(busiest.seconds))")
     }
 
     private func chartUnit(_ unit: WatchStats.BucketUnit) -> Calendar.Component {
@@ -117,14 +117,14 @@ struct StatsSections: View {
     // MARK: - Habits
 
     private func habitsCard(_ stats: WatchStats) -> some View {
-        StatsCard(title: "Habits", subtitle: habitSummary(stats)) {
+        StatsCard(title: String(localized: "Habits"), subtitle: habitSummary(stats)) {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 140 * StatsMetrics.scale), spacing: 12)], spacing: 12) {
                 if stats.offset == 0 {
-                    StatTile(value: "\(stats.currentStreak)", unit: stats.currentStreak == 1 ? "day" : "days", label: "Current streak", icon: "flame.fill", hex: "F97316")
+                    StatTile(value: String(localized: "\(stats.currentStreak) days"), unit: nil, label: String(localized: "Current streak"), icon: "flame.fill", hex: "F97316")
                 }
-                StatTile(value: "\(stats.longestStreak)", unit: stats.longestStreak == 1 ? "day" : "days", label: "Longest streak", icon: "trophy.fill", hex: "EAB308")
-                StatTile(value: "\(stats.activeDays)", unit: stats.activeDays == 1 ? "day" : "days", label: "Days you watched", icon: "calendar", hex: "FF6A4D")
-                StatTile(value: StatsFormat.duration(stats.averagePerActiveDay), unit: nil, label: "On a watching day", icon: "clock.fill", hex: "60A5FA")
+                StatTile(value: String(localized: "\(stats.longestStreak) days"), unit: nil, label: String(localized: "Longest streak"), icon: "trophy.fill", hex: "EAB308")
+                StatTile(value: String(localized: "\(stats.activeDays) days"), unit: nil, label: String(localized: "Days you watched"), icon: "calendar", hex: "FF6A4D")
+                StatTile(value: StatsFormat.duration(stats.averagePerActiveDay), unit: nil, label: String(localized: "On a watching day"), icon: "clock.fill", hex: "60A5FA")
             }
             VStack(alignment: .leading, spacing: 8) {
                 Text("By day of the week")
@@ -153,16 +153,16 @@ struct StatsSections: View {
 
     private func habitSummary(_ stats: WatchStats) -> String {
         var parts: [String] = []
-        if let day = stats.busiestWeekday { parts.append("Mostly \(Calendar.current.weekdaySymbols[day])s") }
+        if let day = stats.busiestWeekday { parts.append(String(localized: "Busiest weekday: \(Calendar.current.standaloneWeekdaySymbols[day])")) }
         if let hour = stats.busiestHour { parts.append(DayPart(hour: hour).phrase) }
-        return parts.joined(separator: ", ")
+        return parts.joined(separator: " · ")
     }
 
     // MARK: - Shows and movies
 
     private func showsSection(_ stats: WatchStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            StatsSectionHeader(title: "Top Shows")
+            StatsSectionHeader(title: String(localized: "Top Shows"))
             VStack(spacing: 10) {
                 ForEach(Array(stats.topShows.prefix(6).enumerated()), id: \.element.id) { index, show in
                     NavigationLink(value: show.item) {
@@ -176,13 +176,13 @@ struct StatsSections: View {
 
     private func moviesSection(_ stats: WatchStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            StatsSectionHeader(title: "Top Movies")
+            StatsSectionHeader(title: String(localized: "Top Movies"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 14) {
                     ForEach(Array(stats.topMovies.enumerated()), id: \.element.id) { index, title in
                         NavigationLink(value: title.item) {
                             StatsPosterTile(item: title.item, rank: index + 1,
-                                       caption: title.playCount > 1 ? "Watched \(title.playCount) times" : title.item.productionYear.map(String.init))
+                                       caption: title.playCount > 1 ? String(localized: "Watched \(title.playCount) times") : title.item.productionYear.map(String.init))
                         }
                         .arcfinPlainButton(ring: false)
                     }
@@ -196,13 +196,13 @@ struct StatsSections: View {
 
     private func rewatchedSection(_ stats: WatchStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            StatsSectionHeader(title: "On Repeat")
+            StatsSectionHeader(title: String(localized: "On Repeat"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 14) {
                     ForEach(stats.rewatched) { title in
                         NavigationLink(value: title.item.type == .episode ? StatsFormat.series(of: title.item) : title.item) {
                             StatsPosterTile(item: title.item.type == .episode ? StatsFormat.series(of: title.item) : title.item,
-                                       rank: nil, caption: "\(title.playCount) plays",
+                                       rank: nil, caption: String(localized: "\(title.playCount) plays"),
                                        title: title.item.type == .episode ? StatsFormat.episodeName(title.item) : nil)
                         }
                         .arcfinPlainButton(ring: false)
@@ -221,7 +221,7 @@ struct StatsSections: View {
         let total = stats.genres.reduce(0) { $0 + $1.seconds }
         // A long list: on tvOS each genre takes focus, so the remote can walk down it and the
         // page scrolls with it, instead of the whole card being one stop taller than the screen.
-        return StatsCard(title: "Genres", subtitle: stats.genres.first.map { "Mostly \($0.name)" }, isFocusTarget: false) {
+        return StatsCard(title: String(localized: "Genres"), subtitle: stats.genres.first.map { String(localized: "Mostly \($0.name)") }, isFocusTarget: false) {
             VStack(spacing: 12) {
                 ForEach(Array(stats.genres.enumerated()), id: \.element.id) { index, genre in
                     RankedBar(name: genre.name,
@@ -237,11 +237,11 @@ struct StatsSections: View {
     private func peopleSection(_ stats: WatchStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             if !stats.actors.isEmpty {
-                StatsSectionHeader(title: "Seen Most On Screen")
+                StatsSectionHeader(title: String(localized: "Seen Most On Screen"))
                 peopleRow(stats.actors)
             }
             if !stats.directors.isEmpty {
-                StatsSectionHeader(title: "Directors")
+                StatsSectionHeader(title: String(localized: "Directors"))
                     .padding(.top, stats.actors.isEmpty ? 0 : 12)
                 peopleRow(stats.directors)
             }
@@ -265,7 +265,7 @@ struct StatsSections: View {
     }
 
     private func tasteCard(_ stats: WatchStats) -> some View {
-        StatsCard(title: "Your Taste", subtitle: tasteSubtitle(stats)) {
+        StatsCard(title: String(localized: "Your Taste"), subtitle: tasteSubtitle(stats)) {
             if !stats.decades.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("By decade")
@@ -273,7 +273,7 @@ struct StatsSections: View {
                         .foregroundStyle(DT.Color.textSecondary)
                     let peak = stats.decades.max { $0.count < $1.count }?.decade
                     Chart(stats.decades) { decade in
-                        BarMark(x: .value("Decade", "\(decade.decade)s"), y: .value("Titles", decade.count))
+                        BarMark(x: .value("Decade", String(localized: "\(String(decade.decade))s")), y: .value("Titles", decade.count))
                             .foregroundStyle(decade.decade == peak ? DT.Color.palette("60A5FA") : DT.Color.palette("60A5FA").opacity(0.35))
                             .cornerRadius(3)
                     }
@@ -315,34 +315,34 @@ struct StatsSections: View {
 
     private func tasteSubtitle(_ stats: WatchStats) -> String? {
         guard let peak = stats.decades.max(by: { $0.count < $1.count }) else { return nil }
-        return "Most at home in the \(peak.decade)s"
+        return String(localized: "Most at home in the \(String(peak.decade))s")
     }
 
     // MARK: - Highlights and library
 
     private func highlightsCard(_ stats: WatchStats) -> some View {
-        StatsCard(title: "Highlights", subtitle: nil, isFocusTarget: false) {
+        StatsCard(title: String(localized: "Highlights"), subtitle: nil, isFocusTarget: false) {
             VStack(spacing: 14) {
                 if let rating = stats.averageMovieRating {
-                    FactRow(icon: "star.fill", hex: "EAB308", title: "Average movie rating",
+                    FactRow(icon: "star.fill", hex: "EAB308", title: String(localized: "Average movie rating"),
                             value: rating.formatted(.number.precision(.fractionLength(1))))
                 }
                 if let best = stats.highestRated, let rating = best.item.communityRating {
-                    FactLink(item: best.item, icon: "rosette", hex: "10b981", title: "Highest rated",
+                    FactLink(item: best.item, icon: "rosette", hex: "10b981", title: String(localized: "Highest rated"),
                              value: "\(best.item.name) · \(rating.formatted(.number.precision(.fractionLength(1))))")
                 }
                 if let longest = stats.longestMovie, longest.runTimeTicks > 0 {
-                    FactLink(item: longest.item, icon: "hourglass", hex: "60A5FA", title: "Longest movie",
+                    FactLink(item: longest.item, icon: "hourglass", hex: "60A5FA", title: String(localized: "Longest movie"),
                              value: "\(longest.item.name) · \(StatsFormat.duration(longest.runtimeSeconds))")
                 }
                 if let oldest = stats.oldestTitle, let year = oldest.item.productionYear {
-                    FactLink(item: oldest.item, icon: "film.stack", hex: "F97316", title: "Oldest movie",
+                    FactLink(item: oldest.item, icon: "film.stack", hex: "F97316", title: String(localized: "Oldest movie"),
                              value: "\(oldest.item.name) · \(String(year))")
                 }
-                FactRow(icon: "sum", hex: "FF6A4D", title: "That's about",
+                FactRow(icon: "sum", hex: "FF6A4D", title: String(localized: "That's about"),
                         value: StatsFormat.equivalent(stats.seconds))
                 if stats.period == .allTime, let first = stats.firstPlayed {
-                    FactRow(icon: "clock.arrow.circlepath", hex: "EC4899", title: "Watching since",
+                    FactRow(icon: "clock.arrow.circlepath", hex: "EC4899", title: String(localized: "Watching since"),
                             value: first.formatted(.dateTime.month(.wide).year()))
                 }
             }
@@ -350,22 +350,22 @@ struct StatsSections: View {
     }
 
     private var libraryCard: some View {
-        StatsCard(title: "Your Library", subtitle: "All time, across the server") {
+        StatsCard(title: String(localized: "Your Library"), subtitle: String(localized: "All time, across the server")) {
             HStack(spacing: 12) {
-                CompletionRing(label: "Movies", done: counts.watchedMovies, total: counts.movies, hex: "60A5FA")
-                CompletionRing(label: "Episodes", done: counts.watchedEpisodes, total: counts.episodes, hex: "FF6A4D")
-                CompletionRing(label: "Shows finished", done: counts.finishedShows, total: counts.shows, hex: "10b981")
+                CompletionRing(label: String(localized: "Movies"), done: counts.watchedMovies, total: counts.movies, hex: "60A5FA")
+                CompletionRing(label: String(localized: "Episodes"), done: counts.watchedEpisodes, total: counts.episodes, hex: "FF6A4D")
+                CompletionRing(label: String(localized: "Shows finished"), done: counts.finishedShows, total: counts.shows, hex: "10b981")
             }
             HStack(spacing: 12) {
-                StatTile(value: "\(counts.inProgress)", unit: nil, label: "In progress", icon: "play.circle.fill", hex: "F97316")
-                StatTile(value: "\(counts.favourites)", unit: nil, label: "Favourites", icon: "heart.fill", hex: "EC4899")
+                StatTile(value: "\(counts.inProgress)", unit: nil, label: String(localized: "In progress"), icon: "play.circle.fill", hex: "F97316")
+                StatTile(value: "\(counts.favourites)", unit: nil, label: String(localized: "Favourites"), icon: "heart.fill", hex: "EC4899")
             }
         }
     }
 
     private func recentSection(_ stats: WatchStats) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            StatsSectionHeader(title: "Recently Watched")
+            StatsSectionHeader(title: String(localized: "Recently Watched"))
             VStack(spacing: 8) {
                 ForEach(stats.titles.prefix(10)) { title in
                     NavigationLink(value: title.item) {
@@ -386,13 +386,13 @@ struct StatsEmptyPeriod: View {
 
     var body: some View {
         ContentUnavailableView {
-            Label(period == .allTime ? "Nothing Watched Yet" : "Nothing Watched in \(stats?.name ?? period.title)", systemImage: "popcorn")
+            Label(period == .allTime ? "Nothing Watched Yet" : "Nothing Watched in \(stats?.periodName ?? period.label)", systemImage: "popcorn")
         } description: {
             Text(period == .allTime
-                 ? "Finish a movie or an episode and your stats start here."
+                 ? String(localized: "Finish a movie or an episode and your stats start here.")
                  : offset == 0
-                    ? "Pick a longer period, go back to an earlier one, or come back once you've finished something."
-                    : "Nothing you finished was last played then. Try another \(period.title.lowercased()).")
+                    ? String(localized: "Pick a longer period, go back to an earlier one, or come back once you've finished something.")
+                    : period.nothingThen)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 40)

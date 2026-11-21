@@ -88,7 +88,7 @@ struct StatsView: View {
 
     private var periodPicker: some View {
         Picker("Period", selection: $period) {
-            ForEach(StatsPeriod.allCases) { Text($0.title).tag($0) }
+            ForEach(StatsPeriod.allCases) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
     }
@@ -96,19 +96,19 @@ struct StatsView: View {
     /// Steps back through earlier weeks, months or years, and forward again to the current one.
     private func periodStepper(_ stats: WatchStats) -> some View {
         HStack(spacing: 12) {
-            stepButton("chevron.left", label: "Previous \(period.title)", disabled: !stats.hasEarlier) { model.offset -= 1 }
+            stepButton("chevron.left", label: period.previousLabel, disabled: !stats.hasEarlier) { model.offset -= 1 }
             VStack(spacing: 1) {
-                Text(stats.name)
+                Text(stats.periodName)
                     .font(.system(.headline))
                     .foregroundStyle(DT.Color.textPrimary)
                     .contentTransition(.numericText())
-                Text(stats.heading)
+                Text(stats.periodHeading)
                     .font(.system(.caption))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
-            stepButton("chevron.right", label: "Next \(period.title)", disabled: model.offset == 0) { model.offset += 1 }
+            stepButton("chevron.right", label: period.nextLabel, disabled: model.offset == 0) { model.offset += 1 }
         }
     }
 
