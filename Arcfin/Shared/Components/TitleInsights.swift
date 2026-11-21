@@ -149,6 +149,7 @@ struct TitleInsights: View {
             Text(region.isEmpty ? "Where to Watch" : "Where to Watch in \(Locale.current.localizedString(forRegionCode: region) ?? region)")
                 .font(DT.Font.cardTitle)
                 .foregroundStyle(DT.Color.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             providerGroup("Stream", watch.streaming)
             providerGroup("Free", watch.free)
             providerGroup("With Ads", watch.ads)
@@ -168,6 +169,7 @@ struct TitleInsights: View {
                 Text(title)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(DT.Color.textSecondary)
+                    .accessibilityAddTraits(.isHeader)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 12) {
                         ForEach(providers) { provider in
@@ -245,6 +247,7 @@ struct TitleInsights: View {
             Text("Details")
                 .font(DT.Font.cardTitle)
                 .foregroundStyle(DT.Color.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             VStack(spacing: 0) {
                 ForEach(Array(detailRows.enumerated()), id: \.offset) { index, row in
                     if index > 0 { Divider().overlay(DT.Color.textPrimary.opacity(0.05)).padding(.leading, 14) }

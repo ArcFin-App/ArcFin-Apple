@@ -14,6 +14,7 @@ struct DetailSectionTitle: View {
             .contentFont(.callout, design: .default, weight: .bold)
             .foregroundStyle(DT.Color.textPrimary)
             .tracking(-0.3)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 

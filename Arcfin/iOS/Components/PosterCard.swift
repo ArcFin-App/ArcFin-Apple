@@ -19,8 +19,10 @@ struct PosterCard: View {
     private var cardAccessibilityValue: Text {
         var parts: [String] = []
         if let subtitle { parts.append(subtitle) }
-        if let progress { parts.append("\(Int((progress * 100).rounded())) percent watched") }
-        return Text(parts.joined(separator: ", "))
+        if let progress {
+            parts.append(String(localized: "\(progress.formatted(.percent.precision(.fractionLength(0)))) watched"))
+        }
+        return Text(verbatim: parts.joined(separator: ", "))
     }
 
     var body: some View {
