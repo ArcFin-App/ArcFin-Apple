@@ -187,6 +187,15 @@ private struct LiveTVTimerRow: View {
     @State private var confirming = false
 
     var body: some View {
+        // Without the cancel button nothing in the row takes focus on Apple TV.
+        if ProfileRules.shared.canRecordLiveTV {
+            row
+        } else {
+            row.tvFocusable(cornerRadius: DT.Radius.md)
+        }
+    }
+
+    private var row: some View {
         HStack(spacing: 12) {
             Image(systemName: isActive ? "record.circle.fill" : "clock")
                 .font(.title3)
@@ -258,7 +267,7 @@ private struct LiveTVSeriesTimerRow: View {
                 .arcfinPlainButton(cornerRadius: 22 * DT.Scale.font)
                 .accessibilityLabel("Stop Recording Series")
             } else {
-                summary
+                summary.tvFocusable(cornerRadius: DT.Radius.sm)
             }
         }
         .padding(.leading, 14)
