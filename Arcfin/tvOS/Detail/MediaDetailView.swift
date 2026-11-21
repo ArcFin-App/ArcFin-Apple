@@ -72,8 +72,7 @@ struct MediaDetailView: View {
         // it would show the new title's name over the old one's details: start it over.
         .task(id: item.id) {
             if model.item.id != item.id { model = MediaDetailModel(item: item) }
-            await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: nil,
-                             trailers: .withPage, seriesOpensOnSeasonInProgress: false)
+            await loadPage()
         }
         .task(id: item.id) { await model.loadContainingSets(authManager: authManager) }
         .task {
@@ -123,6 +122,11 @@ struct MediaDetailView: View {
     }
 
     // MARK: - Showcase (above fold)
+
+    private func loadPage() async {
+        await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: nil,
+                         trailers: .withPage, seriesOpensOnSeasonInProgress: false)
+    }
 
     private func showcaseSection(screenW: CGFloat, screenH: CGFloat) -> some View {
         ZStack(alignment: .bottomLeading) {
@@ -414,6 +418,11 @@ struct MediaDetailView: View {
     // them. Each section brings its own 56 pt below it.
     private var belowFoldSection: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if model.detailFailed {
+                DetailLoadFailedRow { Task { await loadPage() } }
+                    .padding(.horizontal, 80)
+                    .focusSection()
+            }
             // Room under the hero's buttons, which grow when focused, so they don't cover the heading.
             if !model.seasons.isEmpty { seriesSection.padding(.top, 48).trackSectionOffset().focusSection() }
             if let seriesItem = model.seriesItem, item.type == .episode {

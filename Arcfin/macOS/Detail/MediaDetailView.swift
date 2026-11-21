@@ -202,9 +202,7 @@ struct MediaDetailView: View {
         // it would show the new title's name over the old one's details: start it over.
         .task(id: item.id) {
             if model.item.id != item.id { model = MediaDetailModel(item: item) }
-            await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: downloadManager,
-                             trailers: trailersEnabled ? .alongside(youTubeFallback: youtubeTrailersEnabled) : .skipped,
-                             seriesOpensOnSeasonInProgress: true)
+            await loadPage()
         }
         // Apart from load(): the first lookup reads every collection and playlist.
         .task(id: item.id) { await model.loadContainingSets(authManager: authManager) }
@@ -212,6 +210,12 @@ struct MediaDetailView: View {
         .onChange(of: model.selectedSeason) { _, season in
             model.showSeason(season, authManager: authManager)
         }
+    }
+
+    private func loadPage() async {
+        await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: downloadManager,
+                         trailers: trailersEnabled ? .alongside(youTubeFallback: youtubeTrailersEnabled) : .skipped,
+                         seriesOpensOnSeasonInProgress: true)
     }
 
     private func playerDismissed() {
@@ -233,6 +237,9 @@ struct MediaDetailView: View {
     @ViewBuilder
     private var detailContent: some View {
         DetailPlayButton(model: model)
+        if model.detailFailed {
+            DetailLoadFailedRow { Task { await loadPage() } }
+        }
         if model.hasPlayableTrailer(trailersEnabled: trailersEnabled, youTubeTrailersEnabled: youtubeTrailersEnabled) {
             DetailTrailerButton(model: model) { youTubeTrailer = $0 }
         }

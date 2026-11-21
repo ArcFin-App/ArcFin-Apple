@@ -16,6 +16,8 @@ final class MediaDetailModel {
     private(set) var awards: [WikidataAward] = []
     private(set) var isLoading = true
     private var hasLoaded = false
+    /// The title's own details couldn't be fetched (and there's no downloaded copy of them).
+    private(set) var detailFailed = false
     private(set) var isFavorite = false
     private(set) var likes: Bool?
     private(set) var isWatched = false
@@ -121,6 +123,7 @@ final class MediaDetailModel {
         let fetchedDetail = (try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id))
             ?? downloadManager?.savedDetail(itemId: item.id)
         detail = fetchedDetail
+        detailFailed = fetchedDetail == nil && !Task.isCancelled
         isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
         likes = fetchedDetail?.item.userData?.likes ?? item.userData?.likes
         isWatched = fetchedDetail?.item.userData?.played ?? item.userData?.played ?? false
@@ -167,7 +170,8 @@ final class MediaDetailModel {
                 await self.loadSeasons(credential: cred, header: header, preferringProgress: seriesOpensOnSeasonInProgress)
             }
         }
-        if !Task.isCancelled { hasLoaded = true }
+        // A page that couldn't reach the server loads in full the next time it's shown.
+        if !Task.isCancelled, fetchedDetail != nil { hasLoaded = true }
     }
 
     /// Seerr's recommendations, or the server's own similar titles and recommendations.

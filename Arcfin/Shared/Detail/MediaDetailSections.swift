@@ -17,6 +17,23 @@ struct DetailSectionTitle: View {
     }
 }
 
+/// The title's details couldn't be fetched: says so, with a way to ask again.
+struct DetailLoadFailedRow: View {
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("Couldn't load this title's details.")
+                .contentFont(.callout)
+                .foregroundStyle(DT.Color.textSecondary)
+                .multilineTextAlignment(.center)
+            Button("Try Again", action: retry)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DT.Spacing.md)
+    }
+}
+
 struct DetailGenreChips: View {
     let genres: [String]
 
