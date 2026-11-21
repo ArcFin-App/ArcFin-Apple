@@ -30,6 +30,8 @@ final class AppRootModel {
     /// Why connecting Seerr by itself didn't work, for the prompt that asks for the password.
     var seerrSetupError: String?
     @ObservationIgnored private var isConnectingSeerr = false
+    /// Links that came while the lock was up or not yet decided, run once it opens.
+    @ObservationIgnored private var heldLinks: [URL] = []
     // Shared by every window's model, so a second window doesn't start a second set and one
     // going to the background doesn't stop the other's.
     private static var heartbeatTask: Task<Void, Never>?
@@ -42,6 +44,10 @@ final class AppRootModel {
     func handleDeepLink(_ url: URL) {
         if QuickConnectApproval.shared.open(url) { return }
         guard url.scheme == "arcfin" else { return }
+        guard isPastLock else {
+            heldLinks.append(url)
+            return
+        }
         switch url.host {
         case "play":
             // arcfin://play/<itemId>. Buffered for a cold launch: Home reads it after loading.
@@ -72,6 +78,30 @@ final class AppRootModel {
     func unlock() {
         isAppLocked = false
         AppServices.hasPassedLock = true
+        runHeldRoutes()
+    }
+
+    /// The lock is decided and open in this window. Until then the signed-in screens aren't
+    /// built, so nothing of the profile's can be reached, or open above the lock.
+    var isPastLock: Bool { launchChecked && !isAppLocked }
+
+    /// Whether the phase's screens are built: the signed-in ones once the lock is decided and
+    /// open, offline Downloads while it isn't up.
+    func showsContent(_ phase: AppPhase) -> Bool {
+        switch phase {
+        case .main: isPastLock
+        case .offline: !isAppLocked
+        default: true
+        }
+    }
+
+    /// Links, Siri and controls that waited for the lock, and Play On sent meanwhile.
+    private func runHeldRoutes() {
+        let links = heldLinks
+        heldLinks = []
+        links.forEach(handleDeepLink)
+        runPendingRoutes()
+        RemoteControl.shared.runHeld()
     }
 
     func loadProfileRules() async {
@@ -81,7 +111,7 @@ final class AppRootModel {
 
     /// Siri's Download Next Episode, once there's a signed-in profile to download with.
     func startPendingDownload() {
-        guard let credential = authManager.state.credential,
+        guard isPastLock, let credential = authManager.state.credential,
               let id = UserDefaults.standard.string(forKey: DownloadRoute.pendingKey) else { return }
         UserDefaults.standard.removeObject(forKey: DownloadRoute.pendingKey)
         let header = authManager.authClient.authHeader(token: credential.accessToken)
@@ -98,7 +128,7 @@ final class AppRootModel {
         await refreshLockRequirement()
         if activeProfileHasPIN { isAppLocked = true } else { AppServices.hasPassedLock = true }
         launchChecked = true
-        runPendingRoutes()
+        if !isAppLocked { runHeldRoutes() }
     }
 
     /// The tour and What's New wait for the splash, the sign-in check and the PIN lock, and

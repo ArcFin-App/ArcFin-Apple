@@ -90,7 +90,9 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            phaseContent
+            Group {
+                if model.showsContent(phase) { phaseContent } else { DT.Color.backgroundPrimary }
+            }
                 // Title pages pin their content to the container's width. Sized from that
                 // content, the window grew by the sidebar's width on every pass until AppKit
                 // aborted (#345). With both bounds set the frame takes the window's size and
@@ -106,6 +108,7 @@ struct ContentView: View {
 
             if model.isAppLocked {
                 AppLockView(useFaceID: appLockUseFaceID) { model.unlock() }
+                    .accessibilityAddTraits(.isModal)
                     .transition(.opacity)
                     .zIndex(10)
             }
@@ -116,7 +119,7 @@ struct ContentView: View {
             // AppLockView's own full-window overlay pattern instead: real window-filling
             // content, and a real working NSWindow-level fullscreen. iOS/tvOS are untouched
             // and keep using their existing per-screen .fullScreenCover.
-            if let request = model.playbackPresenter.request {
+            if !model.isAppLocked, let request = model.playbackPresenter.request {
                 PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
                     model.playbackPresenter.present(next, onPlayNext: request.onPlayNext)
                 }
