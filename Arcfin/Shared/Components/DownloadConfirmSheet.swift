@@ -32,11 +32,16 @@ struct DownloadConfirmSheet: View {
     @Environment(AuthManager.self) private var authManager
     @State private var preview: DownloadManager.DownloadPreview?
     @State private var isLoading = true
+    /// The server didn't answer for the file (offline, an error, no permission).
+    @State private var loadFailed = false
     @State private var quality = DownloadQuality.original
     @State private var audioKeys: Set<String> = []
     @State private var subtitleKeys: Set<String> = []
     @State private var isAtEnd = true
     @State private var hasReachedEnd = false
+    /// Read once the details are in: working it out reads the running downloads' progress and
+    /// the volume's capacity, which on every render redrew the sheet with each progress tick.
+    @State private var room: Int64?
 
     private var options: [DownloadQualityOption] {
         guard let preview else { return [DownloadQualityOption(quality: .original, tier: nil, videoBitrate: nil)] }
@@ -76,7 +81,7 @@ struct DownloadConfirmSheet: View {
     /// Whether it fits, worked out before anything starts. A movie or episode that doesn't fit
     /// can't be started; a season downloads the episodes that fit and the rest wait for room.
     private var space: (message: String, blocks: Bool)? {
-        guard let bytes = sizeBytes(for: selected), bytes > 0, let room = downloadManager.roomForDownloads(),
+        guard let bytes = sizeBytes(for: selected), bytes > 0, let room,
               bytes > room else { return nil }
         let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
         let free = ByteCountFormatter.string(fromByteCount: room, countStyle: .file)
@@ -97,7 +102,7 @@ struct DownloadConfirmSheet: View {
         return DownloadChoice(bitrateCap: selected.tier, tracks: DownloadTracks(audio: audio, subtitles: subtitles))
     }
 
-    private var blocksDownload: Bool { isLoading || space?.blocks == true }
+    private var blocksDownload: Bool { isLoading || loadFailed || space?.blocks == true }
 
     var body: some View {
         NavigationStack {
@@ -114,6 +119,8 @@ struct DownloadConfirmSheet: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, DT.Spacing.xl)
+                        } else if loadFailed {
+                            loadFailedNotice
                         } else {
                             details
                         }
@@ -163,11 +170,33 @@ struct DownloadConfirmSheet: View {
         .task { await loadPreview() }
     }
 
+    private var loadFailedNotice: some View {
+        VStack(spacing: 10) {
+            Text("Couldn't load this title's details.")
+                .font(.system(.subheadline, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+            Text("Check your connection and try again.")
+                .font(.system(.footnote))
+                .foregroundStyle(DT.Color.textSecondary)
+            Button("Try Again") { Task { await loadPreview() } }
+                .buttonStyle(.bordered)
+                .padding(.top, 4)
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DT.Spacing.xl)
+    }
+
     private func loadPreview() async {
-        let loaded = await load() ?? DownloadManager.DownloadPreview(
-            subtitleLanguages: [], audioLanguages: [], estimatedSizeBytes: nil,
-            estimatedSizeIsApproximate: false, willRemux: false)
+        isLoading = true
+        loadFailed = false
+        guard let loaded = await load() else {
+            loadFailed = true
+            isLoading = false
+            return
+        }
         preview = loaded
+        room = downloadManager.roomForDownloads()
         audioKeys = Set(loaded.audioStreams.map(DownloadTracks.key))
         subtitleKeys = Set(DownloadManager.subtitlesFromSettings(loaded.subtitleStreams).map(DownloadTracks.key))
         quality = options.contains { $0.quality == DownloadQuality.saved } ? DownloadQuality.saved : .original
@@ -458,11 +487,11 @@ struct DownloadConfirmSheet: View {
                 .foregroundStyle(DT.Color.textPrimary)
         } icon: {
             Image(systemName: "externaldrive.badge.exclamationmark")
-                .foregroundStyle(blocks ? DT.Color.palette("F43F5E") : .orange)
+                .foregroundStyle(blocks ? DT.Color.palette("F43F5E") : DT.Color.palette("F59E0B"))
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background((blocks ? DT.Color.palette("F43F5E") : Color.orange).opacity(0.12))
+        .background((blocks ? DT.Color.palette("F43F5E") : DT.Color.palette("F59E0B")).opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
     }
 
@@ -498,7 +527,6 @@ struct DownloadConfirmSheet: View {
 
     private static func runtimeLabel(ticks: Int64) -> String {
         let totalMinutes = Int(Double(ticks) / 10_000_000 / 60)
-        let h = totalMinutes / 60, m = totalMinutes % 60
-        return h > 0 ? "\(h)h \(m)m" : "\(m)m"
+        return Duration.seconds(totalMinutes * 60).formatted(.units(allowed: [.hours, .minutes], width: .narrow))
     }
 }

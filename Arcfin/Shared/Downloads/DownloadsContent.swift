@@ -40,10 +40,10 @@ struct DownloadsContent<Manage: View>: View {
                         if !downloadManager.activeItemTitles.isEmpty { downloadingSection }
                         if !model.isSelecting {
                             if mergeContinueAndUpNext {
-                                if !(inProgress + upNext).isEmpty { continueSection(String(localized: "Continue Watching"), inProgress + upNext) }
+                                if !(inProgress + upNext).isEmpty { continueSection("Continue Watching", inProgress + upNext) }
                             } else {
-                                if !inProgress.isEmpty { continueSection(String(localized: "Continue Watching"), inProgress) }
-                                if !upNext.isEmpty { continueSection(String(localized: "Up Next"), upNext) }
+                                if !inProgress.isEmpty { continueSection("Continue Watching", inProgress) }
+                                if !upNext.isEmpty { continueSection("Up Next", upNext) }
                             }
                         }
                         if !seriesGroups.isEmpty { showsSection }
@@ -100,7 +100,7 @@ struct DownloadsContent<Manage: View>: View {
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 
-    private func sectionHeader(_ title: String, count: Int? = nil) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey, count: Int? = nil) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title)
                 .font(DT.Font.cardTitle)
@@ -122,7 +122,7 @@ struct DownloadsContent<Manage: View>: View {
         HStack(spacing: 12) {
             Image(systemName: hold == .storage ? "externaldrive.badge.exclamationmark" : hold == .playing ? "play.circle" : hold == .mobileData ? "wifi.exclamationmark" : hold == .lowDataMode ? "antenna.radiowaves.left.and.right.slash" : "battery.25percent")
                 .font(.system(.title3))
-                .foregroundStyle(.orange)
+                .foregroundStyle(DT.Color.palette("F59E0B"))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(hold.title)
@@ -181,7 +181,7 @@ struct DownloadsContent<Manage: View>: View {
                     if index > 0 {
                         Divider().overlay(DT.Color.textPrimary.opacity(0.06)).padding(.leading, 16)
                     }
-                    inProgressRow(itemId)
+                    DownloadingRow(itemId: itemId, cancel: cancel)
                         .contextMenu {
                             if downloadManager.queuedItemIds.first != itemId,
                                downloadManager.queuedItemIds.contains(itemId) {
@@ -208,109 +208,9 @@ struct DownloadsContent<Manage: View>: View {
         }
     }
 
-    private func inProgressRow(_ itemId: String) -> some View {
-        let stats = downloadManager.stats[itemId]
-        let fraction = downloadManager.progress[itemId] ?? 0
-        let isActive = downloadManager.activeItemIds.contains(itemId) && !downloadManager.queuedItemIds.contains(itemId)
-        let isPaused = downloadManager.pausedItemIds.contains(itemId)
-        let item = downloadManager.activeItems[itemId]
-        let isEpisode = item?.type == .episode
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 10) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text((isEpisode ? item?.seriesName : nil) ?? downloadManager.activeItemTitles[itemId] ?? "Downloading…")
-                        .font(.system(.subheadline, weight: .semibold))
-                        .foregroundStyle(isActive ? DT.Color.textPrimary : DT.Color.textSecondary)
-                        .lineLimit(1)
-                    if isEpisode, let item, let subtitle = HomeText.subtitle(item) {
-                        Text(subtitle)
-                            .font(.system(.caption))
-                            .foregroundStyle(DT.Color.textSecondary)
-                            .lineLimit(1)
-                    }
-                }
-                Spacer()
-                if let stats, stats.totalBytes > 0 {
-                    Text(Double(fraction), format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
-                        .font(.system(.caption, weight: .semibold))
-                        .monospacedDigit()
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .contentTransition(.numericText())
-                        .animation(.default, value: fraction)
-                }
-                if isActive {
-                    Button {
-                        if isPaused { downloadManager.resumeDownload(itemId: itemId) }
-                        else { downloadManager.pauseDownload(itemId: itemId) }
-                    } label: {
-                        Image(systemName: isPaused ? "play.circle.fill" : "pause.circle.fill")
-                            .font(.system(.title3))
-                            .foregroundStyle(DT.Color.textSecondary)
-                            .frame(minWidth: 44, minHeight: 44)
-                    }
-                    .accessibilityLabel(isPaused ? "Resume download" : "Pause download")
-                    .buttonStyle(.plain)
-                }
-                Button { cancel(itemId) } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(.title3))
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .frame(minWidth: 44, minHeight: 44)
-                }
-                .accessibilityLabel("Cancel download")
-                .buttonStyle(.plain)
-            }
-            if isActive {
-                Group {
-                    if let stats, stats.totalBytes > 0 {
-                        ProgressView(value: fraction)
-                    } else if stats != nil {
-                        // Total size isn't knowable ahead of time for a server-side remux
-                        // download — still show that data IS flowing, not a static empty bar.
-                        ProgressView()
-                    } else {
-                        ProgressView(value: 0)
-                    }
-                }
-                .tint(isPaused ? .orange : DT.Color.accent)
-            }
-            HStack {
-                if let stats, stats.bytesWritten > 0, stats.totalBytes > 0 {
-                    let total = (stats.isEstimate ? "~" : "") + ByteCountFormatter.string(fromByteCount: stats.totalBytes, countStyle: .file)
-                    Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) of \(total)")
-                } else if let stats, stats.bytesWritten > 0 {
-                    Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) downloaded")
-                } else if downloadManager.queuedItemIds.contains(itemId) {
-                    Text(downloadManager.isQueuePaused ? "Paused"
-                         : downloadManager.queueHold?.title ?? "Waiting in queue")
-                } else {
-                    Text("Preparing…")
-                }
-                Spacer()
-                if isPaused {
-                    Text("Paused")
-                } else if let stats, stats.bytesPerSecond > 0 {
-                    let speed = "\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s"
-                    if stats.totalBytes > stats.bytesWritten {
-                        let left = (stats.isEstimate ? "~" : "") + Duration.seconds(Double(stats.totalBytes - stats.bytesWritten) / stats.bytesPerSecond)
-                            .formatted(.units(allowed: [.hours, .minutes, .seconds], width: .abbreviated, maximumUnitCount: 2))
-                        Text("\(speed) · \(left) left")
-                    } else {
-                        Text(speed)
-                    }
-                }
-            }
-            .font(.system(.caption))
-            .monospacedDigit()
-            .foregroundStyle(DT.Color.textSecondary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-    }
-
     // MARK: - Continue watching
 
-    private func continueSection(_ title: String, _ shelf: [DownloadedItem]) -> some View {
+    private func continueSection(_ title: LocalizedStringKey, _ shelf: [DownloadedItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader(title)
             ScrollView(.horizontal, showsIndicators: false) {
@@ -350,7 +250,8 @@ struct DownloadsContent<Manage: View>: View {
                         PosterTile(
                             artwork: DownloadsModel.seriesPosterURL(group.seriesId, fallback: group.episodes.first),
                             title: group.seriesName,
-                            caption: "\(group.episodes.count) episode\(group.episodes.count == 1 ? "" : "s") · \(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))",
+                            caption: [group.episodes.count == 1 ? String(localized: "1 episode") : String(localized: "\(group.episodes.count) episodes"),
+                                      ByteCountFormatter.string(fromByteCount: size, countStyle: .file)].joined(separator: " · "),
                             badge: "\(group.episodes.count)",
                             progress: nil, isWatched: group.episodes.allSatisfy(\.played),
                             selection: model.isSelecting ? model.selection.contains(id) : nil
@@ -489,7 +390,8 @@ struct DownloadsAlerts: ViewModifier {
             } message: {
                 Text("What's already downloaded of them is discarded.")
             }
-            .alert("Delete \(model.selection.count) selected download\(model.selection.count == 1 ? "" : "s")?", isPresented: $model.showBulkDeleteConfirm) {
+            .alert(model.selection.count == 1 ? "Delete 1 selected download?" : "Delete \(model.selection.count) selected downloads?",
+                   isPresented: $model.showBulkDeleteConfirm) {
                 Button("Delete", role: .destructive) {
                     model.deleteSelection(in: items, downloadManager: downloadManager)
                 }
@@ -520,6 +422,117 @@ struct DownloadsSelectionToolbar: ToolbarContent {
                 }
             }
         }
+    }
+}
+
+// MARK: - Downloading row
+
+/// One title in Downloading. Its own view, so a progress tick redraws this row and not the
+/// whole Downloads list.
+private struct DownloadingRow: View {
+    let itemId: String
+    let cancel: (String) -> Void
+
+    @Environment(DownloadManager.self) private var downloadManager
+
+    var body: some View {
+        let stats = downloadManager.stats[itemId]
+        let fraction = downloadManager.progress[itemId] ?? 0
+        let isActive = downloadManager.activeItemIds.contains(itemId) && !downloadManager.queuedItemIds.contains(itemId)
+        let isPaused = downloadManager.pausedItemIds.contains(itemId)
+        let item = downloadManager.activeItems[itemId]
+        let isEpisode = item?.type == .episode
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text((isEpisode ? item?.seriesName : nil) ?? downloadManager.activeItemTitles[itemId] ?? String(localized: "Downloading…"))
+                        .font(.system(.subheadline, weight: .semibold))
+                        .foregroundStyle(isActive ? DT.Color.textPrimary : DT.Color.textSecondary)
+                        .lineLimit(1)
+                    if isEpisode, let item, let subtitle = HomeText.subtitle(item) {
+                        Text(subtitle)
+                            .font(.system(.caption))
+                            .foregroundStyle(DT.Color.textSecondary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer()
+                if let stats, stats.totalBytes > 0 {
+                    Text(Double(fraction), format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
+                        .font(.system(.caption, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .contentTransition(.numericText())
+                        .animation(.default, value: fraction)
+                }
+                if isActive {
+                    Button {
+                        if isPaused { downloadManager.resumeDownload(itemId: itemId) }
+                        else { downloadManager.pauseDownload(itemId: itemId) }
+                    } label: {
+                        Image(systemName: isPaused ? "play.circle.fill" : "pause.circle.fill")
+                            .font(.system(.title3))
+                            .foregroundStyle(DT.Color.textSecondary)
+                            .frame(minWidth: 44, minHeight: 44)
+                    }
+                    .accessibilityLabel(isPaused ? "Resume download" : "Pause download")
+                    .buttonStyle(.plain)
+                }
+                Button { cancel(itemId) } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(.title3))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .frame(minWidth: 44, minHeight: 44)
+                }
+                .accessibilityLabel("Cancel download")
+                .buttonStyle(.plain)
+            }
+            if isActive {
+                Group {
+                    if let stats, stats.totalBytes > 0 {
+                        ProgressView(value: fraction)
+                    } else if stats != nil {
+                        // Total size isn't knowable ahead of time for a server-side remux
+                        // download — still show that data IS flowing, not a static empty bar.
+                        ProgressView()
+                    } else {
+                        ProgressView(value: 0)
+                    }
+                }
+                .tint(isPaused ? DT.Color.palette("F59E0B") : DT.Color.accent)
+            }
+            HStack {
+                if let stats, stats.bytesWritten > 0, stats.totalBytes > 0 {
+                    let total = (stats.isEstimate ? "~" : "") + ByteCountFormatter.string(fromByteCount: stats.totalBytes, countStyle: .file)
+                    Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) of \(total)")
+                } else if let stats, stats.bytesWritten > 0 {
+                    Text("\(ByteCountFormatter.string(fromByteCount: stats.bytesWritten, countStyle: .file)) downloaded")
+                } else if downloadManager.queuedItemIds.contains(itemId) {
+                    Text(downloadManager.isQueuePaused ? "Paused"
+                         : downloadManager.queueHold?.title ?? "Waiting in queue")
+                } else {
+                    Text("Preparing…")
+                }
+                Spacer()
+                if isPaused {
+                    Text("Paused")
+                } else if let stats, stats.bytesPerSecond > 0 {
+                    let speed = "\(ByteCountFormatter.string(fromByteCount: Int64(stats.bytesPerSecond), countStyle: .file))/s"
+                    if stats.totalBytes > stats.bytesWritten {
+                        let left = (stats.isEstimate ? "~" : "") + Duration.seconds(Double(stats.totalBytes - stats.bytesWritten) / stats.bytesPerSecond)
+                            .formatted(.units(allowed: [.hours, .minutes, .seconds], width: .abbreviated, maximumUnitCount: 2))
+                        Text("\(speed) · \(left) left")
+                    } else {
+                        Text(speed)
+                    }
+                }
+            }
+            .font(.system(.caption))
+            .monospacedDigit()
+            .foregroundStyle(DT.Color.textSecondary)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
     }
 }
 
