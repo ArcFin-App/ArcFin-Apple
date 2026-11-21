@@ -163,7 +163,7 @@ struct TitleInsights: View {
     }
 
     @ViewBuilder
-    private func providerGroup(_ title: String, _ providers: [SeerrWatchProvider]) -> some View {
+    private func providerGroup(_ title: LocalizedStringResource, _ providers: [SeerrWatchProvider]) -> some View {
         if !providers.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
@@ -192,7 +192,7 @@ struct TitleInsights: View {
                             .frame(width: Self.logoSize + 18)
                             .tvFocusable(cornerRadius: 12)
                             .accessibilityElement(children: .combine)
-                            .accessibilityLabel("\(provider.name), \(title.lowercased())")
+                            .accessibilityLabel(Text(verbatim: "\(provider.name), \(String(localized: title).localizedLowercase)"))
                         }
                     }
                 }

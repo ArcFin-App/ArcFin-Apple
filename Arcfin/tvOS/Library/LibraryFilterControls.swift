@@ -26,7 +26,7 @@ extension LibraryFilterList {
 
 /// A filter's choices on their own page.
 struct FilterGroup<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: String
     @ViewBuilder let content: () -> Content
 

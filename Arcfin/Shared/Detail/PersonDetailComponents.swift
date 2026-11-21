@@ -145,7 +145,7 @@ private struct PersonPhotoPlaceholder: View {
 }
 
 private struct PersonSectionHeader: View {
-    let title: String
+    let title: LocalizedStringKey
 
     var body: some View {
         Text(title)

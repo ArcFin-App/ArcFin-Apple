@@ -339,7 +339,7 @@ struct HomeShelfView<Card: View>: View {
             if mergeContinueWatchingAndUpNext {
                 if !mergedContinueAndNextItems.isEmpty {
                     ShelfRow(title: "Continue Watching", onSeeAll: {
-                        seeAll(SeeAllShelf(title: "Continue Watching", items: mergedContinueAndNextItems, isLandscape: true))
+                        seeAll(SeeAllShelf(title: String(localized: "Continue Watching"), items: mergedContinueAndNextItems, isLandscape: true))
                     }) {
                         ForEach(mergedContinueAndNextItems) { item in
                             card(item, true)
@@ -348,7 +348,7 @@ struct HomeShelfView<Card: View>: View {
                 }
             } else if !mediaRepo.continueWatching.isEmpty {
                 ShelfRow(title: "Continue Watching", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Continue Watching", items: mediaRepo.continueWatching, isLandscape: true))
+                    seeAll(SeeAllShelf(title: String(localized: "Continue Watching"), items: mediaRepo.continueWatching, isLandscape: true))
                 }) {
                     ForEach(mediaRepo.continueWatching) { item in
                         card(item, true)
@@ -358,7 +358,7 @@ struct HomeShelfView<Card: View>: View {
         case .nextUp:
             if !mergeContinueWatchingAndUpNext, !mediaRepo.nextUp.isEmpty {
                 ShelfRow(title: "Next Up", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Next Up", items: mediaRepo.nextUp, isLandscape: true))
+                    seeAll(SeeAllShelf(title: String(localized: "Next Up"), items: mediaRepo.nextUp, isLandscape: true))
                 }) {
                     ForEach(mediaRepo.nextUp) { item in
                         card(item, true)
@@ -369,7 +369,7 @@ struct HomeShelfView<Card: View>: View {
             // Placeholders only until the first load finishes; an empty answer hides the shelf.
             if !mediaRepo.recentlyAddedMovies.isEmpty || (!mediaRepo.loaded && !mediaRepo.connectionFailed) {
                 ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Recently Added Movies", items: mediaRepo.recentlyAddedMovies))
+                    seeAll(SeeAllShelf(title: String(localized: "Recently Added Movies"), items: mediaRepo.recentlyAddedMovies))
                 }) {
                     posters(mediaRepo.recentlyAddedMovies)
                 }
@@ -377,7 +377,7 @@ struct HomeShelfView<Card: View>: View {
         case .recentlyAddedShows:
             if !mediaRepo.recentlyAddedShows.isEmpty || (!mediaRepo.loaded && !mediaRepo.connectionFailed) {
                 ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Recently Added Shows", items: mediaRepo.recentlyAddedShows))
+                    seeAll(SeeAllShelf(title: String(localized: "Recently Added Shows"), items: mediaRepo.recentlyAddedShows))
                 }) {
                     posters(mediaRepo.recentlyAddedShows)
                 }
@@ -385,7 +385,7 @@ struct HomeShelfView<Card: View>: View {
         case .recentlyReleasedMovies:
             if !mediaRepo.recentlyReleasedMovies.isEmpty {
                 ShelfRow(title: "Recently Released Movies", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies))
+                    seeAll(SeeAllShelf(title: String(localized: "Recently Released Movies"), items: mediaRepo.recentlyReleasedMovies))
                 }) {
                     posters(mediaRepo.recentlyReleasedMovies)
                 }
@@ -393,7 +393,7 @@ struct HomeShelfView<Card: View>: View {
         case .recentlyAiredEpisodes:
             if !mediaRepo.recentlyAiredEpisodes.isEmpty {
                 ShelfRow(title: "Recently Aired Episodes", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes, isLandscape: true))
+                    seeAll(SeeAllShelf(title: String(localized: "Recently Aired Episodes"), items: mediaRepo.recentlyAiredEpisodes, isLandscape: true))
                 }) {
                     ForEach(mediaRepo.recentlyAiredEpisodes) { item in
                         card(item, true)
@@ -403,7 +403,7 @@ struct HomeShelfView<Card: View>: View {
         case .watchAgain:
             if !mediaRepo.watchAgain.isEmpty {
                 ShelfRow(title: "Watch Again", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Watch Again", items: mediaRepo.watchAgain))
+                    seeAll(SeeAllShelf(title: String(localized: "Watch Again"), items: mediaRepo.watchAgain))
                 }) {
                     posters(mediaRepo.watchAgain)
                 }
@@ -437,7 +437,7 @@ struct HomeShelfView<Card: View>: View {
         case .favorites:
             if !mediaRepo.favorites.isEmpty {
                 ShelfRow(title: "Favorites", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Favorites", items: mediaRepo.favorites))
+                    seeAll(SeeAllShelf(title: String(localized: "Favorites"), items: mediaRepo.favorites))
                 }) {
                     posters(mediaRepo.favorites)
                 }
@@ -445,7 +445,7 @@ struct HomeShelfView<Card: View>: View {
         case .topRatedUnwatched:
             if !mediaRepo.topRatedUnwatched.isEmpty {
                 ShelfRow(title: "Top Rated, Unwatched", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Top Rated, Unwatched", items: mediaRepo.topRatedUnwatched))
+                    seeAll(SeeAllShelf(title: String(localized: "Top Rated, Unwatched"), items: mediaRepo.topRatedUnwatched))
                 }) {
                     posters(mediaRepo.topRatedUnwatched)
                 }
@@ -453,7 +453,7 @@ struct HomeShelfView<Card: View>: View {
         case .suggested:
             if !mediaRepo.suggestions.isEmpty {
                 ShelfRow(title: "Suggested for You", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Suggested for You", items: mediaRepo.suggestions))
+                    seeAll(SeeAllShelf(title: String(localized: "Suggested for You"), items: mediaRepo.suggestions))
                 }) {
                     posters(mediaRepo.suggestions)
                 }
@@ -470,7 +470,7 @@ struct HomeShelfView<Card: View>: View {
         case .nowAvailable:
             if seerrRepo.isConfigured, !model.nowAvailable.isEmpty {
                 ShelfRow(title: "Now Available", onSeeAll: {
-                    seeAll(SeeAllShelf(title: "Now Available", items: model.nowAvailable))
+                    seeAll(SeeAllShelf(title: String(localized: "Now Available"), items: model.nowAvailable))
                 }) {
                     posters(model.nowAvailable)
                 }
@@ -485,19 +485,19 @@ struct HomeShelfView<Card: View>: View {
             }
         case .seerrWatchlist:
             if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
-                HomeSeerrShelf(title: "Watchlist", items: seerrRepo.watchlist, open: openSeerrItem, request: requestSeerrItem)
+                HomeSeerrShelf(title: String(localized: "Watchlist"), items: seerrRepo.watchlist, open: openSeerrItem, request: requestSeerrItem)
             }
         case .seerrTrending:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
-                HomeSeerrShelf(title: "Trending", items: seerrRepo.trending, open: openSeerrItem, request: requestSeerrItem)
+                HomeSeerrShelf(title: String(localized: "Trending"), items: seerrRepo.trending, open: openSeerrItem, request: requestSeerrItem)
             }
         case .seerrPopularMovies:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
-                HomeSeerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies, open: openSeerrItem, request: requestSeerrItem)
+                HomeSeerrShelf(title: String(localized: "Popular Movies"), items: seerrRepo.popularMovies, open: openSeerrItem, request: requestSeerrItem)
             }
         case .seerrPopularSeries:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
-                HomeSeerrShelf(title: "Popular Series", items: seerrRepo.popularTV, open: openSeerrItem, request: requestSeerrItem)
+                HomeSeerrShelf(title: String(localized: "Popular Series"), items: seerrRepo.popularTV, open: openSeerrItem, request: requestSeerrItem)
             }
         case .liveFavoriteChannels, .liveOnNow, .liveRecentChannels:
             if HomeShelf.hasLiveTV(in: mediaRepo) {

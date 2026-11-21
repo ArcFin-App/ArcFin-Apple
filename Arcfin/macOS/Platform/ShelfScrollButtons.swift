@@ -44,7 +44,7 @@ private struct ShelfScrollButtons: ViewModifier {
         withAnimation(DT.Animation.motion(.easeInOut(duration: 0.35))) { position.scrollTo(x: target) }
     }
 
-    private func arrow(_ icon: String, label: String, action: @escaping () -> Void) -> some View {
+    private func arrow(_ icon: String, label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: icon)
                 .font(.system(.title3, weight: .semibold))

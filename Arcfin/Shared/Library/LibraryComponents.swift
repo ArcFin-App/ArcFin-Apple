@@ -57,7 +57,7 @@ struct LibraryCard: View {
 /// "Your Requests" as one more tile alongside the library ones.
 struct RequestsCard: View {
     var body: some View {
-        BrowseTile(systemImage: "text.badge.checkmark", title: "Requests") {
+        BrowseTile(systemImage: "text.badge.checkmark", title: String(localized: "Requests")) {
             BrowseTileFallback(systemImage: "text.badge.checkmark")
         }
     }

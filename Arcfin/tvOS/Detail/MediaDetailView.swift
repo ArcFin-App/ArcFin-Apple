@@ -400,7 +400,7 @@ struct MediaDetailView: View {
         }
     }
 
-    private func infoRow(label: String, value: String) -> some View {
+    private func infoRow(label: LocalizedStringKey, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 23, weight: .bold))
@@ -426,7 +426,7 @@ struct MediaDetailView: View {
             // Room under the hero's buttons, which grow when focused, so they don't cover the heading.
             if !model.seasons.isEmpty { seriesSection.padding(.top, 48).trackSectionOffset().focusSection() }
             if let seriesItem = model.seriesItem, item.type == .episode {
-                itemRow("Series", [seriesItem]).trackSectionOffset().focusSection()
+                itemRow(Text("Series"), [seriesItem]).trackSectionOffset().focusSection()
             }
             if !model.trailers.isEmpty {
                 trailersSection.padding(.top, trailersFollowHero ? 48 : 0).trackSectionOffset().focusSection()
@@ -441,7 +441,7 @@ struct MediaDetailView: View {
                 similarSection.trackSectionOffset().focusSection()
             }
             if let jellyfinRecommended = model.jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
-                itemRow(jellyfinRecommended.title, jellyfinRecommended.items).trackSectionOffset().focusSection()
+                itemRow(Text(verbatim: jellyfinRecommended.title), jellyfinRecommended.items).trackSectionOffset().focusSection()
             }
             if !model.containingCollections.isEmpty {
                 setRow(model.containingCollections.count == 1 ? "Collection" : "Collections", model.containingCollections) { openedCollection = $0 }
@@ -457,7 +457,7 @@ struct MediaDetailView: View {
         }
     }
 
-    private func itemRow(_ title: String, _ items: [MediaItem]) -> some View {
+    private func itemRow(_ title: Text, _ items: [MediaItem]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle(title).padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
@@ -484,7 +484,7 @@ struct MediaDetailView: View {
     }
 
     /// Collections or playlists, which open their own pages rather than a title's.
-    private func setRow(_ title: String, _ sets: [MediaItem], open: @escaping (MediaItem) -> Void) -> some View {
+    private func setRow(_ title: LocalizedStringKey, _ sets: [MediaItem], open: @escaping (MediaItem) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle(title).padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
@@ -517,7 +517,7 @@ struct MediaDetailView: View {
                     Button("Mark Series Watched") { markScopeWatched(.series, watched: true) }
                     Button("Mark Series Unwatched") { markScopeWatched(.series, watched: false) }
                 } label: {
-                    TVSeasonPickerLabel(name: "Watched", systemImage: "checkmark.circle")
+                    TVSeasonPickerLabel(name: Text("Watched"), systemImage: "checkmark.circle")
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -526,7 +526,7 @@ struct MediaDetailView: View {
                         Button(season.name) { model.selectedSeason = season }
                     }
                 } label: {
-                    TVSeasonPickerLabel(name: model.selectedSeason?.name ?? "Season")
+                    TVSeasonPickerLabel(name: model.selectedSeason.map { Text(verbatim: $0.name) } ?? Text("Season"))
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -772,23 +772,28 @@ struct MediaDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title)
+    private func sectionTitle(_ title: LocalizedStringKey) -> some View {
+        sectionTitle(Text(title))
+    }
+
+    private func sectionTitle(_ title: Text) -> some View {
+        title
             .font(.system(size: 28, weight: .bold))
             .foregroundStyle(DT.Color.textPrimary)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
 // MARK: - Season picker label
 
 private struct TVSeasonPickerLabel: View {
-    let name: String
+    let name: Text
     var systemImage = "chevron.down"
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(name)
+            name
                 .font(.system(size: 23, weight: .semibold))
                 .foregroundStyle(isFocused ? .white : DT.Color.accent)
             Image(systemName: systemImage)

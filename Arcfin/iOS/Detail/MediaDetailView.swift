@@ -275,10 +275,10 @@ struct MediaDetailView: View {
                 model.seerrRelatedSubtitle($0, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
             }, onSelect: openSeerrRelated)
         } else if !model.similarItems.isEmpty {
-            DetailTitleShelf(title: "More Like This", items: model.similarItems) { rec, poster in titleLink(rec, poster) }
+            DetailTitleShelf(title: Text("More Like This"), items: model.similarItems) { rec, poster in titleLink(rec, poster) }
         }
         if let jellyfinRecommended = model.jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
-            DetailTitleShelf(title: jellyfinRecommended.title, items: jellyfinRecommended.items) { rec, poster in titleLink(rec, poster) }
+            DetailTitleShelf(title: Text(verbatim: jellyfinRecommended.title), items: jellyfinRecommended.items) { rec, poster in titleLink(rec, poster) }
         }
         if !model.containingCollections.isEmpty {
             DetailSetShelf(title: model.containingCollections.count == 1 ? "Collection" : "Collections", sets: model.containingCollections) { openedCollection = $0 }
