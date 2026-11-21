@@ -631,6 +631,28 @@ final class AuthManager {
         }
     }
 
+    /// The Seerr sign-in that comes with signing in (the server sets Seerr to the Jellyfin
+    /// account), saved under the profile it's for. It's saved before that profile becomes the
+    /// active one, while the slot in use is still the previous person's; switching to it puts
+    /// it in place. With no owner yet, the slot goes to whoever signs in.
+    func saveSeerrSignIn(url: String, authMethod: String, username: String, password: String,
+                         for credential: ServerCredential) {
+        let id = keepingProfileID(credential).id
+        let defaults = UserDefaults.standard
+        let owner = defaults.string(forKey: Self.seerrOwnerKey)
+        if owner == nil || owner == id.uuidString {
+            defaults.set(authMethod, forKey: "seerrAuthMethod")
+            defaults.set(username, forKey: "seerrUsername")
+            defaults.set(url, forKey: "seerrURL")
+            saveSeerrPassword(password)
+        } else {
+            defaults.set(authMethod, forKey: Self.perProfileKey("seerrAuthMethod", for: id))
+            defaults.set(username, forKey: Self.seerrUsernameKey(for: id))
+            defaults.set(url, forKey: Self.perProfileKey("seerrURL", for: id))
+            keychainWrite { try $0.saveSeerrPassword(password, profile: id) }
+        }
+    }
+
     /// Sets the outgoing profile's Seerr sign-in aside and puts the incoming one's in place
     /// (or none, when it hasn't connected Seerr), which reconfigures Seerr through the
     /// observers on the slot.
