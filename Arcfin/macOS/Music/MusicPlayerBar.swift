@@ -67,18 +67,18 @@ struct MusicPlayerBar: View {
     private var transport: some View {
         HStack(spacing: DT.Spacing.lg) {
             toggle(systemImage: "shuffle", isOn: player.queue.isShuffled, label: "Shuffle") {
-                player.setShuffled(!player.queue.isShuffled)
+                AppServices.music.setShuffled(!player.queue.isShuffled)
             }
-            Button { player.previous() } label: { Image(systemName: "backward.fill") }
+            Button { AppServices.music.previous() } label: { Image(systemName: "backward.fill") }
                 .accessibilityLabel("Previous")
-            Button { player.togglePlayPause() } label: {
+            Button { AppServices.music.togglePlayPause() } label: {
                 Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                     .font(.title2)
                     .contentTransition(.symbolEffect(.replace))
                     .frame(width: 28)
             }
             .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
-            Button { player.next() } label: { Image(systemName: "forward.fill") }
+            Button { AppServices.music.next() } label: { Image(systemName: "forward.fill") }
                 .accessibilityLabel("Next")
             toggle(systemImage: player.repeatMode == .one ? "repeat.1" : "repeat", isOn: player.repeatMode != .off,
                    label: "Repeat") {
@@ -97,7 +97,7 @@ struct MusicPlayerBar: View {
         scrubSettle?.cancel()
         scrubSettle = nil
         guard let scrubbing else { return }
-        player.seek(to: scrubbing)
+        AppServices.music.seek(to: scrubbing)
         self.scrubbing = nil
     }
 
@@ -133,6 +133,7 @@ struct MusicPlayerBar: View {
     private func trailingControls(_ song: MusicSong) -> some View {
         HStack(spacing: DT.Spacing.sm) {
             MusicRatingButtons(song: song)
+            MusicSharePlayButton(iconOnly: true)
             Button { nowPlaying = .lyrics } label: { Image(systemName: "quote.bubble") }
                 .disabled(!MusicLyricsSource.shared.isAvailable(song))
                 .accessibilityLabel("Lyrics")
@@ -251,8 +252,8 @@ struct MusicMacNowPlaying: View {
                         }
                         .foregroundStyle(.secondary)
                         .contentShape(Rectangle())
-                        .onTapGesture(count: 2) { player.jump(to: entry.id) }
-                        .contextMenu { Button("Play", systemImage: "play") { player.jump(to: entry.id) } }
+                        .onTapGesture(count: 2) { AppServices.music.jump(to: entry.id) }
+                        .contextMenu { Button("Play", systemImage: "play") { AppServices.music.jump(to: entry.id) } }
                     }
                 }
             }
@@ -271,9 +272,9 @@ struct MusicMacNowPlaying: View {
                     }
                 }
                 .contentShape(Rectangle())
-                .onTapGesture(count: 2) { player.jump(to: entry.id) }
+                .onTapGesture(count: 2) { AppServices.music.jump(to: entry.id) }
                 .contextMenu {
-                    Button("Play", systemImage: "play") { player.jump(to: entry.id) }
+                    Button("Play", systemImage: "play") { AppServices.music.jump(to: entry.id) }
                     Button("Remove", systemImage: "minus.circle", role: .destructive) { player.remove(entry.id) }
                 }
             }
@@ -302,7 +303,7 @@ struct MusicMacNowPlaying: View {
                                 .foregroundStyle(lyrics.isSynced && index != current ? .secondary : .primary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .id(index)
-                                .onTapGesture { if let start = line.start { player.seek(to: start + MusicLyricsSource.shared.delay(song.id)) } }
+                                .onTapGesture { if let start = line.start { AppServices.music.seek(to: start + MusicLyricsSource.shared.delay(song.id)) } }
                                 .contextMenu {
                                     if line.start != nil {
                                         Button("Sing This Line Now", systemImage: "music.mic") {

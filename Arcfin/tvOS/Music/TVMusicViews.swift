@@ -38,7 +38,7 @@ final class TVMusicPresenter {
     /// Playing up, so the music is always a press away.
     func playPausePressed() {
         guard AppServices.music.isActive else { return }
-        AppServices.music.player.togglePlayPause()
+        AppServices.music.togglePlayPause()
         isShowingNowPlaying = true
     }
 

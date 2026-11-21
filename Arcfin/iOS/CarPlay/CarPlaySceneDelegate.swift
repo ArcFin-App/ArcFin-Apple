@@ -571,7 +571,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         }
         let shuffle = CPNowPlayingShuffleButton { [weak self] _ in
             guard let self else { return }
-            player.setShuffled(!player.queue.isShuffled)
+            AppServices.music.setShuffled(!player.queue.isShuffled)
         }
         let repeatButton = CPNowPlayingRepeatButton { [weak self] _ in
             guard let self else { return }
@@ -613,7 +613,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             let item = CPListItem(text: entry.track.name, detailText: entry.track.artistLine)
             loadImage(MusicAPI.artworkURL(entry.track, width: 120), into: item)
             item.handler = { [weak self] _, done in
-                self?.player.jump(to: entry.id)
+                AppServices.music.jump(to: entry.id)
                 _ = self?.interface?.popTemplate(animated: true, completion: nil)
                 done()
             }

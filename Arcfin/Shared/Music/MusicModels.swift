@@ -227,16 +227,16 @@ enum MusicActions {
     static var player: MusicQueuePlayer { AppServices.music.player }
 
     static func play(_ songs: [MusicSong], from index: Int = 0) {
-        player.play(songs, startingAt: index)
+        AppServices.music.play(songs, startingAt: index)
     }
 
     static func shuffle(_ songs: [MusicSong]) {
-        player.play(songs, startingAt: Int.random(in: 0..<max(songs.count, 1)), shuffled: true)
+        AppServices.music.play(songs, startingAt: Int.random(in: 0..<max(songs.count, 1)), shuffled: true)
     }
 
-    static func playNext(_ songs: [MusicSong]) { player.playNext(songs) }
+    static func playNext(_ songs: [MusicSong]) { AppServices.music.playNext(songs) }
 
-    static func addToQueue(_ songs: [MusicSong]) { player.addToQueue(songs) }
+    static func addToQueue(_ songs: [MusicSong]) { AppServices.music.addToQueue(songs) }
 
     static func playlistSongs(_ playlist: MusicPlaylist) async -> [MusicSong] {
         (try? await MusicAPI.call { try await $0.getPlaylistSongs(credential: $1, authHeader: $2, playlistId: playlist.id) }) ?? []

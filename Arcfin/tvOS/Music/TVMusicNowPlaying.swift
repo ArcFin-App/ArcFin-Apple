@@ -63,7 +63,7 @@ struct TVMusicNowPlaying: View {
         }
         .foregroundStyle(.white)
         .defaultFocus($playPauseFocused, true)
-        .onPlayPauseCommand { player.togglePlayPause() }
+        .onPlayPauseCommand { AppServices.music.togglePlayPause() }
     }
 
     /// The cover beside the song across the screen, or above it in the left column.
@@ -99,18 +99,23 @@ struct TVMusicNowPlaying: View {
     private func controls(_ song: MusicSong) -> some View {
         VStack(alignment: .leading, spacing: 28) {
             HStack(spacing: 28) {
-                circle("backward.fill", label: "Previous") { player.previous() }
+                circle("backward.fill", label: "Previous") { AppServices.music.previous() }
                 circle(player.isPlaying ? "pause.fill" : "play.fill", label: player.isPlaying ? "Pause" : "Play", large: true) {
-                    player.togglePlayPause()
+                    AppServices.music.togglePlayPause()
                 }
                 .focused($playPauseFocused)
-                circle("forward.fill", label: "Next") { player.next() }
+                circle("forward.fill", label: "Next") { AppServices.music.next() }
+                // Listening together over FaceTime: on, it leaves; off, it starts.
+                circle("shareplay", label: MusicSharePlay.shared.isActive ? "Leave SharePlay" : "SharePlay",
+                       isOn: MusicSharePlay.shared.isActive, small: true) {
+                    MusicSharePlay.shared.isActive ? MusicSharePlay.shared.leave() : MusicSharePlay.shared.start()
+                }
             }
             // Nine at most (Timing joins while lyrics show): 9 × 64 + 8 × 16 = 704 pt, inside
             // the column's 760, so none wraps onto a row below the screen.
             TVWrapLayout(spacing: 16) {
                 circle("shuffle", label: "Shuffle", isOn: player.queue.isShuffled, small: true) {
-                    player.setShuffled(!player.queue.isShuffled)
+                    AppServices.music.setShuffled(!player.queue.isShuffled)
                 }
                 circle(player.repeatMode == .one ? "repeat.1" : "repeat", label: "Repeat", isOn: player.repeatMode != .off,
                        small: true) {
@@ -192,7 +197,7 @@ struct TVMusicNowPlaying: View {
                         ForEach(Array(player.queue.upNext.prefix(100))) { entry in
                             TVMusicSongRow(song: entry.track, showsArtwork: true, removeTitle: "Remove",
                                            onRemove: { player.remove(entry.id) }) {
-                                player.jump(to: entry.id)
+                                AppServices.music.jump(to: entry.id)
                             }
                         }
                     }
@@ -324,7 +329,7 @@ private struct TVMusicScrubber: View {
         settle = Task {
             try? await Task.sleep(for: .milliseconds(400))
             guard !Task.isCancelled, let target else { return }
-            player.seek(to: target)
+            AppServices.music.seek(to: target)
             try? await Task.sleep(for: .milliseconds(600))
             guard !Task.isCancelled else { return }
             self.target = nil
