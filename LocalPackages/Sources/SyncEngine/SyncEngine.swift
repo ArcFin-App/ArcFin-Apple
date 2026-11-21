@@ -18,8 +18,31 @@ import Telemetry
 public enum OfflineProgressSync {
     private static let log = Telemetry.logger(category: "OfflineProgressSync")
 
+    /// The foreground, a network change and the player closing can each ask at once: one runs
+    /// at a time, and one asked for meanwhile runs again after it instead of alongside.
+    @MainActor private static var isSyncing = false
+    @MainActor private static var syncRequestedMeanwhile = false
+
     @MainActor
     public static func syncPending(
+        modelContext: ModelContext,
+        profiles: [ServerCredential],
+        authHeader: (ServerCredential) -> String
+    ) async {
+        guard !isSyncing else {
+            syncRequestedMeanwhile = true
+            return
+        }
+        isSyncing = true
+        defer { isSyncing = false }
+        repeat {
+            syncRequestedMeanwhile = false
+            await syncOnce(modelContext: modelContext, profiles: profiles, authHeader: authHeader)
+        } while syncRequestedMeanwhile
+    }
+
+    @MainActor
+    private static func syncOnce(
         modelContext: ModelContext,
         profiles: [ServerCredential],
         authHeader: (ServerCredential) -> String
@@ -39,12 +62,16 @@ public enum OfflineProgressSync {
                   let credential = profiles.first(where: { $0.id.uuidString == first.serverId && $0.userID == first.userId })
             else { continue }
             let header = authHeader(credential)
+            // What's being sent: a save that lands while a request is out is newer than it, so
+            // that row stays marked for the next sync instead of being cleared or overwritten.
+            let changedAt = Dictionary(items.map { ($0.itemId, $0.progressChangedAt) }, uniquingKeysWith: { first, _ in first })
             // The server's state first: the title may have been watched elsewhere meanwhile,
             // and sending this device's older "part-way through" would mark it unwatched.
             guard let server = try? await client.getUserData(
                 credential: credential, authHeader: header, itemIds: items.map(\.itemId))
             else { continue }
             for item in items {
+                guard item.progressChangedAt == changedAt[item.itemId] ?? nil else { continue }
                 if let remote = server[item.itemId], serverIsNewer(remote, than: item) {
                     item.played = remote.played
                     item.playbackPositionTicks = remote.played ? 0 : remote.playbackPositionTicks
@@ -61,6 +88,7 @@ public enum OfflineProgressSync {
                     // Left marked, so the next sync tries again.
                     continue
                 }
+                guard item.progressChangedAt == changedAt[item.itemId] ?? nil else { continue }
                 item.needsSync = false
                 syncedCount += 1
             }

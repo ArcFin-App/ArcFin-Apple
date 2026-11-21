@@ -122,7 +122,7 @@ struct DownloadsContent<Manage: View>: View {
         HStack(spacing: 12) {
             Image(systemName: hold == .storage ? "externaldrive.badge.exclamationmark" : hold == .playing ? "play.circle" : hold == .mobileData ? "wifi.exclamationmark" : hold == .lowDataMode ? "antenna.radiowaves.left.and.right.slash" : "battery.25percent")
                 .font(.system(.title3))
-                .foregroundStyle(.orange)
+                .foregroundStyle(DT.Color.palette("F59E0B"))
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 2) {
                 Text(hold.title)
@@ -497,7 +497,7 @@ private struct DownloadingRow: View {
                         ProgressView(value: 0)
                     }
                 }
-                .tint(isPaused ? .orange : DT.Color.accent)
+                .tint(isPaused ? DT.Color.palette("F59E0B") : DT.Color.accent)
             }
             HStack {
                 if let stats, stats.bytesWritten > 0, stats.totalBytes > 0 {

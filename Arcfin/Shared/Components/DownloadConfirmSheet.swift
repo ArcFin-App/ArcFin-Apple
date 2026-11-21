@@ -487,11 +487,11 @@ struct DownloadConfirmSheet: View {
                 .foregroundStyle(DT.Color.textPrimary)
         } icon: {
             Image(systemName: "externaldrive.badge.exclamationmark")
-                .foregroundStyle(blocks ? DT.Color.palette("F43F5E") : .orange)
+                .foregroundStyle(blocks ? DT.Color.palette("F43F5E") : DT.Color.palette("F59E0B"))
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background((blocks ? DT.Color.palette("F43F5E") : Color.orange).opacity(0.12))
+        .background((blocks ? DT.Color.palette("F43F5E") : DT.Color.palette("F59E0B")).opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
     }
 

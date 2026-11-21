@@ -81,7 +81,14 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private var speedSamples: [String: (time: Date, bytes: Int64)] = [:]
     #if canImport(UIKit) && !os(tvOS)
     @ObservationIgnored private var backgroundTaskId: UIBackgroundTaskIdentifier = .invalid
+    #elseif os(macOS)
+    /// Held while anything downloads, so idle sleep doesn't cut the transfers off.
+    @ObservationIgnored private var transferActivity: NSObjectProtocol?
     #endif
+    /// Titles whose range parts are being joined after a relaunch: each part's arrival tries.
+    @ObservationIgnored private var joiningPartsItemIds: Set<String> = []
+    /// Another part arrived during that join, which may have looked before its file landed.
+    @ObservationIgnored private var partsArrivedWhileJoining: Set<String> = []
     #if canImport(ActivityKit) && os(iOS)
     @ObservationIgnored private var liveActivity: Activity<DownloadActivityAttributes>?
     /// Poster thumbnail + season/episode per active item, fetched once per item start
@@ -1737,6 +1744,10 @@ final class DownloadManager: NSObject {
         backgroundTaskId = UIApplication.shared.beginBackgroundTask(withName: "ArcfinDownload") { [weak self] in
             MainActor.assumeIsolated { self?.endBackgroundTaskIfIdle(force: true) }
         }
+        #elseif os(macOS)
+        guard transferActivity == nil else { return }
+        transferActivity = ProcessInfo.processInfo.beginActivity(options: [.idleSystemSleepDisabled, .userInitiated],
+                                                                 reason: "Downloading videos")
         #endif
     }
 
@@ -1745,6 +1756,10 @@ final class DownloadManager: NSObject {
         guard force || activeItemIds.isEmpty, backgroundTaskId != .invalid else { return }
         UIApplication.shared.endBackgroundTask(backgroundTaskId)
         backgroundTaskId = .invalid
+        #elseif os(macOS)
+        guard force || activeItemIds.isEmpty, let transferActivity else { return }
+        ProcessInfo.processInfo.endActivity(transferActivity)
+        self.transferActivity = nil
         #endif
     }
 
@@ -2324,6 +2339,15 @@ final class DownloadManager: NSObject {
         let dir = partURL.deletingLastPathComponent()
         let parts = (1...count).map { dir.appendingPathComponent(partFileName($0, of: count)) }
         guard parts.allSatisfy({ FileManager.default.fileExists(atPath: $0.path) }) else { return nil }
+        // Same check as the live path, from the sizes alone: downloadInParts gives every range
+        // but the last total / count bytes, and the last the remainder.
+        let sizes = parts.map { (try? FileManager.default.attributesOfItem(atPath: $0.path)[.size] as? Int64) ?? -1 }
+        guard let chunk = sizes.first, chunk > 0, sizes.dropLast().allSatisfy({ $0 == chunk }),
+              let last = sizes.last, last >= chunk, last < chunk + Int64(count)
+        else {
+            parts.forEach { try? FileManager.default.removeItem(at: $0) }
+            return nil
+        }
         let staged = dir.appendingPathComponent(stagedVideoFileName)
         try join(parts, into: staged)
         return staged.path
@@ -2428,8 +2452,20 @@ extension DownloadManager: URLSessionDownloadDelegate {
             // No continuation means this app instance didn't originate the transfer — most
             // likely relaunched specifically to receive this exact redelivered event. The
             // file's already safely moved above; finish the rest of the pipeline for it.
-            if capturedMoveError == nil, let capturedPath,
-               let videoPath = try? await Task.detached(priority: .utility, operation: { try Self.joinOrphanedParts(at: capturedPath) }).value {
+            guard capturedMoveError == nil, let capturedPath else { return }
+            // Two parts arriving together would each find the set complete and join it twice.
+            let itemId = URL(fileURLWithPath: capturedPath).deletingLastPathComponent().lastPathComponent
+            guard self.joiningPartsItemIds.insert(itemId).inserted else {
+                self.partsArrivedWhileJoining.insert(itemId)
+                return
+            }
+            var joined: String?
+            repeat {
+                self.partsArrivedWhileJoining.remove(itemId)
+                joined = try? await Task.detached(priority: .utility, operation: { try Self.joinOrphanedParts(at: capturedPath) }).value
+            } while joined == nil && self.partsArrivedWhileJoining.contains(itemId)
+            self.joiningPartsItemIds.remove(itemId)
+            if let videoPath = joined {
                 await self.recoverOrphanedDownload(destinationPath: videoPath)
             }
         }

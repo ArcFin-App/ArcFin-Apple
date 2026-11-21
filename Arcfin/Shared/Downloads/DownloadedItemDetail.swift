@@ -96,7 +96,7 @@ struct DownloadedItemDetailPage: View {
                                 .frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .buttonStyle(.bordered)
-                        .tint(.red)
+                        .tint(DT.Color.palette("F43F5E"))
                     }
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.top, DT.Spacing.md)
