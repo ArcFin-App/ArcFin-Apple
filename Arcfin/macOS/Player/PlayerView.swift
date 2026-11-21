@@ -442,6 +442,9 @@ struct PlayerView: View {
 
     private func teardown() async {
         model.stopTasks()
+        // Closed with the right arrow still held: the key-up monitor would outlive the player.
+        if let arrowReleaseMonitor { NSEvent.removeMonitor(arrowReleaseMonitor) }
+        arrowReleaseMonitor = nil
         // The window's toolbar is real window chrome, not part of this view — left hidden,
         // it would stay hidden on whatever screen is underneath once the player closes.
         setMacWindowToolbarVisible(macWindow, true)
