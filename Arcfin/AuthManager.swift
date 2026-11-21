@@ -60,6 +60,8 @@ final class AuthManager {
     /// The profile whose sign-in the server stopped accepting (password changed, device
     /// removed). The sign-in screen opens on its server and says why.
     var expiredCredential: ServerCredential?
+    /// Sign-outs that left another profile in use, so each window can show the profile picker.
+    private(set) var signOutsToNextProfile = 0
     @ObservationIgnored private var lastSignInCheck: Date?
 
     /// nil until the first check completes, or if the server has no Arcfin Sync plugin or
@@ -501,8 +503,10 @@ final class AuthManager {
         guard case .authenticated(let current) = state, current.id == id else { return }
         ProfileRules.shared.clear()
         if let next = profiles.first {
-            persist(active: next)
-            state = .authenticated(next)
+            // Who goes next is picked on the profile picker, with their PIN if they have one.
+            signOutsToNextProfile += 1
+            AppServices.hasPassedLock = false
+            switchTo(next)
         } else {
             forgetPreviousProfile()
             UserDefaults.standard.removeObject(forKey: "arcfin.activeProfileID")

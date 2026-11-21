@@ -30,6 +30,7 @@ final class AppRootModel {
     /// Why connecting Seerr by itself didn't work, for the prompt that asks for the password.
     var seerrSetupError: String?
     @ObservationIgnored private var isConnectingSeerr = false
+    @ObservationIgnored private var handledSignOuts = AppServices.authManager.signOutsToNextProfile
     // Shared by every window's model, so a second window doesn't start a second set and one
     // going to the background doesn't stop the other's.
     private static var heartbeatTask: Task<Void, Never>?
@@ -162,6 +163,10 @@ final class AppRootModel {
     }
 
     func refreshLockRequirement() async {
+        if authManager.signOutsToNextProfile != handledSignOuts {
+            handledSignOuts = authManager.signOutsToNextProfile
+            isAppLocked = true
+        }
         guard case .authenticated(let cred) = authManager.state else {
             activeProfileHasPIN = false
             return
