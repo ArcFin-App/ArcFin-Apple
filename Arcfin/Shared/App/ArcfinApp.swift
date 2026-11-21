@@ -6,7 +6,7 @@ import Persistence
 
 @main
 struct ArcfinApp: App {
-    var sharedModelContainer: ModelContainer = Persistence.makeContainerRecoveringFromFailure()
+    let sharedModelContainer = AppServices.modelContainer
     @PlatformAppDelegate private var appDelegate
 
     var body: some Scene {
@@ -21,6 +21,8 @@ struct ArcfinApp: App {
 /// window of its own.
 @MainActor
 enum AppServices {
+    /// Static so the app delegate can reach it on a background relaunch, before any window.
+    static let modelContainer: ModelContainer = Persistence.makeContainerRecoveringFromFailure()
     static let authManager = AuthManager()
     static let mediaRepo = MediaRepository()
     static let seerrRepo = SeerrRepository()

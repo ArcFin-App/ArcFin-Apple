@@ -4,6 +4,7 @@
 import UIKit
 import CarPlay
 import Intents
+import SwiftData
 import UserNotifications
 import CastKit
 import Telemetry
@@ -51,6 +52,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             return
         }
         DownloadManager.pendingBackgroundCompletionHandler = completionHandler
+        // A background relaunch usually connects no window, and the session that hands over
+        // the finished videos is only created when the manager is set up. A window's own
+        // configure call later does nothing.
+        AppServices.downloadManager.configure(modelContext: AppServices.modelContainer.mainContext,
+                                              authManager: AppServices.authManager)
     }
 
     /// A shortcut item can arrive in the launch options of a cold start or through the scene
