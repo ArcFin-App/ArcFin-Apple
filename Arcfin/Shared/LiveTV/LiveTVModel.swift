@@ -53,6 +53,7 @@ final class LiveTVModel {
     private(set) var timers: [LiveTVTimer] = []
     private(set) var seriesTimers: [LiveTVSeriesTimer] = []
     private(set) var isLoadingRecordings = true
+    private(set) var recordingsFailed = false
 
     /// Search, on the Live TV screen and in Browse.
     var searchQuery = ""
@@ -100,6 +101,7 @@ final class LiveTVModel {
     /// The channels showing that kind of programme, as the server finds them.
     private(set) var categoryChannels: [LiveTVChannel] = []
     private(set) var isLoadingCategory = false
+    private(set) var categoryFailed = false
 
     var guideChannels: [LiveTVChannel] {
         guard guideCategory != nil else { return visibleChannels }
@@ -111,13 +113,26 @@ final class LiveTVModel {
         guideCategory = category
         categoryChannels = []
         reloadGuide()
-        guard let category, let (credential, header) = session(authManager) else { return }
+        loadCategory(authManager: authManager)
+    }
+
+    func retryCategory(authManager: AuthManager) {
+        loadCategory(authManager: authManager)
+    }
+
+    private func loadCategory(authManager: AuthManager) {
+        categoryFailed = false
+        guard let category = guideCategory, let (credential, header) = session(authManager) else {
+            isLoadingCategory = false
+            return
+        }
         isLoadingCategory = true
         Task {
             let page = try? await client.getLiveTVChannels(credential: credential, authHeader: header,
                                                            limit: 500, category: category)
             guard guideCategory == category else { return }
             categoryChannels = page?.channels ?? []
+            categoryFailed = page == nil
             isLoadingCategory = false
         }
     }
@@ -284,13 +299,17 @@ final class LiveTVModel {
             .map(\.id).filter { !requestedGuideChannels.contains($0) }
         guard !block.isEmpty else { return }
         requestedGuideChannels.formUnion(block)
+        // A reload while this was out has already asked again for the new category or window.
+        let generation = guideGeneration
         do {
             let found = try await client.getLiveTVPrograms(credential: credential, authHeader: header,
                                                            channelIds: block, from: guideStart, to: guideEnd,
                                                            category: guideCategory)
+            guard generation == guideGeneration else { return }
             let grouped = Dictionary(grouping: found, by: \.channelId)
             for id in block { programs[id] = grouped[id] ?? [] }
         } catch {
+            guard generation == guideGeneration else { return }
             requestedGuideChannels.subtract(block)
         }
     }
@@ -306,9 +325,11 @@ final class LiveTVModel {
         async let recordingsResult = try? client.getLiveTVRecordings(credential: credential, authHeader: header)
         async let timersResult = try? client.getLiveTVTimers(credential: credential, authHeader: header)
         async let seriesResult = try? client.getLiveTVSeriesTimers(credential: credential, authHeader: header)
-        if let value = await recordingsResult { recordings = value }
-        if let value = await timersResult { timers = value }
-        if let value = await seriesResult { seriesTimers = value }
+        let (fetchedRecordings, fetchedTimers, fetchedSeries) = await (recordingsResult, timersResult, seriesResult)
+        if let fetchedRecordings { recordings = fetchedRecordings }
+        if let fetchedTimers { timers = fetchedTimers }
+        if let fetchedSeries { seriesTimers = fetchedSeries }
+        recordingsFailed = fetchedRecordings == nil && fetchedTimers == nil && fetchedSeries == nil
         isLoadingRecordings = false
     }
 

@@ -25,6 +25,14 @@ struct LiveTVRecordingsView: View {
     var body: some View {
         if model.isLoadingRecordings, isEmpty {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if isEmpty, model.recordingsFailed {
+            ContentUnavailableView {
+                Label("Couldn't Load Recordings", systemImage: "record.circle")
+            } description: {
+                Text("Check your connection and try again.")
+            } actions: {
+                Button("Try Again") { Task { await model.loadRecordings(authManager: authManager) } }
+            }
         } else if isEmpty {
             ContentUnavailableView("No Recordings", systemImage: "record.circle",
                                    description: ProfileRules.shared.canRecordLiveTV
@@ -179,6 +187,15 @@ private struct LiveTVTimerRow: View {
     @State private var confirming = false
 
     var body: some View {
+        // Without the cancel button nothing in the row takes focus on Apple TV.
+        if ProfileRules.shared.canRecordLiveTV {
+            row
+        } else {
+            row.tvFocusable(cornerRadius: DT.Radius.md)
+        }
+    }
+
+    private var row: some View {
         HStack(spacing: 12) {
             Image(systemName: isActive ? "record.circle.fill" : "clock")
                 .font(.title3)
@@ -250,7 +267,7 @@ private struct LiveTVSeriesTimerRow: View {
                 .arcfinPlainButton(cornerRadius: 22 * DT.Scale.font)
                 .accessibilityLabel("Stop Recording Series")
             } else {
-                summary
+                summary.tvFocusable(cornerRadius: DT.Radius.sm)
             }
         }
         .padding(.leading, 14)

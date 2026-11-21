@@ -246,11 +246,15 @@ struct TitleInsights: View {
         return rows
     }
 
-    /// The server's English "Continuing" and "Ended".
+    /// TMDB's and Jellyfin's status words are English; the common ones are translated.
     private static func statusText(_ status: String) -> String {
         switch status {
-        case "Continuing": String(localized: "Returning")
+        case "Continuing", "Returning Series": String(localized: "Returning")
         case "Ended": String(localized: "Ended")
+        case "Canceled", "Cancelled": String(localized: "Canceled")
+        case "Released": String(localized: "Released")
+        case "In Production": String(localized: "In Production")
+        case "Planned": String(localized: "Planned")
         default: status
         }
     }

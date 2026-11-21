@@ -9,6 +9,8 @@ struct LiveTVView: View {
     let library: JellyfinLibrary
 
     @Environment(AuthManager.self) private var authManager
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(PlaybackPresenter.self) private var playbackPresenter
     @State private var model = LiveTVModel()
     @SceneStorage("liveTVTab") private var tab: LiveTVTab = .channels
 
@@ -52,9 +54,12 @@ struct LiveTVView: View {
         }
         .task { await model.loadChannels(authManager: authManager) }
         .task { await model.loadRecordings(authManager: authManager) }
-        .task {
+        // Not while the player covers the screen or the app is in the background.
+        .task(id: scenePhase == .active && playbackPresenter.request == nil) {
+            guard scenePhase == .active, playbackPresenter.request == nil else { return }
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(60))
+                guard !Task.isCancelled else { return }
                 await model.refreshNowPlaying(authManager: authManager)
             }
         }

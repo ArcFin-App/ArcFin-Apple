@@ -24,16 +24,32 @@ struct LiveTVGuideView: View {
     var body: some View {
         if model.isLoadingChannels {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if model.channelsFailed {
+            ContentUnavailableView {
+                Label("Couldn't Load Channels", systemImage: "antenna.radiowaves.left.and.right.slash")
+            } description: {
+                Text("Check your connection and try again.")
+            } actions: {
+                Button("Try Again") { Task { await model.loadChannels(authManager: authManager) } }
+            }
+        } else if model.visibleChannels.isEmpty {
+            LiveTVEmptyChannels(favoritesOnly: model.favoritesOnly)
         } else if model.hasGuide == false {
             ContentUnavailableView("No Guide", systemImage: "calendar.badge.exclamationmark",
                                    description: Text("Your server has channels but no programme guide. Add a listings provider, such as an XMLTV file or Schedules Direct, in the Jellyfin dashboard under Live TV."))
-        } else if model.visibleChannels.isEmpty {
-            LiveTVEmptyChannels(favoritesOnly: model.favoritesOnly)
         } else {
             VStack(spacing: 0) {
                 if model.hasGuide == true { categoryBar }
                 if model.isLoadingCategory {
                     ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else if model.categoryFailed {
+                    ContentUnavailableView {
+                        Label("Couldn't Load Channels", systemImage: "antenna.radiowaves.left.and.right.slash")
+                    } description: {
+                        Text("Check your connection and try again.")
+                    } actions: {
+                        Button("Try Again") { model.retryCategory(authManager: authManager) }
+                    }
                 } else if model.guideChannels.isEmpty, let category = model.guideCategory {
                     ContentUnavailableView("Nothing Found", systemImage: category.systemImage,
                                            description: Text("Nothing of this kind is in the guide right now."))

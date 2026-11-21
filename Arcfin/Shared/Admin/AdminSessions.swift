@@ -28,7 +28,7 @@ final class AdminSessionsModel {
             do {
                 try await client.sendPlaystateCommand(command, sessionId: session.id, credential: credential, authHeader: authHeader)
             } catch {
-                actionError = "\(session.deviceName) didn't accept the command."
+                actionError = String(localized: "\(session.deviceName) didn't accept the command.")
             }
         }
     }
@@ -41,7 +41,7 @@ final class AdminSessionsModel {
             do {
                 try await client.sendSessionMessage(text, sessionId: session.id, credential: credential, authHeader: authHeader)
             } catch {
-                actionError = "The message couldn't be sent to \(session.deviceName)."
+                actionError = String(localized: "The message couldn't be sent to \(session.deviceName).")
             }
         }
     }
@@ -52,7 +52,7 @@ final class AdminSessionsModel {
         do {
             apply(try await client.getActiveSessions(credential: credential, authHeader: authHeader))
         } catch {
-            errorMessage = "Couldn't load active sessions."
+            errorMessage = String(localized: "Couldn't load active sessions.")
         }
         isLoading = false
     }
@@ -125,7 +125,7 @@ struct AdminSessionRow: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(session.userName ?? "Unknown User")
+                    Text(session.userName ?? String(localized: "Unknown User"))
                         .font(.system(.footnote, design: .default, weight: .semibold))
                         .foregroundStyle(DT.Color.textPrimary)
                     Text("\(session.deviceName) · \(session.clientName)")
@@ -185,17 +185,17 @@ struct AdminSessionRow: View {
     /// server's reasons, which is what an admin needs to fix it (a codec setting, a bitrate limit).
     private func playbackMethodText(_ session: JellyfinSession) -> String? {
         switch session.playMethod {
-        case "DirectPlay": return "Direct Play"
-        case "DirectStream": return "Direct Stream · repackaged, not re-encoded"
+        case "DirectPlay": return String(localized: "Direct Play")
+        case "DirectStream": return String(localized: "Direct Stream · repackaged, not re-encoded")
         case "Transcode":
-            guard let transcode = session.transcode else { return "Transcoding" }
-            var parts = ["Transcoding"]
+            guard let transcode = session.transcode else { return String(localized: "Transcoding") }
+            var parts = [String(localized: "Transcoding")]
             if let bitrate = transcode.bitrate {
-                parts.append(String(format: "%.1f Mb/s", Double(bitrate) / 1_000_000))
+                parts.append(String(localized: "\((Double(bitrate) / 1_000_000).formatted(.number.precision(.fractionLength(1)))) Mb/s"))
             }
             let converted = [
-                transcode.isVideoDirect ? nil : transcode.videoCodec.map { "video → \($0.uppercased())" },
-                transcode.isAudioDirect ? nil : transcode.audioCodec.map { "audio → \($0.uppercased())" },
+                transcode.isVideoDirect ? nil : transcode.videoCodec.map { String(localized: "video → \($0.uppercased())") },
+                transcode.isAudioDirect ? nil : transcode.audioCodec.map { String(localized: "audio → \($0.uppercased())") },
             ].compactMap { $0 }
             parts += converted
             if let hw = transcode.hardwareAcceleration, hw != "none", !hw.isEmpty { parts.append(hw.uppercased()) }

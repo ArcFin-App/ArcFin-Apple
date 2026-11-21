@@ -30,7 +30,7 @@ struct StatsShareSheet: View {
                             .scaledToFit()
                             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous))
                             .shadow(color: .black.opacity(0.35), radius: 20, y: 10)
-                            .accessibilityLabel("Your stats card for \(stats.name)")
+                            .accessibilityLabel("Your stats card for \(stats.periodName)")
                     } else {
                         ProgressView()
                     }
@@ -39,7 +39,7 @@ struct StatsShareSheet: View {
 
                 if let rendered {
                     let image = Image(decorative: rendered, scale: 1)
-                    ShareLink(item: image, preview: SharePreview("My \(stats.period == .allTime ? "Stats" : stats.name) on Arcfin", image: image)) {
+                    ShareLink(item: image, preview: SharePreview(stats.period == .allTime ? String(localized: "My Stats on Arcfin") : String(localized: "My \(stats.periodName) on Arcfin"), image: image)) {
                         Label("Share", systemImage: "square.and.arrow.up")
                             .font(.system(.headline))
                             .frame(maxWidth: .infinity)

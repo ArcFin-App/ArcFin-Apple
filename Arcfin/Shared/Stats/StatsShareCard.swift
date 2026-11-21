@@ -26,25 +26,21 @@ struct StatsShareCard: View {
     private let coral = Color(red: 1, green: 0.416, blue: 0.302)
 
     var body: some View {
-        let headline = StatsFormat.headline(stats.seconds)
+        let headline = StatsFormat.styled(
+            StatsFormat.headline(stats.seconds),
+            value: .system(size: format == .story ? 76 : 62, weight: .heavy, design: .rounded), valueColor: .white,
+            unit: .system(size: 20, weight: .bold), unitColor: coral)
         ZStack {
             background
             VStack(alignment: .leading, spacing: format == .story ? 22 : 14) {
                 header
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(name.map { "\($0)'s \(periodPhrase)" } ?? "My \(periodPhrase)")
+                    Text(owner)
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.75))
-                    HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(headline.value)
-                            .font(.system(size: format == .story ? 76 : 62, weight: .heavy, design: .rounded))
-                        Text(headline.unit)
-                            .font(.system(size: 20, weight: .bold))
-                            .foregroundStyle(coral)
-                    }
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
+                    Text(headline)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                     Text("of movies and TV")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.white.opacity(0.6))
@@ -52,18 +48,18 @@ struct StatsShareCard: View {
                 counts
                 if format == .story {
                     if let show = stats.topShows.first {
-                        feature(label: "Top show", title: show.item.name,
-                                detail: "\(show.episodes) \(show.episodes == 1 ? "episode" : "episodes")", poster: artwork.topShow)
+                        feature(label: String(localized: "Top show"), title: show.item.name,
+                                detail: String(localized: "\(show.episodes) episodes"), poster: artwork.topShow)
                     }
                     if let movie = stats.topMovies.first {
-                        feature(label: "Top movie", title: movie.item.name,
-                                detail: movie.playCount > 1 ? "Watched \(movie.playCount) times" : movie.item.productionYear.map(String.init) ?? "", poster: artwork.topMovie)
+                        feature(label: String(localized: "Top movie"), title: movie.item.name,
+                                detail: movie.playCount > 1 ? String(localized: "Watched \(movie.playCount) times") : movie.item.productionYear.map(String.init) ?? "", poster: artwork.topMovie)
                     }
                 } else if let show = stats.topShows.first {
-                    feature(label: "Top show", title: show.item.name,
-                            detail: "\(show.episodes) \(show.episodes == 1 ? "episode" : "episodes")", poster: artwork.topShow)
+                    feature(label: String(localized: "Top show"), title: show.item.name,
+                            detail: String(localized: "\(show.episodes) episodes"), poster: artwork.topShow)
                 } else if let movie = stats.topMovies.first {
-                    feature(label: "Top movie", title: movie.item.name, detail: "", poster: artwork.topMovie)
+                    feature(label: String(localized: "Top movie"), title: movie.item.name, detail: "", poster: artwork.topMovie)
                 }
                 chips
                 Spacer(minLength: 0)
@@ -75,12 +71,17 @@ struct StatsShareCard: View {
         .clipped()
     }
 
-    private var periodPhrase: String {
-        switch stats.period {
-        case .week: "week"
-        case .month: "month"
-        case .year: "year"
-        case .allTime: "watch history"
+    /// Whole phrases: the period's word changes with whose it is in some languages.
+    private var owner: String {
+        switch (stats.period, name) {
+        case (.week, nil): String(localized: "My week")
+        case (.month, nil): String(localized: "My month")
+        case (.year, nil): String(localized: "My year")
+        case (.allTime, nil): String(localized: "My watch history")
+        case (.week, let name?): String(localized: "\(name)'s week")
+        case (.month, let name?): String(localized: "\(name)'s month")
+        case (.year, let name?): String(localized: "\(name)'s year")
+        case (.allTime, let name?): String(localized: "\(name)'s watch history")
         }
     }
 
@@ -113,7 +114,7 @@ struct StatsShareCard: View {
                 .font(.system(size: 17, weight: .heavy))
                 .foregroundStyle(.white)
             Spacer()
-            Text((stats.period == .allTime ? stats.heading : stats.name).uppercased())
+            Text((stats.period == .allTime ? stats.periodHeading : stats.periodName).uppercased())
                 .font(.system(size: 11, weight: .bold))
                 .tracking(1.2)
                 .foregroundStyle(coral)
@@ -124,9 +125,9 @@ struct StatsShareCard: View {
 
     private var counts: some View {
         HStack(spacing: 8) {
-            count(stats.movies, stats.movies == 1 ? "Movie" : "Movies")
-            count(stats.episodes, stats.episodes == 1 ? "Episode" : "Episodes")
-            count(stats.shows, stats.shows == 1 ? "Show" : "Shows")
+            count(stats.movies, String(localized: "Movies"))
+            count(stats.episodes, String(localized: "Episodes"))
+            count(stats.shows, String(localized: "Shows"))
         }
     }
 
@@ -177,8 +178,8 @@ struct StatsShareCard: View {
     private var chips: some View {
         let items = [
             stats.genres.first.map { ("theatermasks.fill", $0.name) },
-            stats.longestStreak > 1 ? ("flame.fill", "\(stats.longestStreak)-day streak") : nil,
-            stats.busiestWeekday.map { ("calendar", "\(Calendar.current.weekdaySymbols[$0])s") },
+            stats.longestStreak > 1 ? ("flame.fill", String(localized: "\(stats.longestStreak)-day streak")) : nil,
+            stats.busiestWeekday.map { ("calendar", Calendar.current.standaloneWeekdaySymbols[$0]) },
         ].compactMap { $0 }
         return HStack(spacing: 6) {
             ForEach(items, id: \.1) { icon, text in

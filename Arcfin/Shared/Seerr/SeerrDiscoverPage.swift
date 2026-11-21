@@ -78,7 +78,7 @@ struct SeerrDiscoverPage: View {
             Text("Seerr Not Connected")
                 .font(.system(.title3, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Add your Seerr server URL and credentials in Settings → Plugins → Seerr.")
+            Text("Add your Seerr server URL and credentials in Settings › Integrations › Seerr.")
                 .font(.system(.footnote))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
@@ -263,7 +263,7 @@ struct SeerrDiscoverPage: View {
     private func featuredCard(_ item: SeerrItem, rank: Int, kind: FeaturedKind) -> some View {
         let isAvailable = mediaRepo.hasInLibrary(item)
         let request = isAvailable ? nil : seerrRepo.matchingRequest(for: item)
-        let canRequest = !isAvailable && !seerrRepo.isRequested(item)
+        let canRequest = !isAvailable && !seerrRepo.isRequested(item) && seerrRepo.mayRequest(item.mediaType)
         let width = featuredWidth
         return ZStack(alignment: .bottomTrailing) {
             Button { openedItem = item } label: {
@@ -300,7 +300,7 @@ struct SeerrDiscoverPage: View {
                             if isAvailable {
                                 availabilityPill(label: String(localized: "In Library"), hex: "10b981")
                             } else if let request {
-                                let status = request.displayStatus
+                                let status = request.localizedDisplayStatus
                                 availabilityPill(label: status.label, hex: status.colorHex)
                             }
                         }
@@ -395,7 +395,7 @@ struct SeerrDiscoverPage: View {
                 systemImage: seerrRepo.isInWatchlist(item) ? "bookmark.slash" : "bookmark"
             )
         }
-        if !mediaRepo.hasInLibrary(item), !seerrRepo.isRequested(item) {
+        if !mediaRepo.hasInLibrary(item), !seerrRepo.isRequested(item), seerrRepo.mayRequest(item.mediaType) {
             Button {
                 requestingItem = item
             } label: {

@@ -43,6 +43,16 @@ struct SeerrView: View {
         .task(id: model.mediaType) { await model.loadLanguageItems(seerrRepo: seerrRepo) }
     }
 
+    @ViewBuilder
+    private func requestMenu(_ req: SeerrRequestItem) -> some View {
+        SeerrRequestReviewMenu(request: req, review: review)
+        if seerrRepo.canRemove(req) {
+            Button(role: .destructive) { review.removing = req } label: {
+                Label("Remove Request", systemImage: "trash")
+            }
+        }
+    }
+
     // MARK: - Auth failed
 
     private var authFailedView: some View {
@@ -53,7 +63,7 @@ struct SeerrView: View {
             Text("Authentication Failed")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Seerr didn't accept the sign-in. Try again, or check Settings › Integrations › Seerr.")
+            SeerrSettingsHint.signInFailed
                 .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
@@ -75,13 +85,15 @@ struct SeerrView: View {
             Text("Seerr Not Connected")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Add your Seerr server in Settings → Plugins → Seerr.")
+            Text("Add your Seerr server in Settings › Plugins › Seerr.")
                 .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 600)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Something has to take focus, or it falls to the tab bar, where Back leaves the app.
+        .focusable()
     }
 
     // MARK: - Main content
@@ -136,7 +148,7 @@ struct SeerrView: View {
             NavigationLink {
                 TVSeerrSearchView()
             } label: {
-                pillLabel("Search", systemImage: "magnifyingglass")
+                pillLabel(String(localized: "Search"), systemImage: "magnifyingglass")
             }
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
@@ -145,7 +157,7 @@ struct SeerrView: View {
             NavigationLink {
                 WatchlistView()
             } label: {
-                pillLabel("Watchlist", systemImage: "bookmark.fill")
+                pillLabel(String(localized: "Watchlist"), systemImage: "bookmark.fill")
             }
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
@@ -284,12 +296,12 @@ struct SeerrView: View {
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
-                            // Press and hold to approve or decline.
-                            .contextMenu { SeerrRequestReviewMenu(request: req, review: review) }
+                            // Press and hold to approve, decline or remove.
+                            .contextMenu { requestMenu(req) }
                         } else {
                             TVRequestRow(req: req, requester: seerrRepo.requesterName(of: req))
                                 .focusable()
-                                .contextMenu { SeerrRequestReviewMenu(request: req, review: review) }
+                                .contextMenu { requestMenu(req) }
                         }
                     }
                 }
@@ -388,8 +400,8 @@ private struct TVSeerrCard: View {
     }
 
     private var badge: (label: String, colorHex: String)? {
-        if mediaRepo.hasInLibrary(item) { return ("Available", "10b981") }
-        return matchingRequest?.displayStatus
+        if mediaRepo.hasInLibrary(item) { return (String(localized: "Available"), "10b981") }
+        return matchingRequest?.localizedDisplayStatus
     }
 
     var body: some View {
@@ -512,18 +524,16 @@ private struct TVRequestRow: View {
     }
 
     private func statusPill(_ status: RequestStatus) -> some View {
-        let (label, hex): (String, String) = switch status {
-        case .approved:  ("Approved",  "10b981")
-        case .declined:  ("Declined",  "F43F5E")
-        case .failed:  ("Failed",  "F43F5E")
-        case .completed: ("Completed", "10b981")
-        case .pending:   ("Pending",   "f59e0b")
+        let hex = switch status {
+        case .approved, .completed: "10b981"
+        case .declined, .failed: "F43F5E"
+        case .pending: "f59e0b"
         }
-        return pillView(label: label, hex: hex)
+        return pillView(label: status.localizedLabel, hex: hex)
     }
 
     private func mediaStatusPill(_ status: SeerrAvailabilityStatus) -> some View {
-        pillView(label: status.label, hex: status.colorHex)
+        pillView(label: status.localizedLabel, hex: status.colorHex)
     }
 
     private func pillView(label: String, hex: String) -> some View {

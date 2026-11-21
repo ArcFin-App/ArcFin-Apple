@@ -167,27 +167,24 @@ private struct AdminLogView: View {
     let file: JellyfinLogFile
 
     @Environment(AuthManager.self) private var authManager
-    @State private var lines: [String] = []
+    /// Newest first, numbered in that order so a row keeps its identity while filtering.
+    @State private var lines: [(id: Int, text: String)] = []
     @State private var text = ""
     @State private var isLoading = true
     @State private var search = ""
+    @State private var query = ""
     @State private var errorsOnly = false
-
-    private var shown: [String] {
-        lines.reversed().filter { line in
-            (search.isEmpty || line.localizedCaseInsensitiveContains(search))
-                && (!errorsOnly || line.contains("[ERR]") || line.contains("[WRN]") || line.contains("[FTL]"))
-        }
-    }
+    @State private var shown: [(id: Int, text: String)] = []
 
     var body: some View {
         List {
             Toggle("Warnings and Errors Only", isOn: $errorsOnly)
-            ForEach(Array(shown.prefix(2000).enumerated()), id: \.offset) { _, line in
+            ForEach(shown, id: \.id) { entry in
+                let line = entry.text
                 Text(line)
                     .font(.system(.caption2, design: .monospaced))
                     .foregroundStyle(line.contains("[ERR]") || line.contains("[FTL]") ? DT.Color.palette("F43F5E")
-                                     : line.contains("[WRN]") ? Color.orange : DT.Color.textPrimary)
+                                     : line.contains("[WRN]") ? DT.Color.palette("f59e0b") : DT.Color.textPrimary)
                     .textSelection(.enabled)
             }
         }
@@ -208,13 +205,28 @@ private struct AdminLogView: View {
             }
         }
         .task { await load() }
+        .task(id: search) {
+            try? await Task.sleep(for: .milliseconds(250))
+            guard !Task.isCancelled else { return }
+            query = search
+        }
+        .onChange(of: query) { filter() }
+        .onChange(of: errorsOnly) { filter() }
     }
 
     private func load() async {
         guard let access = AdminAccess.session(authManager) else { return }
         text = (try? await JellyfinAdminClient().logFile(named: file.name, credential: access.credential, authHeader: access.header)) ?? ""
-        lines = text.split(separator: "\n", omittingEmptySubsequences: true).map(String.init)
+        lines = text.split(separator: "\n", omittingEmptySubsequences: true).reversed().enumerated().map { (id: $0.offset, text: String($0.element)) }
+        filter()
         isLoading = false
+    }
+
+    private func filter() {
+        shown = Array(lines.lazy.filter { entry in
+            (query.isEmpty || entry.text.localizedCaseInsensitiveContains(query))
+                && (!errorsOnly || entry.text.contains("[ERR]") || entry.text.contains("[WRN]") || entry.text.contains("[FTL]"))
+        }.prefix(2000))
     }
 }
 
@@ -238,6 +250,7 @@ struct AdminBackupsView: View {
     @State private var backups: [JellyfinBackup] = []
     @State private var isLoading = true
     @State private var unsupported = false
+    @State private var loadFailed = false
     @State private var isCreating = false
     @State private var includeMetadata = false
     @State private var includeTrickplay = false
@@ -269,7 +282,9 @@ struct AdminBackupsView: View {
                     Text("The database and settings are always included. Backups are saved on the server, in its backup folder.")
                 }
                 Section("Backups") {
-                    if !isLoading && backups.isEmpty {
+                    if loadFailed {
+                        Text("Couldn't load the server's backups.").foregroundStyle(DT.Color.textSecondary)
+                    } else if !isLoading && backups.isEmpty {
                         Text("No backups yet.").foregroundStyle(DT.Color.textSecondary)
                     }
                     ForEach(backups) { backup in
@@ -305,8 +320,12 @@ struct AdminBackupsView: View {
         do {
             backups = try await JellyfinAdminClient().backups(credential: access.credential, authHeader: access.header)
             unsupported = false
+            loadFailed = false
         } catch {
-            unsupported = true
+            // Only an older server has no backups; anything else is a failure to say so.
+            let version = await ServerVersions.version(for: access.credential)
+            unsupported = version.map { $0 < ServerVersion(10, 11) } ?? false
+            loadFailed = !unsupported
         }
         isLoading = false
     }

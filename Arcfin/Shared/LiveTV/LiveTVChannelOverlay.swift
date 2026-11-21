@@ -13,6 +13,8 @@ struct LiveTVChannelOverlay: View {
     let select: (LiveTVChannel) -> Void
     let close: () -> Void
 
+    @FocusState private var focusedChannel: String?
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
@@ -67,6 +69,8 @@ struct LiveTVChannelOverlay: View {
         .background(.ultraThinMaterial.opacity(0.95))
         .background(Color.black.opacity(0.45))
         .environment(\.colorScheme, .dark)
+        // Apple TV: start on the playing channel, not Close.
+        .defaultFocus($focusedChannel, currentID)
         .tvFocusSection()
     }
 
@@ -108,6 +112,7 @@ struct LiveTVChannelOverlay: View {
             .contentShape(Rectangle())
         }
         .arcfinPlainButton(cornerRadius: DT.Radius.md, prominent: false)
+        .focused($focusedChannel, equals: channel.id)
         .accessibilityAddTraits(isCurrent ? .isSelected : [])
     }
 }

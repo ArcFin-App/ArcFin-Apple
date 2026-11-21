@@ -8,6 +8,7 @@ import AuthCore
 struct StatsView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage("statsPeriod") private var period = StatsPeriod.month
     @State private var model = StatsModel()
@@ -30,6 +31,15 @@ struct StatsView: View {
         .task(id: authManager.state.credential?.id) { await model.load(authManager: authManager) }
         .task(id: model.input(period: period)) { await model.compute(period: period, reduceMotion: reduceMotion) }
         .onChange(of: period) { model.offset = 0 }
+        // No pull to refresh on Apple TV: pick up what's been watched since when the tab comes
+        // back into view or the app comes back to the front.
+        .onAppear { refresh() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { refresh() } }
+    }
+
+    private func refresh() {
+        guard model.phase != .loading else { return }
+        Task { await model.load(authManager: authManager) }
     }
 
     @ViewBuilder
@@ -76,7 +86,7 @@ struct StatsView: View {
 
     private var periodPicker: some View {
         Picker("Period", selection: $period) {
-            ForEach(StatsPeriod.allCases) { Text($0.title).tag($0) }
+            ForEach(StatsPeriod.allCases) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
         .focusSection()
@@ -85,19 +95,19 @@ struct StatsView: View {
     /// Steps back through earlier weeks, months or years, and forward again to the current one.
     private func periodStepper(_ stats: WatchStats) -> some View {
         HStack(spacing: 12) {
-            stepButton("chevron.left", label: "Previous \(period.title)", disabled: !stats.hasEarlier) { model.offset -= 1 }
+            stepButton("chevron.left", label: period.previousLabel, disabled: !stats.hasEarlier) { model.offset -= 1 }
             VStack(spacing: 1) {
-                Text(stats.name)
+                Text(stats.periodName)
                     .font(.system(.headline))
                     .foregroundStyle(DT.Color.textPrimary)
                     .contentTransition(.numericText())
-                Text(stats.heading)
+                Text(stats.periodHeading)
                     .font(.system(.caption))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
-            stepButton("chevron.right", label: "Next \(period.title)", disabled: model.offset == 0) { model.offset += 1 }
+            stepButton("chevron.right", label: period.nextLabel, disabled: model.offset == 0) { model.offset += 1 }
         }
         .focusSection()
     }

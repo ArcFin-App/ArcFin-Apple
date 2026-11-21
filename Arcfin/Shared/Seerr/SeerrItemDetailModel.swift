@@ -18,6 +18,9 @@ final class SeerrItemDetailModel {
     /// The title's age rating for this region, e.g. "PG-13".
     private(set) var certification: String?
     private(set) var isLoadingDetail = false
+    /// False once the signed-in Seerr user turns out not to have request permission for this
+    /// kind of title; true while that isn't known.
+    private(set) var mayRequest = true
     private(set) var heroTint: Color?
     private(set) var moreLikeThis: [SeerrItem] = []
     private(set) var companyRow: (name: String, items: [SeerrItem])?
@@ -27,6 +30,7 @@ final class SeerrItemDetailModel {
     private(set) var isRequestingCollection = false
     var isConfirmingCollectionRequest = false
     var collectionRequestMessage: String?
+    var watchlistError: String?
     var openLibraryItem: MediaItem?
     var openSeerrItem: SeerrItem?
     var requestingItem: SeerrItem?
@@ -51,12 +55,16 @@ final class SeerrItemDetailModel {
 
     /// Requesting needs Seerr; a title shown from TMDB alone still links to the library copy.
     func canRequest(seerrRepo: SeerrRepository) -> Bool {
-        seerrRepo.isConfigured && !isAvailable && hasRequestableContent(seerrRepo: seerrRepo)
+        seerrRepo.isConfigured && mayRequest && !isAvailable && hasRequestableContent(seerrRepo: seerrRepo)
     }
 
     func loadDetail(seerrRepo: SeerrRepository) async {
         isLoadingDetail = true
-        detail = await seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
+        async let fetched = seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
+        if let user = await seerrRepo.ensureCurrentUser() {
+            mayRequest = SeerrPermission.canRequest(item.mediaType, in: user.permissions)
+        }
+        detail = await fetched
         isLoadingDetail = false
     }
 
@@ -119,10 +127,16 @@ final class SeerrItemDetailModel {
     func toggleWatchlist(seerrRepo: SeerrRepository) {
         HapticManager.impact(.light)
         Task {
-            if seerrRepo.isInWatchlist(item) {
-                try? await seerrRepo.removeFromWatchlist(item)
-            } else {
-                try? await seerrRepo.addToWatchlist(item)
+            let removing = seerrRepo.isInWatchlist(item)
+            do {
+                if removing {
+                    try await seerrRepo.removeFromWatchlist(item)
+                } else {
+                    try await seerrRepo.addToWatchlist(item)
+                }
+            } catch where SeerrRepository.isCancellation(error) {
+            } catch {
+                watchlistError = removing ? String(localized: "Couldn't remove this from your watchlist. Check your connection and try again.") : String(localized: "Couldn't add this to your watchlist. Check your connection and try again.")
             }
         }
     }

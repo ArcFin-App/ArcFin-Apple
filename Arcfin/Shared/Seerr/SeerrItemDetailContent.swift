@@ -39,9 +39,9 @@ struct SeerrItemDetailContent: View {
                     }
 
                     if let availabilityStatus = item.availabilityStatus {
-                        availabilityRow(label: "Availability", status: (availabilityStatus.label, availabilityStatus.colorHex))
+                        availabilityRow(label: "Availability", status: (availabilityStatus.localizedLabel, availabilityStatus.colorHex))
                     } else if let request = seerrRepo.matchingRequest(for: item) {
-                        availabilityRow(label: "Request", status: request.displayStatus)
+                        availabilityRow(label: "Request", status: request.localizedDisplayStatus)
                     }
 
                     if model.isLoadingDetail {
@@ -84,9 +84,9 @@ struct SeerrItemDetailContent: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.lg)
 
-                if !model.moreLikeThis.isEmpty { discoveryRow("More Like This", model.moreLikeThis) }
-                if let companyRow = model.companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
-                if let keywordRow = model.keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
+                if !model.moreLikeThis.isEmpty { discoveryRow(String(localized: "More Like This"), model.moreLikeThis) }
+                if let companyRow = model.companyRow { discoveryRow(String(localized: "More from \(companyRow.name)"), companyRow.items) }
+                if let keywordRow = model.keywordRow { discoveryRow(String(localized: "More About \(keywordRow.name.capitalized)"), keywordRow.items) }
 
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
@@ -119,6 +119,13 @@ struct SeerrItemDetailContent: View {
             get: { model.collectionRequestMessage != nil }, set: { if !$0 { model.collectionRequestMessage = nil } }
         )) {
             Button("OK", role: .cancel) {}
+        }
+        .alert("Watchlist", isPresented: Binding(
+            get: { model.watchlistError != nil }, set: { if !$0 { model.watchlistError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.watchlistError ?? "")
         }
         .task(id: item.id) { await model.loadHeroTint() }
         .task(id: item.id) { await model.loadDiscovery(seerrRepo: seerrRepo) }
@@ -264,7 +271,7 @@ struct SeerrItemDetailContent: View {
     @ViewBuilder
     private var requestCollectionButton: some View {
         let parts = model.requestableParts(seerrRepo: seerrRepo)
-        if seerrRepo.isConfigured, !parts.isEmpty {
+        if seerrRepo.isConfigured, model.mayRequest, !parts.isEmpty {
             Button { model.isConfirmingCollectionRequest = true } label: {
                 if model.isRequestingCollection { ProgressView() } else { Text("Request Collection") }
             }
@@ -308,7 +315,7 @@ struct SeerrItemDetailContent: View {
                                 .overlay(alignment: .topTrailing) {
                                     if let status = related.availabilityStatus {
                                         Circle().fill(DT.Color.palette(status.colorHex)).frame(width: 10, height: 10).padding(6)
-                                            .accessibilityLabel(status.label)
+                                            .accessibilityLabel(status.localizedLabel)
                                     }
                                 }
                                 Text(related.title)
@@ -388,7 +395,7 @@ struct SeerrItemDetailContent: View {
                         Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(.caption2))
-                            Text(String(format: "%.1f", rating))
+                            Text(rating.formatted(.number.precision(.fractionLength(1))))
                         }
                         .font(.system(.caption2))
                         .foregroundStyle(DT.Color.palette("f59e0b"))
@@ -406,7 +413,7 @@ struct SeerrItemDetailContent: View {
         .padding(.bottom, DT.Spacing.md)
     }
 
-    private func availabilityRow(label: String, status: (label: String, colorHex: String)) -> some View {
+    private func availabilityRow(label: LocalizedStringKey, status: (label: String, colorHex: String)) -> some View {
         HStack {
             Text(label)
                 .font(.system(.footnote, design: .default, weight: .semibold))
