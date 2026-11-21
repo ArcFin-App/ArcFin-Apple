@@ -77,7 +77,7 @@ struct DownloadedSeriesHeader: View {
                     if let rating = series?.communityRating, rating > 0 {
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(.caption2)).accessibilityHidden(true)
-                            Text(String(format: "%.1f", rating))
+                            Text(rating.formatted(.number.precision(.fractionLength(1))))
                         }
                         .font(.system(.caption2))
                         .foregroundStyle(DT.Color.palette("f59e0b"))

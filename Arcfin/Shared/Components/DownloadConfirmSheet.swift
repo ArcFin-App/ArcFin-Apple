@@ -527,7 +527,6 @@ struct DownloadConfirmSheet: View {
 
     private static func runtimeLabel(ticks: Int64) -> String {
         let totalMinutes = Int(Double(ticks) / 10_000_000 / 60)
-        let h = totalMinutes / 60, m = totalMinutes % 60
-        return h > 0 ? "\(h)h \(m)m" : "\(m)m"
+        return Duration.seconds(totalMinutes * 60).formatted(.units(allowed: [.hours, .minutes], width: .narrow))
     }
 }

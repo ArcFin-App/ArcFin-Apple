@@ -162,7 +162,7 @@ struct DownloadedItemDetailPage: View {
         if let year = item.productionYear { parts.append(String(year)) }
         if item.runtimeTicks > 0 { parts.append("\(Int(item.runtimeTicks / 10_000_000 / 60)) min") }
         if let rating = item.officialRating, !rating.isEmpty { parts.append(rating) }
-        if let score = item.communityRating, score > 0 { parts.append("★ \(String(format: "%.1f", score))") }
+        if let score = item.communityRating, score > 0 { parts.append("★ \(score.formatted(.number.precision(.fractionLength(1))))") }
         return parts.joined(separator: " · ")
     }
 
