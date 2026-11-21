@@ -443,7 +443,11 @@ final class DownloadManager: NSObject {
     /// For the player's Quality on Mobile Data, read as it opens.
     static private(set) var isOnMobileDataNow = false
 
+    /// The path monitor has reported once, so the mobile data and Low Data Mode holds are real.
+    @ObservationIgnored private var hasNetworkPath = false
+
     private func networkChanged(onMobileData: Bool, lowDataMode: Bool) {
+        hasNetworkPath = true
         isOnMobileData = onMobileData
         isOnLowDataMode = lowDataMode
         Self.isOnMobileDataNow = onMobileData
@@ -668,6 +672,10 @@ final class DownloadManager: NSObject {
         // The last update before the app is suspended; the estimate carries it from here.
         refreshLiveActivity()
         #endif
+    }
+
+    private func isUnderway(_ itemId: String) -> Bool {
+        activeItemIds.contains(itemId) || pendingQueue.contains { $0.item.id == itemId }
     }
 
     /// Waits for a handed-off transfer, or takes its result if it already ended.
@@ -1561,6 +1569,8 @@ final class DownloadManager: NSObject {
         // Activity meta, neither of which meaningfully applies to a recovery that's already
         // finished downloading its video by the time this runs.
         let placeholder = MediaItem(id: itemId, name: String(localized: "Resuming…"), type: .movie)
+        // Queued again after a relaunch, but the file's already here: finished from it instead.
+        pendingQueue.removeAll { $0.item.id == itemId }
         await performDownload(item: placeholder, credential: credential, authHeader: authHeader, bitrateCap: descriptor.bitrateCap,
                               tracks: descriptor.tracks ?? .all, skipVideoDownload: true)
     }
@@ -1693,7 +1703,13 @@ final class DownloadManager: NSObject {
                 restored = true
             }
         }
-        if restored { Task { await processQueue() } }
+        guard restored else { return }
+        Task {
+            // Until the path monitor has reported, mobile data reads as Wi-Fi and the queue
+            // would start past Wi-Fi Only.
+            for _ in 0..<25 where !hasNetworkPath { try? await Task.sleep(for: .milliseconds(200)) }
+            await processQueue()
+        }
     }
 
     /// Folders under Downloads nothing points to any more, left by a transfer cut off, a range
@@ -2446,7 +2462,8 @@ extension DownloadManager: URLSessionDownloadDelegate {
             }
             // Orphaned and refused by the server: there's no file to finish it from.
             if capturedMoveError != nil, let capturedPath {
-                self.removePendingDescriptor(itemId: URL(fileURLWithPath: capturedPath).deletingLastPathComponent().lastPathComponent)
+                let itemId = URL(fileURLWithPath: capturedPath).deletingLastPathComponent().lastPathComponent
+                if !self.isUnderway(itemId) { self.removePendingDescriptor(itemId: itemId) }
                 return
             }
             // No continuation means this app instance didn't originate the transfer — most
@@ -2488,9 +2505,11 @@ extension DownloadManager: URLSessionDownloadDelegate {
             // Orphaned and it failed outright — there'll never be a video file to trigger
             // recovery via didFinishDownloadingTo, so the pending descriptor would otherwise
             // sit around forever. Best-effort cleanup only; nothing else was watching this.
+            // A transfer from before that was cancelled when its title was queued again (see
+            // restoreSavedQueue) leaves the new run's descriptor alone.
             if let capturedPath {
                 let itemId = URL(fileURLWithPath: capturedPath).deletingLastPathComponent().lastPathComponent
-                self.removePendingDescriptor(itemId: itemId)
+                if !self.isUnderway(itemId) { self.removePendingDescriptor(itemId: itemId) }
             }
         }
     }
