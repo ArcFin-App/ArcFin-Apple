@@ -460,9 +460,11 @@ private struct TVLibraryFilterList: View {
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark").foregroundStyle(DT.Color.accent)
+                        .accessibilityHidden(true)
                 }
             }
         }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func toggle<T: Hashable>(_ value: T, in set: inout Set<T>) {
