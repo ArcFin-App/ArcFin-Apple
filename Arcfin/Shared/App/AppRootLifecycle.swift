@@ -14,6 +14,7 @@ struct AppRootLifecycle: ViewModifier {
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
+    @State private var sceneID = UUID()
     @AppStorage("seerrURL")          private var seerrURL         = ""
     @AppStorage("seerrUsername")     private var seerrUsername    = ""
     @AppStorage("seerrAuthMethod")   private var seerrAuthMethod  = SeerrAuthMethod.jellyfin
@@ -66,6 +67,7 @@ struct AppRootLifecycle: ViewModifier {
             }
             .task { model.downloadManager.configure(modelContext: modelContext, authManager: model.authManager) }
             .onChange(of: scenePhase) { _, newPhase in
+                AppServices.scenes.set(newPhase, for: sceneID)
                 model.scenePhaseChanged(to: newPhase)
                 onScenePhase(newPhase)
                 // Deliberately no re-lock here. scenePhase drops to .background not just when
@@ -74,15 +76,14 @@ struct AppRootLifecycle: ViewModifier {
                 // the system backgrounds the scene) — locking on every one of those made the
                 // PIN/Face ID prompt reappear on nearly every interaction. The PIN/Face ID
                 // gate now only ever applies at cold launch (see the initial .task above).
-                if newPhase == .active {
-                    Task { await model.loadProfileRules() }
-                    Task { await MusicDownloads.shared.refreshSmartDownloads() }
-                }
                 // Music still to download goes to the system, which carries on with it.
                 if newPhase == .background { MusicDownloads.shared.handOff() }
             }
             .onChange(of: model.authManager.state) { _, _ in Task { await model.refreshLockRequirement() } }
-            .onAppear { configureSeerr() }
+            .onAppear {
+                AppServices.scenes.set(scenePhase, for: sceneID)
+                configureSeerr()
+            }
             .onChange(of: seerrURL)        { configureSeerr() }
             .onChange(of: seerrUsername)   { configureSeerr() }
             .onChange(of: model.authManager.seerrPassword) { configureSeerr() }
@@ -101,8 +102,12 @@ struct AppRootLifecycle: ViewModifier {
             .onChange(of: model.authManager.profiles.isEmpty) { _, isEmpty in
                 if isEmpty { model.seerrRepo.reloadTMDB() }
             }
-            .onChange(of: model.authManager.state) { _, newState in
-                if case .authenticated = newState { model.syncOfflineProgress(modelContext: modelContext) }
+            .onChange(of: model.authManager.state) { oldState, newState in
+                if case .authenticated = newState {
+                    model.syncOfflineProgress(modelContext: modelContext)
+                } else if oldState.credential != nil {
+                    model.forgetSignedOutAccount()
+                }
             }
             // The explicit "I'm back online" moment — items played while offline sync then too,
             // not just at next cold launch.
@@ -112,18 +117,19 @@ struct AppRootLifecycle: ViewModifier {
                 model.downloadManager.refreshSmartDownloads()
             }
             // The profile's parental controls and permissions, from the server: on sign-in, a
-            // profile switch, and each return to the app (an admin may have changed them).
+            // profile switch, and on returning to the app (an admin may have changed them; see
+            // scenePhaseChanged).
             .task(id: model.authManager.state.credential?.id) { await model.loadProfileRules() }
             .task(id: LiveUpdatesKey(credentialID: model.authManager.state.credential?.id,
-                                     isActive: scenePhase != .background || PlayerActivity.shared.isPlayerOpen)) {
-                if scenePhase != .background || PlayerActivity.shared.isPlayerOpen,
+                                     isActive: AppServices.scenes.anyForeground || PlayerActivity.shared.isPlayerOpen)) {
+                if AppServices.scenes.anyForeground || PlayerActivity.shared.isPlayerOpen,
                    let credential = model.authManager.state.credential {
                     AppServices.liveUpdates.connect(credential: credential, authClient: model.authManager.authClient)
                 } else {
                     AppServices.liveUpdates.disconnect()
                 }
             }
-            .modifier(AppRootPrompts(model: model))
+            .modifier(AppRootPrompts(model: model, sceneID: sceneID))
             .onChange(of: offlineModeEnabled) { _, isOffline in
                 if !isOffline { model.syncOfflineProgress(modelContext: modelContext) }
             }
@@ -166,7 +172,7 @@ struct AppRootLifecycle: ViewModifier {
 /// modifiers was getting too long to type-check.
 private struct AppRootPrompts: ViewModifier {
     let model: AppRootModel
-    @Environment(\.scenePhase) private var scenePhase
+    let sceneID: UUID
     private var setupGuide: NearbySetupGuide { AppServices.nearbySetup }
 
     /// Prompts that act for the signed-in profile wait for the launch checks and the PIN lock.
@@ -175,17 +181,20 @@ private struct AppRootPrompts: ViewModifier {
     /// Looks for an Apple TV to set up only while it could be offered: signed in, in front,
     /// unlocked and not watching something.
     private var offersNearbySetup: Bool {
-        PlatformMetrics.setsUpNearbyDevices && canPrompt && scenePhase == .active
+        PlatformMetrics.setsUpNearbyDevices && canPrompt && AppServices.scenes.anyActive
             && model.authManager.state.credential != nil && !PlayerActivity.shared.isPlayerOpen
     }
 
+    /// Not while this device's own player covers the screen the remote bar sits on.
     private var watchesOtherDevices: Bool {
-        PlatformMetrics.controlsOtherDevices && canPrompt && scenePhase == .active
+        PlatformMetrics.controlsOtherDevices && canPrompt && AppServices.scenes.anyActive
             && model.authManager.state.credential != nil
+            && (!PlayerActivity.shared.isPlayerOpen || AppServices.remoteSessions.isShowingRemote)
     }
 
     func body(content: Content) -> some View {
         content
+        .onDisappear { AppServices.scenes.remove(sceneID) }
         // A scanned Quick Connect code: nothing is signed in until it's confirmed here.
         .alert("Sign In Apple TV?",
                isPresented: Binding(get: { QuickConnectApproval.shared.request != nil && canPrompt },

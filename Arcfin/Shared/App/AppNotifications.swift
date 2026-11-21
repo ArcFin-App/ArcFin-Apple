@@ -31,4 +31,7 @@ extension Notification.Name {
     static let arcfinPlaybackReported = Notification.Name("arcfinPlaybackReported")
     /// File › Open Video File… on the Mac.
     static let arcfinOpenFile = Notification.Name("arcfinOpenFile")
+    /// Posted once AppServices.hasPassedLock turns true, for screens that wait for the app lock
+    /// without a view to observe it (CarPlay).
+    static let arcfinPassedLock = Notification.Name("arcfinPassedLock")
 }

@@ -135,6 +135,9 @@ struct ContentView: View {
                 .frame(width: 520, height: 620)
         }
         .modifier(AppRootLifecycle(model: model))
+        // An arcfin:// link from a widget or notification goes to the open window instead of
+        // opening another one with its own launch checks.
+        .handlesExternalEvents(preferring: ["*"], allowing: ["*"])
     }
 }
 

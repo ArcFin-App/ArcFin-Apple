@@ -10,6 +10,14 @@ final class LocalPlayerModel {
     let player = VLCEnginePlayer()
     var isControlsVisible = true
     private var hideControlsTask: Task<Void, Never>?
+    /// VoiceOver is on: hidden controls drop out of the accessibility tree, so they stay up.
+    @ObservationIgnored var keepsControlsVisible = false {
+        didSet {
+            guard keepsControlsVisible else { return }
+            hideControlsTask?.cancel()
+            isControlsVisible = true
+        }
+    }
     private(set) var isScrubbing = false
     private(set) var scrubTicks: Double = 0
     var showTrackMenu = false
@@ -33,13 +41,13 @@ final class LocalPlayerModel {
 
     func togglePlayPause() {
         Task { if player.status == .playing { await player.pause() } else { await player.play() } }
-        toggleControlsVisibilityOnAction()
+        revealControls()
     }
 
     func seek(by seconds: Int) {
         let newTicks = max(0, player.positionTicks + Int64(seconds) * 10_000_000)
         Task { await player.seek(to: min(newTicks, player.durationTicks)) }
-        toggleControlsVisibilityOnAction()
+        revealControls()
     }
 
     func scrub(to fraction: Double) {
@@ -61,13 +69,15 @@ final class LocalPlayerModel {
         if isControlsVisible { scheduleAutoHide() }
     }
 
-    private func toggleControlsVisibilityOnAction() {
+    /// Shows the controls after something was done and restarts the timer that hides them.
+    func revealControls() {
         if !isControlsVisible { withAnimation(DT.Animation.fast) { isControlsVisible = true } }
         scheduleAutoHide()
     }
 
     func scheduleAutoHide() {
         hideControlsTask?.cancel()
+        guard !keepsControlsVisible else { return }
         hideControlsTask = Task {
             try? await Task.sleep(for: .seconds(3.5))
             guard !Task.isCancelled, player.status == .playing else { return }

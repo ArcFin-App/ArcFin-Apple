@@ -446,13 +446,12 @@ enum ArcfinRouting {
         }
     }
 
+    /// Buffered like the arcfin://downloads link: the Browse tab that shows Downloads may not
+    /// be mounted yet, and reads the flag when it appears.
     @MainActor
     static func showDownloads() {
-        // Views listening for this aren't mounted yet on a cold launch.
-        Task {
-            try? await Task.sleep(for: .seconds(1.5))
-            NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
-        }
+        UserDefaults.standard.set(true, forKey: "arcfin.pendingShowDownloads")
+        NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
     }
 }
 

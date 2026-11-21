@@ -102,9 +102,10 @@ struct LocalPlayerTrackSheet: View {
                     HStack {
                         Text("Off")
                         Spacer()
-                        if player.selectedSubtitleTrackIndex == nil { Image(systemName: "checkmark") }
+                        if player.selectedSubtitleTrackIndex == nil { Image(systemName: "checkmark").accessibilityHidden(true) }
                     }
                 }
+                .accessibilityAddTraits(player.selectedSubtitleTrackIndex == nil ? .isSelected : [])
                 ForEach(player.availableSubtitleTracks) { track in
                     Button {
                         Task { await player.setSubtitleTrack(index: track.id) }
@@ -113,9 +114,10 @@ struct LocalPlayerTrackSheet: View {
                         HStack {
                             Text(track.displayName)
                             Spacer()
-                            if player.selectedSubtitleTrackIndex == track.id { Image(systemName: "checkmark") }
+                            if player.selectedSubtitleTrackIndex == track.id { Image(systemName: "checkmark").accessibilityHidden(true) }
                         }
                     }
+                    .accessibilityAddTraits(player.selectedSubtitleTrackIndex == track.id ? .isSelected : [])
                 }
             }
             .navigationTitle("Subtitles")

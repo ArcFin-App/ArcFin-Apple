@@ -51,6 +51,13 @@ extension AppRootModel {
         consumeControlLink()
         startPendingDownload()
     }
+
+    /// Signed out, or the sign-in expired: nothing outside the app keeps offering the last
+    /// account's titles, and a title tapped before this doesn't open for whoever signs in next.
+    func forgetSignedOutAccount() {
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
+        WidgetSnapshotUpdater.clear()
+    }
 }
 
 extension View {

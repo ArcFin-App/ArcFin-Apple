@@ -52,6 +52,18 @@ extension AppRootModel {
         startPendingDownload()
     }
 
+    /// Signed out, or the sign-in expired: nothing outside the app keeps offering the last
+    /// account's titles, and a title tapped before this doesn't open for whoever signs in next.
+    func forgetSignedOutAccount() {
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
+        QuickActions.update(resumeItemID: nil, title: nil)
+        WidgetSnapshotUpdater.clear()
+        // The other device's Live Activity is only matched to the list when it comes back from
+        // the server, which it won't now.
+        AppServices.remoteSessions.stop()
+        Task { await RemotePlaybackActivity.shared.sync() }
+    }
+
     func refreshOnForeground(_ newPhase: ScenePhase, modelContext: ModelContext) {
         // NWPathMonitor's callback can be suspended along with the rest of the app while
         // backgrounded and doesn't reliably fire again the instant it resumes — coming
@@ -66,6 +78,14 @@ extension AppRootModel {
             downloadManager.refreshSmartDownloads()
             syncOfflineProgress(modelContext: modelContext)
         }
+        // From here rather than the app delegate, which a scene-based app never tells about
+        // going to the background or becoming active.
+        if newPhase == .active {
+            BackgroundRefresh.startWhileOpen()
+        } else if !AppServices.scenes.anyActive {
+            BackgroundRefresh.stopWhileOpen()
+        }
+        if newPhase == .background, !AppServices.scenes.anyForeground { BackgroundRefresh.schedule() }
     }
 }
 

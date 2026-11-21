@@ -32,6 +32,8 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
     private let continuation: AsyncStream<JellyfinWSEvent>.Continuation
     private let keepAliveTask = KeepAliveBox()
     public let events: AsyncStream<JellyfinWSEvent>
+    /// One for every socket: a session per connection was never invalidated.
+    private static let session = URLSession(configuration: .default)
 
     public init(credential: ServerCredential, authHeader: String, deviceId: String) {
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent("socket"), resolvingAgainstBaseURL: false)!
@@ -39,9 +41,11 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
         comps.queryItems = [.init(name: "deviceId", value: deviceId)]
         // Servers with legacy authorization turned off refuse an api_key query parameter.
         var request = URLRequest(url: comps.url!)
+        // A gateway in front of the server (Cloudflare Access, Pangolin) refuses the upgrade
+        // without the same headers every other request carries.
+        for (name, value) in CustomHTTPHeaders.current { request.setValue(value, forHTTPHeaderField: name) }
         request.setValue(authHeader, forHTTPHeaderField: "Authorization")
-        let session = URLSession(configuration: .default)
-        task = session.webSocketTask(with: request)
+        task = Self.session.webSocketTask(with: request)
         (events, continuation) = AsyncStream.makeStream(of: JellyfinWSEvent.self)
         super.init()
         task.resume()

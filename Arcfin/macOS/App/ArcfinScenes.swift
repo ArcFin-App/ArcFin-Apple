@@ -1,21 +1,33 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import AppKit
 import SwiftUI
 import SwiftData
 import UserNotifications
 import Telemetry
 
-/// The Mac has no app delegate; this starts what one would, as the app starts.
-@propertyWrapper
-struct PlatformAppDelegate {
-    var wrappedValue: PlatformAppDelegate { self }
+typealias PlatformAppDelegate = NSApplicationDelegateAdaptor<MacAppDelegate>
 
-    init() {
+final class MacAppDelegate: NSObject, NSApplicationDelegate {
+    /// Starts at the same point the app does, as before there was a delegate.
+    override init() {
+        super.init()
         // Taps on a notification open the title, Discover or Downloads, as on iOS.
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         BackgroundRefresh.register()
         Diagnostics.shared.start()
         MusicWidgetPublisher.start()
+    }
+
+    /// The Mac's downloads don't outlive the app, so quitting mid-download asks first.
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        guard !AppServices.downloadManager.activeItemIds.isEmpty else { return .terminateNow }
+        let alert = NSAlert()
+        alert.messageText = String(localized: "Quit While Downloading?")
+        alert.informativeText = String(localized: "Arcfin is still downloading. Quitting stops the downloads in progress.")
+        alert.addButton(withTitle: String(localized: "Quit"))
+        alert.addButton(withTitle: String(localized: "Cancel"))
+        return alert.runModal() == .alertFirstButtonReturn ? .terminateNow : .terminateCancel
     }
 }
 
