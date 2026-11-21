@@ -55,9 +55,19 @@ struct SearchRecentLabel: View {
 /// Nothing typed yet, or nothing found.
 struct SearchEmptyState: View {
     let query: String
+    var failed = false
+    var retry: () -> Void = {}
 
     var body: some View {
-        if query.isEmpty {
+        if failed, !query.isEmpty {
+            ContentUnavailableView {
+                Label("Couldn't Search Your Library", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text("Couldn't reach your server. Check your connection, then try again.")
+            } actions: {
+                Button("Try Again", action: retry)
+            }
+        } else if query.isEmpty {
             ContentUnavailableView(
                 "Search",
                 systemImage: "magnifyingglass",

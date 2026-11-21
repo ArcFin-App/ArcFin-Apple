@@ -11,6 +11,8 @@ final class SearchModel {
     private(set) var seerrResults: [SeerrItem] = []
     private(set) var isSearchingLibrary = false
     private(set) var isSearchingDiscover = false
+    /// The library search couldn't reach the server, so "no results" would be wrong.
+    private(set) var libraryFailed = false
     private var searchTask: Task<Void, Never>?
 
     var foundNothing: Bool {
@@ -48,6 +50,7 @@ final class SearchModel {
         guard !query.isEmpty else {
             jellyfinResults = []
             seerrResults = []
+            libraryFailed = false
             isSearchingLibrary = false
             isSearchingDiscover = false
             return
@@ -66,7 +69,8 @@ final class SearchModel {
                         authClient: authManager.authClient
                     )
                     guard !Task.isCancelled else { return }
-                    self.jellyfinResults = jellyfin
+                    self.jellyfinResults = jellyfin ?? []
+                    self.libraryFailed = jellyfin == nil
                     self.isSearchingLibrary = false
                 }
                 group.addTask { @MainActor in

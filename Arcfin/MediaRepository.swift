@@ -394,13 +394,14 @@ final class MediaRepository {
             || libraryTMDBKeys.contains(JellyfinMediaClient.libraryKey(tmdbId: item.id, isSeries: item.mediaType == .tv))
     }
 
-    func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem] {
+    /// nil when the server couldn't be asked, as opposed to no matches.
+    func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem]? {
         guard !query.isEmpty else { return [] }
         let header = authClient.authHeader(token: credential.accessToken)
-        return (try? await client.search(credential: credential, authHeader: header, query: query)) ?? []
+        return try? await client.search(credential: credential, authHeader: header, query: query)
     }
 
-    func searchIfAuthenticated(query: String, authState: AuthState, authClient: JellyfinAuthClient) async -> [MediaItem] {
+    func searchIfAuthenticated(query: String, authState: AuthState, authClient: JellyfinAuthClient) async -> [MediaItem]? {
         guard case .authenticated(let cred) = authState else { return [] }
         return await search(query: query, credential: cred, authClient: authClient)
     }
