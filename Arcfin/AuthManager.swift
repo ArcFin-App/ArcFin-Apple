@@ -60,6 +60,8 @@ final class AuthManager {
     /// The profile whose sign-in the server stopped accepting (password changed, device
     /// removed). The sign-in screen opens on its server and says why.
     var expiredCredential: ServerCredential?
+    /// Sign-outs that left another profile in use, so each window can show the profile picker.
+    private(set) var signOutsToNextProfile = 0
     @ObservationIgnored private var lastSignInCheck: Date?
 
     /// nil until the first check completes, or if the server has no Arcfin Sync plugin or
@@ -495,31 +497,20 @@ final class AuthManager {
         MusicScrobbler.forget(profile: id)
         ProfileSettings.forget(profile: id.uuidString)
         profiles.removeAll { $0.id == id }
-        #if !os(tvOS)
-        // Another profile's titles shouldn't stay searchable through Spotlight and Siri.
-        Task { await SpotlightIndexer.clear() }
-        // Likewise for the widgets and the background notification bookkeeping.
-        WidgetSnapshotUpdater.clear()
-        SeerrSpotlightStore.clear()
-        #endif
-        #if !os(tvOS)
-        BackgroundRefresh.resetState()
-        #else
-        // The Top Shelf, likewise.
-        TopShelfArtwork.clear()
-        #endif
-        SplashMosaicStore.clear()
-        PlaylistStore.shared.clear()
-        ProfileRules.shared.clear()
         if profiles.isEmpty { clearDeviceSignIns() }
-        if case .authenticated(let current) = state, current.id == id {
-            if let next = profiles.first {
-                persist(active: next)
-                state = .authenticated(next)
-            } else {
-                UserDefaults.standard.removeObject(forKey: "arcfin.activeProfileID")
-                state = .unauthenticated
-            }
+        // Spotlight, the widgets, playlists and the parental rules only ever hold the profile in
+        // use (a switch clears them), so removing another profile leaves them alone.
+        guard case .authenticated(let current) = state, current.id == id else { return }
+        ProfileRules.shared.clear()
+        if let next = profiles.first {
+            // Who goes next is picked on the profile picker, with their PIN if they have one.
+            signOutsToNextProfile += 1
+            AppServices.hasPassedLock = false
+            switchTo(next)
+        } else {
+            forgetPreviousProfile()
+            UserDefaults.standard.removeObject(forKey: "arcfin.activeProfileID")
+            state = .unauthenticated
         }
     }
 
@@ -575,8 +566,54 @@ final class AuthManager {
 
     // MARK: - PIN management
 
-    func pin(for credentialID: UUID) async -> String? {
-        await keychainRead { try? $0.loadPin(for: credentialID) }
+    nonisolated enum StoredPIN: Sendable, Equatable {
+        case none
+        case set(String)
+        /// The Keychain didn't answer (the device locked, say). Counts as a PIN that can't be
+        /// checked yet, never as no PIN.
+        case unreadable
+    }
+
+    enum PINCheck: Equatable {
+        case correct, incorrect, unreadable
+        case waiting(TimeInterval)
+
+        var message: String? {
+            switch self {
+            case .correct: nil
+            case .incorrect: String(localized: "Incorrect PIN")
+            case .unreadable: String(localized: "Couldn't check the PIN. Try again.")
+            case .waiting(let seconds):
+                String(localized: "Too many tries. Try again in \(PINAttempts.formatted(seconds)).")
+            }
+        }
+
+        /// What the PIN pad says as it opens: the PIN couldn't be read, or a wait is still on.
+        static func message(opening stored: StoredPIN, for credentialID: UUID) -> String? {
+            if stored == .unreadable { return PINCheck.unreadable.message }
+            return PINAttempts.remainingWait(for: credentialID).flatMap { PINCheck.waiting($0).message }
+        }
+    }
+
+    func storedPIN(for credentialID: UUID) async -> StoredPIN {
+        await keychainRead { k in
+            do { return try k.loadPin(for: credentialID).map(StoredPIN.set) ?? .none } catch { return .unreadable }
+        }
+    }
+
+    /// Checks a typed PIN against the stored one, counting wrong tries (see `PINAttempts`).
+    func checkPIN(_ entered: String, for credentialID: UUID) async -> PINCheck {
+        if let wait = PINAttempts.remainingWait(for: credentialID) { return .waiting(wait) }
+        switch await storedPIN(for: credentialID) {
+        case .unreadable:
+            return .unreadable
+        case .set(let pin) where pin != entered:
+            PINAttempts.recordFailure(for: credentialID)
+            return PINAttempts.remainingWait(for: credentialID).map(PINCheck.waiting) ?? .incorrect
+        case .set, .none:
+            PINAttempts.reset(for: credentialID)
+            return .correct
+        }
     }
 
     func savePin(_ pin: String, for credentialID: UUID) {
@@ -815,6 +852,45 @@ final class AuthManager {
         return await withCheckedContinuation { continuation in
             Self.keychainQueue.async { continuation.resume(returning: work(k)) }
         }
+    }
+}
+
+/// Wrong PINs per profile, kept on this device across launches: after five, each further
+/// try waits 30 seconds, then 1, 5 and 15 minutes. Timed on the trusted clock, so changing
+/// the device's time doesn't shorten a wait; a right PIN or Face ID / Touch ID starts over.
+nonisolated enum PINAttempts {
+    private static let freeTries = 5
+    private static let waits: [TimeInterval] = [30, 60, 5 * 60, 15 * 60]
+
+    private static func failuresKey(_ id: UUID) -> String { "arcfin.pinFailures.\(id.uuidString)" }
+    private static func waitUntilKey(_ id: UUID) -> String { "arcfin.pinWaitUntil.\(id.uuidString)" }
+
+    static func remainingWait(for id: UUID) -> TimeInterval? {
+        let until = UserDefaults.standard.double(forKey: waitUntilKey(id))
+        guard until > 0 else { return nil }
+        // Capped, so a clock that went back can't make a wait longer than the longest.
+        let remaining = min(until - TrustedClock.now.timeIntervalSince1970, waits[waits.count - 1])
+        return remaining > 0 ? remaining : nil
+    }
+
+    static func recordFailure(for id: UUID) {
+        let defaults = UserDefaults.standard
+        let failures = defaults.integer(forKey: failuresKey(id)) + 1
+        defaults.set(failures, forKey: failuresKey(id))
+        guard failures >= freeTries else { return }
+        let wait = waits[min(failures - freeTries, waits.count - 1)]
+        defaults.set(TrustedClock.now.timeIntervalSince1970 + wait, forKey: waitUntilKey(id))
+    }
+
+    static func reset(for id: UUID) {
+        UserDefaults.standard.removeObject(forKey: failuresKey(id))
+        UserDefaults.standard.removeObject(forKey: waitUntilKey(id))
+    }
+
+    static func formatted(_ seconds: TimeInterval) -> String {
+        Duration.seconds(seconds.rounded(.up))
+            .formatted(.units(allowed: [.minutes, .seconds], width: .wide, maximumUnitCount: 1,
+                              fractionalPart: .hide(rounded: .up)))
     }
 }
 
