@@ -146,7 +146,8 @@ final class SeerrRepository {
               let url = URL(string: trimURL) else {
             client = nil
             configuredURL = ""; configuredUsername = ""; configuredPassword = ""
-            trending = []; popularMovies = []; popularTV = []; requests = []
+            currentUser = nil; canManageRequests = false; publicSettings = nil; authFailed = false
+            trending = []; popularMovies = []; popularTV = []; requests = []; watchlist = []
             upcomingMovies = []; upcomingTV = []; movieGenres = []; tvGenres = []
             return
         }
@@ -168,9 +169,10 @@ final class SeerrRepository {
         // A different Seerr user, whose permissions and quota are their own.
         currentUser = nil
         canManageRequests = false
+        publicSettings = nil
         authFailed = false
         cachedRegion = nil
-        trending = []; popularMovies = []; popularTV = []; requests = []
+        trending = []; popularMovies = []; popularTV = []; requests = []; watchlist = []
         upcomingMovies = []; upcomingTV = []; movieGenres = []; tvGenres = []
     }
 
