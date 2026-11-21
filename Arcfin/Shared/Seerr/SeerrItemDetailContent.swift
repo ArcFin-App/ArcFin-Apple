@@ -120,6 +120,13 @@ struct SeerrItemDetailContent: View {
         )) {
             Button("OK", role: .cancel) {}
         }
+        .alert("Watchlist", isPresented: Binding(
+            get: { model.watchlistError != nil }, set: { if !$0 { model.watchlistError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.watchlistError ?? "")
+        }
         .task(id: item.id) { await model.loadHeroTint() }
         .task(id: item.id) { await model.loadDiscovery(seerrRepo: seerrRepo) }
         .task { await model.loadDetail(seerrRepo: seerrRepo) }

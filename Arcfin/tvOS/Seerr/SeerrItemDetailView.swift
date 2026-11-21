@@ -53,6 +53,13 @@ struct SeerrItemDetailView: View {
         )) {
             Button("OK", role: .cancel) {}
         }
+        .alert("Watchlist", isPresented: Binding(
+            get: { model.watchlistError != nil }, set: { if !$0 { model.watchlistError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.watchlistError ?? "")
+        }
         .task(id: item.id) { await model.loadDetail(seerrRepo: seerrRepo) }
         .task(id: item.id) { await model.loadDiscovery(seerrRepo: seerrRepo) }
         .task(id: item.id) { await model.loadLibraryItem(authManager: authManager) }

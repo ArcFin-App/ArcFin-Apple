@@ -30,6 +30,7 @@ final class SeerrItemDetailModel {
     private(set) var isRequestingCollection = false
     var isConfirmingCollectionRequest = false
     var collectionRequestMessage: String?
+    var watchlistError: String?
     var openLibraryItem: MediaItem?
     var openSeerrItem: SeerrItem?
     var requestingItem: SeerrItem?
@@ -126,10 +127,16 @@ final class SeerrItemDetailModel {
     func toggleWatchlist(seerrRepo: SeerrRepository) {
         HapticManager.impact(.light)
         Task {
-            if seerrRepo.isInWatchlist(item) {
-                try? await seerrRepo.removeFromWatchlist(item)
-            } else {
-                try? await seerrRepo.addToWatchlist(item)
+            let removing = seerrRepo.isInWatchlist(item)
+            do {
+                if removing {
+                    try await seerrRepo.removeFromWatchlist(item)
+                } else {
+                    try await seerrRepo.addToWatchlist(item)
+                }
+            } catch where SeerrRepository.isCancellation(error) {
+            } catch {
+                watchlistError = removing ? String(localized: "Couldn't remove this from your watchlist. Check your connection and try again.") : String(localized: "Couldn't add this to your watchlist. Check your connection and try again.")
             }
         }
     }
