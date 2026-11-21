@@ -97,7 +97,7 @@ struct CollectionContent: View {
             parts.append(items.count == 1 ? String(localized: "1 title") : String(localized: "\(items.count) titles"))
         }
         if let yearSpan = model.yearSpan { parts.append(yearSpan) }
-        if let rating = collection.communityRating { parts.append("★ \(String(format: "%.1f", rating))") }
+        if let rating = collection.communityRating { parts.append("★ \(rating.ratingText)") }
         return parts.joined(separator: " · ")
     }
 
@@ -254,7 +254,7 @@ struct CollectionContent: View {
                 HStack(spacing: 6) {
                     if let year = item.productionYear { Text(String(year)) }
                     if let rating = item.communityRating {
-                        Text("★ \(String(format: "%.1f", rating))").foregroundStyle(DT.Color.accent)
+                        Text(verbatim: "★ \(rating.ratingText)").foregroundStyle(DT.Color.accent)
                     }
                 }
                 .font(.system(.caption))

@@ -421,7 +421,7 @@ struct HomeView: View {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
-                    Text(String(format: "%.1f", rating))
+                    Text(rating.ratingText)
                         .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
@@ -1043,7 +1043,7 @@ struct HomeView: View {
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear { Label(String(year), systemImage: "calendar") }
         if let rating = item.communityRating {
-            Label(String(format: "%.1f / 10", rating), systemImage: "star.fill")
+            Label(String(localized: "\(rating.ratingText) / 10"), systemImage: "star.fill")
         }
     }
 

@@ -211,7 +211,7 @@ struct MediaDetailView: View {
             }
             if let mins = model.detail?.runtimeMinutes {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
-                Text("\(mins)m").font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
+                Text(DurationText.minutes(mins)).font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
             // Counts from the resume point; minuteTick redraws it each minute so it stays right
             // on a page left open. A TimelineView(.everyMinute) here redrew the whole page every
@@ -226,7 +226,7 @@ struct MediaDetailView: View {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
-                    Text(String(format: "%.1f", rating))
+                    Text(rating.ratingText)
                         .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
@@ -275,7 +275,7 @@ struct MediaDetailView: View {
             if let total = item.type == .series ? nil : model.detail?.runTimeTicks,
                let position = playTarget.userData?.playbackPositionTicks, total > position {
                 let minutes = Int(Double(total - position) / 10_000_000 / 60)
-                let left = minutes >= 60 ? "\(minutes / 60)h \(minutes % 60)m" : "\(minutes)m"
+                let left = DurationText.minutes(minutes)
                 return "Resume · \(left) left"
             }
             return episode.map { "Resume \($0)" } ?? "Resume"

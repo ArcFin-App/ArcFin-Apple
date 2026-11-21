@@ -242,7 +242,7 @@ struct LibraryQuickLookMenu: View {
             Label(String(year), systemImage: "calendar")
         }
         if let rating = item.communityRating {
-            Label(String(format: "%.1f / 10", rating), systemImage: "star.fill")
+            Label(String(localized: "\(rating.ratingText) / 10"), systemImage: "star.fill")
         }
     }
 }

@@ -27,8 +27,7 @@ struct DetailPlayButton: View {
               let runTimeTicks = model.detail?.runTimeTicks, runTimeTicks > ud.playbackPositionTicks
         else { return nil }
         let remainingMinutes = Int(Double(runTimeTicks - ud.playbackPositionTicks) / 10_000_000 / 60)
-        if remainingMinutes >= 60 { return "\(remainingMinutes / 60)h \(remainingMinutes % 60)m left" }
-        return "\(remainingMinutes)m left"
+        return String(localized: "\(DurationText.minutes(remainingMinutes)) left")
     }
 
     /// Resume only: "19m left • Ends 9:42 PM" on its own line (too long to share the title

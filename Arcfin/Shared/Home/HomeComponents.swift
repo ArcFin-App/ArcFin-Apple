@@ -124,7 +124,7 @@ private struct HomeHeroInfo: View {
                     if let rating = item.communityRating, rating > 0 {
                         HStack(spacing: 3) {
                             Image(systemName: "star.fill").scaledFont(size: 10)
-                            Text(String(format: "%.1f", rating)).scaledFont(size: 12, weight: .semibold)
+                            Text(rating.ratingText).scaledFont(size: 12, weight: .semibold)
                         }
                         .foregroundStyle(DT.Color.palette("f59e0b"))
                     }
@@ -585,7 +585,7 @@ struct HomeQuickLookMenu: View {
             Label(String(year), systemImage: "calendar")
         }
         if let rating = item.communityRating {
-            Label(String(format: "%.1f / 10", rating), systemImage: "star.fill")
+            Label(String(localized: "\(rating.ratingText) / 10"), systemImage: "star.fill")
         }
         if let overview = item.overview, !overview.isEmpty {
             Label(String(overview.prefix(60)) + "…", systemImage: "text.alignleft")

@@ -92,7 +92,7 @@ final class HomeModel {
                     .compactMap { $0 }.joined(separator: " · "),
                 logoURL: mediaRepo.logoURL(itemID: item.type == .episode ? item.seriesId ?? item.id : item.id, fillWidth: 800),
                 ratingTitle: String(localized: "Rating"),
-                ratingValue: item.communityRating.flatMap { $0 > 0 ? String(format: "★ %.1f", $0) : nil }
+                ratingValue: item.communityRating.flatMap { $0 > 0 ? "★ \($0.ratingText)" : nil }
             )
         }
         let resumeContext = String(localized: "Continue Watching")

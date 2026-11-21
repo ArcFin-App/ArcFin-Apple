@@ -9,7 +9,7 @@ extension LibraryFilterList {
             set: { extraFilters.minRating = $0 > 0 ? $0 : nil }
         )) {
             Text("Any").tag(0.0)
-            ForEach([5.0, 6.0, 7.0, 7.5, 8.0, 8.5, 9.0], id: \.self) { Text(String(format: "%.1f+", $0)).tag($0) }
+            ForEach([5.0, 6.0, 7.0, 7.5, 8.0, 8.5, 9.0], id: \.self) { Text(verbatim: "\($0.ratingText)+").tag($0) }
         }
     }
 

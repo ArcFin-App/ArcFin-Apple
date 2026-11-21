@@ -177,7 +177,7 @@ private struct DetailMetaRow: View {
             }
             if let mins = detail?.runtimeMinutes {
                 Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).contentFont(.caption, design: .default)
-                Text("\(mins)m")
+                Text(DurationText.minutes(mins))
                     .contentFont(.caption, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -187,7 +187,7 @@ private struct DetailMetaRow: View {
                     Image(systemName: "star.fill")
                         .contentFont(.caption2)
                         .foregroundStyle(DT.Color.accent)
-                    Text(String(format: "%.1f", rating))
+                    Text(rating.ratingText)
                         .contentFont(.caption2, design: .default, weight: .bold)
                         .foregroundStyle(DT.Color.accent)
                 }
