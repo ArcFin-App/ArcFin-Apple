@@ -25,8 +25,13 @@ nonisolated enum IntentSession {
         guard let all = try? store.allServers(), !all.isEmpty else { return nil }
         let storedID = UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap { UUID(uuidString: $0) }
         guard let credential = all.first(where: { $0.id == storedID }) ?? all.first else { return nil }
-        let pin = (try? store.loadPin(for: credential.id)) ?? nil
-        return pin == nil ? credential : nil
+        // A PIN that couldn't be read counts as one.
+        do {
+            guard try store.loadPin(for: credential.id) == nil else { return nil }
+        } catch {
+            return nil
+        }
+        return credential
     }
 
     static func authHeader(for credential: ServerCredential) -> String {

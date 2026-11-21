@@ -54,7 +54,7 @@ struct AppRootLifecycle: ViewModifier {
             }
             // With a player open, it shows these itself.
             .alert("SharePlay", isPresented: Binding(
-                get: { model.sharePlayManager.notice != nil && !model.sharePlayManager.hasOpenPlayer },
+                get: { model.sharePlayManager.notice != nil && !model.sharePlayManager.hasOpenPlayer && model.isPastLock },
                 set: { if !$0 { model.sharePlayManager.notice = nil } }
             )) {
                 Button("OK", role: .cancel) {}
@@ -140,7 +140,8 @@ struct AppRootLifecycle: ViewModifier {
                     model.checkSeerrSetupPrompt(seerrURL: seerrURL, seerrUsername: seerrUsername, seerrAuthMethod: seerrAuthMethod)
                 }
             }
-            .appSheet(isPresented: Bindable(model).showSeerrSetupPrompt) {
+            .appSheet(isPresented: Binding(get: { model.showSeerrSetupPrompt && model.isPastLock },
+                                           set: { model.showSeerrSetupPrompt = $0 })) {
                 if case .authenticated(let cred) = model.authManager.state {
                     SeerrSetupPromptView(
                         seerrURL: seerrURL,
@@ -176,7 +177,7 @@ private struct AppRootPrompts: ViewModifier {
     private var setupGuide: NearbySetupGuide { AppServices.nearbySetup }
 
     /// Prompts that act for the signed-in profile wait for the launch checks and the PIN lock.
-    private var canPrompt: Bool { model.splashDone && model.launchChecked && !model.isAppLocked }
+    private var canPrompt: Bool { model.splashDone && model.isPastLock }
 
     /// Looks for an Apple TV to set up only while it could be offered: signed in, in front,
     /// unlocked and not watching something.
@@ -236,7 +237,7 @@ private struct AppRootPrompts: ViewModifier {
         }
         // A message from the dashboard while nothing is playing; the player shows its own.
         .alert(Text(verbatim: RemoteControl.shared.message.flatMap { $0.header.isEmpty ? nil : $0.header } ?? "Arcfin"),
-               isPresented: Binding(get: { RemoteControl.shared.message != nil },
+               isPresented: Binding(get: { RemoteControl.shared.message != nil && canPrompt },
                                     set: { if !$0 { RemoteControl.shared.message = nil } }),
                presenting: RemoteControl.shared.message) { _ in
             Button("OK") {}

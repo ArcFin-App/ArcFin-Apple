@@ -15,7 +15,7 @@ final class ProfilePINStates {
     func load(authManager: AuthManager) async {
         var states: [UUID: Bool] = [:]
         for profile in authManager.profiles {
-            states[profile.id] = await authManager.pin(for: profile.id) != nil
+            states[profile.id] = await authManager.storedPIN(for: profile.id) != .none
         }
         self.states = states
     }
