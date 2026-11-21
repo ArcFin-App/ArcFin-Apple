@@ -340,6 +340,7 @@ final class PlayerModel {
     /// from here (macOS has no "hidden MPVolumeView" trick the way iOS does; tvOS's physical
     /// volume buttons don't reach the app at all unless wired up this way).
     func setEngineVolume(_ volume: Float) {
+        engineVolume = volume
         if let avPlayer = player as? AVFoundationPlayer {
             avPlayer.player.volume = volume
         } else if let vlcEngine = player as? VLCEnginePlayer {
@@ -347,6 +348,14 @@ final class PlayerModel {
         } else if let aetherEngine = player as? AetherEnginePlayer {
             aetherEngine.volume = volume
         }
+    }
+
+    /// The volume last set on the engine, for whichever engine takes the stream over next
+    /// (Aether's fallback, the missing-picture switch), which would otherwise start at full.
+    @ObservationIgnored private var engineVolume: Float = 1
+
+    private func applyEngineVolume() {
+        if engineVolume != 1 { setEngineVolume(engineVolume) }
     }
 
     func applyFillScreen() {
@@ -501,6 +510,7 @@ final class PlayerModel {
         (player as? LineArtUpscaling)?.upscalesLineArt = upscalesLineArt
         (player as? SubtitleReaching)?.setSubtitleReach(laterSeconds: Self.subtitleReach(Self.subtitleReachLaterKey),
                                                         earlierSeconds: Self.subtitleReach(Self.subtitleReachEarlierKey))
+        applyEngineVolume()
     }
 
     // MARK: Raise quiet audio
@@ -2039,6 +2049,7 @@ final class PlayerModel {
                 }
                 guard reloadIsCurrent(generation) else { return }
                 await player.play()
+                applyEngineVolume()
                 watchForMissingPicture()
                 if selectedAudioIndex != nil { await selectAudioInEngine() }
                 await applyRememberedRate()
