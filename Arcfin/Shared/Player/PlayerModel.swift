@@ -79,6 +79,14 @@ final class PlayerModel {
     // nothing reachable for the remote to bring back, even while fully invisible.
     var tvControlsHidden = false
     @ObservationIgnored var hideControlsTask: Task<Void, Never>?
+    /// VoiceOver is on: hidden controls drop out of the accessibility tree, so they stay up.
+    @ObservationIgnored var keepsControlsVisible = false {
+        didSet {
+            guard keepsControlsVisible, !hidesControlsByFading else { return }
+            hideControlsTask?.cancel()
+            isControlsVisible = true
+        }
+    }
     var isScrubbing = false
     var scrubTicks: Double = 0
     @ObservationIgnored var castLoadTask: Task<Void, Never>?
@@ -2087,6 +2095,7 @@ final class PlayerModel {
                 withAnimation(DT.Animation.fast) { tvControlsHidden = true }
             }
         } else {
+            guard !keepsControlsVisible else { return }
             hideControlsTask = Task {
                 try? await Task.sleep(for: .seconds(3.5))
                 guard !Task.isCancelled, player.status == .playing else { return }

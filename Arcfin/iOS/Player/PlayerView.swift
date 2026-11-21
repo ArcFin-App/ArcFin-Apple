@@ -28,6 +28,7 @@ struct PlayerView: View {
     @Environment(\.dismissWindow) var dismissWindow
     @Environment(\.openWindow) var openWindow
     @Environment(\.supportsMultipleWindows) var supportsMultipleWindows
+    @Environment(\.accessibilityVoiceOverEnabled) var voiceOverEnabled
 
     func closePlayer() {
         if isPlayerWindow {
@@ -229,6 +230,8 @@ struct PlayerView: View {
             model.scenePhaseChanged(to: phase)
         }
         .onChange(of: model.isFillScreen) { _, _ in model.applyFillScreen() }
+        .onChange(of: voiceOverEnabled, initial: true) { _, enabled in model.keepsControlsVisible = enabled }
+        .accessibilityAction(.magicTap) { model.togglePlayPause() }
         // These must live on a view that's always mounted, not inside the conditionally
         // -shown controlsOverlay — auto-hide removing that view from the tree while a
         // sheet/dialog was presented from it was tearing the presentation down too.
@@ -318,6 +321,11 @@ struct PlayerView: View {
                 .gesture(tapGesture(width: proxy.size.width))
                 .simultaneousGesture(dragGesture(size: proxy.size))
                 .simultaneousGesture(holdForSpeedGesture)
+                // The gestures above have no VoiceOver equivalent of their own.
+                .accessibilityElement()
+                .accessibilityLabel("Show playback controls")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { model.toggleControlsVisibilityOnAction() }
                 .onChange(of: proxy.size) { _, newSize in
                     isLandscape = newSize.width > newSize.height
                 }

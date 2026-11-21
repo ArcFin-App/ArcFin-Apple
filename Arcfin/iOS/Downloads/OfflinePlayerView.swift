@@ -23,6 +23,7 @@ struct OfflinePlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(DownloadManager.self) private var downloadManager
     @Environment(AuthManager.self) private var authManager
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @AppStorage("playbackEngine") private var playbackEnginePreference = PlaybackEngineKind.auto
     @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
 
@@ -69,6 +70,10 @@ struct OfflinePlayerView: View {
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .contentShape(Rectangle())
                 .onTapGesture { model.toggleControls() }
+                .accessibilityElement()
+                .accessibilityLabel("Show playback controls")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { model.revealControls() }
             }
             .ignoresSafeArea()
 
@@ -131,6 +136,8 @@ struct OfflinePlayerView: View {
         .onChange(of: model.isFillScreen) { _, _ in
             model.applyFillScreen()
         }
+        .onChange(of: voiceOverEnabled, initial: true) { _, enabled in model.keepsControlsVisible = enabled }
+        .accessibilityAction(.magicTap) { model.togglePlayPause() }
         .sheet(isPresented: $model.showTrackMenu) {
             OfflineSubtitleSheet(model: model)
         }
