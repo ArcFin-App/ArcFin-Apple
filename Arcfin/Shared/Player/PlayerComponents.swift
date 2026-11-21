@@ -687,6 +687,7 @@ struct TrackSelectionSheet: View {
         Button(action: action) {
             TrackRowLabel(label: label, isSelected: isSelected, followsFocus: followsFocus)
         }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .listRowBackground(rowBackground)
     }
 
@@ -717,6 +718,7 @@ private struct TrackRowLabel: View {
             Spacer()
             if isSelected {
                 Image(systemName: "checkmark").foregroundStyle(isFocused ? Color.black : DT.Color.accent)
+                    .accessibilityHidden(true)
             }
         }
     }
