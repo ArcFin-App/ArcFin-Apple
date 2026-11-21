@@ -43,8 +43,11 @@ final class LiveUpdates {
     func disconnect() {
         connectionTask?.cancel()
         connectionTask = nil
+        // A cancelled refresh returns before clearing itself, and the next one waits for nil.
         watchStateTask?.cancel()
+        watchStateTask = nil
         libraryTask?.cancel()
+        libraryTask = nil
         socket?.close()
         socket = nil
     }
