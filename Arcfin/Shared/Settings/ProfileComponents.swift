@@ -131,7 +131,7 @@ private struct PINFlowSheet: View {
     @State private var errorMessage: String? = nil
     @State private var storedPIN: String? = nil
 
-    enum Stage { case first, second }
+    enum Stage { case first, second, confirmNew }
 
     private var firstTitle: String {
         switch flow {
@@ -170,6 +170,16 @@ private struct PINFlowSheet: View {
                 resetToken: resetToken,
                 onCancel: { stage = .first; errorMessage = nil },
                 onComplete: handleSecond
+            )
+
+        case .confirmNew:
+            PINPadView(
+                title: "Confirm PIN",
+                subtitle: profile.displayName,
+                errorMessage: errorMessage,
+                resetToken: resetToken,
+                onCancel: { stage = .second; errorMessage = nil },
+                onComplete: handleConfirmNew
             )
         }
     }
@@ -214,12 +224,23 @@ private struct PINFlowSheet: View {
             }
 
         case .changeVerifyCurrent:
-            // Second stage = confirm new PIN (no repeat needed for simplicity — save directly)
-            authManager.savePin(entered, for: profile.id)
-            Task { await onDone(); dismiss() }
+            pendingPIN = entered
+            errorMessage = nil
+            stage = .confirmNew
 
         default: break
         }
+    }
+
+    private func handleConfirmNew(_ entered: String) {
+        guard entered == pendingPIN else {
+            pendingPIN = nil
+            errorMessage = String(localized: "PINs don't match")
+            stage = .second
+            return
+        }
+        authManager.savePin(entered, for: profile.id)
+        Task { await onDone(); dismiss() }
     }
 }
 
