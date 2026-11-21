@@ -227,6 +227,12 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
     /// Another item follows straight after, so the TV stays in this one's mode instead of
     /// switching back to its default and out again in between.
     public var keepsDisplayModeOnStop = false
+    /// Another player takes over the shared audio session, which stopping this one would
+    /// otherwise deactivate under it, cutting its sound.
+    public var keepsAudioSessionOnStop: Bool {
+        get { !engine.deactivatesAudioSessionOnStop }
+        set { engine.deactivatesAudioSessionOnStop = !newValue }
+    }
     public func stop() async { engine.stop(resetDisplayCriteria: !keepsDisplayModeOnStop) }
 
     /// Whether this load has put a frame on screen, read from the presenting layer or renderer

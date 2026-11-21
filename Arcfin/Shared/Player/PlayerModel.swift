@@ -48,11 +48,14 @@ final class PlayerModel {
         didSet {
             guard oldValue !== player else { return }
             let replaced = oldValue
+            (replaced as? AetherEnginePlayer)?.keepsAudioSessionOnStop = true
             Task { await replaced.stop() }
         }
     }
     /// Set once the screen closes: a load that finishes after that stops instead of playing.
     @ObservationIgnored private var isClosed = false
+    /// Another title has taken this player's place; it owns the audio session now.
+    @ObservationIgnored private(set) var handedOver = false
     var playbackInfo: JellyfinPlaybackInfo? {
         didSet {
             // Every new PlaybackInfo for a channel opens another tuner stream; the one it
@@ -1251,6 +1254,8 @@ final class PlayerModel {
             }
             NotificationCenter.default.post(name: .arcfinPlaybackReported, object: nil)
         }
+        // Another window's player is still using the shared audio session.
+        if PlayerActivity.shared.isPlayerOpen { (player as? AetherEnginePlayer)?.keepsAudioSessionOnStop = true }
         await player.stop()
     }
 
@@ -1697,6 +1702,8 @@ final class PlayerModel {
         // A countdown or a SharePlay lookup finishing after close would open the player again.
         guard !isClosed else { return }
         (player as? AetherEnginePlayer)?.keepsDisplayModeOnStop = true
+        (player as? AetherEnginePlayer)?.keepsAudioSessionOnStop = true
+        handedOver = true
         onPlayNext(next)
     }
 

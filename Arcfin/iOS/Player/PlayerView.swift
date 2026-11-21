@@ -488,7 +488,9 @@ struct PlayerView: View {
         volumeEchoSuppressTask?.cancel()
         displayCriteriaMatcher.detach()
         await model.stopPlayback()
-        await deactivateAudioSession()
+        // The stop reports can take seconds, by when the next title (or another window's
+        // player) may be playing in the same session; deactivating it would stop its sound.
+        if !model.handedOver, !PlayerActivity.shared.isPlayerOpen { await deactivateAudioSession() }
         model.detachViewSteps()
     }
 
