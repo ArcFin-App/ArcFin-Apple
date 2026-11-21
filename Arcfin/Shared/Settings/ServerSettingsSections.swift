@@ -11,6 +11,8 @@ final class ServerSettingsModel {
     private(set) var isLoadingInfo = true
     private(set) var infoError: String?
     private(set) var isCapturingSSID = false
+    /// The last "Use Current" couldn't read the network's name.
+    private(set) var ssidCaptureFailed = false
 
     private let client = JellyfinMediaClient()
 
@@ -24,14 +26,16 @@ final class ServerSettingsModel {
         isLoadingInfo = false
     }
 
-    /// Hands `store` the Wi-Fi network this device is on, or "" when it can't tell.
+    /// Hands `store` the Wi-Fi network this device is on. When it can't tell, the saved one is
+    /// kept and `ssidCaptureFailed` says so.
     func captureCurrentSSID(_ store: @escaping @MainActor (String) -> Void) {
         isCapturingSSID = true
+        ssidCaptureFailed = false
         Task {
             if let ssid = await AuthManager.currentWiFiSSID() {
                 store(ssid)
             } else {
-                store("")
+                ssidCaptureFailed = true
             }
             isCapturingSSID = false
         }

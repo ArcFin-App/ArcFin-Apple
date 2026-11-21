@@ -53,20 +53,30 @@ struct ServerSettingsView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Home Wi-Fi Network")
                             .font(.system(.subheadline, design: .default))
-                        Text(homeSSID.isEmpty ? "Not set" : homeSSID)
+                        Text(homeSSID.isEmpty ? String(localized: "Not set") : homeSSID)
                             .font(.caption)
                             .foregroundStyle(DT.Color.textSecondary)
                     }
                     Spacer()
-                    // currentWiFiSSID() only resolves on iOS (see AuthManager) — no point
-                    // offering a capture button elsewhere that can only ever come back nil.
+                    if !homeSSID.isEmpty {
+                        Button("Clear") { homeSSID = "" }
+                            .buttonStyle(.borderless)
+                            .disabled(model.isCapturingSSID)
+                    }
                     Button {
                         model.captureCurrentSSID { homeSSID = $0 }
                     } label: {
                         if model.isCapturingSSID { ProgressView().scaleEffect(0.8) }
                         else { Text("Use Current") }
                     }
+                    .buttonStyle(.borderless)
                     .disabled(model.isCapturingSSID)
+                }
+                if model.ssidCaptureFailed {
+                    Label("Couldn't read the Wi-Fi network. Allow Location for Arcfin and try again.",
+                          systemImage: "exclamationmark.triangle")
+                        .font(.callout)
+                        .foregroundStyle(DT.Color.palette("F59E0B"))
                 }
             } header: {
                 Label("Local URL", systemImage: "wifi")
@@ -74,7 +84,7 @@ struct ServerSettingsView: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .textCase(nil)
             } footer: {
-                Text("Used automatically when this device is connected to the saved home Wi-Fi network. Requires the Access Wi-Fi Information capability.")
+                Text("Used automatically when this device is on the saved home Wi-Fi network. Arcfin needs Location access to read the network's name.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
             }
