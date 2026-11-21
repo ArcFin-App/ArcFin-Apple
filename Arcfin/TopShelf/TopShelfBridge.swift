@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import AuthCore
 import Foundation
 
 // Shared between the main app target and ArcfinTopShelf extension target.
@@ -64,6 +65,8 @@ public enum TopShelfBridge {
         recentlyAdded: some Collection<TopShelfMediaItem>,
         liveChannels: [TopShelfMediaItem] = []
     ) {
+        // Like Siri and Spotlight, the shelf never shows a library an app-lock PIN protects.
+        guard !activeProfileHasPIN else { return clear() }
         guard let defaults = UserDefaults(suiteName: suiteName) else { return }
         if let data = try? JSONEncoder().encode(Array(continueWatching.prefix(5))) {
             defaults.set(data, forKey: continueWatchingKey)
@@ -78,6 +81,12 @@ public enum TopShelfBridge {
             defaults.set(data, forKey: liveChannelsKey)
         }
         defaults.synchronize()
+    }
+
+    private static var activeProfileHasPIN: Bool {
+        guard let id = UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap(UUID.init(uuidString:))
+        else { return false }
+        return ((try? KeychainStore().loadPin(for: id)) ?? nil) != nil
     }
 
     /// Nobody signed in, or another profile now: the shelf shouldn't show the last one's titles.

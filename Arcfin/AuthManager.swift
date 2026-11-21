@@ -17,6 +17,9 @@ import Network
 #if os(iOS) || os(tvOS)
 import UIKit
 #endif
+#if !os(tvOS)
+import CoreSpotlight
+#endif
 
 private final class TimeoutResult<Value: Sendable>: @unchecked Sendable {
     private let lock = NSLock()
@@ -467,11 +470,12 @@ final class AuthManager {
     }
 
     /// What belonged to the profile just switched away from: its playlists, its titles in
-    /// Spotlight and the widgets, and what the background check had seen, so the next check
+    /// Spotlight (pages it opened too) and the widgets, and what the background check had seen, so the next check
     /// only records the new profile's library instead of announcing it.
     private func forgetPreviousProfile() {
         #if !os(tvOS)
         Task { await SpotlightIndexer.clear() }
+        NSUserActivity.deleteAllSavedUserActivities {}
         WidgetSnapshotUpdater.clear()
         SeerrSpotlightStore.clear()
         BackgroundRefresh.resetState()

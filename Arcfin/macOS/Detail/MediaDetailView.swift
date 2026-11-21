@@ -79,7 +79,8 @@ struct MediaDetailView: View {
         .userActivity(ArcfinActivity.viewTitle) { activity in
             activity.title = item.name
             activity.isEligibleForHandoff = true
-            activity.isEligibleForSearch = true
+            // Kept out of Spotlight for a profile with an app-lock PIN, as its titles are.
+            activity.isEligibleForSearch = IntentSession.credential() != nil
             activity.userInfo = ["itemID": item.id]
             activity.webpageURL = shareURL
             activity.appEntityIdentifier = EntityIdentifier(for: MediaEntity.self, identifier: item.id)
