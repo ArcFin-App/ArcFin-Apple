@@ -46,6 +46,8 @@ final class MusicSharePlay {
     /// This device started the session, so its music is what the group hears first.
     @ObservationIgnored private var startedHere = false
     @ObservationIgnored private var isObserving = false
+    /// Joined from the call while the app lock was up; it starts once the lock opens.
+    @ObservationIgnored private var heldSession: GroupSession<ListenTogetherActivity>?
 
     private var music: MusicPlayback { AppServices.music }
 
@@ -56,8 +58,15 @@ final class MusicSharePlay {
         isObserving = true
         defer { isObserving = false }
         for await session in ListenTogetherActivity.sessions() {
-            configure(session)
+            if AppServices.hasPassedLock { configure(session) } else { heldSession = session }
         }
+    }
+
+    func runHeld() {
+        guard let session = heldSession else { return }
+        heldSession = nil
+        if case .invalidated = session.state { return }
+        configure(session)
     }
 
     func start() {

@@ -22,17 +22,26 @@ enum MusicWidgetPublisher {
     static func start() {
         guard !isStarted else { return }
         isStarted = true
-        MusicIntentPerformer.handle = { await perform($0) }
+        MusicIntentPerformer.handle = { try await perform($0) }
         follow()
         refreshRecentlyPlayed()
     }
 
     // MARK: Buttons
 
-    private static func perform(_ command: MusicIntentCommand) async {
+    private static func perform(_ command: MusicIntentCommand) async throws {
         // Started by the widget, the app hasn't signed in or brought the queue back yet.
         await AppServices.authManager.checkStoredAuthOnce()
         let music = AppServices.music
+        // While the app lock is up music can only be paused, not started.
+        if await AppServices.isLocked() {
+            switch command {
+            case .setPlaying(false): music.pause()
+            case .togglePlayPause where music.isPlaying: music.pause()
+            default: throw MusicLockedError()
+            }
+            return
+        }
         music.restoreQueue()
         switch command {
         case .togglePlayPause:
@@ -53,6 +62,10 @@ enum MusicWidgetPublisher {
         }), !songs.isEmpty else { return }
         let index = songID.flatMap { id in songs.firstIndex { $0.id == id } } ?? 0
         MusicActions.play(songs, from: index)
+    }
+
+    nonisolated struct MusicLockedError: Error, CustomLocalizedStringResourceConvertible {
+        var localizedStringResource: LocalizedStringResource { "Unlock Arcfin to play music." }
     }
 
     // MARK: Snapshot
