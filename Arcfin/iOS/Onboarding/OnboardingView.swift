@@ -124,6 +124,12 @@ struct OnboardingView: View {
             VStack(spacing: DT.Spacing.lg) {
                 PageDots(index: model.index, count: pages.count)
                 HStack(spacing: DT.Spacing.sm) {
+                    // The swipe back isn't there for VoiceOver, Switch Control or a keyboard.
+                    if model.index > 0 {
+                        Button("Back", action: back)
+                            .controlSize(.large)
+                            .buttonStyle(.glass)
+                    }
                     LoginPrimaryButton(title: primaryTitle, action: next)
                         .keyboardShortcut(.defaultAction)
                 }
