@@ -74,7 +74,7 @@ struct ShelfRow<Content: View>: View {
 #Preview {
     ZStack {
         DT.Color.backgroundPrimary.ignoresSafeArea()
-        ShelfRow(title: "Continue Watching", badge: "5", onSeeAll: {}) {
+        ShelfRow(title: "Continue Watching", badge: "NEW", onSeeAll: {}) {
             ForEach(0..<4) { _ in
                 PosterCard(title: "Severance", subtitle: "S2 E7", progress: 0.6)
             }
