@@ -2,6 +2,7 @@
 
 import Foundation
 import SwiftUI
+import Network
 import Nuke
 import AuthCore
 import JellyfinAPI
@@ -28,12 +29,16 @@ public enum ImageCache: Sendable {
             if let cached, cached.headers == headers { return cached.pipeline }
             var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
             config.dataCachePolicy = .automatic
+            let session = URLSessionConfiguration.default
             if !headers.isEmpty {
-                let session = URLSessionConfiguration.default
                 session.httpAdditionalHeaders = headers
-                session.urlCache = nil
-                config.dataLoader = DataLoader(configuration: session)
             }
+            session.urlCache = nil
+            // A poster asked for at cold launch, before the network path is up, otherwise fails
+            // at once and the card keeps its placeholder.
+            session.waitsForConnectivity = true
+            session.timeoutIntervalForResource = 30
+            config.dataLoader = DataLoader(configuration: session)
             let pipeline = ImagePipeline(configuration: config)
             cached = (headers, pipeline)
             return pipeline
@@ -64,9 +69,21 @@ public enum ImageCache: Sendable {
         shared.cache[ImageRequest(url: url)]?.image
     }
 
+    /// Waited on once, before the first load: waitsForConnectivity alone doesn't cover a
+    /// request made before the system has any network path to report.
+    private static let networkPathReady = Task {
+        await withCheckedContinuation { continuation in
+            PathWait(continuation: continuation).start(timeoutSeconds: 6)
+        }
+    }
+
     /// Loads through the shared pipeline: memory cache, then disk cache, then network, with
     /// decoding off the main thread and duplicate in-flight requests coalesced.
     public static func load(_ url: URL) async throws -> PlatformImage {
+        let pipeline = shared
+        if !pipeline.cache.containsCachedImage(for: ImageRequest(url: url)) {
+            await networkPathReady.value
+        }
         do {
             return try await shared.image(for: url)
         } catch {
@@ -90,6 +107,43 @@ public enum ImageCache: Sendable {
                 }
             }
         }
+    }
+}
+
+/// Races a one-shot NWPathMonitor read against a timeout, resuming once — the same pattern
+/// as the HTTP clients' own path waits.
+private final class PathWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private let continuation: CheckedContinuation<Void, Never>
+    private let monitor = NWPathMonitor()
+
+    init(continuation: CheckedContinuation<Void, Never>) {
+        self.continuation = continuation
+    }
+
+    func start(timeoutSeconds: Double) {
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            self?.finish()
+        }
+        monitor.start(queue: DispatchQueue(label: "arcfin.imagecache.pathwait"))
+        Task {
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            self.finish()
+        }
+    }
+
+    private func finish() {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            return
+        }
+        finished = true
+        lock.unlock()
+        monitor.cancel()
+        continuation.resume()
     }
 }
 
