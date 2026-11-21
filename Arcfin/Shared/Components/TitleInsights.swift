@@ -150,8 +150,9 @@ struct TitleInsights: View {
                 .font(DT.Font.cardTitle)
                 .foregroundStyle(DT.Color.textPrimary)
                 .accessibilityAddTraits(.isHeader)
-            providerGroup("Stream", watch.streaming)
-            providerGroup("Free", watch.free)
+            // Own keys: the catalog's "Stream" and "Free" are the verb and free space elsewhere.
+            providerGroup(LocalizedStringResource("Stream (Where to Watch)", defaultValue: "Stream"), watch.streaming)
+            providerGroup(LocalizedStringResource("Free (Where to Watch)", defaultValue: "Free"), watch.free)
             providerGroup("With Ads", watch.ads)
             providerGroup("Rent", watch.rent)
             providerGroup("Buy", watch.buy)
