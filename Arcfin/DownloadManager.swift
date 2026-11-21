@@ -217,6 +217,7 @@ final class DownloadManager: NSObject {
         guard self.modelContext == nil else { return }
         self.modelContext = modelContext
         self.authManager = authManager
+        downloadedIds = Set(((try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []).map(\.itemId))
         // `session` was only ever touched lazily, on the first actual download action —
         // meaning after a relaunch (e.g. the app was killed while a background download
         // was in flight), nothing registered this session's delegate until the user
@@ -675,11 +676,11 @@ final class DownloadManager: NSObject {
         }
     }
 
-    func isDownloaded(_ itemId: String) -> Bool {
-        guard let modelContext else { return false }
-        let descriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })
-        return (try? modelContext.fetchCount(descriptor)) ?? 0 > 0
-    }
+    /// Every title with a download record, kept here so a Download button can ask on each
+    /// render without a SwiftData fetch. Filled in configure; changed only by insert and delete.
+    private var downloadedIds: Set<String> = []
+
+    func isDownloaded(_ itemId: String) -> Bool { downloadedIds.contains(itemId) }
 
     // MARK: - Preview (shown before the user confirms a download)
 
@@ -1125,6 +1126,7 @@ final class DownloadManager: NSObject {
             downloaded.castPhotoFileNames = fetched.castPhotoFileNames
             modelContext.insert(downloaded)
             try? modelContext.save()
+            downloadedIds.insert(item.id)
             savedTitle = detail.item.name
 
             if let seriesId = detail.item.seriesId {
@@ -1753,6 +1755,7 @@ final class DownloadManager: NSObject {
         // Watching here that hasn't reached the server yet would go with the row.
         OfflineProgressSync.keepUnsyncedProgress(of: item)
         DownloadStore.deleteDirectory(for: item.itemId)
+        downloadedIds.remove(item.itemId)
         modelContext.delete(item)
         try? modelContext.save()
         if let seriesId {
@@ -2349,9 +2352,6 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 totalBytesExpectedToWrite = max(estimate, Int64(Double(totalBytesWritten) * 1.02))
                 isEstimate = true
             }
-            if totalBytesExpectedToWrite > 0 {
-                self.progress[itemId] = min(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite), isEstimate ? 0.99 : 1)
-            }
             // Sampled rather than computed from this single delta — didWriteData can fire
             // many times a second, which would make the displayed speed jump around.
             let bytesPerSecond: Double
@@ -2367,6 +2367,12 @@ extension DownloadManager: URLSessionDownloadDelegate {
                 tookNewSample = true
             } else {
                 bytesPerSecond = self.stats[itemId]?.bytesPerSecond ?? 0
+            }
+            // Published at the sample's pace too: every view reading progress or stats redraws
+            // on each change, and didWriteData can come hundreds of times a second.
+            guard tookNewSample else { return }
+            if totalBytesExpectedToWrite > 0 {
+                self.progress[itemId] = min(Double(totalBytesWritten) / Double(totalBytesExpectedToWrite), isEstimate ? 0.99 : 1)
             }
             self.stats[itemId] = DownloadStats(bytesWritten: totalBytesWritten, totalBytes: totalBytesExpectedToWrite,
                                                bytesPerSecond: bytesPerSecond, isEstimate: isEstimate)

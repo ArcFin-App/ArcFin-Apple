@@ -37,6 +37,9 @@ struct DownloadConfirmSheet: View {
     @State private var subtitleKeys: Set<String> = []
     @State private var isAtEnd = true
     @State private var hasReachedEnd = false
+    /// Read once the details are in: working it out reads the running downloads' progress and
+    /// the volume's capacity, which on every render redrew the sheet with each progress tick.
+    @State private var room: Int64?
 
     private var options: [DownloadQualityOption] {
         guard let preview else { return [DownloadQualityOption(quality: .original, tier: nil, videoBitrate: nil)] }
@@ -76,7 +79,7 @@ struct DownloadConfirmSheet: View {
     /// Whether it fits, worked out before anything starts. A movie or episode that doesn't fit
     /// can't be started; a season downloads the episodes that fit and the rest wait for room.
     private var space: (message: String, blocks: Bool)? {
-        guard let bytes = sizeBytes(for: selected), bytes > 0, let room = downloadManager.roomForDownloads(),
+        guard let bytes = sizeBytes(for: selected), bytes > 0, let room,
               bytes > room else { return nil }
         let size = ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
         let free = ByteCountFormatter.string(fromByteCount: room, countStyle: .file)
@@ -168,6 +171,7 @@ struct DownloadConfirmSheet: View {
             subtitleLanguages: [], audioLanguages: [], estimatedSizeBytes: nil,
             estimatedSizeIsApproximate: false, willRemux: false)
         preview = loaded
+        room = downloadManager.roomForDownloads()
         audioKeys = Set(loaded.audioStreams.map(DownloadTracks.key))
         subtitleKeys = Set(DownloadManager.subtitlesFromSettings(loaded.subtitleStreams).map(DownloadTracks.key))
         quality = options.contains { $0.quality == DownloadQuality.saved } ? DownloadQuality.saved : .original
