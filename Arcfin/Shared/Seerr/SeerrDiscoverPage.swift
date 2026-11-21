@@ -78,7 +78,7 @@ struct SeerrDiscoverPage: View {
             Text("Seerr Not Connected")
                 .font(.system(.title3, design: .default, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Add your Seerr server URL and credentials in Settings → Plugins → Seerr.")
+            Text("Add your Seerr server URL and credentials in Settings › Integrations › Seerr.")
                 .font(.system(.footnote))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)

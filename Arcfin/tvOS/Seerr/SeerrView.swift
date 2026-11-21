@@ -53,7 +53,7 @@ struct SeerrView: View {
             Text("Authentication Failed")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Seerr didn't accept the sign-in. Try again, or check Settings › Integrations › Seerr.")
+            SeerrSettingsHint.signInFailed
                 .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
@@ -75,13 +75,15 @@ struct SeerrView: View {
             Text("Seerr Not Connected")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundStyle(DT.Color.textPrimary)
-            Text("Add your Seerr server in Settings → Plugins → Seerr.")
+            Text("Add your Seerr server in Settings › Plugins › Seerr.")
                 .font(.system(size: 23))
                 .foregroundStyle(DT.Color.textSecondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 600)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Something has to take focus, or it falls to the tab bar, where Back leaves the app.
+        .focusable()
     }
 
     // MARK: - Main content

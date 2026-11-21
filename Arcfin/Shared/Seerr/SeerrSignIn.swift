@@ -55,7 +55,7 @@ struct SeerrSignInFailedView: View {
         ContentUnavailableView {
             Label("Couldn't Sign In to Seerr", systemImage: "person.crop.circle.badge.exclamationmark")
         } description: {
-            Text("Seerr didn't accept the sign-in. Try again, or check Settings › Integrations › Seerr.")
+            SeerrSettingsHint.signInFailed
         } actions: {
             Button {
                 isRetrying = true
