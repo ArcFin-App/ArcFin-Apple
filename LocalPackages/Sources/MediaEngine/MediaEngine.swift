@@ -281,7 +281,8 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     @ObservationIgnored private var bufferObservation: NSKeyValueObservation?
     @ObservationIgnored private var endObserver: NSObjectProtocol?
     #if !os(macOS)
-    @ObservationIgnored private var interruptionObserver: NSObjectProtocol?
+    /// Removed by stop() and deinit: a block-based observer stays registered until removed.
+    @ObservationIgnored nonisolated(unsafe) private var interruptionObserver: NSObjectProtocol?
     /// Only true when handleInterruption itself paused playback — distinguishes that from
     /// the user having already paused before the interruption began, so .ended doesn't
     /// resume something the user deliberately stopped.
@@ -297,6 +298,19 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         // overriding an explicit setAudioTrack/setSubtitleTrack call the user just made.
         player.appliesMediaSelectionCriteriaAutomatically = false
         #if !os(macOS)
+        observeInterruptions()
+        #endif
+    }
+
+    deinit {
+        #if !os(macOS)
+        if let interruptionObserver { NotificationCenter.default.removeObserver(interruptionObserver) }
+        #endif
+    }
+
+    #if !os(macOS)
+    private func observeInterruptions() {
+        guard interruptionObserver == nil else { return }
         // `status` here is a plain flag this class owns, only ever set by its own play()/
         // pause() calls — it doesn't track player.rate or timeControlStatus. System UI that
         // briefly takes audio focus (Notification Center / Control Center appearing over the
@@ -322,10 +336,8 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
                 self?.handleInterruption(type: type, optionsValue: optionsValue)
             }
         }
-        #endif
     }
 
-    #if !os(macOS)
     private func handleInterruption(type: AVAudioSession.InterruptionType, optionsValue: UInt?) {
         switch type {
         case .began:
@@ -351,6 +363,9 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         // never change status again.
         readyWait?.cancel()
         teardownObservers()
+        #if !os(macOS)
+        observeInterruptions()
+        #endif
         status = .loading
         isBuffering = true
         positionTicks = 0
@@ -473,6 +488,10 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     public func stop() async {
         readyWait?.cancel()
         teardownObservers()
+        #if !os(macOS)
+        if let interruptionObserver { NotificationCenter.default.removeObserver(interruptionObserver) }
+        interruptionObserver = nil
+        #endif
         player.pause()
         player.replaceCurrentItem(with: nil)
         status = .idle
@@ -546,9 +565,7 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         endObserver = nil
         // interruptionObserver is deliberately not torn down here — teardownObservers()
         // runs at the top of every load()/reload(), not just final stop(), and an
-        // interruption can legitimately happen mid-reload. It lives for this player
-        // instance's whole lifetime instead; NotificationCenter auto-unregisters a stored
-        // observer token when it's deallocated, so no explicit deinit is needed for it.
+        // interruption can legitimately happen mid-reload. stop() and deinit remove it.
     }
 }
 
