@@ -139,7 +139,8 @@ public struct MusicQueue: Sendable, Equatable {
     public mutating func clearUpNext() {
         guard let index = currentIndex else { return }
         entries = Array(entries[...index])
-        unshuffled.removeAll { !entries.contains($0) }
+        let kept = Set(entries.map(\.id))
+        unshuffled.removeAll { !kept.contains($0.id) }
     }
 
     public mutating func setShuffled(_ on: Bool) {
