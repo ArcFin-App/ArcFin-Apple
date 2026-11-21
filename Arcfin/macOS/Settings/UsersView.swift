@@ -107,7 +107,8 @@ struct UsersView: View {
         }
         .task { await pins.load(authManager: authManager) }
         .onChange(of: authManager.profiles) { _, _ in Task { await pins.load(authManager: authManager) } }
-        .confirmingProfileRemoval($removeTarget, signingOut: false, isLastProfile: false) { target in
+        .confirmingProfileRemoval($removeTarget, signingOut: false, isLastProfile: false,
+                                  confirmOwner: appLockUseFaceID ? { await attemptBiometrics(reason: $0) } : nil) { target in
             authManager.removeProfile(id: target.id)
         }
         // PIN entry sheet for switching to a protected profile
@@ -154,7 +155,7 @@ struct UsersView: View {
             // having the device unlocked — Face ID here just confirms the device owner again,
             // same as the PIN would, so it's offered first with the PIN as fallback instead
             // of skipping straight to the PIN pad.
-            if appLockUseFaceID, await attemptBiometrics(for: profile) {
+            if appLockUseFaceID, await attemptBiometrics(reason: String(localized: "Switch to \(profile.displayName)")) {
                 authManager.switchTo(profile)
                 await pins.load(authManager: authManager)
             } else {
@@ -172,12 +173,12 @@ struct UsersView: View {
         return context.biometryType == .touchID ? "Touch ID" : "Face ID"
     }
 
-    private func attemptBiometrics(for profile: ServerCredential) async -> Bool {
+    private func attemptBiometrics(reason: String) async -> Bool {
         let context = LAContext()
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return false }
         guard let success = try? await context.evaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: String(localized: "Switch to \(profile.displayName)")
+            localizedReason: reason
         ), success else { return false }
         return true
     }

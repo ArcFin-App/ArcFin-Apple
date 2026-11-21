@@ -495,31 +495,18 @@ final class AuthManager {
         MusicScrobbler.forget(profile: id)
         ProfileSettings.forget(profile: id.uuidString)
         profiles.removeAll { $0.id == id }
-        #if !os(tvOS)
-        // Another profile's titles shouldn't stay searchable through Spotlight and Siri.
-        Task { await SpotlightIndexer.clear() }
-        // Likewise for the widgets and the background notification bookkeeping.
-        WidgetSnapshotUpdater.clear()
-        SeerrSpotlightStore.clear()
-        #endif
-        #if !os(tvOS)
-        BackgroundRefresh.resetState()
-        #else
-        // The Top Shelf, likewise.
-        TopShelfArtwork.clear()
-        #endif
-        SplashMosaicStore.clear()
-        PlaylistStore.shared.clear()
-        ProfileRules.shared.clear()
         if profiles.isEmpty { clearDeviceSignIns() }
-        if case .authenticated(let current) = state, current.id == id {
-            if let next = profiles.first {
-                persist(active: next)
-                state = .authenticated(next)
-            } else {
-                UserDefaults.standard.removeObject(forKey: "arcfin.activeProfileID")
-                state = .unauthenticated
-            }
+        // Spotlight, the widgets, playlists and the parental rules only ever hold the profile in
+        // use (a switch clears them), so removing another profile leaves them alone.
+        guard case .authenticated(let current) = state, current.id == id else { return }
+        ProfileRules.shared.clear()
+        if let next = profiles.first {
+            persist(active: next)
+            state = .authenticated(next)
+        } else {
+            forgetPreviousProfile()
+            UserDefaults.standard.removeObject(forKey: "arcfin.activeProfileID")
+            state = .unauthenticated
         }
     }
 
