@@ -45,7 +45,7 @@ struct SwitchServerView: View {
                     .buttonStyle(.plain)
                 } else {
                     NavigationLink(value: group) {
-                        serverRow(group, subtitle: "\(group.profiles.count) users")
+                        serverRow(group, subtitle: String(localized: "\(group.profiles.count) users"))
                     }
                 }
             }
