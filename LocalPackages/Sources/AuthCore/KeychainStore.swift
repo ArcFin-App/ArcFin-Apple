@@ -14,6 +14,10 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
     private let pinService = "com.psmattas.arcfin.pin"
     private let seerrService = "com.psmattas.arcfin.seerr"
     private let seerrAccount = "password"
+    /// Sign-ins and the Seerr password stay readable while the device is locked, once it has
+    /// been unlocked since starting: CarPlay, Lock Screen music buttons, Siri and background
+    /// refresh all start the app then. Before 0.5.0 they were saved "when unlocked".
+    private let accessible = kSecAttrAccessibleAfterFirstUnlock
 
     public init() {}
 
@@ -34,14 +38,32 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             // on iOS/tvOS, where it's already the default.
             kSecUseDataProtectionKeychain: true,
         ]
-        let attrs: [CFString: Any] = [kSecValueData: data]
+        let attrs: [CFString: Any] = [kSecValueData: data, kSecAttrAccessible: accessible]
         var status = SecItemUpdate(query as CFDictionary, attrs as CFDictionary)
         if status == errSecItemNotFound {
             var item = query
             item[kSecValueData] = data
+            item[kSecAttrAccessible] = accessible
             status = SecItemAdd(item as CFDictionary, nil)
         }
         guard status == errSecSuccess else { throw KeychainError.unexpectedStatus(status) }
+    }
+
+    /// Moves the sign-ins and Seerr passwords saved before 0.5.0 to `accessible`. The items are
+    /// updated in place, so nothing is deleted or rewritten; if it fails they stay as they were.
+    /// Needs the device unlocked.
+    public func upgradeAccessibility() throws {
+        for itemService in [service, seerrService] {
+            let query: [CFString: Any] = [
+                kSecClass: kSecClassGenericPassword,
+                kSecAttrService: itemService,
+                kSecUseDataProtectionKeychain: true,
+            ]
+            let status = SecItemUpdate(query as CFDictionary, [kSecAttrAccessible: accessible] as CFDictionary)
+            guard status == errSecSuccess || status == errSecItemNotFound else {
+                throw KeychainError.unexpectedStatus(status)
+            }
+        }
     }
 
     public func load(serverID: UUID) throws -> ServerCredential? {
@@ -179,10 +201,11 @@ public final class KeychainStore: KeychainClientProtocol, @unchecked Sendable {
             kSecAttrAccount: account,
             kSecUseDataProtectionKeychain: true,
         ]
-        var status = SecItemUpdate(query as CFDictionary, [kSecValueData: data] as CFDictionary)
+        var status = SecItemUpdate(query as CFDictionary, [kSecValueData: data, kSecAttrAccessible: accessible] as CFDictionary)
         if status == errSecItemNotFound {
             var item = query
             item[kSecValueData] = data
+            item[kSecAttrAccessible] = accessible
             status = SecItemAdd(item as CFDictionary, nil)
         }
         guard status == errSecSuccess else { throw KeychainError.unexpectedStatus(status) }
