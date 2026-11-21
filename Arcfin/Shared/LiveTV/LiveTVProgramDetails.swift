@@ -15,6 +15,8 @@ struct LiveTVProgramDetails: View {
     @State private var isWorking = false
     /// Set while the series options show, before the series is recorded.
     @State private var seriesOptions: LiveTVSeriesOptions?
+    @State private var confirmingCancel = false
+    @State private var confirmingStopSeries = false
 
     /// The programme with any timer change made while the sheet is open.
     private var current: LiveTVProgram { model.selectedProgram?.id == program.id ? model.selectedProgram ?? program : program }
@@ -155,13 +157,30 @@ struct LiveTVProgramDetails: View {
                 }
             }
         }
+        .alert(current.isAiring() ? "Stop recording \(current.name)?" : "Cancel the recording of \(current.name)?",
+               isPresented: $confirmingCancel) {
+            Button(current.isAiring() ? "Stop Recording" : "Cancel Recording", role: .destructive) {
+                run { await model.cancelRecording(of: current, series: false, authManager: authManager) }
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .alert("Stop recording \(current.name)?", isPresented: $confirmingStopSeries) {
+            Button("Stop Recording Series", role: .destructive) {
+                run { await model.cancelRecording(of: current, series: true, authManager: authManager) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Episodes already recorded stay on your server.")
+        }
     }
 
     private var recordButton: some View {
         Button {
-            run { current.timerId != nil
-                ? await model.cancelRecording(of: current, series: false, authManager: authManager)
-                : await model.record(current, series: false, authManager: authManager) }
+            if current.timerId != nil {
+                confirmingCancel = true
+            } else {
+                run { await model.record(current, series: false, authManager: authManager) }
+            }
         } label: {
             Label(current.timerId != nil ? "Cancel Recording" : "Record",
                   systemImage: current.timerId != nil ? "record.circle.fill" : "record.circle")
@@ -175,7 +194,7 @@ struct LiveTVProgramDetails: View {
     private var seriesButton: some View {
         Button {
             if current.seriesTimerId != nil {
-                run { await model.cancelRecording(of: current, series: true, authManager: authManager) }
+                confirmingStopSeries = true
             } else if seriesOptions == nil {
                 // The options come first, with the server's defaults filled in.
                 run { seriesOptions = await model.seriesDefaults(for: current, authManager: authManager) }
