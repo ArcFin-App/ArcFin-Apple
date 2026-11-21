@@ -28,10 +28,13 @@ struct HomeView: View {
     @State private var hero = HomeHeroCarousel()
     @State private var heroStretch: CGFloat = 0
 
-    /// Counted when asked, not a @Query: a query of every download re-rendered all of Home on
-    /// each save to any of them (position writes, each finished download).
-    private var hasDownloads: Bool {
-        ((try? modelContext.fetchCount(FetchDescriptor<DownloadedItem>())) ?? 0) > 0
+    /// Counted when the offline banner or prompt can show, not a @Query: a query of every
+    /// download re-rendered all of Home on each save to any of them (position writes, each
+    /// finished download).
+    @State private var hasDownloads = false
+
+    private func countDownloads() {
+        hasDownloads = ((try? modelContext.fetchCount(FetchDescriptor<DownloadedItem>())) ?? 0) > 0
     }
     @State private var showSettings = false
     @Environment(\.openWindow) private var openWindow
@@ -197,6 +200,8 @@ struct HomeView: View {
         .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
             if isFailed && !wasFailed { showOfflinePrompt = true }
         }
+        .onChange(of: mediaRepo.connectionFailed, initial: true) { _, _ in countDownloads() }
+        .onChange(of: model.isSlowFirstLoad) { _, _ in countDownloads() }
         .alert(
             "Can't reach your server", isPresented: $showOfflinePrompt
         ) {
