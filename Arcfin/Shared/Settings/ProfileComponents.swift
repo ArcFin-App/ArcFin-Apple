@@ -135,16 +135,16 @@ private struct PINFlowSheet: View {
 
     private var firstTitle: String {
         switch flow {
-        case .setNew:                   return "Enter new PIN"
-        case .changeVerifyCurrent:      return "Enter current PIN"
-        case .disableVerifyCurrent:     return "Enter PIN to disable"
+        case .setNew:                   return String(localized: "Enter new PIN")
+        case .changeVerifyCurrent:      return String(localized: "Enter current PIN")
+        case .disableVerifyCurrent:     return String(localized: "Enter PIN to disable")
         }
     }
 
     private var secondTitle: String {
         switch flow {
-        case .setNew:              return "Confirm PIN"
-        case .changeVerifyCurrent: return "Enter new PIN"
+        case .setNew:              return String(localized: "Confirm PIN")
+        case .changeVerifyCurrent: return String(localized: "Enter new PIN")
         default:                   return ""
         }
     }
@@ -174,7 +174,7 @@ private struct PINFlowSheet: View {
 
         case .confirmNew:
             PINPadView(
-                title: "Confirm PIN",
+                title: String(localized: "Confirm PIN"),
                 subtitle: profile.displayName,
                 errorMessage: errorMessage,
                 resetToken: resetToken,

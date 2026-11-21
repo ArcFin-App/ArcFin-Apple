@@ -113,7 +113,7 @@ struct UsersView: View {
         // PIN entry sheet for switching to a protected profile
         .sheet(item: $switchTarget) { target in
             PINEntrySheet(
-                title: "Switch to \(target.displayName)",
+                title: String(localized: "Switch to \(target.displayName)"),
                 subtitle: target.baseURL.host,
                 storedPIN: switchStoredPIN,
                 resetToken: switchPINResetToken,

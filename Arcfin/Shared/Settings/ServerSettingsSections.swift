@@ -70,7 +70,7 @@ struct ServerPublicInfoSection: View {
                 LabeledContent("Local Address", value: info.localAddress ?? "—")
                     .lineLimit(1)
                     .tvReadOnlyRow()
-                LabeledContent("Setup Completed", value: (info.startupWizardCompleted ?? false) ? "Yes" : "No")
+                LabeledContent("Setup Completed") { (info.startupWizardCompleted ?? false) ? Text("Yes") : Text("No") }
                     .tvReadOnlyRow()
             } else if let infoError = model.infoError {
                 Text(infoError)
@@ -97,7 +97,7 @@ struct ArcfinSyncSection: View {
                 HStack { Spacer(); ProgressView(); Spacer() }
                     .tvReadOnlyRow()
             } else if let status = authManager.arcfinSyncStatus {
-                LabeledContent("Status", value: "Connected")
+                LabeledContent("Status") { Text("Connected") }
                     .tvReadOnlyRow()
                 LabeledContent("Version", value: status.version)
                     .tvReadOnlyRow()
@@ -110,7 +110,7 @@ struct ArcfinSyncSection: View {
                     .tvReadOnlyRow()
                 }
             } else {
-                LabeledContent("Status", value: "Not Installed")
+                LabeledContent("Status") { Text("Not Installed") }
                     .tvReadOnlyRow()
             }
             Button {
