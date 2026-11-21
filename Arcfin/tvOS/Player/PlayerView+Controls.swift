@@ -113,7 +113,7 @@ extension PlayerView {
 
     private var sleepTimerEntry: TVMenuEntry {
         var choices = [TVMenuEntry(title: String(localized: "Off")) { model.setSleepTimer(minutes: nil) }]
-        choices += [15, 30, 45, 60].map { minutes in
+        choices += [15, 30, 45, 60].map { (minutes: Int) in
             TVMenuEntry(title: String(localized: "\(minutes) minutes")) { model.setSleepTimer(minutes: minutes) }
         }
         if item.type == .episode {
