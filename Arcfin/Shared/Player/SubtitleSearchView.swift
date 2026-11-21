@@ -23,13 +23,14 @@ struct SubtitleSearchView: View {
     private let client = JellyfinMediaClient()
 
     /// Jellyfin names languages by their ISO 639-2/B codes ("fre", "ger"), which is also what
-    /// its subtitle providers expect.
+    /// its subtitle providers expect; the two-letter code is only for showing the name in the
+    /// viewer's language.
     static let languages: [(code: String, name: String)] = [
-        ("eng", "English"), ("spa", "Spanish"), ("fre", "French"), ("ger", "German"),
-        ("ita", "Italian"), ("por", "Portuguese"), ("dut", "Dutch"), ("swe", "Swedish"),
-        ("pol", "Polish"), ("rus", "Russian"), ("tur", "Turkish"), ("ara", "Arabic"),
-        ("hin", "Hindi"), ("jpn", "Japanese"), ("kor", "Korean"), ("chi", "Chinese"),
-    ]
+        ("eng", "en"), ("spa", "es"), ("fre", "fr"), ("ger", "de"),
+        ("ita", "it"), ("por", "pt"), ("dut", "nl"), ("swe", "sv"),
+        ("pol", "pl"), ("rus", "ru"), ("tur", "tr"), ("ara", "ar"),
+        ("hin", "hi"), ("jpn", "ja"), ("kor", "ko"), ("chi", "zh"),
+    ].map { (code: $0.0, name: Locale.current.localizedString(forLanguageCode: $0.1) ?? $0.0) }
 
     init(itemId: String, onDownloaded: @escaping () -> Void = {}) {
         self.itemId = itemId

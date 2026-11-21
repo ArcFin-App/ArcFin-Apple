@@ -571,7 +571,7 @@ extension PlayerView {
                             get: { model.selectedAudioIndex ?? model.playbackInfo?.defaultAudioStreamIndex ?? audio[0].index },
                             set: { model.changeTrack(audioIndex: $0) }
                         )) {
-                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Audio", systemImage: "speaker.wave.2")
@@ -584,7 +584,7 @@ extension PlayerView {
                             set: { model.changeTrack(subtitleIndex: .some($0 < 0 ? nil : $0)) }
                         )) {
                             Text("Off").tag(-1)
-                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Subtitles", systemImage: "captions.bubble")
@@ -749,7 +749,7 @@ extension PlayerView {
                             get: { model.selectedAudioIndex ?? model.playbackInfo?.defaultAudioStreamIndex ?? audio[0].index },
                             set: { model.selectCastAudio(index: $0) }
                         )) {
-                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Audio", systemImage: "speaker.wave.2")
@@ -762,7 +762,7 @@ extension PlayerView {
                             set: { model.selectCastSubtitle(index: $0 < 0 ? nil : $0) }
                         )) {
                             Text("Off").tag(-1)
-                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Subtitles", systemImage: "captions.bubble")

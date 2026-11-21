@@ -57,7 +57,7 @@ final class SyncPlayManager {
             // I just made" from a bare success response).
             let groups = (try? await client.syncPlayListGroups(credential: credential, authHeader: authHeader)) ?? []
             guard let created = groups.first(where: { $0.groupName == groupName }) else {
-                lastError = "Group was created but couldn't be found."
+                lastError = String(localized: "Group was created but couldn't be found.")
                 return
             }
             try await client.syncPlaySetQueue(credential: credential, authHeader: authHeader, itemId: itemId, startPositionTicks: startPositionTicks)
@@ -65,7 +65,7 @@ final class SyncPlayManager {
             self.groupName = created.groupName
             connectSocket(credential: credential, authHeader: authHeader)
         } catch {
-            lastError = "Couldn't create the group. Check your connection and try again."
+            lastError = String(localized: "Couldn't create the group. Check your connection and try again.")
         }
     }
 
@@ -79,7 +79,7 @@ final class SyncPlayManager {
             groupName = group.groupName
             connectSocket(credential: credential, authHeader: authHeader)
         } catch {
-            lastError = "Couldn't join that group — it may have just ended."
+            lastError = String(localized: "Couldn't join that group — it may have just ended.")
         }
     }
 

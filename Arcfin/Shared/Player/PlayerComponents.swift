@@ -206,7 +206,7 @@ struct ChapterListSheet: View {
                     } label: {
                         HStack(spacing: 12) {
                             ChapterThumbnailView(loader: model.trickplayLoader, positionTicks: chapter.startPositionTicks)
-                            Text(chapter.name ?? "Chapter \(index + 1)")
+                            Text(chapter.name ?? String(localized: "Chapter \(index + 1)"))
                                 .font(.system(.footnote, design: .default, weight: isCurrent ? .semibold : .regular))
                                 .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
                             Spacer()
@@ -301,7 +301,7 @@ struct PlayerMediaInfoSheet: View {
     private func mediaInfoTrackLabel(_ stream: JellyfinMediaStream) -> String {
         if let title = stream.displayTitle, !title.isEmpty { return title }
         let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
-        return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "Track \(stream.index)") : parts.joined(separator: " · ")
     }
 
     private func mediaInfoBitrateLabel(_ bitrate: Int) -> String {
@@ -699,7 +699,7 @@ struct TrackSelectionSheet: View {
     private func label(for stream: JellyfinMediaStream) -> String {
         if let title = stream.displayTitle, !title.isEmpty { return title }
         let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
-        return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "Track \(stream.index)") : parts.joined(separator: " · ")
     }
 
     private func audioLabel(for stream: JellyfinMediaStream) -> String {
