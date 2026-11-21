@@ -24,7 +24,6 @@ private struct ProfileRemovalConfirmation: ViewModifier {
 
     @Environment(AuthManager.self) private var authManager
     @State private var pinTarget: ServerCredential?
-    @State private var storedPIN: String?
     @State private var pinError: String?
     @State private var pinResetToken = 0
 
@@ -55,12 +54,13 @@ private struct ProfileRemovalConfirmation: ViewModifier {
 
     private func remove(_ target: ServerCredential) {
         Task {
-            guard let pin = await authManager.pin(for: target.id) else { return perform(target) }
+            let stored = await authManager.storedPIN(for: target.id)
+            guard stored != .none else { return perform(target) }
             if let confirmOwner, await confirmOwner(String(localized: "Remove \(target.displayName)")) {
+                PINAttempts.reset(for: target.id)
                 return perform(target)
             }
-            storedPIN = pin
-            pinError = nil
+            pinError = AuthManager.PINCheck.message(opening: stored, for: target.id)
             pinResetToken = 0
             pinTarget = target
         }
@@ -73,18 +73,21 @@ private struct ProfileRemovalConfirmation: ViewModifier {
                 PINEntrySheet(
                     title: String(localized: "Enter PIN"),
                     subtitle: target.displayName,
-                    storedPIN: storedPIN,
                     resetToken: pinResetToken,
                     errorMessage: pinError,
                     onCancel: { pinTarget = nil },
                     onComplete: { entered in
-                        guard entered == storedPIN else {
-                            pinError = String(localized: "Incorrect PIN")
-                            pinResetToken += 1
-                            return
+                        Task {
+                            let result = await authManager.checkPIN(entered, for: target.id)
+                            guard pinTarget?.id == target.id else { return }
+                            guard result == .correct else {
+                                pinError = result.message
+                                pinResetToken += 1
+                                return
+                            }
+                            pinTarget = nil
+                            perform(target)
                         }
-                        pinTarget = nil
-                        perform(target)
                     }
                 )
             }
