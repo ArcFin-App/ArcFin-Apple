@@ -644,15 +644,24 @@ final class PlayerModel {
     }
 
     func rateLabel(_ rate: Float) -> String {
-        rate == 1.0 ? "Normal" : "\(rate.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", rate) : String(format: "%.2f", rate))×"
+        rate == 1.0 ? String(localized: "Normal") : "\(rate.formatted(.number.precision(.fractionLength(0...2))))×"
+    }
+
+    /// "8 Mb/s" or "800 Kb/s", with the number written the viewer's way.
+    static func bitrateLabel(_ bitsPerSecond: Int, fractionDigits: Int = 0) -> String {
+        let mbps = Double(bitsPerSecond) / 1_000_000
+        if mbps >= 1 {
+            return String(localized: "\(mbps.formatted(.number.precision(.fractionLength(fractionDigits)))) Mb/s")
+        }
+        return String(localized: "\((Double(bitsPerSecond) / 1000).formatted(.number.precision(.fractionLength(0)))) Kb/s")
     }
 
     // MARK: - Setup / teardown
 
     var loadingStatusText: String {
         if let loadingStage { return loadingStage }
-        if playbackInfo?.playMethod == .transcode { return "Waiting for the server…" }
-        return "Buffering…"
+        if playbackInfo?.playMethod == .transcode { return String(localized: "Waiting for the server…") }
+        return String(localized: "Buffering…")
     }
 
     private var decodesNatively: Bool { player is AetherEnginePlayer || player is VLCEnginePlayer }
@@ -699,23 +708,23 @@ final class PlayerModel {
         setupGeneration += 1
         let generation = setupGeneration
         guard let credential, let authHeader else {
-            errorMessage = "Not signed in."
+            errorMessage = String(localized: "Not signed in.")
             return
         }
         guard !item.isVirtual else {
             if let premiere = item.premiereDate, premiere > Date() {
-                errorMessage = "This episode airs \(premiere.formatted(.dateTime.day().month(.wide))). It'll play once it's on your server."
+                errorMessage = String(localized: "This episode airs \(premiere.formatted(.dateTime.day().month(.wide))). It'll play once it's on your server.")
             } else {
-                errorMessage = "This episode isn't on your server."
+                errorMessage = String(localized: "This episode isn't on your server.")
             }
             return
         }
         if quality == .auto {
-            loadingStage = "Checking your connection…"
+            loadingStage = String(localized: "Checking your connection…")
             await primeAutoLadder(credential: credential, authHeader: authHeader)
             guard !setupAbandoned(generation) else { return }
         }
-        loadingStage = "Contacting the server…"
+        loadingStage = String(localized: "Contacting the server…")
         do {
             // The engine is picked before asking the server how to stream, because the answer
             // depends on it: Aether and VLC take the file as is, AVFoundation needs it repackaged.
@@ -821,7 +830,8 @@ final class PlayerModel {
             await detectAnimation(genres: detail?.genres ?? item.genres, credential: credential, authHeader: authHeader)
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
-            loadingStage = info.playMethod == .transcode ? "The server is converting this video…" : "Opening the video…"
+            loadingStage = info.playMethod == .transcode
+                ? String(localized: "The server is converting this video…") : String(localized: "Opening the video…")
             // Auto's pre-flight pick can't catch everything — a runtime load failure on
             // Aether (the exact class of bug we spent real time on this session, where a
             // source's own structure breaks one engine but not another) falls back once to
@@ -1399,9 +1409,9 @@ final class PlayerModel {
                 autoCap = cap
                 reload(errorContext: "raise quality")
                 if let bitrate = cap?.maxBitrate {
-                    networkToast = String(format: "Raised to %.0f Mb/s — your connection has recovered", Double(bitrate) / 1_000_000)
+                    networkToast = String(localized: "Raised to \(Self.bitrateLabel(bitrate)) — your connection has recovered")
                 } else {
-                    networkToast = "Back to full quality — your connection has recovered"
+                    networkToast = String(localized: "Back to full quality — your connection has recovered")
                 }
                 try? await Task.sleep(for: .seconds(3))
                 networkToast = nil
@@ -1487,12 +1497,11 @@ final class PlayerModel {
                 // Still stalling at the bottom step: not a bandwidth problem a lower bitrate
                 // can fix (a codec/output failure, a dead source), so say so rather than
                 // leaving the video frozen on a spinner.
-                errorMessage = "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC."
+                errorMessage = String(localized: "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC.")
             case .lower(let cap):
                 autoCap = cap
                 reload(errorContext: "adjust quality")
-                let mbps = Double(cap.maxBitrate ?? 0) / 1_000_000
-                networkToast = "Lowered to \(mbps >= 1 ? String(format: "%.0f Mb/s", mbps) : String(format: "%.0f Kb/s", mbps * 1000)) — your connection can't keep up"
+                networkToast = String(localized: "Lowered to \(Self.bitrateLabel(cap.maxBitrate ?? 0)) — your connection can't keep up")
                 try? await Task.sleep(for: .seconds(3))
                 networkToast = nil
             }
@@ -1785,7 +1794,7 @@ final class PlayerModel {
     private func pauseForSleepTimer() {
         if CastManager.shared.isConnected { CastManager.shared.pause() }
         Task { await player.pause() }
-        networkToast = "Sleep timer — playback paused"
+        networkToast = String(localized: "Sleep timer — playback paused")
         Task {
             try? await Task.sleep(for: .seconds(3))
             networkToast = nil
@@ -1925,7 +1934,7 @@ final class PlayerModel {
     func adoptDownloadedSubtitle() {
         guard let credential, let authHeader else { return }
         let known = Set(playbackInfo?.subtitleStreams.map(\.index) ?? [])
-        networkToast = "Adding subtitles…"
+        networkToast = String(localized: "Adding subtitles…")
         Task {
             for _ in 0..<5 {
                 if let info = try? await client.getPlaybackInfo(
@@ -1940,7 +1949,7 @@ final class PlayerModel {
                 }
                 try? await Task.sleep(for: .seconds(2))
             }
-            networkToast = "Subtitles were saved on the server. Reopen the title to use them."
+            networkToast = String(localized: "Subtitles were saved on the server. Reopen the title to use them.")
             try? await Task.sleep(for: .seconds(4))
             networkToast = nil
         }

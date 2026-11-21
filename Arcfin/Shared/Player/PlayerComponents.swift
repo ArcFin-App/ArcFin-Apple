@@ -305,8 +305,7 @@ struct PlayerMediaInfoSheet: View {
     }
 
     private func mediaInfoBitrateLabel(_ bitrate: Int) -> String {
-        let mbps = Double(bitrate) / 1_000_000
-        return mbps >= 1 ? String(format: "%.1f Mb/s", mbps) : String(format: "%.0f Kb/s", Double(bitrate) / 1000)
+        PlayerModel.bitrateLabel(bitrate, fractionDigits: 1)
     }
 }
 
@@ -357,7 +356,13 @@ struct SyncPlaySheet: View {
                                     } label: {
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(group.groupName).foregroundStyle(DT.Color.textPrimary)
-                                            Text("\(group.participants.count) watching" + (group.playingItemName.map { " · \($0)" } ?? ""))
+                                            Group {
+                                                if let playing = group.playingItemName {
+                                                    Text("\(group.participants.count) watching · \(playing)")
+                                                } else {
+                                                    Text("\(group.participants.count) watching")
+                                                }
+                                            }
                                                 .font(.system(.caption2))
                                                 .foregroundStyle(DT.Color.textSecondary)
                                         }
