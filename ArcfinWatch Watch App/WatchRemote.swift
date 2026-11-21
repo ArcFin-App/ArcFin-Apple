@@ -63,7 +63,7 @@ final class WatchRemote {
         hasLoaded = true
     }
 
-    func artworkURL(for session: WatchSession) -> URL? { client?.artworkURL(itemID: session.itemID) }
+    func artworkURL(for session: WatchSession) -> URL? { client?.artworkURL(itemID: session.artworkItemID) }
 
     // MARK: - Commands
 

@@ -22,7 +22,7 @@ struct LibraryView: View {
         ]
     }
 
-    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV) }
+    private var supportedLibraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV, includeMusic: true) }
 
     var body: some View {
         NavigationStack {
@@ -34,8 +34,13 @@ struct LibraryView: View {
                 }
             }
             .screenBackground()
+            // An album or artist opened from Now Playing.
+            .navigationDestination(item: Binding(get: { MusicNavigator.shared.route },
+                                                 set: { MusicNavigator.shared.route = $0 })) { route in
+                MusicDestination(route: route)
+            }
             .navigationTitle("Browse")
-            .searchable(text: $model.searchQuery, prompt: "Movies, shows, people…")
+            .searchable(text: $model.searchQuery, prompt: "Movies, shows, music, live TV, people…")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: JellyfinLibrary.self) { library in
@@ -88,6 +93,8 @@ struct LibraryView: View {
     private func libraryDestination(_ library: JellyfinLibrary) -> some View {
         if library.collectionType == .livetv {
             LiveTVView(library: library)
+        } else if library.collectionType == .music {
+            MusicLibraryView(library: library)
         } else {
             LibraryDetailView(library: library)
         }
@@ -108,6 +115,15 @@ struct LibraryView: View {
 
                 // ── Downloads ───────────────────────────────────────────
                 jellyfinDownloadsSection
+                if !MusicDownloads.shared.isEmpty {
+                    NavigationLink {
+                        MusicDownloadsView()
+                    } label: {
+                        LibraryLinkRow(systemImage: "music.note", title: "Downloaded Music",
+                                       subtitle: "Albums and songs saved for offline listening")
+                    }
+                    .buttonStyle(.plain)
+                }
 
                 // ── On This Device ──────────────────────────────────────
                 onDeviceSection

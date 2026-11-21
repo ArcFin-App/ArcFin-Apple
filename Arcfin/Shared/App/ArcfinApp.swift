@@ -29,9 +29,11 @@ enum AppServices {
     static let sharePlayManager = SharePlayManager()
     static let liveUpdates = LiveUpdates(mediaRepo: mediaRepo)
     /// Offers to set up a signed-out Apple TV on the network (#481), by itself or from Settings.
-    static let appleTVSetup = AppleTVSetupGuide()
+    static let nearbySetup = NearbySetupGuide()
     /// The other devices this profile can control, for the iPhone remote (#457).
     static let remoteSessions = RemoteSessions()
+    /// Music, playing behind every screen (#386).
+    static let music = MusicPlayback(authManager: authManager)
     static let introduction = AppIntroduction()
     /// Past the app lock (or there's none) this launch. A player window brought back on
     /// relaunch closes rather than play ahead of the lock.

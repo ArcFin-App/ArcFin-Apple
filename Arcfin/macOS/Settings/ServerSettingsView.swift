@@ -19,6 +19,9 @@ struct ServerSettingsView: View {
             ArcfinSyncSection()
 
             Section {
+                NavigationLink { ServerConnectionView().tvSettingsPage() } label: {
+                    TVRowLabelText(title: "Server & Connection", detail: "Test your speed to the server, and see what your account and this device can play.")
+                }
                 NavigationLink { CustomHeadersView().tvSettingsPage() } label: {
                     TVRowLabelText(title: "Custom Headers", detail: "Extra headers for a server behind an access gateway, such as Cloudflare Access.")
                 }

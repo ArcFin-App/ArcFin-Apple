@@ -12,6 +12,26 @@ struct DeviceSetupTests {
     private let profile = DeviceSetup.Profile(userName: "Sam", serverName: "Home",
                                               servers: ["http://10.0.0.2:8096"], tmdbKey: "abc123")
 
+    // MARK: - Profiles
+
+    @Test("A profile from an older phone, without Seerr or ListenBrainz, still opens")
+    func olderProfile() throws {
+        let json = #"{"userName":"Sam","serverName":"Home","servers":["http://10.0.0.2:8096"],"tmdbKey":"abc123"}"#
+        let decoded = try JSONDecoder().decode(DeviceSetup.Profile.self, from: Data(json.utf8))
+        #expect(decoded == profile)
+        #expect(decoded.seerr == nil)
+        #expect(decoded.listenBrainzToken == nil)
+    }
+
+    @Test("A profile's Seerr connection and ListenBrainz token arrive as sent")
+    func integrations() throws {
+        let sent = DeviceSetup.Profile(userName: "Sam", serverName: "Home", servers: ["http://10.0.0.2:8096"], tmdbKey: "abc123",
+                                       seerr: .init(url: "http://10.0.0.3:5055", authMethod: "jellyfin", username: "sam"),
+                                       listenBrainzToken: "token")
+        let decoded = try JSONDecoder().decode(DeviceSetup.Profile.self, from: JSONEncoder().encode(sent))
+        #expect(decoded == sent)
+    }
+
     // MARK: - Framing
 
     @Test("A message split across reads arrives once, whole")

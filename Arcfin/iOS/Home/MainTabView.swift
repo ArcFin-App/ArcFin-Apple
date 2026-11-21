@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import MediaEngine
 import JellyfinAPI
 import SeerrAPI
 import CastKit
@@ -10,6 +11,7 @@ struct MainTabView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
     @Bindable private var playlistStore = PlaylistStore.shared
+    @Bindable private var musicPlaylists = MusicPlaylistEditor.shared
     @Bindable private var tagEditor = TagEditor.shared
     @Bindable private var metadataEditor = MetadataEditor.shared
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
@@ -65,6 +67,10 @@ struct MainTabView: View {
                 AddToPlaylistSheet(item: item)
                     .presentationDetents([.medium, .large])
             }
+            .sheet(item: $musicPlaylists.request) { request in
+                MusicAddToPlaylistSheet(songs: request.songs)
+                    .presentationDetents([.medium, .large])
+            }
             .onChange(of: selectedTab) { old, _ in
                 if old == .home { NotificationCenter.default.post(name: .arcfinHomeTabLeft, object: nil) }
             }
@@ -74,6 +80,9 @@ struct MainTabView: View {
             }
             .modifier(CastMiniControllerAccessory())
             // arcfin://downloads — from the download Live Activity's tap target.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinShowMusic)) { _ in
+                selectedTab = .browse
+            }
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowDownloads)) { _ in
                 selectedTab = .browse
             }
@@ -106,7 +115,15 @@ struct MainTabView: View {
 /// `isEnabled:` arrived in iOS 26.1; the older overload can't hide the bar, so on 26.0
 /// there is no mini controller rather than a permanently empty accessory.
 private struct CastMiniControllerAccessory: ViewModifier {
-    private var casting: Bool { CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil }
+    /// A video on a Chromecast; music on one keeps the music bar.
+    private var casting: Bool {
+        CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil && !AppServices.music.isCasting
+    }
+    @Namespace private var musicTransition
+    /// Music playing here goes first; paused, it gives the bar to another device that's playing.
+    private var showsMusicBar: Bool {
+        AppServices.music.isActive && (AppServices.music.isPlaying || AppServices.remoteSessions.selected == nil)
+    }
 
     func body(content: Content) -> some View {
         accessory(content)
@@ -118,9 +135,26 @@ private struct CastMiniControllerAccessory: ViewModifier {
     @ViewBuilder
     private func accessory(_ content: Content) -> some View {
         if #available(iOS 26.1, *) {
-            content.tabViewBottomAccessory(isEnabled: casting || AppServices.remoteSessions.selected != nil) {
-                // Casting from here comes first; otherwise another device playing on this profile.
-                if casting { CastMiniController() } else { RemoteMiniController() }
+            content.tabViewBottomAccessory(isEnabled: casting || AppServices.music.isActive
+                                           || AppServices.remoteSessions.selected != nil) {
+                // Casting from here comes first, then music on this device, then another
+                // device playing on this profile.
+                if casting {
+                    CastMiniController()
+                } else if showsMusicBar || AppServices.remoteSessions.selected == nil {
+                    MusicMiniPlayer(isExpanded: Binding(get: { AppServices.music.isNowPlayingOpen },
+                                                        set: { AppServices.music.isNowPlayingOpen = $0 }))
+                        .matchedTransitionSource(id: "music", in: musicTransition)
+                } else {
+                    RemoteMiniController()
+                }
+            }
+            .sheet(isPresented: Binding(get: { AppServices.music.isNowPlayingOpen },
+                                        set: { AppServices.music.isNowPlayingOpen = $0 })) {
+                MusicNowPlayingView()
+                    .navigationTransition(.zoom(sourceID: "music", in: musicTransition))
+                    .presentationDragIndicator(.hidden)
+                    .presentationBackground(.black)
             }
             .fullScreenCover(isPresented: Binding(get: { AppServices.remoteSessions.isShowingRemote },
                                                   set: { AppServices.remoteSessions.isShowingRemote = $0 })) {

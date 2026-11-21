@@ -2,6 +2,8 @@
 
 #if canImport(UIKit) && !os(tvOS)
 import UIKit
+import CarPlay
+import Intents
 import UserNotifications
 import CastKit
 import Telemetry
@@ -24,7 +26,13 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         BackgroundRefresh.register()
         RemotePlaybackActivity.shared.install()
         WatchLink.shared.install()
+        MusicWidgetPublisher.start()
         return true
+    }
+
+    /// Siri's "Play … in Arcfin", on the phone or in the car.
+    func application(_ application: UIApplication, handlerFor intent: INIntent) -> Any? {
+        intent is INPlayMediaIntent ? MusicSiriHandler() : nil
     }
 
     func applicationDidEnterBackground(_ application: UIApplication) {
@@ -44,6 +52,12 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         handleEventsForBackgroundURLSession identifier: String,
         completionHandler: @escaping () -> Void
     ) {
+        if identifier == MusicTransfers.identifier {
+            MusicTransfers.pendingCompletionHandler = completionHandler
+            // Reconnects the session, which hands over the songs that finished.
+            _ = MusicDownloads.shared
+            return
+        }
         guard identifier == DownloadManager.backgroundSessionIdentifier else {
             completionHandler()
             return
@@ -60,7 +74,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         options: UIScene.ConnectionOptions
     ) -> UISceneConfiguration {
         let config = UISceneConfiguration(name: nil, sessionRole: connectingSceneSession.role)
-        config.delegateClass = QuickActionSceneDelegate.self
+        // The car's screen has its own scene, with CarPlay's templates instead of a window.
+        config.delegateClass = connectingSceneSession.role == .carTemplateApplication
+            ? CarPlaySceneDelegate.self : QuickActionSceneDelegate.self
         return config
     }
 }

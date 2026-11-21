@@ -4,15 +4,15 @@ import SwiftUI
 import AuthCore
 import JellyfinAPI
 
-// MARK: - Apple TV: being set up
+// MARK: - Apple TV, iPad or Mac: being set up
 
-/// The Apple TV's side of setup from an iPhone or iPad (#481), while it's on the sign-in
+/// The other device's side of setup from an iPhone or iPad (#481), while it's on the sign-in
 /// pages. The connection agrees fresh keys and shows a code made from them on both screens
 /// (see DeviceSetup). Nothing is contacted until the person here presses Allow and the
 /// person at the phone confirms the same code, so nobody else on the network can sign this
-/// Apple TV in, or listen in.
+/// device in, or listen in.
 @MainActor @Observable
-final class AppleTVSetupHost {
+final class NearbySetupHost {
     enum Phase: Equatable {
         case idle
         /// A phone connected; the person here checks the code and allows it or not.
@@ -26,7 +26,7 @@ final class AppleTVSetupHost {
     private(set) var phase: Phase = .idle
     /// Quick Connect is off on the server the phone sent: its password page, instead.
     var passwordServer: URL?
-    /// Goes up each time a phone signs this Apple TV in, so Add Profile can close.
+    /// Goes up each time a phone signs this device in, so Add Profile can close.
     private(set) var completedSetups = 0
 
     @ObservationIgnored private var listener: DeviceSetupListener?
@@ -35,7 +35,11 @@ final class AppleTVSetupHost {
     @ObservationIgnored private var answer: CheckedContinuation<Bool, Never>?
 
     func start(authManager: AuthManager) {
-        guard listener == nil, let listener = try? DeviceSetupListener() else { return }
+        guard listener == nil else { return }
+        NearbySetupAccess.shared.blocked = false
+        guard let listener = try? DeviceSetupListener(kind: PlatformMetrics.nearbySetupKind, onBlocked: {
+            Task { @MainActor in NearbySetupAccess.shared.blocked = true }
+        }) else { return }
         self.listener = listener
         listenTask = Task { [weak self] in
             for await session in listener.sessions {
@@ -138,7 +142,7 @@ final class AppleTVSetupHost {
             case .unreachable:
                 guard index > 0 else {
                     endSession(sending: .failed(.unreachable))
-                    phase = .failed(String(localized: "This Apple TV couldn't reach \(first.serverName). Check it's on the same network as your server. If your server needs custom headers, add them here under Custom Headers first."))
+                    phase = .failed(String(localized: "This device couldn't reach \(first.serverName). Check it's on the same network as your server. If your server needs custom headers, add them here under Custom Headers first."))
                     return
                 }
                 session.send(.skipped(profile: index, .unreachable))
@@ -176,20 +180,29 @@ final class AppleTVSetupHost {
             authManager.addProfile(credential)
         }
         authManager.save(primary)
-        Self.keepTMDBKeys(profiles: profiles, signedIn: signedIn, authManager: authManager)
+        Self.keepIntegrations(profiles: profiles, signedIn: signedIn, authManager: authManager)
         completedSetups += 1
     }
 
-    /// Each profile's TMDB key, under the id the profile got here, and the active one's in
-    /// the slot TMDB reads.
-    private static func keepTMDBKeys(profiles: [DeviceSetup.Profile], signedIn: [Int: ServerCredential],
-                                     authManager: AuthManager) {
+    /// Each profile's TMDB key, Seerr connection and ListenBrainz token, under the id the
+    /// profile got here; the active one's TMDB key and Seerr go in the slots in use.
+    private static func keepIntegrations(profiles: [DeviceSetup.Profile], signedIn: [Int: ServerCredential],
+                                         authManager: AuthManager) {
         let active = authManager.state.credential?.id
         for (index, credential) in signedIn {
-            guard let key = profiles[index].tmdbKey, !key.isEmpty else { continue }
+            let profile = profiles[index]
             let id = authManager.profiles.first { $0.userID == credential.userID && $0.baseURL == credential.baseURL }?.id ?? credential.id
-            try? TMDBCredential.save(key, profile: id)
-            if id == active { try? TMDBCredential.save(key) }
+            if let key = profile.tmdbKey, !key.isEmpty {
+                try? TMDBCredential.save(key, profile: id)
+                if id == active { try? TMDBCredential.save(key) }
+            }
+            if let seerr = profile.seerr {
+                authManager.setSeerrConnection(url: seerr.url, authMethod: seerr.authMethod, username: seerr.username, for: id)
+            }
+            if let token = profile.listenBrainzToken, !token.isEmpty {
+                try? ListenBrainzCredential.save(token, profile: id)
+                ListenBrainzState.shared.changed()
+            }
         }
     }
 
@@ -204,23 +217,23 @@ final class AppleTVSetupHost {
     }
 }
 
-/// Where the Apple TV can be set up from a phone: the sign-in pages, and Add Profile. Shows
+/// Where the other device can be set up from a phone: the sign-in pages, and Add Profile. Shows
 /// the setup screen over them while a phone is setting it up.
-private struct AppleTVSetupHosting: ViewModifier {
+private struct NearbySetupHosting: ViewModifier {
     let onAdded: () -> Void
     let onPasswordServer: (URL) -> Void
     @Environment(AuthManager.self) private var authManager
-    @State private var host = AppleTVSetupHost()
+    @State private var host = NearbySetupHost()
 
     func body(content: Content) -> some View {
         content
             .task {
-                if PlatformMetrics.hostsAppleTVSetup { host.start(authManager: authManager) }
+                if PlatformMetrics.hostsNearbySetup { host.start(authManager: authManager) }
             }
             .onDisappear { host.stop() }
             .appSheet(isPresented: Binding(get: { host.phase != .idle },
                                            set: { if !$0 { host.cancelSession() } })) {
-                AppleTVSetupHostView(host: host)
+                NearbySetupHostView(host: host)
             }
             .onChange(of: host.completedSetups) { onAdded() }
             // Quick Connect is off on the server the phone sent: its password page.
@@ -233,47 +246,88 @@ private struct AppleTVSetupHosting: ViewModifier {
 }
 
 extension View {
-    /// Lets a phone on the network set this Apple TV up while this screen shows (#481).
-    func hostsAppleTVSetup(onAdded: @escaping () -> Void = {},
+    /// Lets a phone on the network set this device up while this screen shows (#481).
+    func hostsNearbySetup(onAdded: @escaping () -> Void = {},
                            onPasswordServer: @escaping (URL) -> Void = { _ in }) -> some View {
-        modifier(AppleTVSetupHosting(onAdded: onAdded, onPasswordServer: onPasswordServer))
+        modifier(NearbySetupHosting(onAdded: onAdded, onPasswordServer: onPasswordServer))
     }
 }
 
-/// The line on the Apple TV's sign-in pages saying a phone can set it up too.
-struct AppleTVSetupHint: View {
+/// Whether the system keeps this device off the local network, so no phone can find it.
+@MainActor @Observable
+final class NearbySetupAccess {
+    static let shared = NearbySetupAccess()
+    var blocked = false
+}
+
+/// The line on the other device's sign-in pages saying a phone can set it up too, or, when
+/// Local Network is off for the app, why it can't and where to turn it on. The system asks
+/// only once, so after a No it stays silent and only this can say so.
+struct NearbySetupHint: View {
+    @Environment(\.openURL) private var openURL
+
     var body: some View {
-        if PlatformMetrics.hostsAppleTVSetup {
-            Label("You can also set up this Apple TV from Arcfin on an iPhone or iPad on this network.",
-                  systemImage: "iphone")
-                .font(.callout)
-                .foregroundStyle(DT.Color.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+        if PlatformMetrics.hostsNearbySetup {
+            if NearbySetupAccess.shared.blocked {
+                VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                    Label("An iPhone or iPad can't find this device: Local Network is off for Arcfin. Turn it on in Privacy & Security settings, then quit and reopen Arcfin.",
+                          systemImage: "network.slash")
+                        .font(.callout)
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let settings = PlatformMetrics.localNetworkSettings {
+                        Button("Open Settings") { openURL(settings) }
+                    }
+                }
+            } else {
+                Label("You can also set this device up from Arcfin on an iPhone or iPad on this network.",
+                      systemImage: "iphone")
+                    .font(.callout)
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
         }
     }
 }
 
-/// The Apple TV's setup screen, over the sign-in pages while a phone is setting it up: what
+/// The other device's setup screen, over the sign-in pages while a phone is setting it up: what
 /// to do on the left, the code on the right.
-struct AppleTVSetupHostView: View {
-    let host: AppleTVSetupHost
+struct NearbySetupHostView: View {
+    let host: NearbySetupHost
 
     var body: some View {
-        HStack(alignment: .center, spacing: 96) {
-            VStack(alignment: .leading, spacing: 28) {
-                Image(systemName: "iphone.and.arrow.forward")
-                    .font(.system(size: 64))
-                    .foregroundStyle(DT.Color.accent)
-                    .accessibilityHidden(true)
+        // Across a TV, what to do beside the code; on an iPad or a Mac, one above the other.
+        if PlatformMetrics.sheetsSideBySide {
+            HStack(alignment: .center, spacing: 96) {
+                VStack(alignment: .leading, spacing: 28) {
+                    icon(size: 64)
+                    details
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .loginFocusSection()
+                code(size: 120)
+                    .frame(maxWidth: .infinity)
+            }
+            .padding(60)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else {
+            VStack(spacing: 24) {
+                icon(size: 48)
+                code(size: 64)
                 details
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .loginFocusSection()
-            code
-                .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
+            .padding(32)
+            .frame(maxWidth: 480)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(60)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func icon(size: CGFloat) -> some View {
+        Image(systemName: "iphone.and.arrow.forward")
+            .font(.system(size: size))
+            .foregroundStyle(DT.Color.accent)
+            .accessibilityHidden(true)
     }
 
     @ViewBuilder
@@ -282,8 +336,8 @@ struct AppleTVSetupHostView: View {
         case .idle:
             EmptyView()
         case .confirming:
-            title("Set Up This Apple TV?")
-            message(Text("An iPhone or iPad on this network wants to set up this Apple TV. Allow it only if it shows this code."))
+            title("Set Up This Device?")
+            message(Text("An iPhone or iPad on this network wants to set up this device. Allow it only if it shows this code."))
             HStack(spacing: 32) {
                 Button("Allow") { host.allow(true) }
                 Button("Cancel", role: .cancel) { host.allow(false) }
@@ -296,18 +350,18 @@ struct AppleTVSetupHostView: View {
             title("Signing In")
             message(Text("Signing in \(names)."))
         case .failed(let reason):
-            title("Couldn't Set Up This Apple TV")
+            title("Couldn't Set Up This Device")
             message(Text(reason))
             Button("OK") { host.dismissFailure() }
         }
     }
 
     @ViewBuilder
-    private var code: some View {
+    private func code(size: CGFloat) -> some View {
         switch host.phase {
         case .confirming(let code), .waitingForPhone(let code):
             Text(code.count == 6 ? "\(code.prefix(3)) \(code.suffix(3))" : code)
-                .font(.system(size: 120, weight: .bold, design: .rounded))
+                .font(.system(size: size, weight: .bold, design: .rounded))
                 .monospacedDigit()
                 .tracking(12)
                 .foregroundStyle(DT.Color.textPrimary)
@@ -335,22 +389,22 @@ struct AppleTVSetupHostView: View {
 
 // MARK: - iPhone / iPad: setting one up
 
-/// The phone's side (#481): notices a signed-out Apple TV on the network and offers to set it
+/// The phone's side (#481): notices a signed-out device on the network and offers to set it
 /// up with one or more of this device's profiles. Once both people have checked the code,
 /// it sends the profiles over the sealed connection and approves the Quick Connect code the
-/// Apple TV starts for each.
+/// device starts for each.
 @MainActor @Observable
-final class AppleTVSetupGuide {
+final class NearbySetupGuide {
     enum Phase: Equatable {
         case idle
-        /// Settings › Set Up Nearby Apple TV: looking, with nothing found yet.
+        /// Settings › Set Up Nearby Device: looking, with nothing found yet.
         case searching
-        /// The Apple TVs waiting to be set up; more than one is set up one at a time.
-        case offering([DeviceSetupBrowser.AppleTV])
+        /// The devices waiting to be set up; more than one is set up one at a time.
+        case offering([DeviceSetupBrowser.NearbyDevice])
         case connecting(String)
         /// Both screens show this; the person confirms it matches.
         case confirming(code: String, name: String)
-        /// Confirmed here; waiting for the person at the Apple TV to press Allow.
+        /// Confirmed here; waiting for the person at the other device to press Allow.
         case waitingForTV(String)
         /// Both confirmed: which profiles to sign in, leaving out those already on the TV.
         case choosing(String)
@@ -360,13 +414,16 @@ final class AppleTVSetupGuide {
     }
 
     private(set) var phase: Phase = .idle
-    /// The profiles to sign the Apple TV in with, the active one first.
+    /// What's being set up, or offered when it's one, for its icon and wording.
+    /// Nil until one is found: the icon is for any device till then.
+    private(set) var kind: DeviceSetup.DeviceKind?
+    /// The profiles to sign the other device in with, the active one first.
     var selected: Set<UUID> = []
     /// Profiles with a PIN, which can only be added after switching to them.
     private(set) var locked: Set<UUID> = []
 
     /// How long it looks by itself each time the app comes to the front. Settings › Set Up
-    /// Nearby Apple TV looks again whenever it's asked.
+    /// Nearby device looks again whenever it's asked.
     private static let lookingWindow: Duration = .seconds(120)
 
     @ObservationIgnored private var browser: DeviceSetupBrowser?
@@ -374,10 +431,10 @@ final class AppleTVSetupGuide {
     @ObservationIgnored private var session: DeviceSetupSession?
     @ObservationIgnored private var declined: Set<String> = []
     @ObservationIgnored private var sending: [ServerCredential] = []
-    /// Set once the Apple TV allowed it: the user ids it already has.
+    /// Set once the other device allowed it: the user ids it already has.
     private(set) var onTV: Set<String>?
     @ObservationIgnored private var phoneConfirmed = false
-    @ObservationIgnored private var found: [DeviceSetupBrowser.AppleTV] = []
+    @ObservationIgnored private var found: [DeviceSetupBrowser.NearbyDevice] = []
     @ObservationIgnored private weak var authManager: AuthManager?
     @ObservationIgnored private var searchTimeout: Task<Void, Never>?
 
@@ -420,11 +477,12 @@ final class AppleTVSetupGuide {
         if phase == .searching { phase = .idle }
     }
 
-    /// Settings › Set Up Nearby Apple TV: looks again, offers one even after Not Now, and
+    /// Settings › Set Up Nearby Device: looks again, offers one even after Not Now, and
     /// says so when there's none.
     func findNearby(authManager: AuthManager) {
         declined = []
         phase = .searching
+        kind = nil
         stop()
         phase = .searching
         start(authManager: authManager)
@@ -432,7 +490,7 @@ final class AppleTVSetupGuide {
         searchTimeout = Task { [weak self] in
             try? await Task.sleep(for: .seconds(15))
             guard let self, !Task.isCancelled, self.phase == .searching else { return }
-            self.phase = .failed(String(localized: "No Apple TV to set up was found. Open Arcfin on the Apple TV, go to its sign-in page, and make sure both are on the same network."))
+            self.phase = .failed(String(localized: "No device to set up was found. Open Arcfin on the Apple TV, iPad or Mac, go to its sign-in page, and make sure both are on the same network."))
         }
     }
 
@@ -443,7 +501,7 @@ final class AppleTVSetupGuide {
         }
     }
 
-    /// Offers every Apple TV found that wasn't passed over, and keeps the list current while
+    /// Offers every device found that wasn't passed over, and keeps the list current while
     /// it shows.
     private func offer(authManager: AuthManager) async {
         let tvs = found.filter { !declined.contains($0.name) }
@@ -455,6 +513,7 @@ final class AppleTVSetupGuide {
         await prepareChoices(authManager: authManager)
         guard isOfferingOrWaiting else { return }
         searchTimeout?.cancel()
+        if let first = tvs.first { kind = first.kind }
         phase = .offering(tvs)
     }
 
@@ -474,7 +533,7 @@ final class AppleTVSetupGuide {
         if selected.contains(id) { selected.remove(id) } else { selected.insert(id) }
     }
 
-    /// Hides this Apple TV until the app is next opened, or Settings looks again.
+    /// Hides this device until the app is next opened, or Settings looks again.
     func notNow() {
         if case .offering(let tvs) = phase { declined.formUnion(tvs.map(\.name)) }
         cancel()
@@ -486,14 +545,15 @@ final class AppleTVSetupGuide {
         phase = .idle
     }
 
-    func setUp(_ tv: DeviceSetupBrowser.AppleTV, authManager: AuthManager) {
+    func setUp(_ tv: DeviceSetupBrowser.NearbyDevice, authManager: AuthManager) {
         sending = []
         onTV = nil
         phoneConfirmed = false
+        kind = tv.kind
         phase = .connecting(tv.name)
         Task {
             guard let session = try? await withTimeout(seconds: 10, { try await DeviceSetupSession.connect(to: tv.endpoint) }) else {
-                phase = .failed(String(localized: "The Apple TV stopped answering. Try again from its sign-in page."))
+                phase = .failed(String(localized: "The other device stopped answering. Try again from its sign-in page."))
                 return
             }
             guard case .connecting = phase else {
@@ -520,8 +580,8 @@ final class AppleTVSetupGuide {
                     approve(index: index, code: code, authManager: authManager)
                 case .done(let count):
                     phase = .done(count == 1
-                        ? String(localized: "The Apple TV is signed in as \(sending.first?.displayName ?? "").")
-                        : String(localized: "The Apple TV is signed in with \(count) profiles."))
+                        ? String(localized: "It's signed in as \(sending.first?.displayName ?? "").")
+                        : String(localized: "It's signed in with \(count) profiles."))
                 case .failed(let failure):
                     phase = .failed(Self.explanation(failure))
                 default:
@@ -531,29 +591,30 @@ final class AppleTVSetupGuide {
             if self.session === session { self.session = nil }
             switch phase {
             case .confirming, .waitingForTV, .choosing:
-                phase = .failed(String(localized: "The Apple TV stopped answering. Try again from its sign-in page."))
+                phase = .failed(String(localized: "The other device stopped answering. Try again from its sign-in page."))
             case .approving:
-                phase = .failed(String(localized: "The Apple TV stopped answering before it confirmed. Check whether it's signed in."))
+                phase = .failed(String(localized: "The other device stopped answering before it confirmed. Check whether it's signed in."))
             default:
                 break
             }
         }
     }
 
-    /// The person saw the same code on both screens: the connection is the Apple TV's.
-    /// Profiles are picked once the Apple TV has allowed it too.
+    /// The person saw the same code on both screens: the connection is the other device's.
+    /// Profiles are picked once the other device has allowed it too.
     func confirm() {
         guard case .confirming(_, let name) = phase else { return }
         phoneConfirmed = true
         phase = onTV == nil ? .waitingForTV(name) : .choosing(name)
     }
 
-    /// The profiles that can still go to the Apple TV.
+    /// The profiles that can still go to the other device.
     func available(_ authManager: AuthManager) -> [ServerCredential] {
         authManager.profiles.filter { !(onTV?.contains($0.userID) ?? false) }
     }
 
-    /// Sends the picked profiles, sealed, each with its TMDB key, the active one first.
+    /// Sends the picked profiles, sealed, each with its TMDB key, Seerr connection and
+    /// ListenBrainz token, the active one first.
     func signIn(authManager: AuthManager) {
         guard let session, case .choosing = phase else { return }
         let activeID = authManager.state.credential?.id
@@ -563,10 +624,14 @@ final class AppleTVSetupGuide {
         guard !sending.isEmpty else { return }
         session.send(.hello(profiles: sending.map { profile in
             let key = profile.id == activeID ? TMDBCredential.load() : TMDBCredential.load(profile: profile.id)
+            let seerr = authManager.seerrConnection(for: profile.id).map {
+                DeviceSetup.Profile.Seerr(url: $0.url, authMethod: $0.authMethod, username: $0.username)
+            }
             return DeviceSetup.Profile(userName: profile.displayName,
                                        serverName: profile.baseURL.host() ?? profile.baseURL.absoluteString,
                                        servers: Self.addresses(for: profile).map(\.absoluteString),
-                                       tmdbKey: key.flatMap { $0.isEmpty ? nil : $0 })
+                                       tmdbKey: key.flatMap { $0.isEmpty ? nil : $0 }, seerr: seerr,
+                                       listenBrainzToken: ListenBrainzCredential.load(profile: profile.id))
         }))
         phase = .approving
     }
@@ -581,21 +646,22 @@ final class AppleTVSetupGuide {
             if approved {
                 session.send(.approved(profile: index))
             } else if index == 0 {
-                phase = .failed(String(localized: "The code has expired or was already used. Start again from the Apple TV's sign-in page."))
+                phase = .failed(String(localized: "The code has expired or was already used. Start again from the other device's sign-in page."))
                 session.finish(with: .failed(.expired))
             }
         }
     }
 
-    /// Closes this one; any other Apple TV still waiting is offered next.
+    /// Closes this one; any other device still waiting is offered next.
     func dismiss() {
         session?.close()
         session = nil
         phase = .idle
+        kind = nil
         if let authManager { Task { await offer(authManager: authManager) } }
     }
 
-    /// Home first, then away, then the address in use now: the Apple TV is usually at home,
+    /// Home first, then away, then the address in use now: the other device is usually at home,
     /// and takes the first one that answers.
     private static func addresses(for credential: ServerCredential) -> [URL] {
         let defaults = UserDefaults.standard
@@ -608,11 +674,11 @@ final class AppleTVSetupGuide {
 
     private static func explanation(_ failure: DeviceSetup.Failure) -> String {
         switch failure {
-        case .declined: String(localized: "Setup was cancelled on the Apple TV.")
-        case .unreachable: String(localized: "The Apple TV couldn't reach your server. It needs to be on a network that can reach it.")
-        case .quickConnectOff: String(localized: "Quick Connect is off on your server, so the Apple TV is showing its password page instead.")
-        case .busy: String(localized: "Another device is already setting up this Apple TV.")
-        case .expired: String(localized: "The code ran out before it was confirmed. Start again from the Apple TV's sign-in page.")
+        case .declined: String(localized: "Setup was cancelled on the other device.")
+        case .unreachable: String(localized: "The other device couldn't reach your server. It needs to be on a network that can reach it.")
+        case .quickConnectOff: String(localized: "Quick Connect is off on your server, so the other device is showing its password page instead.")
+        case .busy: String(localized: "Another iPhone or iPad is already setting this device up.")
+        case .expired: String(localized: "The code ran out before it was confirmed. Start again from the other device's sign-in page.")
         }
     }
 }
@@ -632,14 +698,14 @@ private func withTimeout<T: Sendable>(seconds: Double, _ work: @escaping @Sendab
 }
 
 /// The card on iPhone and iPad, like the system's own setup cards.
-struct AppleTVSetupCard: View {
-    let guide: AppleTVSetupGuide
+struct NearbySetupCard: View {
+    let guide: NearbySetupGuide
     let authManager: AuthManager
 
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                Image(systemName: "appletv.fill")
+                Image(systemName: guide.kind?.filledSymbol ?? "laptopcomputer.and.iphone")
                     .font(.system(size: 56))
                     .foregroundStyle(DT.Color.accent)
                     .padding(.top, 8)
@@ -662,27 +728,27 @@ struct AppleTVSetupCard: View {
         case .idle:
             ProgressView()
         case .searching:
-            heading("Looking for Apple TVs")
-            note(Text("Open Arcfin on the Apple TV and go to its sign-in page. It needs to be on the same network as this device."))
+            heading("Looking for Devices")
+            note(Text("Open Arcfin on the Apple TV, iPad or Mac and go to its sign-in page. It needs to be on the same network as this device."))
             ProgressView()
             Button("Cancel") { guide.dismiss() }
                 .foregroundStyle(DT.Color.textSecondary)
         case .offering(let tvs) where tvs.count == 1:
-            heading("Set Up Apple TV?")
+            heading("Set Up Nearby Device?")
             Text(verbatim: tvs[0].name)
                 .font(.headline)
                 .foregroundStyle(DT.Color.textSecondary)
-            note(Text("Sign this Apple TV in with your profile from here."))
+            note(Text("Sign it in with your profile from here."))
             primary("Set Up") { guide.setUp(tvs[0], authManager: authManager) }
             Button("Not Now") { guide.notNow() }
                 .foregroundStyle(DT.Color.textSecondary)
         case .offering(let tvs):
-            heading("Set Up Apple TVs?")
-            note(Text("There's more than one Apple TV waiting to be set up on this network. Set them up one at a time."))
+            heading("Set Up Nearby Devices?")
+            note(Text("There's more than one device waiting to be set up on this network. Set them up one at a time."))
             VStack(spacing: 0) {
                 ForEach(tvs, id: \.self) { tv in
                     HStack(spacing: 12) {
-                        Image(systemName: "appletv")
+                        Image(systemName: tv.kind.symbol)
                             .foregroundStyle(DT.Color.accent)
                             .accessibilityHidden(true)
                         Text(verbatim: tv.name)
@@ -718,15 +784,15 @@ struct AppleTVSetupCard: View {
             Button("Cancel") { guide.cancel() }
                 .foregroundStyle(DT.Color.textSecondary)
         case .waitingForTV(let name):
-            heading("Allow on the Apple TV")
-            note(Text("Press Allow on \(name) with its remote."))
+            heading("Allow on \(name)")
+            note(guide.kind == .appleTV ? Text("Press Allow on \(name) with its remote.") : Text("Press Allow on \(name)."))
             ProgressView()
             Button("Cancel") { guide.cancel() }
                 .foregroundStyle(DT.Color.textSecondary)
         case .choosing:
             if guide.available(authManager).isEmpty {
                 heading("Already Signed In")
-                note(Text("All your profiles are already on this Apple TV."))
+                note(Text("All your profiles are already signed in there."))
                 primary("Done") { guide.cancel() }
             } else {
                 heading("Sign In As")
@@ -737,20 +803,20 @@ struct AppleTVSetupCard: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
         case .approving:
-            heading("Signing In the Apple TV")
+            heading("Signing In")
             ProgressView()
         case .done(let text):
-            heading("Apple TV Signed In")
+            heading("Signed In")
             note(Text(text))
             primary("Done") { guide.dismiss() }
         case .failed(let text):
-            heading("Couldn't Set Up Apple TV")
+            heading("Couldn't Set It Up")
             note(Text(text))
             primary("OK") { guide.dismiss() }
         }
     }
 
-    /// Which of this device's profiles to sign in. One already on the Apple TV isn't offered;
+    /// Which of this device's profiles to sign in. One already on the other device isn't offered;
     /// one with a PIN needs switching to first.
     private var profilePicker: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -764,7 +830,7 @@ struct AppleTVSetupCard: View {
                             Text(verbatim: profile.displayName)
                                 .foregroundStyle(DT.Color.textPrimary)
                             if onTV {
-                                Text("Already on this Apple TV.")
+                                Text("Already signed in there.")
                                     .font(.caption)
                                     .foregroundStyle(DT.Color.textSecondary)
                             } else if isLocked {
@@ -815,4 +881,16 @@ struct AppleTVSetupCard: View {
         .tint(DT.Color.accent)
         .foregroundStyle(DT.Color.onAccent)
     }
+}
+
+extension DeviceSetup.DeviceKind {
+    var symbol: String {
+        switch self {
+        case .appleTV: "appletv"
+        case .iPad: "ipad"
+        case .mac: "laptopcomputer"
+        }
+    }
+
+    var filledSymbol: String { self == .appleTV ? "appletv.fill" : symbol }
 }

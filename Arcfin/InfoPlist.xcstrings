@@ -145,6 +145,77 @@
         }
       }
     },
+    "NSAppleMusicUsageDescription" : {
+      "comment" : "Permission prompt",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin findet und spielt Apple Music-Titel, die nicht auf deinem Server sind, sobald du das in den Einstellungen aktivierst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin busca y reproduce canciones de Apple Music que no están en tu servidor, cuando lo activas en Ajustes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin trouve et lit les morceaux Apple Music absents de votre serveur, une fois l’option activée dans Réglages."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin trova e riproduce i brani di Apple Music che non sono sul server, dopo che lo attivi in Impostazioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「設定」でオンにすると、サーバにないApple Musicの曲をArcfinが見つけて再生します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정에서 켜면 서버에 없는 Apple Music 노래를 Arcfin이 찾아 재생합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin vindt en speelt Apple Music-nummers die niet op je server staan, zodra je dit aanzet in Instellingen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Arcfin encontra e toca músicas do Apple Music que não estão no seu servidor, quando você ativa isso em Ajustes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin находит и воспроизводит песни из Apple Music, которых нет на вашем сервере, после включения в Настройках."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“设置”中开启后，Arcfin 会查找并播放你的服务器上没有的 Apple Music 歌曲。"
+          }
+        }
+      }
+    },
     "NSBluetoothAlwaysUsageDescription" : {
       "comment" : "Permission prompt",
       "extractionState" : "extracted_with_value",
@@ -501,6 +572,221 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Arcfin 使用你的无线局域网名称，在你在家和外出时自动切换服务器的本地地址和远程地址。你的位置绝不会被存储、跟踪或共享——它仅用于读取当前的无线局域网名称。"
+          }
+        }
+      }
+    },
+    "NSMicrophoneUsageDescription" : {
+      "comment" : "Permission prompt",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin hört zu, wenn du im Auto per Sprache suchst oder einen Titel in deiner Nähe erkennen lässt."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin escucha cuando buscas por voz en el coche o le pides que identifique una canción que suena cerca."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin écoute quand vous cherchez à la voix en voiture ou lui demandez d’identifier un morceau qui passe près de vous."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin ascolta quando cerchi con la voce in auto o gli chiedi di riconoscere un brano che suona vicino a te."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "車内で音声検索するときや、近くで流れている曲を調べるときに、Arcfinが音声を聞き取ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "차에서 음성으로 검색하거나 주변에서 재생 중인 노래를 찾아 달라고 할 때 Arcfin이 듣습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin luistert als je in de auto met je stem zoekt of een nummer in de buurt laat herkennen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O Arcfin ouve quando você busca por voz no carro ou pede para identificar uma música tocando perto de você."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin слушает, когда вы ищете голосом в машине или просите узнать песню, играющую рядом."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当你在车内用语音搜索，或让 Arcfin 识别附近播放的歌曲时，Arcfin 会聆听。"
+          }
+        }
+      }
+    },
+    "NSSiriUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri spielt deine Filme, Serien und Musik in Arcfin ab, wenn du darum bittest, auf iPhone oder iPad oder im Auto."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Siri plays your movies, shows and music in Arcfin when you ask, on your iPhone or iPad or in the car."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri reproduce tus películas, series y música en Arcfin cuando se lo pides, en tu iPhone o iPad o en el coche."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri lance vos films, séries et musique dans Arcfin quand vous le demandez, sur iPhone ou iPad ou en voiture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri riproduce i tuoi film, serie e musica in Arcfin quando lo chiedi, su iPhone o iPad o in auto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone、iPad、車内で頼むと、SiriがArcfinで映画、番組、音楽を再生します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone, iPad 또는 차에서 요청하면 Siri가 Arcfin에서 영화, 프로그램, 음악을 재생합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri speelt je films, series en muziek af in Arcfin als je erom vraagt, op je iPhone of iPad of in de auto."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A Siri reproduz seus filmes, séries e músicas no Arcfin quando você pede, no iPhone ou iPad ou no carro."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri включает ваши фильмы, сериалы и музыку в Arcfin по вашей просьбе — на iPhone, iPad или в машине."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在 iPhone、iPad 上或车内提出请求时，Siri 会在 Arcfin 中播放你的电影、剧集和音乐。"
+          }
+        }
+      }
+    },
+    "NSSpeechRecognitionUsageDescription" : {
+      "comment" : "Permission prompt",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin macht aus dem Gesagten eine Suche, wenn du im Auto per Sprache suchst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Arcfin turns what you say into a search when you search by voice in the car."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin convierte lo que dices en una búsqueda cuando buscas por voz en el coche."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin transforme ce que vous dites en recherche quand vous cherchez à la voix en voiture."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin trasforma ciò che dici in una ricerca quando cerchi con la voce in auto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "車内で音声検索するとき、Arcfinが話した内容を検索語にします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "차에서 음성으로 검색할 때 Arcfin이 말한 내용을 검색어로 바꿉니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin maakt van wat je zegt een zoekopdracht als je in de auto met je stem zoekt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin transforma o que você diz em uma busca quando você busca por voz no carro."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin превращает сказанное в поисковый запрос, когда вы ищете голосом в машине."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在车内用语音搜索时，Arcfin 会把你说的话变成搜索内容。"
           }
         }
       }

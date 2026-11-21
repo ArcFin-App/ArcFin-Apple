@@ -10,6 +10,7 @@ struct MainTabView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
     @Bindable private var playlistStore = PlaylistStore.shared
+    @Bindable private var musicPlaylists = MusicPlaylistEditor.shared
     @Bindable private var tagEditor = TagEditor.shared
     @Bindable private var metadataEditor = MetadataEditor.shared
     @AppStorage(BottomNavPrefs.orderKey) private var orderString = ""
@@ -48,6 +49,9 @@ struct MainTabView: View {
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                if AppServices.music.isActive { MusicPlayerBar() }
+            }
             // The tab sidebar's own toggle ends up in the toolbar's overflow menu at the far
             // right, and `.toolbar(removing: .sidebarToggle)` doesn't reach it, so it's taken
             // off the window's toolbar and Arcfin's own sits at the leading edge instead.
@@ -81,6 +85,10 @@ struct MainTabView: View {
             }
             .sheet(item: $playlistStore.addingItem) { item in
                 AddToPlaylistSheet(item: item)
+                    .presentationDetents([.medium, .large])
+            }
+            .sheet(item: $musicPlaylists.request) { request in
+                MusicAddToPlaylistSheet(songs: request.songs)
                     .presentationDetents([.medium, .large])
             }
             .onChange(of: selectedTab) { old, _ in
@@ -146,11 +154,12 @@ private enum SystemSidebarToggle {
         if let toolbar = window?.toolbar { removeItems(from: toolbar) }
         guard observer == nil else { return }
         observer = NotificationCenter.default.addObserver(forName: NSToolbar.willAddItemNotification, object: nil, queue: .main) { note in
-            guard let item = note.userInfo?["item"] as? NSToolbarItem, isSystemToggle(item),
-                  let toolbar = note.object as? NSToolbar
-            else { return }
-            // Still being added at this point; take it off once it's in.
+            // Delivered on the main queue: the toolbar and its items are the main actor's.
             MainActor.assumeIsolated {
+                guard let item = note.userInfo?["item"] as? NSToolbarItem, isSystemToggle(item),
+                      let toolbar = note.object as? NSToolbar
+                else { return }
+                // Still being added at this point; take it off once it's in.
                 DispatchQueue.main.async { removeItems(from: toolbar) }
             }
         }
@@ -162,7 +171,7 @@ private enum SystemSidebarToggle {
         }
     }
 
-    private nonisolated static func isSystemToggle(_ item: NSToolbarItem) -> Bool {
+    private static func isSystemToggle(_ item: NSToolbarItem) -> Bool {
         item.itemIdentifier == .toggleSidebar
             || item.itemIdentifier.rawValue.localizedCaseInsensitiveContains("togglesidebar")
             || item.itemIdentifier.rawValue.localizedCaseInsensitiveContains("sidebartoggle")

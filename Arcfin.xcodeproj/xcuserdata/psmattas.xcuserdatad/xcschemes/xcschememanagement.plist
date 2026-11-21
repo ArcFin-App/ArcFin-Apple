@@ -14,6 +14,11 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>ArcfinWatch Watch App.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>5</integer>
+		</dict>
 		<key>ArcfinWidgetsExtension.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
@@ -33,6 +38,11 @@
 			<true/>
 		</dict>
 		<key>FAB5D86A2FA9621A002031A9</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>FAD27E2A30AACE7600B67955</key>
 		<dict>
 			<key>primary</key>
 			<true/>

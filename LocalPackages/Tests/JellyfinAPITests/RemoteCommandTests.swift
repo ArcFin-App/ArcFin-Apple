@@ -20,10 +20,18 @@ struct RemoteCommandTests {
         #expect(command == .play(itemIds: ["a1b2"], startPositionTicks: 600_000_000))
     }
 
-    @Test("Queue commands are left out")
-    func playNextIgnored() {
-        #expect(parse("Play", #"{"Data":{"ItemIds":["a1b2"],"PlayCommand":"PlayNext"}}"#) == nil)
+    @Test("Play Next and Play Last queue; an empty list is left out")
+    func queueCommands() {
+        #expect(parse("Play", #"{"Data":{"ItemIds":["a1b2"],"PlayCommand":"PlayNext"}}"#) == .queue(itemIds: ["a1b2"], next: true))
+        #expect(parse("Play", #"{"Data":{"ItemIds":["a1b2"],"PlayCommand":"PlayLast"}}"#) == .queue(itemIds: ["a1b2"], next: false))
+        #expect(parse("Play", #"{"Data":{"ItemIds":["a1b2"],"PlayCommand":"PlayInstantMix"}}"#) == nil)
         #expect(parse("Play", #"{"Data":{"ItemIds":[],"PlayCommand":"PlayNow"}}"#) == nil)
+    }
+
+    @Test("Play Now from a song in the list")
+    func playNowStartIndex() {
+        #expect(parse("Play", #"{"Data":{"ItemIds":["a","b","c"],"StartIndex":2,"PlayCommand":"PlayNow"}}"#)
+                == .play(itemIds: ["a", "b", "c"], startPositionTicks: nil, startIndex: 2))
     }
 
     @Test("Seek carries its position")

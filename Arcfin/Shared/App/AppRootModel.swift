@@ -91,7 +91,7 @@ final class AppRootModel {
 
     /// The stored sign-in and the PIN lock, checked once at launch.
     func checkLaunch() async {
-        await authManager.checkStoredAuth()
+        await authManager.checkStoredAuthOnce()
         await refreshLockRequirement()
         if activeProfileHasPIN { isAppLocked = true } else { AppServices.hasPassedLock = true }
         launchChecked = true

@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var offlinePickedURL: URL?
     @State private var navigateToOfflineLocalPlayer = false
     @State private var bypassSessionCheck = false
+    @State private var showOfflineMusic = false
 
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
 
@@ -63,7 +64,17 @@ struct ContentView: View {
                             }
                             .accessibilityLabel("Open local file")
                         }
+                        // Saved songs play without the server too.
+                        if !MusicDownloads.shared.isEmpty {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button { showOfflineMusic = true } label: {
+                                    Image(systemName: "music.note")
+                                }
+                                .accessibilityLabel("Downloaded Music")
+                            }
+                        }
                     }
+                    .navigationDestination(isPresented: $showOfflineMusic) { MusicDownloadsView() }
                     .sheet(isPresented: $showOfflineDocPicker) {
                         DocumentPickerView { url in
                             offlinePickedURL = url
@@ -76,6 +87,22 @@ struct ContentView: View {
                                 .toolbar(.hidden, for: .tabBar)
                         }
                     }
+            }
+            .safeAreaInset(edge: .bottom) {
+                if AppServices.music.isActive {
+                    MusicMiniPlayer(isExpanded: Binding(get: { AppServices.music.isNowPlayingOpen },
+                                                        set: { AppServices.music.isNowPlayingOpen = $0 }))
+                        .padding(.horizontal, DT.Spacing.md)
+                        .padding(.vertical, DT.Spacing.sm)
+                        .glassEffect(.regular.interactive(), in: .capsule)
+                        .padding(.horizontal, DT.Spacing.md)
+                }
+            }
+            .sheet(isPresented: Binding(get: { AppServices.music.isNowPlayingOpen },
+                                        set: { AppServices.music.isNowPlayingOpen = $0 })) {
+                MusicNowPlayingView()
+                    .presentationDragIndicator(.hidden)
+                    .presentationBackground(.black)
             }
             .transition(.opacity)
         }

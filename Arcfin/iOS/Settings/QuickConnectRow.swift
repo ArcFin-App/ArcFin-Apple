@@ -86,18 +86,18 @@ struct ScanAppleTVCodeRow: View {
     }
 }
 
-/// Settings › Set Up Nearby Apple TV: looks for a signed-out Apple TV on the network now,
+/// Settings › Set Up Nearby Device: looks for a signed-out Apple TV, iPad or Mac on the network now,
 /// rather than waiting for one to turn up (#481).
-struct SetUpNearbyAppleTVRow: View {
+struct SetUpNearbyDeviceRow: View {
     @Environment(AuthManager.self) private var authManager
 
     var body: some View {
-        Button { AppServices.appleTVSetup.findNearby(authManager: authManager) } label: {
+        Button { AppServices.nearbySetup.findNearby(authManager: authManager) } label: {
             Label {
-                Text("Set Up Nearby Apple TV")
+                Text("Set Up Nearby Device")
                     .foregroundStyle(DT.Color.textPrimary)
             } icon: {
-                Image(systemName: "appletv")
+                Image(systemName: "ipad.and.iphone")
                     .foregroundStyle(DT.Color.accent)
                     .frame(width: 22)
             }

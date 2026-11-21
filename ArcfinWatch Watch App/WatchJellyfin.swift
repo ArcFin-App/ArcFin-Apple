@@ -14,6 +14,8 @@ struct WatchSession: Identifiable, Equatable, Sendable {
     let id: String
     let deviceName: String
     let itemID: String
+    /// The album's, for a song: songs rarely have art of their own.
+    let artworkItemID: String
     let title: String
     let subtitle: String?
     let isPaused: Bool
@@ -149,9 +151,15 @@ private struct SessionResponse: Decodable {
         let indexNumber: Int?
         let parentIndexNumber: Int?
         let mediaStreams: [Stream]?
+        let type: String?
+        let albumId: String?
+        let album: String?
+        let artists: [String]?
+        let albumArtist: String?
         enum CodingKeys: String, CodingKey {
             case id = "Id", name = "Name", runTimeTicks = "RunTimeTicks", seriesName = "SeriesName"
             case indexNumber = "IndexNumber", parentIndexNumber = "ParentIndexNumber", mediaStreams = "MediaStreams"
+            case type = "Type", albumId = "AlbumId", album = "Album", artists = "Artists", albumArtist = "AlbumArtist"
         }
     }
     struct PlayState: Decodable {
@@ -179,10 +187,18 @@ private struct SessionResponse: Decodable {
     /// Only devices playing something that take commands.
     var session: WatchSession? {
         guard supportsRemoteControl == true, let item = nowPlayingItem, let itemID = item.id else { return nil }
-        let episode = item.indexNumber.map { number in item.parentIndexNumber.map { "S\($0) E\(number)" } ?? "E\(number)" }
-        let subtitle = item.seriesName.map { [$0, episode].compactMap { $0 }.joined(separator: " · ") }
+        let isSong = item.type == "Audio"
+        let subtitle: String?
+        if isSong {
+            let artist = item.artists.flatMap { $0.isEmpty ? nil : $0.joined(separator: ", ") } ?? item.albumArtist
+            subtitle = artist ?? item.album
+        } else {
+            let episode = item.indexNumber.map { number in item.parentIndexNumber.map { "S\($0) E\(number)" } ?? "E\(number)" }
+            subtitle = item.seriesName.map { [$0, episode].compactMap { $0 }.joined(separator: " · ") }
+        }
         return WatchSession(
-            id: id, deviceName: deviceName ?? "", itemID: itemID, title: item.name ?? "", subtitle: subtitle,
+            id: id, deviceName: deviceName ?? "", itemID: itemID,
+            artworkItemID: isSong ? item.albumId ?? itemID : itemID, title: item.name ?? "", subtitle: subtitle,
             isPaused: playState?.isPaused ?? false, positionTicks: playState?.positionTicks ?? 0,
             runTimeTicks: item.runTimeTicks ?? 0, volumeLevel: playState?.volumeLevel,
             isMuted: playState?.isMuted ?? false, audioIndex: playState?.audioStreamIndex,
@@ -196,5 +212,89 @@ private struct SessionResponse: Decodable {
             guard stream.type == type, let index = stream.index else { return nil }
             return WatchSession.Track(index: index, title: stream.displayTitle ?? stream.language ?? "\(type) \(index)")
         }
+    }
+}
+
+// MARK: - Music on the watch
+
+struct WatchPlaylist: Identifiable, Hashable, Codable, Sendable {
+    let id: String
+    let name: String
+    let songCount: Int?
+}
+
+struct WatchSong: Identifiable, Hashable, Codable, Sendable {
+    let id: String
+    let name: String
+    let artist: String?
+    let albumID: String?
+    let seconds: Double?
+}
+
+private struct WatchItemsResponse: Decodable {
+    struct Item: Decodable {
+        let id: String
+        let name: String?
+        let albumId: String?
+        let artists: [String]?
+        let albumArtist: String?
+        let runTimeTicks: Int64?
+        let childCount: Int?
+        enum CodingKeys: String, CodingKey {
+            case id = "Id", name = "Name", albumId = "AlbumId", artists = "Artists", albumArtist = "AlbumArtist"
+            case runTimeTicks = "RunTimeTicks", childCount = "ChildCount"
+        }
+    }
+    let items: [Item]
+    enum CodingKeys: String, CodingKey { case items = "Items" }
+}
+
+extension WatchJellyfin {
+    func playlists() async throws -> [WatchPlaylist] {
+        try await items("Users/\(credential.userID)/Items", [
+            .init(name: "IncludeItemTypes", value: "Playlist"), .init(name: "MediaTypes", value: "Audio"),
+            .init(name: "Recursive", value: "true"), .init(name: "SortBy", value: "SortName"),
+        ]).map { WatchPlaylist(id: $0.id, name: $0.name ?? "", songCount: $0.childCount) }
+    }
+
+    func songs(inPlaylist id: String) async throws -> [WatchSong] {
+        try await items("Playlists/\(id)/Items", [.init(name: "UserId", value: credential.userID)]).map(Self.song)
+    }
+
+    /// The profile's favourite songs, shuffled.
+    func favoriteSongs() async throws -> [WatchSong] {
+        try await items("Users/\(credential.userID)/Items", [
+            .init(name: "IncludeItemTypes", value: "Audio"), .init(name: "Recursive", value: "true"),
+            .init(name: "Filters", value: "IsFavorite"), .init(name: "SortBy", value: "Random"),
+            .init(name: "Limit", value: "100"),
+        ]).map(Self.song)
+    }
+
+    private static func song(_ item: WatchItemsResponse.Item) -> WatchSong {
+        WatchSong(id: item.id, name: item.name ?? "", artist: item.artists?.first ?? item.albumArtist,
+                  albumID: item.albumId, seconds: item.runTimeTicks.map { Double($0) / 10_000_000 })
+    }
+
+    private func items(_ path: String, _ query: [URLQueryItem]) async throws -> [WatchItemsResponse.Item] {
+        await Self.waitForNetwork()
+        let (data, response) = try await send { server in
+            var comps = URLComponents(url: server.appendingPathComponent(path), resolvingAgainstBaseURL: false)
+            comps?.queryItems = query
+            return comps?.url.map { URLRequest(url: $0) }
+        }
+        guard (200...299).contains(response.statusCode) else { throw URLError(.badServerResponse) }
+        return try JSONDecoder().decode(WatchItemsResponse.self, from: data).items
+    }
+
+    /// The song converted to 192 kbps MP3, which the watch plays and keeps small.
+    func streamURL(songID: String) -> URL? {
+        guard let server = Self.lastWorking ?? credential.serverURLs.first,
+              var comps = URLComponents(url: server.appendingPathComponent("Audio/\(songID)/stream.mp3"),
+                                        resolvingAgainstBaseURL: false) else { return nil }
+        comps.queryItems = [
+            .init(name: "audioCodec", value: "mp3"), .init(name: "audioBitRate", value: "192000"),
+            .init(name: "api_key", value: credential.accessToken),
+        ]
+        return comps.url
     }
 }

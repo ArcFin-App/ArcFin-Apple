@@ -1004,6 +1004,22 @@ public struct JellyfinMediaClient: Sendable {
         _ = try await URLSession.arcfin.data(for: req)
     }
 
+    /// Marks an item played, on the day it was last played.
+    public func markPlayed(credential: ServerCredential, authHeader: String, itemId: String, at date: Date) async throws {
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/PlayedItems/\(itemId)"),
+                                  resolvingAgainstBaseURL: false)
+        comps?.queryItems = [.init(name: "datePlayed", value: ISO8601DateFormatter().string(from: date))]
+        guard let url = comps?.url else { throw URLError(.badURL) }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (_, response) = try await URLSession.arcfin.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
+    }
+
     /// Jellyfin has no dedicated "remove from Continue Watching" call — zeroing the saved
     /// position is what its own web client does, and it drops the item from the shelf
     /// without marking it watched.
@@ -1098,7 +1114,10 @@ public struct JellyfinMediaClient: Sendable {
         req.httpMethod = favorite ? "POST" : "DELETE"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 15
-        _ = try await URLSession.arcfin.data(for: req)
+        let (_, response) = try await URLSession.arcfin.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw URLError(.badServerResponse)
+        }
     }
 
     /// An item's tags, as an admin edits them.

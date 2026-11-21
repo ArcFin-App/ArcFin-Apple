@@ -1,18 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import JellyfinAPI
 
 /// The design tokens that differ on this platform; `DT` reads them.
 enum PlatformMetrics {
+    /// Whether the app tells Now Playing if it's playing. Only the Mac takes it; elsewhere the
+    /// system works it out from the audio session and logs a missing entitlement instead.
+    static let setsNowPlayingState = true
     /// How wide a title's description may run. The window sets it here; it's resized at will.
     /// Which platform's components the Licenses screen lists.
     /// The sign-in pages: two columns across the screen (what to do, and what to do it with),
     /// or one readable column.
     static let loginSideBySide = false
-    /// Can be set up from an iPhone or iPad on the same network (#481).
-    static let hostsAppleTVSetup = false
-    /// Offers to set up a signed-out Apple TV on the same network (#481).
-    static let setsUpAppleTV = false
+    /// Can be set up from Arcfin on an iPhone or iPad on the same network while signed out
+    /// (#481): Apple TV, iPad and Mac.
+    static let hostsNearbySetup = true
+    /// What's Playing? with ShazamKit, and Apple Music for songs not on the server. The Mac
+    /// would need a microphone entitlement, and its MusicKit can't play the catalog.
+    static let identifiesSongs = false
+    static let playsAppleMusic = false
+    /// What it says it is to the phone setting it up.
+    /// How tall a music page's hero art goes, as the title pages' backdrop: a square as wide
+    /// as a Mac window ran far down the page.
+    static let musicHeroMaxHeight: CGFloat = 420
+    static let nearbySetupKind = DeviceSetup.DeviceKind.mac
+    /// Where Local Network is turned on for the app, for setup from a phone.
+    static let localNetworkSettings = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork")
+    /// Offers to set up a signed-out Apple TV, iPad or Mac on the same network (#481).
+    static let setsUpNearbyDevices = false
     /// Sheets with a lot in them lay it out in two columns across the screen (TVs are landscape).
     static let sheetsSideBySide = false
     /// Acts as a remote for Arcfin (or another Jellyfin app) playing elsewhere (#457).

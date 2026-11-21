@@ -62,34 +62,41 @@ func artwork(_ fileName: String?) -> Image? {
 
 /// Artwork keeps its colors in Tinted and Clear Home Screen modes. Without
 /// `.fullColor` the system flattens an image to a single tint, which is what turned
-/// the thumbnail into a plain light box there.
+/// the thumbnail into a plain light box there. The space it's given sets its size and the
+/// picture fills it: a filled picture on its own reports its full size and pushes the layout
+/// out of the widget.
 private struct Artwork: View {
     let item: WidgetSnapshot.Item
 
     var body: some View {
-        if let image = artwork(item.posterFileName) {
-            image
-                .resizable()
-                .widgetAccentedRenderingMode(.fullColor)
-                .scaledToFill()
-        } else {
-            ZStack {
-                Rectangle().fill(.fill.tertiary)
-                Image(systemName: "play.rectangle.fill")
-                    .font(.title2)
-                    .foregroundStyle(.secondary)
+        Color.clear
+            .overlay {
+                if let image = artwork(item.posterFileName) {
+                    image
+                        .resizable()
+                        .widgetAccentedRenderingMode(.fullColor)
+                        .scaledToFill()
+                } else {
+                    ZStack {
+                        Rectangle().fill(.fill.tertiary)
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
-        }
+            .clipped()
     }
 }
 
 private struct ProgressBar: View {
     let progress: Double
+    var tint: Color = .white
 
     var body: some View {
         ProgressView(value: progress)
             .progressViewStyle(.linear)
-            .tint(.white)
+            .tint(tint)
             .widgetAccentable()
     }
 }
@@ -105,35 +112,26 @@ private struct EmptyState: View {
     }
 }
 
-/// Title, then "S2 · E5" and the episode name; movies show just the year.
-private struct ItemCaption: View {
-    let item: WidgetSnapshot.Item
-    var titleFont: Font = .headline
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 1) {
-            Text(item.title).font(titleFont).lineLimit(1)
-            if let subtitle = item.subtitle {
-                Text(subtitle).font(.caption.weight(.semibold)).lineLimit(1)
-            }
-            if let detail = item.detail {
-                Text(detail).font(.caption).lineLimit(1).opacity(0.85)
-            }
-        }
-    }
+/// "S2 · E5 · Episode name", or the year for a movie.
+private func secondLine(_ item: WidgetSnapshot.Item) -> String {
+    [item.subtitle, item.detail].compactMap { $0 }.joined(separator: " · ")
 }
 
-/// Image fills the whole widget with a legibility gradient under the text.
+/// The picture fills it, with the title, the episode and how far in over a gradient.
 private struct HeroCard: View {
     let item: WidgetSnapshot.Item
+    var titleLines = 2
 
     var body: some View {
         ZStack(alignment: .bottomLeading) {
             Artwork(item: item)
-            LinearGradient(colors: [.clear, .black.opacity(0.75)], startPoint: .center, endPoint: .bottom)
-            VStack(alignment: .leading, spacing: 6) {
-                ItemCaption(item: item)
-                ProgressBar(progress: item.progress)
+            LinearGradient(colors: [.clear, .black.opacity(0.8)], startPoint: .center, endPoint: .bottom)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(item.title).font(.headline).lineLimit(titleLines).minimumScaleFactor(0.85)
+                if !secondLine(item).isEmpty {
+                    Text(secondLine(item)).font(.caption.weight(.medium)).lineLimit(1).opacity(0.9)
+                }
+                ProgressBar(progress: item.progress).padding(.top, 2)
             }
             .foregroundStyle(.white)
             .padding(12)
@@ -141,21 +139,41 @@ private struct HeroCard: View {
     }
 }
 
+/// A picture on top with the title, episode and progress under it: two of these fill a
+/// medium widget.
+private struct Card: View {
+    let item: WidgetSnapshot.Item
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Artwork(item: item)
+                .aspectRatio(16 / 9, contentMode: .fit)
+                .overlay(alignment: .bottom) { ProgressBar(progress: item.progress).padding(6) }
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            Text(item.title).font(.caption.weight(.semibold)).lineLimit(1)
+            if !secondLine(item).isEmpty {
+                Text(secondLine(item)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
+/// A small picture, the title and episode, and how far in.
 private struct CompactRow: View {
     let item: WidgetSnapshot.Item
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Artwork(item: item)
-                .frame(width: 64)
-                .aspectRatio(16 / 9, contentMode: .fit)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-            VStack(alignment: .leading, spacing: 1) {
+                .frame(width: 64, height: 36)
+                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            VStack(alignment: .leading, spacing: 2) {
                 Text(item.title).font(.footnote.weight(.semibold)).lineLimit(1)
-                Text([item.subtitle, item.detail].compactMap { $0 }.joined(separator: " · "))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                if !secondLine(item).isEmpty {
+                    Text(secondLine(item)).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
+                }
+                ProgressBar(progress: item.progress, tint: .accentColor).frame(maxWidth: 120)
             }
             Spacer(minLength: 0)
         }
@@ -172,7 +190,8 @@ struct ContinueWatchingWidgetView: View {
         switch family {
         case .systemSmall: small
         case .systemMedium: medium
-        case .systemLarge, .systemExtraLarge: large
+        case .systemLarge: large
+        case .systemExtraLarge: extraLarge
         case .accessoryRectangular: rectangular
         case .accessoryCircular: circular
         case .accessoryInline: inline
@@ -180,34 +199,29 @@ struct ContinueWatchingWidgetView: View {
         }
     }
 
+    /// The latest title fills it.
     @ViewBuilder
     private var small: some View {
         if let item = entry.items.first {
             Color.clear
                 .widgetURL(playURL(item))
-                .containerBackground(for: .widget) { HeroCard(item: item) }
+                .containerBackground(for: .widget) { HeroCard(item: item, titleLines: 3) }
         } else {
             EmptyState().containerBackground(.fill.tertiary, for: .widget)
         }
     }
 
+    /// The two latest, side by side.
     @ViewBuilder
     private var medium: some View {
-        if let hero = entry.items.first {
-            HStack(spacing: 12) {
-                Link(destination: playURL(hero)) {
-                    HeroCard(item: hero)
-                        .clipShape(ContainerRelativeShape())
+        if !entry.items.isEmpty {
+            HStack(alignment: .top, spacing: 12) {
+                ForEach(entry.items.prefix(2)) { item in
+                    Link(destination: playURL(item)) { Card(item: item) }
                 }
-                if entry.items.count > 1 {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(entry.items.dropFirst().prefix(2)) { item in
-                            Link(destination: playURL(item)) { CompactRow(item: item) }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
+                if entry.items.count == 1 { Spacer(minLength: 0).frame(maxWidth: .infinity) }
             }
+            .frame(maxHeight: .infinity, alignment: .center)
             .containerBackground(.fill.tertiary, for: .widget)
         } else {
             EmptyState().containerBackground(.fill.tertiary, for: .widget)
@@ -218,27 +232,51 @@ struct ContinueWatchingWidgetView: View {
     @ViewBuilder
     private var large: some View {
         if let hero = entry.items.first {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: 10) {
                 Link(destination: playURL(hero)) {
                     HeroCard(item: hero)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .frame(maxHeight: .infinity)
-                if entry.items.count > 1 {
-                    Text("Up Next")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .textCase(.uppercase)
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(entry.items.dropFirst().prefix(3)) { item in
-                            Link(destination: playURL(item)) { CompactRow(item: item) }
-                        }
-                    }
-                }
+                upNext(entry.items.dropFirst().prefix(3))
             }
             .containerBackground(.fill.tertiary, for: .widget)
         } else {
             EmptyState().containerBackground(.fill.tertiary, for: .widget)
+        }
+    }
+
+    /// The latest title on the left, up to five more on the right.
+    @ViewBuilder
+    private var extraLarge: some View {
+        if let hero = entry.items.first {
+            HStack(alignment: .top, spacing: 16) {
+                Link(destination: playURL(hero)) {
+                    HeroCard(item: hero)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                upNext(entry.items.dropFirst().prefix(5))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            }
+            .containerBackground(.fill.tertiary, for: .widget)
+        } else {
+            EmptyState().containerBackground(.fill.tertiary, for: .widget)
+        }
+    }
+
+    @ViewBuilder
+    private func upNext(_ items: ArraySlice<WidgetSnapshot.Item>) -> some View {
+        if !items.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Up Next")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .textCase(.uppercase)
+                ForEach(items) { item in
+                    Link(destination: playURL(item)) { CompactRow(item: item) }
+                }
+            }
         }
     }
 
@@ -249,7 +287,7 @@ struct ContinueWatchingWidgetView: View {
                 Label(item.title, systemImage: "play.fill")
                     .font(.headline)
                     .lineLimit(1)
-                Text([item.subtitle, item.detail].compactMap { $0 }.joined(separator: " · "))
+                Text(secondLine(item))
                     .font(.caption)
                     .lineLimit(1)
                 ProgressView(value: item.progress)
@@ -301,6 +339,7 @@ struct ContinueWatchingWidget: Widget {
         .configurationDisplayName("Continue Watching")
         .description("Pick up where you left off.")
         .supportedFamilies(families)
+        .notForCarPlay()
     }
 
     /// The Lock Screen sizes exist on iOS only.

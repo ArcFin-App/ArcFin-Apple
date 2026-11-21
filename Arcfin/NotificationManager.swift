@@ -106,6 +106,12 @@ enum NotificationManager {
         await send(title: "Download Complete", body: title, identifier: "download.\(UUID().uuidString)", route: .downloads)
     }
 
+    /// A run of music downloads has finished.
+    static func notifyMusicDownloaded(songs: Int) async {
+        await send(title: String(localized: "Music Downloaded"), body: String(localized: "\(songs) songs"),
+                   identifier: "music-download.\(UUID().uuidString)")
+    }
+
     static func notifyRequestApproved(title: String) async {
         await send(title: "Request Approved", body: title, identifier: "seerr-approved.\(UUID().uuidString)", route: .discover)
     }

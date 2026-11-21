@@ -6,8 +6,10 @@ import AuthCore
 /// A command another client sent to this device through Jellyfin: the web app's "Play On",
 /// or the dashboard's controls.
 public enum JellyfinRemoteCommand: Sendable, Equatable {
-    /// Play these titles now. Queue commands (Play Next, Play Last…) aren't modeled.
-    case play(itemIds: [String], startPositionTicks: Int64?)
+    /// Play these titles now, from the one at `startIndex`.
+    case play(itemIds: [String], startPositionTicks: Int64?, startIndex: Int? = nil)
+    /// Play Next (`next`) or Play Last: add these to what's playing.
+    case queue(itemIds: [String], next: Bool)
     case playstate(Playstate, seekPositionTicks: Int64?)
     /// `name` is Jellyfin's GeneralCommandType; argument values always arrive as strings.
     case general(name: String, arguments: [String: String])
@@ -30,10 +32,15 @@ public enum JellyfinRemoteCommand: Sendable, Equatable {
         switch messageType {
         case "Play":
             guard let data = (try? decoder.decode(Envelope<PlayData>.self, from: json))?.data,
-                  data.playCommand == nil || data.playCommand == "PlayNow",
                   let ids = data.itemIds, !ids.isEmpty
             else { return nil }
-            return .play(itemIds: ids, startPositionTicks: data.startPositionTicks)
+            switch data.playCommand {
+            case nil, "PlayNow":
+                return .play(itemIds: ids, startPositionTicks: data.startPositionTicks, startIndex: data.startIndex)
+            case "PlayNext": return .queue(itemIds: ids, next: true)
+            case "PlayLast": return .queue(itemIds: ids, next: false)
+            default: return nil
+            }
         case "Playstate":
             guard let data = (try? decoder.decode(Envelope<PlaystateData>.self, from: json))?.data,
                   let command = Playstate(rawValue: data.command)
@@ -55,9 +62,11 @@ public enum JellyfinRemoteCommand: Sendable, Equatable {
     private struct PlayData: Decodable {
         let itemIds: [String]?
         let startPositionTicks: Int64?
+        let startIndex: Int?
         let playCommand: String?
         enum CodingKeys: String, CodingKey {
             case itemIds = "ItemIds", startPositionTicks = "StartPositionTicks", playCommand = "PlayCommand"
+            case startIndex = "StartIndex"
         }
     }
 
@@ -84,7 +93,7 @@ extension JellyfinMediaClient {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.timeoutInterval = 10
         req.httpBody = try? JSONSerialization.data(withJSONObject: [
-            "PlayableMediaTypes": ["Video"],
+            "PlayableMediaTypes": ["Video", "Audio"],
             "SupportedCommands": JellyfinRemoteCommand.supportedGeneralCommands,
             "SupportsMediaControl": true,
             "SupportsPersistentIdentifier": true,

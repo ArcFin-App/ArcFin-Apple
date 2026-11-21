@@ -10,7 +10,7 @@ struct LibraryView: View {
 
     private let columns = [GridItem(.adaptive(minimum: 400), spacing: 20)]
 
-    private var libraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV) }
+    private var libraries: [JellyfinLibrary] { LibraryModel.libraries(in: mediaRepo, includeLiveTV: ProfileRules.shared.canWatchLiveTV, includeMusic: true) }
 
     var body: some View {
         NavigationStack {
@@ -44,6 +44,8 @@ struct LibraryView: View {
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 if library.collectionType == .livetv {
                     LiveTVView(library: library)
+                } else if library.collectionType == .music {
+                    TVMusicLibraryView(library: library)
                 } else {
                     LibraryDetailView(library: library)
                 }
@@ -51,6 +53,7 @@ struct LibraryView: View {
             .navigationDestination(for: MediaItem.self) { item in
                 MediaDetailView(item: item)
             }
+            .musicDestinations()
             .navigationDestination(for: LibraryNavTarget.self) { target in
                 switch target {
                 case .media(let item):       MediaDetailView(item: item)

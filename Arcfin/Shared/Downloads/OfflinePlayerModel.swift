@@ -91,6 +91,7 @@ final class OfflinePlayerModel {
         if enginePreference == .vlc, !(player is VLCEnginePlayer) {
             player = VLCEnginePlayer()
         }
+        AppServices.music.yieldToVideo()
         do {
             try await player.load(url: videoURL, startPositionTicks: startTicks)
         } catch where player is AetherEnginePlayer {

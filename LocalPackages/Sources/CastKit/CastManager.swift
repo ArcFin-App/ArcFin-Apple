@@ -22,6 +22,9 @@ public final class CastManager: NSObject {
     public static let shared = CastManager()
 
     public private(set) var isCastAvailable = false
+    /// A Cast device is on this network (or one is connected). Off on mobile data, where the
+    /// Cast button hides itself.
+    public private(set) var hasDevices = false
     public private(set) var isConnected = false
     public private(set) var isConnecting = false
     public private(set) var isPaused = false
@@ -62,6 +65,12 @@ public final class CastManager: NSObject {
         GCKCastContext.setSharedInstanceWith(options)
         GCKCastContext.sharedInstance().sessionManager.add(self)
         isCastAvailable = true
+        hasDevices = GCKCastContext.sharedInstance().castState != .noDevicesAvailable
+        NotificationCenter.default.addObserver(forName: .gckCastStateDidChange, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.hasDevices = GCKCastContext.sharedInstance().castState != .noDevicesAvailable
+            }
+        }
         #endif
     }
 
@@ -121,6 +130,31 @@ public final class CastManager: NSObject {
         if !isLive { requestBuilder.startTime = startPositionSeconds }
         requestBuilder.autoplay = true
         if let activeSubtitleTrackID { requestBuilder.activeTrackIDs = [NSNumber(value: activeSubtitleTrackID)] }
+        client.loadMedia(with: requestBuilder.build())
+        #endif
+    }
+
+    /// A song: the receiver shows it as music, with its artist, album and cover.
+    public func loadSong(itemID: String, streamURL: URL, title: String, artist: String?, album: String?,
+                         artworkURL: URL?, contentType: String, startPositionSeconds: TimeInterval) {
+        #if canImport(GoogleCast)
+        guard let client = GCKCastContext.sharedInstance().sessionManager.currentSession?.remoteMediaClient else { return }
+        nowPlayingTitle = title
+        nowPlayingItemID = itemID
+        let metadata = GCKMediaMetadata(metadataType: .musicTrack)
+        metadata.setString(title, forKey: kGCKMetadataKeyTitle)
+        if let artist { metadata.setString(artist, forKey: kGCKMetadataKeyArtist) }
+        if let album { metadata.setString(album, forKey: kGCKMetadataKeyAlbumTitle) }
+        if let artworkURL { metadata.addImage(GCKImage(url: artworkURL, width: 600, height: 600)) }
+        let infoBuilder = GCKMediaInformationBuilder(contentURL: streamURL)
+        infoBuilder.contentType = contentType
+        infoBuilder.streamType = .buffered
+        infoBuilder.metadata = metadata
+        infoBuilder.customData = [Self.itemIDKey: itemID]
+        let requestBuilder = GCKMediaLoadRequestDataBuilder()
+        requestBuilder.mediaInformation = infoBuilder.build()
+        requestBuilder.startTime = startPositionSeconds
+        requestBuilder.autoplay = true
         client.loadMedia(with: requestBuilder.build())
         #endif
     }

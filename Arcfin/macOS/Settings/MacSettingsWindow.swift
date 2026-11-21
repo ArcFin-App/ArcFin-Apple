@@ -9,7 +9,7 @@ struct MacSettingsWindow: View {
     static let id = "settings"
 
     private enum Pane: String, CaseIterable, Identifiable {
-        case general, profile, playback, downloads, appearance, notifications, server, integrations
+        case general, profile, playback, downloads, music, appearance, notifications, server, integrations
 
         var id: String { rawValue }
 
@@ -19,6 +19,7 @@ struct MacSettingsWindow: View {
             case .profile: String(localized: "Your Profile")
             case .playback: String(localized: "Playback")
             case .downloads: String(localized: "Downloads")
+            case .music: String(localized: "Music")
             case .appearance: String(localized: "Appearance")
             case .notifications: String(localized: "Notifications")
             case .server: String(localized: "Server")
@@ -32,6 +33,7 @@ struct MacSettingsWindow: View {
             case .profile: "person.text.rectangle"
             case .playback: "play.circle"
             case .downloads: "arrow.down.circle"
+            case .music: "music.note"
             case .appearance: "paintbrush"
             case .notifications: "bell"
             case .server: "person.badge.key"
@@ -56,9 +58,11 @@ struct MacSettingsWindow: View {
                     NavigationStack {
                         detail(for: pane ?? .general)
                     }
-                    .environment(\.listFillsWidth, true)
                     .id(pane)
                 }
+                // On the split view, not the stack: pages pushed onto the stack don't see what's
+                // set on it, so they stayed a narrow column.
+                .environment(\.listFillsWidth, true)
             } else {
                 ContentUnavailableView("Settings Are Locked", systemImage: "lock",
                                        description: Text("Sign in or unlock Arcfin in its main window first."))
@@ -80,6 +84,7 @@ struct MacSettingsWindow: View {
         case .profile: ProfileAccessView()
         case .playback: PlaybackSettingsView()
         case .downloads: DownloadsSettingsView()
+        case .music: MusicSettingsView()
         case .appearance: AppearanceView()
         case .notifications: NotificationsSettingsView()
         case .server: ServerAccountSettingsView()

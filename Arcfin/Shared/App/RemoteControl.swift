@@ -40,8 +40,14 @@ final class RemoteControl {
 
     func handle(_ remote: JellyfinRemoteCommand) {
         switch remote {
-        case .play(let ids, let startTicks):
-            play(id: ids[0], startTicks: startTicks)
+        case .play(let ids, let startTicks, let startIndex):
+            Task {
+                // Songs go to the music player; anything else opens as a title.
+                if await AppServices.music.playFromRemote(ids, startIndex: startIndex ?? 0, startTicks: startTicks) { return }
+                play(id: ids[min(startIndex ?? 0, ids.count - 1)], startTicks: startTicks)
+            }
+        case .queue(let ids, let next):
+            Task { _ = await AppServices.music.queueFromRemote(ids, next: next) }
         case .playstate(let state, let seekTicks):
             switch state {
             case .stop: send(.stop)
@@ -90,7 +96,12 @@ final class RemoteControl {
         }
     }
 
+    /// Closes the open player, for music starting from a remote.
+    func stopPlayer() { command = Command(kind: .stop) }
+
+    /// To the open player, or to the music when no player is open.
     private func send(_ kind: Kind) {
+        if !PlayerActivity.shared.isPlayerOpen, AppServices.music.apply(kind) { return }
         command = Command(kind: kind)
     }
 

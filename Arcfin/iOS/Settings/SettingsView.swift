@@ -46,6 +46,11 @@ struct SettingsView: View {
                 settingsRow("Downloads", icon: "arrow.down.circle")
             }
             NavigationLink {
+                MusicSettingsView()
+            } label: {
+                settingsRow("Music", icon: "music.note")
+            }
+            NavigationLink {
                 AppearanceView()
             } label: {
                 settingsRow("Appearance", icon: "paintbrush")
@@ -183,7 +188,7 @@ struct SettingsView: View {
                 }
                 QuickConnectRow()
                 ScanAppleTVCodeRow()
-                SetUpNearbyAppleTVRow()
+                SetUpNearbyDeviceRow()
             } footer: {
                 Text("Enter the code shown on another device to sign it in instantly using this account.")
                     .font(.caption)

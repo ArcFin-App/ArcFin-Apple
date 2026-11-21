@@ -761,6 +761,7 @@ final class PlayerModel {
             // source's own structure breaks one engine but not another) falls back once to
             // the same AVFoundation/VLC split Auto used before Aether existed, rather than
             // surfacing a hard error over an engine that can't serve this specific source.
+            AppServices.music.yieldToVideo()
             // Before the load, so the stream starts shaped rather than rebuilding once it plays.
             applyEngineOptions()
             // Armed before the load: a conversion that never starts can hold the load itself.

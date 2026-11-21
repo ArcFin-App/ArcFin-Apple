@@ -139,6 +139,7 @@ final class RemoteSessions {
         guard let authManager, let credential = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         let start = item.userData.flatMap { $0.played ? nil : $0.playbackPositionTicks }
+        AppServices.music.yieldToVideo()
         Task {
             try? await client.play(itemIds: [item.id], startTicks: start, sessionId: session.id,
                                    credential: credential, authHeader: header)

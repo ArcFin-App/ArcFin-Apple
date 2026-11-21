@@ -61,6 +61,19 @@ struct LicensesView: View {
                     .tvReadOnlyRow()
                 Text("Awards come from Wikidata.")
                     .tvReadOnlyRow()
+                Text("Lyrics not on your server come from LRCLIB.")
+                    .tvReadOnlyRow()
+                Text("Listening history, loves and Year in Music use ListenBrainz, a MetaBrainz Foundation project.")
+                    .tvReadOnlyRow()
+                // Only where the features are: on iPhone and iPad.
+                if PlatformMetrics.identifiesSongs {
+                    Text("Song recognition in What's Playing? is provided by Shazam.")
+                        .tvReadOnlyRow()
+                }
+                if PlatformMetrics.playsAppleMusic {
+                    Text("Songs not on your server can play from Apple Music, with a subscription.")
+                        .tvReadOnlyRow()
+                }
             }
             Section {
                 ForEach(licenses.filter(\.isArcfin)) { entry in

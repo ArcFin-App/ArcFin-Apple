@@ -10,7 +10,7 @@ import WidgetKit
 /// image file per item in the shared App Group container, then a timeline reload.
 enum WidgetSnapshotUpdater {
     private static let maxItems = 6
-    private static let maxRecentlyAdded = 8
+    private static let maxRecentlyAdded = 12
 
     /// Sign-out / profile removal: empties the widgets right away.
     static func clear() {

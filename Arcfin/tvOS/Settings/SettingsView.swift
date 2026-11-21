@@ -43,6 +43,9 @@ struct SettingsView: View {
             NavigationLink(value: TVSettingsPage.playback) {
                 settingsRow("Playback")
             }
+            NavigationLink(value: TVSettingsPage.music) {
+                settingsRow("Music")
+            }
             NavigationLink(value: TVSettingsPage.appearance) {
                 settingsRow("Appearance")
             }
@@ -100,6 +103,13 @@ struct SettingsView: View {
                     }
                 }
             }
+            NavigationLink(value: TVSettingsPage.listenBrainz) {
+                HStack {
+                    Text("ListenBrainz")
+                    Spacer()
+                    ListenBrainzStatusPill(profile: authManager.state.credential?.id)
+                }
+            }
         } header: {
             sectionHeader("Plugins")
         }
@@ -155,12 +165,14 @@ struct SettingsView: View {
     private func pageContent(_ page: TVSettingsPage) -> some View {
         switch page {
         case .playback: PlaybackSettingsView()
+        case .music: MusicSettingsView()
         case .appearance: AppearanceView()
         case .profile: ProfileAccessView()
         case .serverSettings(let profileID): ServerSettingsView(profileID: profileID)
         case .addServer: AddServerFlowView()
         case .seerr: SeerrPluginView()
         case .tmdb: TMDBSettingsView()
+        case .listenBrainz: ListenBrainzSettingsView(profile: authManager.state.credential?.id)
         case .licenses: LicensesView()
         case .language:
             TVChoicePage(title: "Language", selection: $languageOverride, options: [""] + AppLanguage.available) { code in
@@ -258,7 +270,7 @@ private extension View {
 }
 
 private enum TVSettingsPage: Hashable {
-    case playback, appearance, profile, serverSettings(UUID), addServer, seerr, tmdb, language, licenses
+    case playback, music, appearance, profile, serverSettings(UUID), addServer, seerr, tmdb, listenBrainz, language, licenses
 }
 
 // Settings rows in the tvOS ScrollView: plain text at rest and the light platter of the

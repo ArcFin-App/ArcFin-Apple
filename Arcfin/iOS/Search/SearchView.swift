@@ -14,6 +14,8 @@ struct SearchView: View {
     @State private var model = SearchModel()
     /// Channels and programmes, shown below everything else.
     @State private var liveTV = LiveTVModel()
+    /// Artists, albums and songs, after the library's titles.
+    @State private var music = MusicSearchModel()
     @State private var requestingSeerrItem: SeerrItem?
     @AppStorage(RecentSearches.key) private var recentSearchesData = Data()
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
@@ -33,8 +35,10 @@ struct SearchView: View {
         ProfileRules.shared.canWatchLiveTV && mediaRepo.libraries.contains { $0.collectionType == .livetv }
     }
 
+    private var searchesMusic: Bool { mediaRepo.libraries.contains { $0.collectionType == .music } }
+
     private var foundNothing: Bool {
-        model.foundNothing && !liveTV.isSearching && !liveTV.hasSearchResults
+        model.foundNothing && !liveTV.isSearching && !liveTV.hasSearchResults && !music.isSearching && music.results.isEmpty && music.appleMusic.isEmpty
     }
 
     private func saveRecentSearch() {
@@ -69,6 +73,10 @@ struct SearchView: View {
                         ForEach(model.libraryGroups, id: \.title) { group in
                             libraryShelf(group)
                         }
+                        if !music.results.isEmpty || !music.appleMusic.isEmpty {
+                            MusicSearchSection(results: music.results, appleMusic: music.appleMusic)
+                                .simultaneousGesture(TapGesture().onEnded { saveRecentSearch() })
+                        }
                         if liveTV.hasSearchResults {
                             LiveTVSearchSection(model: liveTV)
                                 .simultaneousGesture(TapGesture().onEnded { saveRecentSearch() })
@@ -97,6 +105,7 @@ struct SearchView: View {
             model.search(newValue, authManager: authManager, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
             liveTV.searchQuery = searchesLiveTV ? newValue : ""
             liveTV.search(authManager: authManager)
+            music.search(searchesMusic ? newValue : "")
         }
         .liveTVPresentations(model: liveTV)
         .sheet(item: $requestingSeerrItem) { item in
@@ -150,6 +159,10 @@ struct SearchView: View {
                     }
                 } else if model.isSearchingLibrary {
                     ProgressView().frame(maxWidth: .infinity)
+                }
+                if !music.results.isEmpty || !music.appleMusic.isEmpty {
+                    MusicSearchSection(results: music.results, appleMusic: music.appleMusic)
+                        .padding(.horizontal, -DT.Spacing.pagePad)
                 }
                 if liveTV.hasSearchResults {
                     LiveTVSearchSection(model: liveTV)

@@ -133,11 +133,27 @@
 				Shared/Admin/AdminTasksView.swift = (ios, macos, );
 				Shared/Admin/AdminUsersView.swift = (ios, macos, );
 				Shared/Admin/AdminView.swift = (ios, macos, );
+				Shared/Music/MusicAlbumView.swift = (ios, macos, );
+				Shared/Music/MusicComponents.swift = (ios, macos, );
+				Shared/Music/MusicDownloadsView.swift = (ios, macos, );
+				Shared/Music/MusicHero.swift = (ios, macos, );
+				Shared/Music/MusicHistoryImportView.swift = (ios, macos, );
+				Shared/Music/MusicIdentifyView.swift = (ios, macos, );
+				Shared/Music/MusicLibraryView.swift = (ios, macos, );
+				Shared/Music/MusicListsView.swift = (ios, macos, );
+				Shared/Music/MusicRecapView.swift = (ios, macos, );
+				Shared/Music/MusicSearchSection.swift = (ios, macos, );
+				Shared/Music/MusicSmartPlaylists.swift = (ios, macos, );
+				Shared/Siri/MusicSiriHandler.swift = (ios, tvos, );
 				iOS/App/AppRootPlatform.swift = (ios, );
 				iOS/App/ArcfinScenes.swift = (ios, );
 				iOS/App/ContentView.swift = (ios, );
 				iOS/App/PlayerFirstResponder.swift = (ios, );
 				iOS/App/PlayerWindow.swift = (ios, );
+				iOS/ArcfiniOS.entitlements = (ios, );
+				iOS/CarPlay/CarPlaySceneDelegate.swift = (ios, );
+				iOS/CarPlay/CarPlaySearch.swift = (ios, );
+				iOS/CarPlay/CarPlayVoiceSearch.swift = (ios, );
 				iOS/Components/LetterIndexBar.swift = (ios, );
 				iOS/Components/PINPadPlatform.swift = (ios, );
 				iOS/Components/PosterCard.swift = (ios, );
@@ -170,6 +186,10 @@
 				iOS/Lock/AppLockView.swift = (ios, );
 				iOS/Login/LoginPlatform.swift = (ios, );
 				iOS/Login/SetupGuideSheet.swift = (ios, );
+				iOS/Music/AppleMusicCatalog.swift = (ios, );
+				iOS/Music/ListeningSession.swift = (ios, );
+				iOS/Music/MusicDownloadActivity.swift = (ios, );
+				iOS/Music/MusicNowPlayingView.swift = (ios, );
 				iOS/Onboarding/OnboardingView.swift = (ios, );
 				iOS/Onboarding/WhatsNew.swift = (ios, );
 				iOS/Onboarding/WhatsNewView.swift = (ios, );
@@ -190,6 +210,7 @@
 				iOS/Platform/PlainButton.swift = (ios, );
 				iOS/Platform/PlatformAccessibility.swift = (ios, );
 				iOS/Platform/PlatformMetrics.swift = (ios, );
+				iOS/Platform/PlatformStorage.swift = (ios, );
 				iOS/Platform/PlayerOverlayButton.swift = (ios, );
 				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Platform/PressableHover.swift = (ios, );
@@ -218,6 +239,8 @@
 				iOS/Settings/HomeShelfSettingsView.swift = (ios, );
 				iOS/Settings/IntegrationsSettingsView.swift = (ios, );
 				iOS/Settings/LicenseRow.swift = (ios, );
+				iOS/Settings/ListenBrainzSettingsView.swift = (ios, );
+				iOS/Settings/MusicSettingsView.swift = (ios, );
 				iOS/Settings/NotificationsSettingsView.swift = (ios, );
 				iOS/Settings/PlaybackSettingsView.swift = (ios, );
 				iOS/Settings/PlayerFeaturesSettingsView.swift = (ios, );
@@ -270,6 +293,10 @@
 				macOS/Lock/AppLockView.swift = (macos, );
 				macOS/Login/LoginPlatform.swift = (macos, );
 				macOS/Login/SetupGuideSheet.swift = (macos, );
+				macOS/Music/AppleMusicCatalog.swift = (macos, );
+				macOS/Music/ListeningSession.swift = (macos, );
+				macOS/Music/MusicDownloadActivity.swift = (macos, );
+				macOS/Music/MusicPlayerBar.swift = (macos, );
 				macOS/Onboarding/OnboardingView.swift = (macos, );
 				macOS/Onboarding/WhatsNew.swift = (macos, );
 				macOS/Onboarding/WhatsNewView.swift = (macos, );
@@ -290,6 +317,7 @@
 				macOS/Platform/PlainButton.swift = (macos, );
 				macOS/Platform/PlatformAccessibility.swift = (macos, );
 				macOS/Platform/PlatformMetrics.swift = (macos, );
+				macOS/Platform/PlatformStorage.swift = (macos, );
 				macOS/Platform/PlayerOverlayButton.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/PressableHover.swift = (macos, );
@@ -316,7 +344,9 @@
 				macOS/Settings/HomeShelfSettingsView.swift = (macos, );
 				macOS/Settings/IntegrationsSettingsView.swift = (macos, );
 				macOS/Settings/LicenseRow.swift = (macos, );
+				macOS/Settings/ListenBrainzSettingsView.swift = (macos, );
 				macOS/Settings/MacSettingsWindow.swift = (macos, );
+				macOS/Settings/MusicSettingsView.swift = (macos, );
 				macOS/Settings/NotificationsSettingsView.swift = (macos, );
 				macOS/Settings/PlaybackSettingsView.swift = (macos, );
 				macOS/Settings/PlayerFeaturesSettingsView.swift = (macos, );
@@ -336,6 +366,7 @@
 				tvOS/App/ArcfinScenes.swift = (tvos, );
 				tvOS/App/ContentView.swift = (tvos, );
 				tvOS/App/PlayerFirstResponder.swift = (tvos, );
+				tvOS/ArcfintvOS.entitlements = (tvos, );
 				tvOS/Components/PINPadPlatform.swift = (tvos, );
 				tvOS/Components/PosterCard.swift = (tvos, );
 				tvOS/Components/SeerrRequestCancel.swift = (tvos, );
@@ -365,6 +396,10 @@
 				tvOS/Lock/AppLockView.swift = (tvos, );
 				tvOS/Login/LoginPlatform.swift = (tvos, );
 				tvOS/Login/SetupGuideSheet.swift = (tvos, );
+				tvOS/Music/AppleMusicCatalog.swift = (tvos, );
+				tvOS/Music/MusicDownloadActivity.swift = (tvos, );
+				tvOS/Music/TVMusicNowPlaying.swift = (tvos, );
+				tvOS/Music/TVMusicViews.swift = (tvos, );
 				tvOS/Onboarding/OnboardingView.swift = (tvos, );
 				tvOS/Onboarding/WhatsNew.swift = (tvos, );
 				tvOS/Onboarding/WhatsNewView.swift = (tvos, );
@@ -385,6 +420,7 @@
 				tvOS/Platform/PlainButton.swift = (tvos, );
 				tvOS/Platform/PlatformAccessibility.swift = (tvos, );
 				tvOS/Platform/PlatformMetrics.swift = (tvos, );
+				tvOS/Platform/PlatformStorage.swift = (tvos, );
 				tvOS/Platform/PlayerOverlayButton.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/PressableHover.swift = (tvos, );
@@ -407,6 +443,8 @@
 				tvOS/Settings/CustomHeadersView.swift = (tvos, );
 				tvOS/Settings/HomeShelfSettingsView.swift = (tvos, );
 				tvOS/Settings/LicenseRow.swift = (tvos, );
+				tvOS/Settings/ListenBrainzSettingsView.swift = (tvos, );
+				tvOS/Settings/MusicSettingsView.swift = (tvos, );
 				tvOS/Settings/PlaybackSettingsView.swift = (tvos, );
 				tvOS/Settings/PlayerFeaturesSettingsView.swift = (tvos, );
 				tvOS/Settings/SeerrPluginView.swift = (tvos, );
@@ -425,6 +463,7 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Intents/ControlIntents.swift,
+				Intents/MusicIntents.swift,
 			);
 			target = FA2E1939305DEF7900513FD4 /* ArcfinWidgetsExtension */;
 		};
@@ -1183,6 +1222,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=appletvos*]" = Arcfin/tvOS/ArcfintvOS.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=appletvsimulator*]" = Arcfin/tvOS/ArcfintvOS.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = Arcfin/iOS/ArcfiniOS.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 25;
 				DEAD_CODE_STRIPPING = YES;
@@ -1207,14 +1250,18 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you.";
+				INFOPLIST_KEY_NSSiriUsageDescription = "Siri plays your movies, shows and music in Arcfin when you ask, on your iPhone or iPad or in the car.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Arcfin turns what you say into a search when you search by voice in the car.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = NO;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = NO;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				INFOPLIST_KEY_UIFileSharingEnabled = YES;
@@ -1255,6 +1302,10 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
 				CODE_SIGN_ENTITLEMENTS = Arcfin/Arcfin.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=appletvos*]" = Arcfin/tvOS/ArcfintvOS.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=appletvsimulator*]" = Arcfin/tvOS/ArcfintvOS.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = Arcfin/iOS/ArcfiniOS.entitlements;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 25;
 				DEAD_CODE_STRIPPING = YES;
@@ -1281,14 +1332,18 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.entertainment";
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
+				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you.";
+				INFOPLIST_KEY_NSSiriUsageDescription = "Siri plays your movies, shows and music in Arcfin when you ask, on your iPhone or iPad or in the car.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "Arcfin turns what you say into a search when you search by voice in the car.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
-				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = NO;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = NO;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
 				INFOPLIST_KEY_UIFileSharingEnabled = YES;

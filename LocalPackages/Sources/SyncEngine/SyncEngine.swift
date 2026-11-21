@@ -201,6 +201,25 @@ public enum SettingsSyncRegistry {
         .init("upNextCountdownSeconds", .int),
         .init("resumeBehavior", .string),
         .init("markWatchedAt", .string),
+        .init("musicVisualizer", .bool),
+        .init("musicVisualizerTint", .bool),
+        .init("musicStreamQuality", .string),
+        .init("musicMobileStreamQuality", .string),
+        .init("musicDownloadQuality", .string),
+        .init("musicDownloadOnMobileData", .bool),
+        .init("musicSoundCheck", .bool),
+        .init("musicEqualizer", .string),
+        .init("musicCrossfadeSeconds", .int),
+        .init("musicAutoplay", .bool),
+        .init("musicRememberQueue", .bool),
+        .init("musicKeepFavoritesDownloaded", .bool),
+        .init("musicKeepRecentCount", .int),
+        .init("musicDownloadNewAlbums", .bool),
+        .init("musicStorageLimitGB", .int),
+        .init("musicNotifyDownloads", .bool),
+        .init("musicFindLyricsOnline", .bool),
+        .init("musicIdentifySongs", .bool),
+        .init("musicAppleMusic", .bool),
         // Downloads
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),
@@ -361,6 +380,11 @@ public enum SettingsSyncEngine {
         return (toApply, toPush)
     }
 
+    /// What this profile and the server last agreed on, in the wire format.
+    static func lastSynced(profile: String, defaults: UserDefaults) -> [String: String]? {
+        defaults.dictionary(forKey: lastSyncedKey(profile: profile)) as? [String: String]
+    }
+
     /// Whether this device has a setting the server hasn't heard yet.
     public static func hasLocalChanges(profile: String, defaults: UserDefaults = .standard) -> Bool {
         guard let base = defaults.dictionary(forKey: lastSyncedKey(profile: profile)) as? [String: String] else { return false }
@@ -375,12 +399,16 @@ public enum SettingsSyncEngine {
     /// — an empty set (including on any failure) means nothing is locked, which is also the
     /// correct fallback when the plugin isn't reachable: settings stay fully local-editable.
     @discardableResult
-    public static func sync(credential: ServerCredential, authHeader: String, defaults: UserDefaults = .standard) async -> Set<String> {
+    /// `isCurrent` says whether the profile is still the one in use: a sync that finishes after
+    /// a switch would read and write the next profile's settings, so it stops there.
+    public static func sync(credential: ServerCredential, authHeader: String, defaults: UserDefaults = .standard,
+                            isCurrent: @Sendable () async -> Bool = { true }) async -> Set<String> {
         let pluginClient = ArcfinPluginSyncClient(credential: credential, authHeader: authHeader)
 
         guard let remote = try? await pluginClient.pull() else { return [] }
         let locked = Set(((try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader)) ?? [])
             .filter { $0.isLocked }.map { $0.key })
+        guard await isCurrent() else { return [] }
         let local = collectLocalPayload(defaults: defaults).settings
         let profile = credential.id.uuidString
         let (base, adoptRemote) = startingPoint(profile: profile, defaults: defaults)
@@ -392,6 +420,7 @@ public enum SettingsSyncEngine {
             // Not sent: keep those as changed here, so the next sync sends them again.
             for key in toPush.keys { agreed[key] = base?[key] }
         }
+        guard await isCurrent() else { return locked }
         defaults.set(agreed, forKey: lastSyncedKey(profile: profile))
         defaults.set(profile, forKey: lastProfileKey)
         return locked

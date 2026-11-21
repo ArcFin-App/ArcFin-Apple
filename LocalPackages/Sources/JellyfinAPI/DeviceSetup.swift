@@ -3,8 +3,9 @@
 import CryptoKit
 import Foundation
 import Network
+import os
 
-/// Setting up an Apple TV from an iPhone or iPad on the same network (#481).
+/// Setting up an Apple TV, iPad or Mac from an iPhone or iPad on the same network (#481).
 ///
 /// The two first agree on keys, the way Bluetooth numeric comparison does: the Apple TV
 /// commits to a fresh X25519 key, the phone sends its own, the Apple TV reveals its key, and
@@ -18,7 +19,20 @@ import Network
 /// After that every message is sealed with ChaCha20-Poly1305, with a key for each direction
 /// and a counter as the nonce, so a changed, replayed or reordered message ends the session.
 public enum DeviceSetup {
+    /// NoAuth or PolicyDenied from Bonjour: Local Network is off for the app.
+    public static func isLocalNetworkRefusal(_ error: NWError) -> Bool {
+        guard case .dns(let code) = error else { return false }
+        return code == -65555 || code == -65570
+    }
+
     public static let serviceType = "_arcfin-setup._tcp"
+    /// The advertisement's TXT key for what kind of device is waiting.
+    static let kindKey = "kind"
+
+    /// What's waiting to be set up, for its icon and wording.
+    public enum DeviceKind: String, Sendable {
+        case appleTV = "appletv", iPad = "ipad", mac = "mac"
+    }
     /// A message is a few hundred bytes; anything far bigger isn't from Arcfin.
     static let maxMessageSize = 16 * 1024
     /// How long the Apple TV waits after one exchange before taking the next.
@@ -44,12 +58,29 @@ public enum DeviceSetup {
         public let serverName: String
         public let servers: [String]
         public let tmdbKey: String?
+        /// The profile's Seerr server and how it signs in. No password: the Jellyfin sign-in
+        /// goes through Quick Connect on the TV, and a local Seerr account signs in there.
+        public let seerr: Seerr?
+        public let listenBrainzToken: String?
 
-        public init(userName: String, serverName: String, servers: [String], tmdbKey: String? = nil) {
+        public struct Seerr: Codable, Equatable, Sendable {
+            public let url: String
+            public let authMethod: String
+            public let username: String
+
+            public init(url: String, authMethod: String, username: String) {
+                self.url = url; self.authMethod = authMethod; self.username = username
+            }
+        }
+
+        public init(userName: String, serverName: String, servers: [String], tmdbKey: String? = nil,
+                    seerr: Seerr? = nil, listenBrainzToken: String? = nil) {
             self.userName = userName
             self.serverName = serverName
             self.servers = servers
             self.tmdbKey = tmdbKey
+            self.seerr = seerr
+            self.listenBrainzToken = listenBrainzToken
         }
     }
 
@@ -370,18 +401,24 @@ public final class DeviceSetupSession: @unchecked Sendable {
     }
 }
 
-/// The Apple TV's side: advertises it on the local network and hands over each phone that
-/// connects, once the keys are agreed.
+/// The side being set up: advertises it on the local network, with what kind of device it is,
+/// and hands over each phone that connects, once the keys are agreed.
 public final class DeviceSetupListener: @unchecked Sendable {
     private let listener: NWListener
     private let continuation: AsyncStream<DeviceSetupSession>.Continuation
     public let sessions: AsyncStream<DeviceSetupSession>
 
     /// `port` is only for tests; the real listener takes any free port and is found by name.
-    public init(advertised: Bool = true, port: NWEndpoint.Port = .any) throws {
+    /// `onBlocked` runs when the system won't let it on the local network (Local Network off for
+    /// the app), so nothing nearby can find it.
+    public init(kind: DeviceSetup.DeviceKind = .appleTV, advertised: Bool = true, port: NWEndpoint.Port = .any,
+                onBlocked: @escaping @Sendable () -> Void = {}) throws {
         listener = try NWListener(using: .tcp, on: port)
         (sessions, continuation) = AsyncStream.makeStream(of: DeviceSetupSession.self)
-        if advertised { listener.service = NWListener.Service(type: DeviceSetup.serviceType) }
+        if advertised {
+            listener.service = NWListener.Service(type: DeviceSetup.serviceType,
+                                                  txtRecord: NWTXTRecord([DeviceSetup.kindKey: kind.rawValue]))
+        }
         let gate = HandshakeGate()
         listener.newConnectionHandler = { [continuation] connection in
             // One exchange at a time, with a pause after each: a device can't run many in
@@ -405,8 +442,22 @@ public final class DeviceSetupListener: @unchecked Sendable {
                 gate.leave()
             }
         }
+        let log = Logger(subsystem: "com.psmattas.arcfin", category: "DeviceSetup")
         listener.stateUpdateHandler = { [continuation] state in
-            if case .failed = state { continuation.finish() }
+            switch state {
+            case .ready: log.notice("Waiting to be set up, as \(kind.rawValue, privacy: .public)")
+            case .waiting(let error):
+                log.error("Can't wait to be set up yet: \(String(describing: error), privacy: .public)")
+                if DeviceSetup.isLocalNetworkRefusal(error) { onBlocked() }
+            case .failed(let error):
+                log.error("Can't wait to be set up: \(String(describing: error), privacy: .public)")
+                if DeviceSetup.isLocalNetworkRefusal(error) { onBlocked() }
+                continuation.finish()
+            default: break
+            }
+        }
+        listener.serviceRegistrationUpdateHandler = { change in
+            if case .add(let endpoint) = change { log.notice("Advertised as \(String(describing: endpoint), privacy: .public)") }
         }
         listener.start(queue: DispatchQueue(label: "arcfin.device-setup.listener"))
     }
@@ -437,24 +488,31 @@ private final class HandshakeGate: @unchecked Sendable {
     }
 }
 
-/// The phone's side: the Apple TVs on the local network waiting to be set up.
+/// The phone's side: the devices on the local network waiting to be set up.
 public final class DeviceSetupBrowser: @unchecked Sendable {
-    public struct AppleTV: Hashable, Sendable {
+    public struct NearbyDevice: Hashable, Sendable {
         public let name: String
         public let endpoint: NWEndpoint
+        /// An Apple TV on an Arcfin from before kinds were sent says nothing: it's an Apple TV.
+        public let kind: DeviceSetup.DeviceKind
     }
 
     private let browser: NWBrowser
-    private let continuation: AsyncStream<[AppleTV]>.Continuation
-    public let results: AsyncStream<[AppleTV]>
+    private let continuation: AsyncStream<[NearbyDevice]>.Continuation
+    public let results: AsyncStream<[NearbyDevice]>
 
     public init() {
-        browser = NWBrowser(for: .bonjour(type: DeviceSetup.serviceType, domain: nil), using: .tcp)
-        (results, continuation) = AsyncStream.makeStream(of: [AppleTV].self)
+        browser = NWBrowser(for: .bonjourWithTXTRecord(type: DeviceSetup.serviceType, domain: nil), using: .tcp)
+        (results, continuation) = AsyncStream.makeStream(of: [NearbyDevice].self)
         browser.browseResultsChangedHandler = { [continuation] results, _ in
             continuation.yield(results.compactMap { result in
                 guard case .service(let name, _, _, _) = result.endpoint else { return nil }
-                return AppleTV(name: name, endpoint: result.endpoint)
+                var kind = DeviceSetup.DeviceKind.appleTV
+                if case .bonjour(let txt) = result.metadata, let value = txt[DeviceSetup.kindKey],
+                   let sent = DeviceSetup.DeviceKind(rawValue: value) {
+                    kind = sent
+                }
+                return NearbyDevice(name: name, endpoint: result.endpoint, kind: kind)
             })
         }
         browser.stateUpdateHandler = { [continuation] state in

@@ -16,7 +16,7 @@ import UIKit
 /// Races a one-shot NWPathMonitor read against a timeout — same lock-guarded resume-once
 /// pattern as MediaRepository's PathWait (duplicated rather than shared across the module
 /// boundary, small enough not to be worth a cross-package refactor for now).
-private final class PathWait: @unchecked Sendable {
+final class PathWait: @unchecked Sendable {
     private let lock = NSLock()
     private var finished = false
     private let continuation: CheckedContinuation<Void, Never>

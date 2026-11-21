@@ -42,17 +42,22 @@ private func percent(_ state: DownloadState) -> String {
 
 private func statusColor(_ state: DownloadState) -> Color {
     if state.isFinished { return WidgetDT.success }
-    return state.isPaused == true || state.isWaitingForWiFi == true ? WidgetDT.paused : WidgetDT.accent
+    return state.isPaused == true || state.isWaitingForWiFi == true || state.isWaitingForNetwork == true
+        ? WidgetDT.paused : WidgetDT.accent
 }
 
 /// What's happening, in one short line: "Downloading 2 of 6", "Paused", "Ready to Watch".
 private func statusLine(_ state: DownloadState) -> String {
     if state.isFinished {
-        return state.totalCount > 1 ? "\(state.totalCount) Ready to Watch" : "Ready to Watch"
+        if state.isMusic == true {
+            return state.totalCount > 1 ? String(localized: "\(state.totalCount) Ready to Play") : String(localized: "Ready to Play")
+        }
+        return state.totalCount > 1 ? String(localized: "\(state.totalCount) Ready to Watch") : String(localized: "Ready to Watch")
     }
-    if state.isWaitingForWiFi == true { return "Waiting for Wi-Fi" }
-    let base = state.isPaused == true ? "Paused" : "Downloading"
-    return state.totalCount > 1 ? "\(base) · \(state.position) of \(state.totalCount)" : base
+    if state.isWaitingForNetwork == true { return String(localized: "Waiting for a connection") }
+    if state.isWaitingForWiFi == true { return String(localized: "Waiting for Wi-Fi") }
+    let base = state.isPaused == true ? String(localized: "Paused") : String(localized: "Downloading")
+    return state.totalCount > 1 ? String(localized: "\(base) · \(state.position) of \(state.totalCount)") : base
 }
 
 // MARK: - Pieces
@@ -69,13 +74,14 @@ private struct Poster: View {
                 ZStack {
                     LinearGradient(colors: [WidgetDT.accentDeep, WidgetDT.accent],
                                    startPoint: .topLeading, endPoint: .bottomTrailing)
-                    Image(systemName: "film")
+                    Image(systemName: state.isMusic == true ? "music.note" : "film")
                         .font(.system(size: width * 0.4, weight: .semibold))
                         .foregroundStyle(.white)
                 }
             }
         }
-        .frame(width: width, height: width * 1.5)
+        // An album cover is square; a poster is two by three.
+        .frame(width: width, height: state.isMusic == true ? width : width * 1.5)
         .clipShape(RoundedRectangle(cornerRadius: width * 0.16, style: .continuous))
         .accessibilityHidden(true)
     }
@@ -101,6 +107,7 @@ private struct ProgressRing: View {
                     .rotationEffect(.degrees(-90))
             }
             Image(systemName: state.isFinished ? "checkmark"
+                  : state.isWaitingForNetwork == true ? "wifi.slash"
                   : state.isWaitingForWiFi == true ? "wifi"
                   : (state.isPaused == true ? "pause.fill" : "arrow.down"))
                 .font(.system(size: 9, weight: .heavy))
@@ -289,6 +296,7 @@ private struct LockScreenView: View {
                         Text(statusLine(state))
                     } icon: {
                         Image(systemName: state.isFinished ? "checkmark.circle.fill"
+                              : state.isWaitingForNetwork == true ? "wifi.slash"
                               : state.isWaitingForWiFi == true ? "wifi"
                               : (state.isPaused == true ? "pause.circle.fill" : "arrow.down.circle.fill"))
                     }

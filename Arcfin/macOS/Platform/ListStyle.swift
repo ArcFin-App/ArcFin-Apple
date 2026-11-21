@@ -20,6 +20,15 @@ private struct ArcfinListWidth: ViewModifier {
 }
 
 extension View {
+    /// The Mac drags list rows into order without an editing mode.
+    func alwaysEditing() -> some View { self }
+
+    /// The Mac has no index down a list's side.
+    func sectionIndexShown() -> some View { self }
+
+    /// A web address field: the URL keyboard, no capitals.
+    func urlFieldKeyboard() -> some View { self }
+
     func arcfinListStyle() -> some View {
         self.scrollContentBackground(.hidden)
             .modifier(ArcfinListWidth())
@@ -42,12 +51,12 @@ extension View {
     }
 }
 
-/// A settings page: a grouped form, as System Settings draws one.
+/// A settings page: a list across the pane, as Settings › Music draws one, so every page
+/// matches it.
 struct SettingsForm<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        Form { content }
-            .formStyle(.grouped)
+        List { content }
     }
 }

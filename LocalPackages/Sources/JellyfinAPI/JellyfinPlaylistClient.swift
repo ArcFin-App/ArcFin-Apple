@@ -128,11 +128,12 @@ extension JellyfinMediaClient {
     }
 
     @discardableResult
-    public func createPlaylist(credential: ServerCredential, authHeader: String, name: String, itemIds: [String]) async throws -> String {
+    public func createPlaylist(credential: ServerCredential, authHeader: String, name: String, itemIds: [String],
+                               mediaType: String = "Video") async throws -> String {
         var req = request(credential.baseURL.appendingPathComponent("Playlists"), authHeader: authHeader, method: "POST")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.httpBody = try JSONSerialization.data(withJSONObject: [
-            "Name": name, "Ids": itemIds, "UserId": credential.userID, "MediaType": "Video",
+            "Name": name, "Ids": itemIds, "UserId": credential.userID, "MediaType": mediaType,
         ])
         let data = try await send(req)
         struct Created: Decodable { let Id: String }

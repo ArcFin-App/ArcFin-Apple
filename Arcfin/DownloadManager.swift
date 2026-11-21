@@ -457,7 +457,8 @@ final class DownloadManager: NSObject {
         Task {
             try? await Task.sleep(for: .seconds(4))
             guard activeItemIds.isEmpty, pendingQueue.isEmpty else { return }
-            for activity in Activity<DownloadActivityAttributes>.activities {
+            // Music downloads keep their own.
+            for activity in Activity<DownloadActivityAttributes>.activities where activity.content.state.isMusic != true {
                 await activity.end(nil, dismissalPolicy: .immediate)
             }
         }
