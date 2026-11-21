@@ -1182,6 +1182,7 @@ final class PlayerModel {
         stillWatchingTimeoutTask?.cancel()
         liveProgramTask?.cancel()
         av1Watchdog?.cancel()
+        cancelUpNextCountdown()
         if holdsPlayerActivity {
             holdsPlayerActivity = false
             PlayerActivity.shared.closed()
@@ -1636,6 +1637,8 @@ final class PlayerModel {
     /// watching" streak (a manual tap is proof someone's there, and resets it).
     /// Opens another item in this player's place.
     private func playNextItem(_ next: MediaItem) {
+        // A countdown or a SharePlay lookup finishing after close would open the player again.
+        guard !isClosed else { return }
         (player as? AetherEnginePlayer)?.keepsDisplayModeOnStop = true
         onPlayNext(next)
     }
