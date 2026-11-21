@@ -181,9 +181,11 @@ private struct AppRootPrompts: ViewModifier {
             && model.authManager.state.credential != nil && !PlayerActivity.shared.isPlayerOpen
     }
 
+    /// Not while this device's own player covers the screen the remote bar sits on.
     private var watchesOtherDevices: Bool {
         PlatformMetrics.controlsOtherDevices && canPrompt && AppServices.scenes.anyActive
             && model.authManager.state.credential != nil
+            && (!PlayerActivity.shared.isPlayerOpen || AppServices.remoteSessions.isShowingRemote)
     }
 
     func body(content: Content) -> some View {
