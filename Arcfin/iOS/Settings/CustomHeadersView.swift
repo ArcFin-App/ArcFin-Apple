@@ -36,7 +36,7 @@ struct CustomHeadersView: View {
             }
 
             if let errorMessage = model.errorMessage {
-                Text(errorMessage).font(.footnote).foregroundStyle(.red)
+                Text(errorMessage).font(.footnote).foregroundStyle(DT.Color.palette("F43F5E"))
             }
         }
         .arcfinListStyle()

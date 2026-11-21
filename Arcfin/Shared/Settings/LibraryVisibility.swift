@@ -103,7 +103,7 @@ struct LibraryVisibilityView: View {
             } footer: {
                 Text(model.errorMessage ?? "Saved to your Jellyfin account, so it applies in its other apps too. Home updates the next time it refreshes.")
                     .font(.caption)
-                    .foregroundStyle(model.errorMessage == nil ? DT.Color.textSecondary : .red)
+                    .foregroundStyle(model.errorMessage == nil ? DT.Color.textSecondary : DT.Color.palette("F43F5E"))
             }
         }
         .arcfinListStyle()

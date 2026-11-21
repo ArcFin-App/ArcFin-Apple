@@ -17,10 +17,14 @@ struct CustomHeadersView: View {
                             .font(.system(.subheadline, design: .monospaced, weight: .semibold))
                         SecureField("Value", text: $header.value)
                             .font(.system(.subheadline, design: .monospaced))
+                        // No swipe or Delete key for a row here, so each has its own button.
+                        Button("Remove Header", systemImage: "minus.circle", role: .destructive) {
+                            model.remove(header.id)
+                        }
+                        .buttonStyle(.borderless)
                     }
                     .padding(.vertical, 4)
                 }
-                .onDelete { model.headers.remove(atOffsets: $0); model.save() }
 
                 Button {
                     model.headers.append(.init(name: "", value: ""))
@@ -34,7 +38,7 @@ struct CustomHeadersView: View {
             }
 
             if let errorMessage = model.errorMessage {
-                Text(errorMessage).font(.footnote).foregroundStyle(.red)
+                Text(errorMessage).font(.footnote).foregroundStyle(DT.Color.palette("F43F5E"))
             }
         }
         .arcfinListStyle()

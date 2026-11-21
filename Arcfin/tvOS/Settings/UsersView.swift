@@ -40,7 +40,7 @@ struct UsersView: View {
                     Button(role: .destructive) {
                         signOutTarget = active
                     } label: {
-                        Text("Sign Out").foregroundStyle(.red)
+                        Text("Sign Out").foregroundStyle(DT.Color.palette("F43F5E"))
                     }
                 }
                 .buttonStyle(TVSettingsRowStyle())

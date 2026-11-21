@@ -15,7 +15,12 @@ final class CustomHeadersModel {
             try CustomHTTPHeaders.save(kept)
             errorMessage = nil
         } catch {
-            errorMessage = "Couldn't save the headers: \(error.localizedDescription)"
+            errorMessage = String(localized: "Couldn't save the headers: \(error.localizedDescription)")
         }
+    }
+
+    func remove(_ id: CustomHTTPHeaders.Header.ID) {
+        headers.removeAll { $0.id == id }
+        save()
     }
 }
