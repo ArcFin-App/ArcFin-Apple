@@ -241,46 +241,49 @@ struct PlayerMediaInfoSheet: View {
             if let info = model.playbackInfo {
                 Section("Video") {
                     if let codec = info.videoStream?.codec {
-                        LabeledContent("Codec", value: codec.uppercased())
+                        LabeledContent("Codec", value: codec.uppercased()).tvReadOnlyRow()
                     }
                     if let width = info.videoStream?.width, let height = info.videoStream?.height {
-                        LabeledContent("Resolution", value: "\(width)×\(height)")
+                        LabeledContent("Resolution", value: "\(width)×\(height)").tvReadOnlyRow()
                     }
                     if let range = info.videoStream?.videoRange {
-                        LabeledContent("Video Range", value: range)
+                        LabeledContent("Video Range", value: range).tvReadOnlyRow()
                     }
                 }
                 Section("Audio") {
                     if let stream = model.currentAudioStream {
                         if let codec = stream.codec {
-                            LabeledContent("Codec", value: codec.uppercased())
+                            LabeledContent("Codec", value: codec.uppercased()).tvReadOnlyRow()
                         }
-                        LabeledContent("Track", value: mediaInfoTrackLabel(stream))
+                        LabeledContent("Track", value: mediaInfoTrackLabel(stream)).tvReadOnlyRow()
                     } else {
                         Text("No audio track selected.")
                             .foregroundStyle(DT.Color.textSecondary)
+                            .tvReadOnlyRow()
                     }
                 }
                 Section("Subtitle") {
                     if let stream = model.currentSubtitleStream {
-                        LabeledContent("Track", value: mediaInfoTrackLabel(stream))
+                        LabeledContent("Track", value: mediaInfoTrackLabel(stream)).tvReadOnlyRow()
                     } else {
                         Text("Off")
                             .foregroundStyle(DT.Color.textSecondary)
+                            .tvReadOnlyRow()
                     }
                 }
                 Section("Stream") {
                     if let container = info.container {
-                        LabeledContent("Container", value: container.uppercased())
+                        LabeledContent("Container", value: container.uppercased()).tvReadOnlyRow()
                     }
-                    LabeledContent("Play Method", value: info.playMethod.rawValue)
+                    LabeledContent("Play Method", value: info.playMethod.rawValue).tvReadOnlyRow()
                     if let bitrate = info.bitrate {
-                        LabeledContent("Bitrate", value: mediaInfoBitrateLabel(bitrate))
+                        LabeledContent("Bitrate", value: mediaInfoBitrateLabel(bitrate)).tvReadOnlyRow()
                     }
                 }
             } else {
                 Text("No playback info available.")
                     .foregroundStyle(DT.Color.textSecondary)
+                    .tvReadOnlyRow()
             }
         }
         .insetGroupedList()
