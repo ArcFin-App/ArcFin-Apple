@@ -467,10 +467,14 @@ extension PlayerView {
 
     // MARK: - Cast & Characters
 
+    /// Hides the controls the Apple TV way, by fading: isControlsVisible drives their hit
+    /// testing, and left false it kept them unfocusable after the panel closed, so nothing on
+    /// screen could take focus. Faded, the remote catcher takes it once the panel closes.
     func openCastPanel() {
+        model.hideControlsTask?.cancel()
         withAnimation(DT.Animation.fast) {
             showCastPanel = true
-            model.isControlsVisible = false
+            model.tvControlsHidden = true
         }
     }
 
