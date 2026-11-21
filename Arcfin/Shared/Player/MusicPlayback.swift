@@ -19,6 +19,11 @@ final class MusicPlayback {
     let player: MusicQueuePlayer
     /// The full player is up over the app, so what's behind it (Home's trailer) stops.
     var isNowPlayingOpen = false
+    /// Listening together over SharePlay: autoplay waits, so everyone's queue stays the same.
+    @ObservationIgnored var isListeningTogether = false
+    /// A person here acted on the music (not the player moving on by itself): SharePlay sends
+    /// it to the group. With whether it should now be playing, when the action says.
+    @ObservationIgnored var onUserAction: ((_ playing: Bool?) -> Void)?
 
     @ObservationIgnored private let authManager: AuthManager
     @ObservationIgnored let scrobbler: MusicScrobbler
@@ -147,11 +152,45 @@ final class MusicPlayback {
     var isPlaying: Bool { isCasting ? !cast.isPaused : player.isPlaying }
     var position: Double { isCasting ? castPosition : player.position }
 
-    func togglePlayPause() { isCasting ? cast.togglePlayPause() : player.togglePlayPause() }
-    func resume() { isCasting ? cast.play() : player.resume() }
-    func pause() { isCasting ? cast.pause() : player.pause() }
+    func togglePlayPause() {
+        let playing = !isPlaying
+        isCasting ? cast.togglePlayPause() : player.togglePlayPause()
+        onUserAction?(playing)
+    }
+
+    func resume() {
+        isCasting ? cast.play() : player.resume()
+        onUserAction?(true)
+    }
+
+    func pause() {
+        isCasting ? cast.pause() : player.pause()
+        onUserAction?(false)
+    }
+
+    /// A new queue, from the library, a search or a playlist.
+    func play(_ songs: [MusicSong], startingAt index: Int = 0, shuffled: Bool = false) {
+        player.play(songs, startingAt: index, shuffled: shuffled)
+        onUserAction?(true)
+    }
+
+    func setShuffled(_ on: Bool) {
+        player.setShuffled(on)
+        onUserAction?(nil)
+    }
+
+    func playNext(_ songs: [MusicSong]) {
+        player.playNext(songs)
+        onUserAction?(nil)
+    }
+
+    func addToQueue(_ songs: [MusicSong]) {
+        player.addToQueue(songs)
+        onUserAction?(nil)
+    }
 
     func seek(to seconds: Double) {
+        defer { onUserAction?(nil) }
         guard isCasting else { return player.seek(to: seconds) }
         castPosition = seconds
         cast.seek(toSeconds: seconds)
@@ -159,6 +198,7 @@ final class MusicPlayback {
     }
 
     func next() {
+        defer { onUserAction?(nil) }
         guard isCasting else { return player.next() }
         let before = player.queue.currentIndex
         endCastSong()
@@ -167,6 +207,7 @@ final class MusicPlayback {
     }
 
     func previous() {
+        defer { onUserAction?(nil) }
         guard isCasting else { return player.previous() }
         if castPosition > MusicQueue.restartThreshold { return seek(to: 0) }
         endCastSong()
@@ -176,6 +217,7 @@ final class MusicPlayback {
     }
 
     func jump(to id: MusicQueue.Entry.ID) {
+        defer { onUserAction?(true) }
         guard isCasting else { return player.jump(to: id) }
         endCastSong()
         player.jump(to: id, plays: false)
@@ -333,7 +375,7 @@ final class MusicPlayback {
 
     /// On the last song, a station from it goes behind it, so the music keeps going.
     private func topUpAutoplay() {
-        guard MusicSettings.isAutoplayOn, player.repeatMode == .off, player.isInSession,
+        guard MusicSettings.isAutoplayOn, !isListeningTogether, player.repeatMode == .off, player.isInSession,
               let song = player.current, player.queue.upNext.isEmpty else { return }
         fetchAutoplay(after: song) { [weak self] songs in
             guard let self, player.current?.id == song.id, player.queue.upNext.isEmpty else { return }
@@ -343,7 +385,7 @@ final class MusicPlayback {
 
     /// The queue ran out before a station arrived: it carries on from the last song.
     private func continueAfterQueue(_ song: MusicSong) {
-        guard MusicSettings.isAutoplayOn, player.repeatMode == .off else { return }
+        guard MusicSettings.isAutoplayOn, !isListeningTogether, player.repeatMode == .off else { return }
         let last = player.queue.entries.last?.id, endedAt = Date.now
         fetchAutoplay(after: song) { [weak self] songs in
             // Only if nothing has been played or changed since.
@@ -511,7 +553,8 @@ final class MusicPlayback {
             }
             player.fadeLevel = Self.fadeLevel(remaining: Double(steps - step) / Double(steps))
         }
-        pause()
+        // Only here: someone listening together who falls asleep doesn't stop the others.
+        isCasting ? cast.pause() : player.pause()
         autoplayTask?.cancel()
         autoplayTask = nil
         player.fadeLevel = 1

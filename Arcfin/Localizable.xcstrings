@@ -257,6 +257,70 @@
         }
       }
     },
+    "Music in Arcfin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik in Arcfin"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Música en Arcfin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musique dans Arcfin"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musica in Arcfin"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfinの音楽"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin의 음악"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muziek in Arcfin"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Música no Arcfin"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Музыка в Arcfin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arcfin 中的音乐"
+          }
+        }
+      }
+    },
     "Song recognition in What's Playing? is provided by Shazam." : {
       "localizations" : {
         "de" : {
@@ -381,6 +445,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "服务器上没有的歌曲可通过 Apple Music 播放（需订阅）。"
+          }
+        }
+      }
+    },
+    "Start a FaceTime call first, then choose SharePlay." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Starte zuerst einen FaceTime-Anruf und wähle dann SharePlay."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primero inicia una llamada de FaceTime y luego elige SharePlay."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lancez d’abord un appel FaceTime, puis choisissez SharePlay."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avvia prima una chiamata FaceTime, poi scegli SharePlay."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先にFaceTime通話を開始してから、SharePlayを選択してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "먼저 FaceTime 통화를 시작한 다음 SharePlay를 선택하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start eerst een FaceTime-gesprek en kies dan SharePlay."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicie primeiro uma chamada do FaceTime e depois escolha SharePlay."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сначала начните вызов FaceTime, затем выберите SharePlay."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先发起 FaceTime 通话，然后选择“同播共享”。"
+          }
+        }
+      }
+    },
+    "The music is on a Jellyfin server you're not signed in to here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Musik liegt auf einem Jellyfin-Server, bei dem du hier nicht angemeldet bist."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La música está en un servidor de Jellyfin en el que no has iniciado sesión aquí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La musique se trouve sur un serveur Jellyfin auquel vous n’êtes pas connecté ici."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La musica è su un server Jellyfin a cui qui non hai eseguito l’accesso."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この音楽は、ここでサインインしていないJellyfinサーバにあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 음악은 여기에서 로그인하지 않은 Jellyfin 서버에 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De muziek staat op een Jellyfin-server waarop je hier niet bent ingelogd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A música está em um servidor Jellyfin no qual você não iniciou sessão aqui."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Музыка находится на сервере Jellyfin, в который вы здесь не вошли."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "该音乐位于你在此处未登录的 Jellyfin 服务器上。"
           }
         }
       }
