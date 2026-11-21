@@ -19,7 +19,6 @@ struct MediaDetailView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
     @Environment(DownloadManager.self) private var downloadManager
-    @Environment(\.modelContext) private var modelContext
 
     @State private var model: MediaDetailModel
     @State private var showSubtitleSearch = false
@@ -158,7 +157,7 @@ struct MediaDetailView: View {
             "This is downloaded — play the offline copy or stream from the server?",
             isPresented: Binding(get: { model.pendingPlaybackChoice != nil }, set: { if !$0 { model.pendingPlaybackChoice = nil } })
         ) {
-            Button("Play Downloaded") { model.playDownloadedCopy(modelContext: modelContext) }
+            Button("Play Downloaded") { model.playDownloadedCopy(downloadManager: downloadManager) }
             Button("Stream Online") { model.streamInstead() }
             Button("Cancel", role: .cancel) { model.pendingPlaybackChoice = nil }
         }

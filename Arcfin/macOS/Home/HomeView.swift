@@ -11,6 +11,7 @@ import Persistence
 struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(DownloadManager.self) private var downloadManager
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(PlaybackPresenter.self) private var playbackPresenter
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -34,7 +35,7 @@ struct HomeView: View {
     @State private var hasDownloads = false
 
     private func countDownloads() {
-        hasDownloads = ((try? modelContext.fetchCount(FetchDescriptor<DownloadedItem>())) ?? 0) > 0
+        hasDownloads = !downloadManager.ownDownloads((try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []).isEmpty
     }
     @State private var showSettings = false
     @Environment(\.openWindow) private var openWindow

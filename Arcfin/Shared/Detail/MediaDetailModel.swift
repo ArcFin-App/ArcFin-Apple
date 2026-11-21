@@ -388,8 +388,8 @@ final class MediaDetailModel {
         }
     }
 
-    func playDownloadedCopy(modelContext: ModelContext) {
-        if let choice = pendingPlaybackChoice, let downloaded = downloadedItem(itemId: choice.item.id, in: modelContext) {
+    func playDownloadedCopy(downloadManager: DownloadManager) {
+        if let choice = pendingPlaybackChoice, let downloaded = downloadManager.ownDownload(itemId: choice.item.id) {
             offlineStartOverride = choice.isExplicitStartOver ? 0 : nil
             offlinePlaybackTarget = downloaded
         }
@@ -401,11 +401,6 @@ final class MediaDetailModel {
             playbackRequest = MediaDetailView.PlaybackRequest(item: choice.item, startTicks: choice.startTicks)
         }
         pendingPlaybackChoice = nil
-    }
-
-    private func downloadedItem(itemId: String, in modelContext: ModelContext) -> DownloadedItem? {
-        let descriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })
-        return try? modelContext.fetch(descriptor).first
     }
 
     func play(_ item: MediaItem) {
