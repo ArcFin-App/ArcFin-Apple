@@ -100,7 +100,7 @@ struct AuthView: View {
             if let err = authError {
                 Label(err, systemImage: "exclamationmark.circle.fill")
                     .font(.footnote)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(DT.Color.palette("F43F5E"))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -232,7 +232,7 @@ struct AuthView: View {
         if let err = authError {
             Label(err, systemImage: "exclamationmark.circle.fill")
                 .font(.footnote)
-                .foregroundStyle(.red)
+                .foregroundStyle(DT.Color.palette("F43F5E"))
                 .fixedSize(horizontal: false, vertical: true)
         }
     }

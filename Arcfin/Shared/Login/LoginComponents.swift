@@ -78,7 +78,7 @@ struct LoginTextField: View {
                 }
                 if isValid {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(DT.Color.palette("10B981"))
                         .transition(.scale.combined(with: .opacity))
                         .accessibilityLabel("Connected")
                 }
@@ -88,14 +88,14 @@ struct LoginTextField: View {
             .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(error != nil ? Color.red.opacity(0.6) : DT.Color.textPrimary.opacity(0.08), lineWidth: 1)
+                    .stroke(error != nil ? DT.Color.palette("F43F5E").opacity(0.6) : DT.Color.textPrimary.opacity(0.08), lineWidth: 1)
             )
             .animation(DT.Animation.fast, value: isValid)
 
             if let error {
                 Label(error, systemImage: "exclamationmark.circle.fill")
                     .font(.footnote)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(DT.Color.palette("F43F5E"))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }

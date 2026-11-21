@@ -126,7 +126,7 @@ struct SeerrSetupPromptView: View {
             if let errorMessage {
                 Text(errorMessage)
                     .font(.system(.footnote))
-                    .foregroundStyle(.red)
+                    .foregroundStyle(DT.Color.palette("F43F5E"))
                     .multilineTextAlignment(.center)
             }
 
