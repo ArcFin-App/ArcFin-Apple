@@ -46,8 +46,14 @@ struct LibraryDetailView: View {
                     buttonTitle: "New Playlist"
                 ) { model.showNewPlaylist = true }
             } else if model.items.isEmpty {
-                LibraryEmptyResults(model: model, retry: reload)
-                    .screenBackground()
+                // The action row stays, so Filter & Sort can still be reached to undo filters
+                // that match nothing: the empty state alone left nothing to focus.
+                VStack(spacing: 0) {
+                    tvActionRow
+                    LibraryEmptyResults(model: model, retry: reload)
+                        .focusSection()
+                }
+                .screenBackground()
             } else {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
