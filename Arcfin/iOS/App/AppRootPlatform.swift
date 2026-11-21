@@ -58,6 +58,10 @@ extension AppRootModel {
         UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
         QuickActions.update(resumeItemID: nil, title: nil)
         WidgetSnapshotUpdater.clear()
+        // The other device's Live Activity is only matched to the list when it comes back from
+        // the server, which it won't now.
+        AppServices.remoteSessions.stop()
+        Task { await RemotePlaybackActivity.shared.sync() }
     }
 
     func refreshOnForeground(_ newPhase: ScenePhase, modelContext: ModelContext) {
