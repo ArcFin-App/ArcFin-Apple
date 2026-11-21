@@ -197,6 +197,7 @@
 				iOS/Platform/AdminPlatform.swift = (ios, );
 				iOS/Platform/AlwaysDarkPlayer.swift = (ios, );
 				iOS/Platform/AppSheet.swift = (ios, );
+				iOS/Platform/Biometrics.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
 				iOS/Platform/ExternalApps.swift = (ios, );
@@ -304,6 +305,7 @@
 				macOS/Platform/AdminPlatform.swift = (macos, );
 				macOS/Platform/AlwaysDarkPlayer.swift = (macos, );
 				macOS/Platform/AppSheet.swift = (macos, );
+				macOS/Platform/Biometrics.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
 				macOS/Platform/ExternalApps.swift = (macos, );
@@ -408,6 +410,7 @@
 				tvOS/Platform/AdminPlatform.swift = (tvos, );
 				tvOS/Platform/AlwaysDarkPlayer.swift = (tvos, );
 				tvOS/Platform/AppSheet.swift = (tvos, );
+				tvOS/Platform/Biometrics.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
 				tvOS/Platform/ExternalApps.swift = (tvos, );
@@ -425,6 +428,7 @@
 				tvOS/Platform/PlayerOverlayButton.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/PressableHover.swift = (tvos, );
+				tvOS/Platform/RootPresentation.swift = (tvos, );
 				tvOS/Platform/RowLabelText.swift = (tvos, );
 				tvOS/Platform/ScrubGesture.swift = (tvos, );
 				tvOS/Platform/ShelfScrollButtons.swift = (tvos, );

@@ -13,6 +13,11 @@ struct ContentView: View {
     @AppStorage("libraryScreensaverMinutes") private var screensaverMinutes = 3
     @State private var showScreensaver = false
     @State private var idleTask: Task<Void, Never>?
+    @State private var leftAt: Date?
+    @State private var offersWhoIsWatching = false
+    @Namespace private var rootFocus
+    @Environment(\.resetFocus) private var resetFocus
+    @AppStorage(WhoIsWatching.settingKey) private var alwaysAskWhoIsWatching = false
 
     private var phase: AppPhase {
         model.phase(offlineModeEnabled: offlineModeEnabled)
@@ -45,7 +50,14 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if model.showsContent(phase) {
+                // Kept under the lock: hidden, and out of reach of focus, presses and VoiceOver.
                 phaseContent
+                    .id(model.contentGeneration)
+                    .environment(\.isBehindLock, model.isAppLocked)
+                    .opacity(model.isAppLocked ? 0 : 1)
+                    .disabled(model.isAppLocked)
+                    .allowsHitTesting(!model.isAppLocked)
+                    .accessibilityHidden(model.isAppLocked)
             } else {
                 DT.Color.backgroundPrimary.ignoresSafeArea()
             }
@@ -56,6 +68,12 @@ struct ContentView: View {
                     .transition(.opacity)
                     .zIndex(10)
             }
+        }
+        .focusScope(rootFocus)
+        // The focus engine doesn't reliably move to the screens just enabled under the lock,
+        // and could leave nothing focused.
+        .onChange(of: model.isAppLocked) { _, locked in
+            if !locked { Task { resetFocus(in: rootFocus) } }
         }
         .animation(DT.Animation.standard, value: phase)
         .animation(DT.Animation.standard, value: model.isAppLocked)
@@ -83,7 +101,37 @@ struct ContentView: View {
         }
         .modifier(AppRootLifecycle(model: model) { newPhase in
             if newPhase == .active { restartIdleTimer() } else { idleTask?.cancel() }
+            if newPhase == .background { leftAt = .now }
+            if newPhase == .active, let leftAt {
+                self.leftAt = nil
+                askWhoIsWatching(secondsAway: Date.now.timeIntervalSince(leftAt))
+            }
         })
+        // Once the screen that added the second profile has closed: an alert can't show over it.
+        .task(id: model.authManager.offersWhoIsWatching) {
+            guard model.authManager.offersWhoIsWatching else { return }
+            while !Task.isCancelled, RootPresentation.isCovered || !model.isPastLock {
+                try? await Task.sleep(for: .milliseconds(300))
+            }
+            guard !Task.isCancelled else { return }
+            model.authManager.offersWhoIsWatching = false
+            UserDefaults.standard.set(true, forKey: WhoIsWatching.offeredKey)
+            if !alwaysAskWhoIsWatching { offersWhoIsWatching = true }
+        }
+        .alert("Always Ask Who's Watching?", isPresented: $offersWhoIsWatching) {
+            Button("Turn On") { alwaysAskWhoIsWatching = true }
+            Button("Not Now", role: .cancel) {}
+        } message: {
+            Text("Arcfin can show the profiles each time it opens, so everyone watches as themselves. You can change this in Settings › Profiles.")
+        }
+    }
+
+    /// The screensaver is Arcfin's own cover, so it just closes; any other screen presented over
+    /// the root would stay above the picker, so then the signed-in screens close instead.
+    private func askWhoIsWatching(secondsAway: TimeInterval) {
+        let keepsContent = showScreensaver || !RootPresentation.isCovered
+        model.askWhoIsWatchingOnReturn(secondsAway: secondsAway, keepsContent: keepsContent)
+        if model.isAppLocked { showScreensaver = false }
     }
 
     /// Settings › Appearance › Screensaver: shown after the chosen idle minutes anywhere but

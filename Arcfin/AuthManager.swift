@@ -65,6 +65,9 @@ final class AuthManager {
     var expiredCredential: ServerCredential?
     /// Sign-outs that left another profile in use, so each window can show the profile picker.
     private(set) var signOutsToNextProfile = 0
+    /// A second profile was just saved on this device: Apple TV offers Always Ask Who's
+    /// Watching once the screen that added it closes.
+    var offersWhoIsWatching = false
     @ObservationIgnored private var lastSignInCheck: Date?
 
     /// nil until the first check completes, or if the server has no Arcfin Sync plugin or
@@ -794,6 +797,7 @@ final class AuthManager {
             profiles[idx] = credential
         } else {
             profiles.append(credential)
+            if profiles.count == 2, WhoIsWatching.canOffer { offersWhoIsWatching = true }
         }
     }
 

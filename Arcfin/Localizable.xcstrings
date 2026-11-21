@@ -2881,6 +2881,70 @@
         }
       }
     },
+    "Arcfin can show the profiles each time it opens, so everyone watches as themselves. You can change this in Settings › Profiles." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin kann bei jedem Start die Profile zeigen, damit alle mit ihrem eigenen Profil schauen. Du kannst das unter Einstellungen › Profile ändern."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin puede mostrar los perfiles cada vez que se abre, para que cada persona vea con el suyo. Puedes cambiarlo en Ajustes › Perfiles."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin peut afficher les profils à chaque ouverture, pour que chacun regarde avec le sien. Vous pouvez modifier ce choix dans Réglages › Profils."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin può mostrare i profili a ogni apertura, così ognuno guarda con il proprio. Puoi modificarlo in Impostazioni › Profili."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinを開くたびにプロファイルを表示して、それぞれが自分のプロファイルで視聴できるようにします。設定 › プロファイルで変更できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin을 열 때마다 프로필을 표시해 모두가 자신의 프로필로 시청할 수 있습니다. 설정 › 프로필에서 변경할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin kan de profielen tonen elke keer dat het opent, zodat iedereen met een eigen profiel kijkt. Je kunt dit wijzigen in Instellingen › Profielen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin pode mostrar os perfis sempre que abrir, para que cada pessoa assista com o seu. Você pode mudar isso em Ajustes › Perfis."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin может показывать профили при каждом запуске, чтобы каждый смотрел под своим профилем. Это можно изменить в разделе «Настройки › Профили»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 可以在每次打开时显示描述文件，让每个人都用自己的描述文件观看。你可以在“设置 › 描述文件”中更改。"
+          }
+        }
+      }
+    },
     "Arcfin can't send any of these until you allow notifications." : {
       "localizations" : {
         "de" : {
@@ -36335,6 +36399,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已在那里登录。"
+          }
+        }
+      }
+    },
+    "Always Ask Who's Watching" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Immer fragen, wer zuschaut"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Preguntar siempre quién está viendo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toujours demander qui regarde"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chiedi sempre chi sta guardando"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "毎回視聴者を確認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "항상 시청자 묻기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Altijd vragen wie er kijkt"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sempre perguntar quem está assistindo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Всегда спрашивать, кто смотрит"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "始终询问谁在观看"
+          }
+        }
+      }
+    },
+    "Always Ask Who's Watching?" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Immer fragen, wer zuschaut?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Preguntar siempre quién está viendo?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toujours demander qui regarde ?"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chiedere sempre chi sta guardando?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "毎回視聴者を確認しますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "항상 시청자를 물어볼까요?"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Altijd vragen wie er kijkt?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sempre perguntar quem está assistindo?"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Всегда спрашивать, кто смотрит?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "始终询问谁在观看？"
           }
         }
       }
@@ -125013,6 +125205,70 @@
         }
       }
     },
+    "Shows the profiles when Arcfin opens, and when you come back after 30 minutes or more with nothing playing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zeigt die Profile, wenn Arcfin startet und wenn du nach 30 Minuten oder mehr zurückkommst, ohne dass etwas läuft."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Muestra los perfiles al abrir Arcfin y al volver tras 30 minutos o más sin nada en reproducción."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Affiche les profils à l’ouverture d’Arcfin, et à votre retour après 30 minutes ou plus sans lecture en cours."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra i profili all’apertura di Arcfin e quando torni dopo 30 minuti o più senza nulla in riproduzione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinを開いたときと、何も再生していない状態で30分以上たってから戻ったときに、プロファイルを表示します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin을 열 때와, 아무것도 재생하지 않은 채 30분 이상 지나 돌아왔을 때 프로필을 표시합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toont de profielen wanneer Arcfin opent en wanneer je na 30 minuten of langer terugkomt terwijl er niets speelt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mostra os perfis quando o Arcfin abre e quando você volta depois de 30 minutos ou mais sem nada tocando."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Показывает профили при запуске Arcfin и при возвращении через 30 минут или больше, если ничего не воспроизводится."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在 Arcfin 打开时，以及在没有播放内容的情况下离开 30 分钟或更久后返回时，显示描述文件。"
+          }
+        }
+      }
+    },
     "Shows the song's format" : {
       "localizations" : {
         "de" : {
@@ -147746,6 +148002,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "关闭睡眠定时器"
+          }
+        }
+      }
+    },
+    "Turn On" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Einschalten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Activar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Activer"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Attiva"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "オンにする"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "켜기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inschakelen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ativar"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Включить"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "打开"
           }
         }
       }

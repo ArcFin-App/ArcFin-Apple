@@ -4,8 +4,8 @@ import SwiftUI
 import AuthCore
 
 /// A button whose tap runs `action` and whose long press lists the other profiles to switch
-/// to; a PIN-locked one asks for its PIN first, as Switch Server does. With only one profile
-/// it's a plain button.
+/// to; a PIN-locked one asks for Face ID or Touch ID when that's on, then its PIN, as Settings ›
+/// Profiles does. With only one profile it's a plain button.
 struct QuickProfileSwitchButton<Content: View>: View {
     let action: () -> Void
     @ViewBuilder let label: () -> Content
@@ -15,6 +15,7 @@ struct QuickProfileSwitchButton<Content: View>: View {
     @State private var switchTarget: ServerCredential?
     @State private var resetToken = 0
     @State private var pinError: String?
+    @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
 
     private var others: [ServerCredential] {
         authManager.profiles.filter { $0.id != authManager.state.credential?.id }
@@ -84,6 +85,12 @@ struct QuickProfileSwitchButton<Content: View>: View {
         Task {
             let stored = await authManager.storedPIN(for: profile.id)
             guard stored != .none else {
+                authManager.switchTo(profile)
+                return
+            }
+            // As in Settings › Profiles: Face ID or Touch ID first, the PIN pad if it fails.
+            if appLockUseFaceID, await Biometrics.confirm(reason: String(localized: "Switch to \(profile.displayName)")) {
+                PINAttempts.reset(for: profile.id)
                 authManager.switchTo(profile)
                 return
             }

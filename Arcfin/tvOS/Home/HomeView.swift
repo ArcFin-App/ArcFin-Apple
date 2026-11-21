@@ -11,6 +11,7 @@ struct HomeView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.isBehindLock) private var isBehindLock
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
@@ -107,7 +108,7 @@ struct HomeView: View {
     private var heroVideoAllowed: Bool {
         isHomeShowing && homePath.isEmpty && model.detailItem == nil && model.seerrDetailItem == nil
             && (modernHome || !isHeroScrolledAway) && model.playbackRequest == nil
-            && !PlayerActivity.shared.isPlayerOpen
+            && !PlayerActivity.shared.isPlayerOpen && !isBehindLock
     }
 
     private var heroDisplayItem: MediaItem? {
@@ -205,8 +206,12 @@ struct HomeView: View {
                 model.openDeepLinkItem(id: id, authManager: authManager, mediaRepo: mediaRepo)
             }
         }
+        // Kept under the lock, a SharePlay title waits in the buffer until it opens.
         .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
-            model.playPendingWatch(authManager: authManager)
+            if !isBehindLock { model.playPendingWatch(authManager: authManager) }
+        }
+        .onChange(of: isBehindLock) { _, behind in
+            if !behind { model.playPendingWatch(authManager: authManager) }
         }
         .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.hasCatalog)-\(seerrRegionOverride)") {
             await model.loadServiceRows(seerrRepo: seerrRepo)

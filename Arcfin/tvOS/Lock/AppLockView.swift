@@ -16,6 +16,7 @@ struct AppLockView: View {
 
     @State private var model = AppLockModel()
     @State private var signingOut: ServerCredential?
+    @FocusState private var focusedProfile: UUID?
 
     private var activeID: UUID? { authManager.state.credential?.id }
 
@@ -87,9 +88,14 @@ struct AppLockView: View {
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
                     .tvFocusRing(cornerRadius: DT.Radius.lg, prominent: true)
+                    .focused($focusedProfile, equals: profile.id)
                 }
             }
             .frame(maxWidth: gridMaxWidth)
+            // The last profile used, rather than whichever tile comes first; set as well, as
+            // the screens kept under the lock may still hold focus.
+            .defaultFocus($focusedProfile, activeID)
+            .task { focusedProfile = activeID }
 
             Spacer()
             Spacer()
