@@ -398,7 +398,7 @@ struct SyncPlaySheet: View {
 
 /// One of the Up Next card's buttons: Play Next, Like or Dislike.
 struct CreditsActionButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     let isSelected: Bool
     var countdown: PlayerView.AutoActionCountdown? = nil
@@ -428,7 +428,7 @@ struct CreditsActionButton: View {
 
 /// Skip Credits, Like or Dislike along the bottom of the More Like This panel.
 struct CreditsRatingButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     let isSelected: Bool
     let action: () -> Void
@@ -660,7 +660,7 @@ struct TrackSelectionSheet: View {
                 }
             }
             Section("Subtitles") {
-                trackRow("Off", isSelected: selectedSubtitleIndex == nil) {
+                trackRow(String(localized: "Off"), isSelected: selectedSubtitleIndex == nil) {
                     onSelectSubtitle(nil)
                 }
                 ForEach(subtitleStreams, id: \.index) { stream in

@@ -466,7 +466,7 @@ extension PlayerView {
             .transition(.opacity)
     }
 
-    func macMenuPanel<Content: View>(title: String, onDone: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
+    func macMenuPanel<Content: View>(title: LocalizedStringKey, onDone: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
             HStack {
                 Text(title)
