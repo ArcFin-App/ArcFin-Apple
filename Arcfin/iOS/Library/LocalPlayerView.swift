@@ -16,6 +16,7 @@ struct LocalPlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var model = LocalPlayerModel()
     @State private var vlcPipController: SwiftVLC.PiPController?
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
 
     var body: some View {
         bodyContent.alwaysDarkPlayer()
@@ -38,6 +39,10 @@ struct LocalPlayerView: View {
                 }
                 .contentShape(Rectangle())
                 .onTapGesture { model.toggleControls() }
+                .accessibilityElement()
+                .accessibilityLabel("Show playback controls")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { model.revealControls() }
             }
             .ignoresSafeArea()
 
@@ -64,6 +69,8 @@ struct LocalPlayerView: View {
         .onChange(of: model.isFillScreen) { _, _ in
             model.applyFillScreen()
         }
+        .onChange(of: voiceOverEnabled, initial: true) { _, enabled in model.keepsControlsVisible = enabled }
+        .accessibilityAction(.magicTap) { model.togglePlayPause() }
         .sheet(isPresented: $model.showTrackMenu) {
             LocalPlayerTrackSheet(model: model)
         }
