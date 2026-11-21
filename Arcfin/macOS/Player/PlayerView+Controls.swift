@@ -55,6 +55,7 @@ extension PlayerView {
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("Close player")
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -304,6 +305,7 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                     }
                     Button { model.togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
@@ -312,6 +314,7 @@ extension PlayerView {
                             .frame(width: 56, height: 56)
                             .contentShape(Rectangle())
                     }
+                    .accessibilityLabel(playPauseIconIsPlaying ? "Pause" : "Play")
                     if !model.isLive || model.canRewindLive {
                         Button { model.seek(by: skipForwardSeconds) } label: {
                             Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
@@ -319,6 +322,7 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
                     }
                     if let nextEpisode = model.nextEpisode {
                         Button { model.playNextEpisode() } label: {
