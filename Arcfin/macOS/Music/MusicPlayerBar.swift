@@ -187,6 +187,9 @@ struct MusicMacNowPlaying: View {
 
     @State var panel: Panel
     @State private var lyrics: Lyrics?
+    /// The lyrics request has come back, with or without them.
+    @State private var lyricsLoaded = false
+    @State private var lyricsAttempt = 0
     @Environment(\.dismiss) private var dismiss
     private var player: MusicQueuePlayer { AppServices.music.player }
 
@@ -218,14 +221,16 @@ struct MusicMacNowPlaying: View {
                         .labelsHidden()
                         switch panel {
                         case .queue: queue
-                        case .lyrics: MusicMacLyrics(song: song, lyrics: lyrics)
+                        case .lyrics: MusicMacLyrics(song: song, lyrics: lyrics, isLoaded: lyricsLoaded) { lyricsAttempt += 1 }
                         }
                     }
                 }
                 .padding(DT.Spacing.xl)
-                .task(id: song.id) {
+                .task(id: "\(song.id) \(lyricsAttempt)") {
                     lyrics = nil
+                    lyricsLoaded = false
                     lyrics = await MusicLyricsSource.shared.lyrics(for: song)
+                    lyricsLoaded = true
                 }
             } else {
                 ContentUnavailableView("Nothing Playing", systemImage: "music.note")
@@ -298,6 +303,8 @@ struct MusicMacNowPlaying: View {
 private struct MusicMacLyrics: View {
     let song: MusicSong
     let lyrics: Lyrics?
+    let isLoaded: Bool
+    let retry: () -> Void
     private var player: MusicQueuePlayer { AppServices.music.player }
 
     var body: some View {
@@ -334,8 +341,15 @@ private struct MusicMacLyrics: View {
                     }
                 }
             }
-        } else if MusicLyricsSource.shared.isAvailable(song) {
+        } else if MusicLyricsSource.shared.isAvailable(song), !isLoaded {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if MusicLyricsSource.shared.isAvailable(song) {
+            // The song has lyrics, but they didn't come.
+            ContentUnavailableView {
+                Label("Lyrics Unavailable", systemImage: "quote.bubble")
+            } actions: {
+                Button("Try Again", action: retry)
+            }
         } else {
             ContentUnavailableView("No Lyrics", systemImage: "quote.bubble")
         }

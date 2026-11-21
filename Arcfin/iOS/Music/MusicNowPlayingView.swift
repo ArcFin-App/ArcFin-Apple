@@ -108,6 +108,9 @@ struct MusicNowPlayingView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var panel = Panel.artwork
     @State private var lyrics: Lyrics?
+    /// The lyrics request has come back, with or without them.
+    @State private var lyricsLoaded = false
+    @State private var lyricsAttempt = 0
     private var player: MusicQueuePlayer { AppServices.music.player }
     private var music: MusicPlayback { AppServices.music }
 
@@ -119,7 +122,7 @@ struct MusicNowPlayingView: View {
                     if panel != .artwork { grabber }
                     switch panel {
                     case .artwork: bigArtwork(song)
-                    case .lyrics: MusicLyricsPanel(lyrics: lyrics)
+                    case .lyrics: MusicLyricsPanel(lyrics: lyrics, isLoaded: lyricsLoaded) { lyricsAttempt += 1 }
                     case .queue: MusicQueuePanel()
                     }
                     if panel == .artwork {
@@ -135,7 +138,7 @@ struct MusicNowPlayingView: View {
                 .padding(.horizontal, DT.Spacing.lg)
                 .padding(.bottom, DT.Spacing.sm)
                 .background { MusicArtworkBackdrop(url: MusicAPI.artworkURL(song, width: 600)) }
-                .task(id: song.id) { await loadLyrics(song) }
+                .task(id: "\(song.id) \(lyricsAttempt)") { await loadLyrics(song) }
             } else {
                 Color.black.onAppear { dismiss() }
             }
@@ -384,8 +387,10 @@ struct MusicNowPlayingView: View {
 
     private func loadLyrics(_ song: MusicSong) async {
         lyrics = nil
+        lyricsLoaded = false
         lyrics = await MusicLyricsSource.shared.lyrics(for: song)
-        if lyrics == nil, panel == .lyrics { panel = .artwork }
+        lyricsLoaded = true
+        if lyrics == nil, panel == .lyrics, !MusicLyricsSource.shared.isAvailable(song) { panel = .artwork }
     }
 }
 
@@ -511,6 +516,8 @@ private struct MusicArtworkBackdrop: View {
 /// The words, following the song when the server has times for them; tap a line to go there.
 private struct MusicLyricsPanel: View {
     let lyrics: Lyrics?
+    let isLoaded: Bool
+    let retry: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var player: MusicQueuePlayer { AppServices.music.player }
     private var music: MusicPlayback { AppServices.music }
@@ -589,8 +596,18 @@ private struct MusicLyricsPanel: View {
                             .tint(.white)
                     }
                 }
-            } else {
+            } else if !isLoaded {
                 ProgressView().tint(.white).frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                // The song has lyrics, but they didn't come.
+                ContentUnavailableView {
+                    Label("Lyrics Unavailable", systemImage: "quote.bubble")
+                } actions: {
+                    Button("Try Again", action: retry)
+                        .buttonStyle(.bordered)
+                        .tint(.white)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(maxHeight: .infinity)

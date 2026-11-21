@@ -14,6 +14,9 @@ struct TVMusicNowPlaying: View {
     /// The right-hand column, kept between songs and visits; empty for none.
     @AppStorage("tvMusicNowPlayingPanel") private var panelName = ""
     @State private var lyrics: Lyrics?
+    /// The lyrics request has come back, with or without them.
+    @State private var lyricsLoaded = false
+    @State private var lyricsAttempt = 0
     @State private var showsSleepTimer = false
     @State private var showsLyricsTiming = false
     /// Play/Pause has focus when focus comes down into the tab, not the first thing on it.
@@ -52,9 +55,11 @@ struct TVMusicNowPlaying: View {
                 .padding(.bottom, 60)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .background { backdrop(MusicAPI.artworkURL(song, width: 600)) }
-                .task(id: song.id) {
+                .task(id: "\(song.id) \(lyricsAttempt)") {
                     lyrics = nil
+                    lyricsLoaded = false
                     lyrics = await MusicLyricsSource.shared.lyrics(for: song)
+                    lyricsLoaded = true
                     if lyrics == nil, panel == .lyrics, !MusicLyricsSource.shared.isAvailable(song) { panelName = "" }
                 }
             } else {
@@ -210,7 +215,7 @@ struct TVMusicNowPlaying: View {
     private var lyricsView: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Lyrics").font(.headline).foregroundStyle(.white.opacity(0.7))
-            TVMusicLyricsLines(lyrics: lyrics)
+            TVMusicLyricsLines(lyrics: lyrics, isLoaded: lyricsLoaded) { lyricsAttempt += 1 }
         }
     }
 
@@ -234,6 +239,8 @@ struct TVMusicNowPlaying: View {
 /// the song redraws only this, not the whole screen.
 private struct TVMusicLyricsLines: View {
     let lyrics: Lyrics?
+    let isLoaded: Bool
+    let retry: () -> Void
     /// Each line takes focus, so the remote scrolls through words longer than the screen;
     /// while one has it, the column stays where the remote put it.
     @FocusState private var focusedLine: Int?
@@ -272,8 +279,15 @@ private struct TVMusicLyricsLines: View {
             }
             .animation(DT.Animation.standard, value: current)
             .animation(DT.Animation.fast, value: focusedLine)
-        } else {
+        } else if !isLoaded {
             ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            // The song has lyrics, but they didn't come.
+            VStack(alignment: .leading, spacing: 24) {
+                Text("Lyrics Unavailable").font(.title3).foregroundStyle(.white.opacity(0.6))
+                Button("Try Again", action: retry)
+            }
+            .focusSection()
         }
     }
 }
