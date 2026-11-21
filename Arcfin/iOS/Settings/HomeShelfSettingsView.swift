@@ -3,6 +3,7 @@
 import SwiftUI
 
 struct HomeShelfSettingsView: View {
+    @Environment(AuthManager.self) private var authManager
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(MediaRepository.self) private var mediaRepo
     @AppStorage(HomeShelfPrefs.orderKey) private var orderString = ""
@@ -31,6 +32,7 @@ struct HomeShelfSettingsView: View {
                 Toggle(isOn: $shuffleShelves) {
                     TVRowLabelText(title: "Shuffle Shelves", detail: "New order each time you open Home; Continue Watching and Next Up stay on top. Turns off reordering.")
                 }
+                .syncLocked(HomeShelfPrefs.shuffleKey, authManager)
             }
 
             HomeEpisodeArtworkSection()

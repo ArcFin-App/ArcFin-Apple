@@ -83,7 +83,9 @@ struct NotificationsSettingsView: View {
                 .syncLocked(QuietHours.enabledKey, authManager)
                 if quietHoursEnabled {
                     DatePicker("From", selection: time($quietStart), displayedComponents: .hourAndMinute)
+                        .syncLocked(QuietHours.startKey, authManager)
                     DatePicker("To", selection: time($quietEnd), displayedComponents: .hourAndMinute)
+                        .syncLocked(QuietHours.endKey, authManager)
                 }
             }
         }
