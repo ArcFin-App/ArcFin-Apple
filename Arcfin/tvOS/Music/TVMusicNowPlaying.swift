@@ -154,21 +154,21 @@ struct TVMusicNowPlaying: View {
         let isFavorite = MusicFavorites.shared.isFavorite(song.id, server: song.isFavorite)
         let likes = MusicRatings.shared.likes(song.id, server: song.likes)
         circle("star", label: isFavorite ? "Remove from Favorites" : "Add to Favorites", isOn: isFavorite,
-               small: true) {
+               small: true, fills: true) {
             MusicFavorites.shared.toggle(song.id, server: song.isFavorite)
         }
-        circle("hand.thumbsup", label: "Like", isOn: likes == true, small: true) {
+        circle("hand.thumbsup", label: "Like", isOn: likes == true, small: true, fills: true) {
             MusicRatings.shared.set(song.id, likes: true, server: song.likes)
         }
-        circle("hand.thumbsdown", label: "Dislike", isOn: likes == false, small: true) {
+        circle("hand.thumbsdown", label: "Dislike", isOn: likes == false, small: true, fills: true) {
             MusicRatings.shared.set(song.id, likes: false, server: song.likes)
         }
     }
 
     private func circle(_ systemImage: String, label: LocalizedStringKey, isOn: Bool = false, large: Bool = false,
-                        small: Bool = false, action: @escaping () -> Void) -> some View {
+                        small: Bool = false, fills: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            CircleControl(systemImage: systemImage, isOn: isOn, size: large ? 104 : small ? 64 : 80)
+            CircleControl(systemImage: systemImage, isOn: isOn, fills: fills, size: large ? 104 : small ? 64 : 80)
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
@@ -200,9 +200,17 @@ struct TVMusicNowPlaying: View {
         }
     }
 
-    /// The words down the column, the line being sung bright and kept in the middle.
-    @ViewBuilder
+    /// The words down the column, headed like Playing Next, the line being sung bright and
+    /// kept in the middle.
     private var lyricsView: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Lyrics").font(.headline).foregroundStyle(.white.opacity(0.7))
+            lyricsLines
+        }
+    }
+
+    @ViewBuilder
+    private var lyricsLines: some View {
         if let lyrics, !lyrics.lines.isEmpty {
             let songID = player.current?.id ?? ""
             let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: songID, at: player.position)
@@ -218,7 +226,7 @@ struct TVMusicNowPlaying: View {
                                     .id(index)
                             }
                         }
-                        .padding(.vertical, 200)
+                        .padding(.vertical, 120)
                     }
                     .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.15),
                                                  .init(color: .black, location: 0.85), .init(color: .clear, location: 1)],
@@ -231,7 +239,7 @@ struct TVMusicNowPlaying: View {
             }
             .animation(DT.Animation.standard, value: current)
         } else {
-            ProgressView().tint(.white)
+            ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -323,14 +331,17 @@ private struct TVMusicScrubber: View {
 private struct CircleControl: View {
     let systemImage: String
     let isOn: Bool
+    /// Favourite, Like and Dislike fill their symbol when on; the rest keep their outline, since
+    /// a filled lyrics bubble turned into a solid blob.
+    var fills = false
     let size: CGFloat
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
-        // On: the filled symbol on the accent, so a like, a favourite, shuffle or repeat reads
-        // at a glance, focused or not.
+        // On: the accent, so a like, a favourite, shuffle or repeat reads at a glance, focused
+        // or not.
         Image(systemName: systemImage)
-            .symbolVariant(isOn ? .fill : .none)
+            .symbolVariant(isOn && fills ? .fill : .none)
             .font(.system(size: size * 0.36, weight: .semibold))
             .contentTransition(.symbolEffect(.replace))
             .frame(width: size, height: size)

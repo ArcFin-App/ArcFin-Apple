@@ -13,7 +13,10 @@ extension View {
     /// On tvOS a row has to take focus for the remote to reach it, and a page with nothing
     /// focusable sent focus to the tab bar, where Back leaves the app. The rows stay read-only.
     func tvReadOnlyRow() -> some View {
+        // Dark text on the focused row's white, wherever the row's shown, even over a screen
+        // that sets white text, as Now Playing does.
         Button {} label: { self }
+            .modifier(TVListRowFocusTextModifier())
     }
 
     /// For a page opened from Settings on Apple TV. With the tab bar showing, Up from the top

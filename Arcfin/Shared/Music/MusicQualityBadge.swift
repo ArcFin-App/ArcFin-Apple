@@ -103,9 +103,6 @@ struct MusicQualityBadge: View {
             }
         }
         .presentationDetents([.medium])
-        // Not Now Playing's white: on Apple TV a focused row turns white and its text has to
-        // turn dark with it.
-        .foregroundStyle(.primary)
     }
 
     private var playing: String {
