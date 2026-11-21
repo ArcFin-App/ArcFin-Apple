@@ -754,8 +754,10 @@ public final class MusicQueuePlayer {
         if let held = retrying, isPlaying, position > held.at + 1 { retrying = nil }
         // The server's length wins: AVFoundation only estimates an Ogg file's (a 60-second
         // Opus file read as 304), and a conversion's is only what it has made so far.
+        // A conversion's grows as it goes; each change redraws Now Playing, so only whole steps.
         if queue.current?.track.duration == nil, item.duration.isNumeric, item.duration.seconds > 0 {
-            duration = (start ?? 0) + item.duration.seconds
+            let length = (start ?? 0) + item.duration.seconds
+            if abs(length - duration) > 1 { duration = length }
         }
         if crossfadesCurrent, fade == nil, isPlaying {
             if prepared == nil, position >= duration - crossfade - Self.prepareLead { prepareNext() }

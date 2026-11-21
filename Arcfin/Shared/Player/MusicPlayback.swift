@@ -66,6 +66,7 @@ final class MusicPlayback {
         }
         player.onEvent = { [weak self] event in self?.handle(event) }
         followPlayer()
+        followDuration()
         followProfile(authManager.state.credential?.userID)
         followCast()
         followVisualizerSetting()
@@ -682,7 +683,6 @@ final class MusicPlayback {
         withObservationTracking {
             _ = player.current
             _ = player.isPlaying
-            _ = player.duration
             _ = player.queue.currentIndex
             _ = player.seekCount
             _ = player.volume
@@ -693,6 +693,19 @@ final class MusicPlayback {
                 // A remote sees a pause, a seek or a volume change straight away.
                 self?.reportProgress()
                 self?.followPlayer()
+            }
+        }
+    }
+
+    /// A song with no length from the server learns it as it streams: the lock screen follows,
+    /// but the server isn't sent a report for it.
+    private func followDuration() {
+        withObservationTracking {
+            _ = player.duration
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.updateNowPlaying()
+                self?.followDuration()
             }
         }
     }
