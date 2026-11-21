@@ -15,6 +15,13 @@ struct MusicHero<Art: View, Info: View>: View {
 
     /// How much taller than the art: the blurred part below it.
     private let extent: CGFloat = 1.16
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    /// The whole square, or on a wide window a strip across it, as the title pages' backdrop
+    /// is: on an iPad the square across the detail column was taller than the screen.
+    private var maxArtHeight: CGFloat {
+        sizeClass == .regular ? min(PlatformMetrics.musicHeroMaxHeight, 520) : PlatformMetrics.musicHeroMaxHeight
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -23,7 +30,7 @@ struct MusicHero<Art: View, Info: View>: View {
             // second time in the same frame.
             Color.clear
                 .aspectRatio(1 / extent, contentMode: .fit)
-                .frame(maxHeight: PlatformMetrics.musicHeroMaxHeight * extent)
+                .frame(maxHeight: maxArtHeight * extent)
                 .frame(maxWidth: .infinity)
                 .overlay {
                     GeometryReader { proxy in
