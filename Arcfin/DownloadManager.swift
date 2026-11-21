@@ -1432,9 +1432,13 @@ final class DownloadManager: NSObject {
     /// disk forever with no record of it and no way to play it from the Downloads screen.
     private func recoverOrphanedDownload(destinationPath: String) async {
         let itemId = URL(fileURLWithPath: destinationPath).deletingLastPathComponent().lastPathComponent
+        // A background relaunch can deliver this before the saved sign-ins are read: wait for
+        // them, and keep the descriptor while they aren't there to look the profile up in.
+        guard let authManager else { return }
+        await authManager.checkStoredAuthOnce()
+        guard !authManager.profiles.isEmpty, !activeItemIds.contains(itemId) else { return }
         guard !isDownloaded(itemId),
               let descriptor = loadPendingDescriptors().first(where: { $0.itemId == itemId }),
-              let authManager,
               let credential = authManager.profiles.first(where: { $0.id.uuidString == descriptor.credentialId })
         else {
             removePendingDescriptor(itemId: itemId)
