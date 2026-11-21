@@ -42,6 +42,9 @@ final class MediaDetailModel {
     private(set) var trailers: [MediaItem] = []
     private(set) var remoteTrailer: RemoteTrailer?
     private var loadedSeasonId: String?
+    private var seasonTask: Task<Void, Never>?
+    /// The picked season's episodes couldn't be fetched; the list offers to try again.
+    private(set) var episodesLoadFailed = false
 
     var playbackRequest: MediaDetailView.PlaybackRequest?
     /// The title the player ended up on after handing over to a suggestion or next episode.
@@ -193,8 +196,11 @@ final class MediaDetailModel {
         }
         selectedSeason = target
         loadedSeasonId = target.id
-        episodes = (try? await client.getEpisodes(credential: cred, authHeader: header,
-                                                  seriesId: seriesId, seasonId: target.id)) ?? []
+        let fetched = try? await client.getEpisodes(credential: cred, authHeader: header,
+                                                    seriesId: seriesId, seasonId: target.id)
+        guard loadedSeasonId == target.id else { return }
+        episodes = fetched ?? []
+        episodesLoadFailed = fetched == nil
     }
 
     private func season(for item: MediaItem, in seasons: [MediaItem], preferringProgress: Bool) -> MediaItem? {
@@ -220,13 +226,28 @@ final class MediaDetailModel {
 
     /// Loads the episodes of a season picked from the season menu.
     func showSeason(_ season: MediaItem?, authManager: AuthManager) {
-        guard let season, season.id != loadedSeasonId,
-              let seriesId = seasonSeriesId,
-              case let (cred, header)? = session(authManager) else { return }
-        Task {
-            loadedSeasonId = season.id
-            episodes = (try? await client.getEpisodes(credential: cred, authHeader: header,
-                                                      seriesId: seriesId, seasonId: season.id)) ?? []
+        guard let season, season.id != loadedSeasonId else { return }
+        loadEpisodes(seasonId: season.id, authManager: authManager)
+    }
+
+    func retryEpisodes(authManager: AuthManager) {
+        guard let seasonId = selectedSeason?.id else { return }
+        loadEpisodes(seasonId: seasonId, authManager: authManager)
+    }
+
+    /// Only the newest pick lands: an earlier season's response arriving late would otherwise
+    /// fill the list under the later season's name.
+    private func loadEpisodes(seasonId: String, authManager: AuthManager) {
+        guard let seriesId = seasonSeriesId, case let (cred, header)? = session(authManager) else { return }
+        seasonTask?.cancel()
+        loadedSeasonId = seasonId
+        episodesLoadFailed = false
+        seasonTask = Task {
+            let fetched = try? await client.getEpisodes(credential: cred, authHeader: header,
+                                                        seriesId: seriesId, seasonId: seasonId)
+            guard !Task.isCancelled, loadedSeasonId == seasonId else { return }
+            episodes = fetched ?? []
+            episodesLoadFailed = fetched == nil
         }
     }
 
@@ -247,7 +268,8 @@ final class MediaDetailModel {
             nextEpisode = nextEp
         }
         if let seasonId = loadedSeasonId,
-           let fresh = try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: seasonId) {
+           let fresh = try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: seasonId),
+           loadedSeasonId == seasonId {
             episodes = fresh
         }
     }

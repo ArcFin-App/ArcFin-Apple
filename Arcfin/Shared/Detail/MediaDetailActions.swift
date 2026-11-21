@@ -255,6 +255,9 @@ struct DetailSeriesSection: View {
             .padding(.horizontal, DT.Spacing.pagePad)
 
             VStack(spacing: 8) {
+                if model.episodesLoadFailed {
+                    EpisodesLoadFailedRow { model.retryEpisodes(authManager: authManager) }
+                }
                 ForEach(model.episodes) { ep in
                     EpisodeRow(
                         episode: ep,
@@ -271,6 +274,21 @@ struct DetailSeriesSection: View {
             .padding(.horizontal, DT.Spacing.pagePad)
         }
         .padding(.bottom, DT.Spacing.md)
+    }
+}
+
+/// A season whose episodes couldn't be fetched, with a way to ask again.
+struct EpisodesLoadFailedRow: View {
+    let retry: () -> Void
+
+    var body: some View {
+        HStack {
+            Text("Couldn't load this season's episodes.")
+                .contentFont(.callout)
+                .foregroundStyle(DT.Color.textSecondary)
+            Spacer()
+            Button("Try Again", action: retry)
+        }
     }
 }
 

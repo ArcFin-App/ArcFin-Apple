@@ -514,6 +514,12 @@ struct MediaDetailView: View {
             }
             .padding(.horizontal, 80)
 
+            if model.episodesLoadFailed {
+                EpisodesLoadFailedRow { model.retryEpisodes(authManager: authManager) }
+                    .padding(.horizontal, 80)
+                    .focusSection()
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 16) {
                         ForEach(model.episodes) { ep in
