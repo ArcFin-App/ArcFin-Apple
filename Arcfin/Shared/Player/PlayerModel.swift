@@ -244,7 +244,7 @@ final class PlayerModel {
     func switchChannel(to channel: LiveTVChannel) {
         showChannelList = false
         guard channel.id != item.id else { return }
-        onPlayNext(channel.mediaItem)
+        playNextItem(channel.mediaItem)
     }
 
     /// Hands over the environment the shared steps need.
@@ -1023,7 +1023,7 @@ final class PlayerModel {
         guard let credential, let authHeader else { return }
         Task {
             if let next = try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: itemId).item {
-                onPlayNext(next)
+                playNextItem(next)
             }
         }
     }
@@ -1615,6 +1615,12 @@ final class PlayerModel {
     /// `isAutomatic` distinguishes the countdown silently firing from the user actually
     /// tapping Play on the Up Next card — only the former counts toward the "are you still
     /// watching" streak (a manual tap is proof someone's there, and resets it).
+    /// Opens another item in this player's place.
+    private func playNextItem(_ next: MediaItem) {
+        (player as? AetherEnginePlayer)?.keepsDisplayModeOnStop = true
+        onPlayNext(next)
+    }
+
     func playNextEpisode(isAutomatic: Bool = false) {
         guard let nextEpisode else { return }
         cancelUpNextCountdown()
@@ -1637,7 +1643,7 @@ final class PlayerModel {
         } else {
             UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
         }
-        onPlayNext(nextEpisode)
+        playNextItem(nextEpisode)
     }
 
     // MARK: - Sleep timer
@@ -1690,7 +1696,7 @@ final class PlayerModel {
         UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
         showStillWatchingPrompt = false
         if let pendingAutoAdvanceEpisode {
-            onPlayNext(pendingAutoAdvanceEpisode)
+            playNextItem(pendingAutoAdvanceEpisode)
         }
         pendingAutoAdvanceEpisode = nil
     }
@@ -1707,7 +1713,7 @@ final class PlayerModel {
         guard let previousItem else { return }
         cancelUpNextCountdown()
         UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
-        onPlayNext(previousItem)
+        playNextItem(previousItem)
     }
 
     func dismissUpNext() {
@@ -2148,7 +2154,7 @@ final class PlayerModel {
     func playSuggestion(_ suggestion: MediaItem) {
         moreLikeThisDismissed = true
         withAnimation(DT.Animation.fast) { showMoreLikeThis = false }
-        onPlayNext(suggestion)
+        playNextItem(suggestion)
     }
 
     // MARK: - Media info

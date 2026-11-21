@@ -224,7 +224,10 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
         playbackRate = rate
         engine.setRate(rate)
     }
-    public func stop() async { engine.stop() }
+    /// Another item follows straight after, so the TV stays in this one's mode instead of
+    /// switching back to its default and out again in between.
+    public var keepsDisplayModeOnStop = false
+    public func stop() async { engine.stop(resetDisplayCriteria: !keepsDisplayModeOnStop) }
 
     /// Whether this load has put a frame on screen, read from the presenting layer or renderer
     /// rather than from readiness.
