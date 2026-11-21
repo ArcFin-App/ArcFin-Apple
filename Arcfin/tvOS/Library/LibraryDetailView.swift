@@ -295,6 +295,6 @@ struct LibraryDetailView: View {
                 Label("Remove from Playlist", systemImage: "minus.circle")
             }
         }
-        LibraryQuickLookMenu(item: item)
+        LibraryQuickLookMenu(item: item) { model.replace($0) }
     }
 }

@@ -417,11 +417,16 @@ final class MediaDetailModel {
     /// Tapping the current rating again clears it.
     func setRating(_ value: Bool, authManager: AuthManager) {
         guard case let (cred, header)? = session(authManager) else { return }
+        let oldValue = likes
         let newValue: Bool? = likes == value ? nil : value
         likes = newValue
         HapticManager.impact(.light)
         Task {
-            try? await client.setRating(credential: cred, authHeader: header, itemId: item.id, likes: newValue)
+            do {
+                try await client.setRating(credential: cred, authHeader: header, itemId: item.id, likes: newValue)
+            } catch {
+                likes = oldValue
+            }
         }
     }
 
@@ -431,7 +436,11 @@ final class MediaDetailModel {
         isFavorite = newValue
         HapticManager.impact(.light)
         Task {
-            try? await client.markFavorite(credential: cred, authHeader: header, itemId: item.id, favorite: newValue)
+            do {
+                try await client.markFavorite(credential: cred, authHeader: header, itemId: item.id, favorite: newValue)
+            } catch {
+                isFavorite = !newValue
+            }
         }
     }
 
@@ -439,7 +448,11 @@ final class MediaDetailModel {
         guard case let (cred, header)? = session(authManager) else { return }
         isWatched = watched
         Task {
-            try? await client.markWatched(credential: cred, authHeader: header, itemId: item.id, watched: watched)
+            do {
+                try await client.markWatched(credential: cred, authHeader: header, itemId: item.id, watched: watched)
+            } catch {
+                isWatched = !watched
+            }
             await refreshAfterPlayback(waitForReport: false, authManager: authManager)
         }
     }

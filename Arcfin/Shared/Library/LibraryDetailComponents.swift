@@ -233,9 +233,10 @@ struct PlaylistShowGroupActions: View {
 /// A title's name, year and score at the end of its context menu.
 struct LibraryQuickLookMenu: View {
     let item: MediaItem
+    var onUpdate: ((MediaItem) -> Void)? = nil
 
     var body: some View {
-        ItemQuickActions(item: item)
+        ItemQuickActions(item: item, onUpdate: onUpdate)
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear {
             Label(String(year), systemImage: "calendar")

@@ -350,6 +350,27 @@ final class MediaRepository {
         if let favsValue { favorites = favsValue }
     }
 
+    /// Puts a title's changed watched or favourite state on every shelf card showing it.
+    func applyUserData(of item: MediaItem) {
+        func apply(_ items: inout [MediaItem]) {
+            for index in items.indices where items[index].id == item.id {
+                items[index].userData = item.userData
+            }
+        }
+        apply(&continueWatching)
+        apply(&recentlyAdded)
+        apply(&nextUp)
+        apply(&recentlyAddedMovies)
+        apply(&recentlyAddedShows)
+        apply(&recentlyReleasedMovies)
+        apply(&recentlyAiredEpisodes)
+        apply(&watchAgain)
+        apply(&featuredItems)
+        apply(&favorites)
+        apply(&topRatedUnwatched)
+        apply(&suggestions)
+    }
+
     /// Shelves that follow what's in the library, after titles are added or removed.
     func refreshRecentlyAdded(credential: ServerCredential, authClient: JellyfinAuthClient) async {
         guard loaded, !isLoading else { return }

@@ -172,6 +172,12 @@ final class LibraryDetailModel {
         return entries
     }
 
+    /// A title changed from its long-press menu, so its card shows the new state.
+    func replace(_ item: MediaItem) {
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+        items[index] = item
+    }
+
     func navTarget(for item: MediaItem) -> LibraryNavTarget {
         switch item.type {
         case .boxSet: .collection(item)

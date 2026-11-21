@@ -280,6 +280,6 @@ struct LibraryDetailView: View {
         Button { trailerLaunchItem = item } label: {
             Label("Play Trailer", systemImage: "play.rectangle")
         }
-        LibraryQuickLookMenu(item: item)
+        LibraryQuickLookMenu(item: item) { model.replace($0) }
     }
 }
