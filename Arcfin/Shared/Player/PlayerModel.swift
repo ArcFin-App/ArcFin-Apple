@@ -335,7 +335,7 @@ final class PlayerModel {
         // follows the local position) never fires — the receiver's end-of-item is the
         // signal instead.
         guard CastManager.shared.isConnected, nextEpisode != nil,
-              UserDefaults.standard.bool(forKey: "autoPlayNext") else { return }
+              UserDefaults.standard.object(forKey: "autoPlayNext") as? Bool ?? true else { return }
         playNextEpisode(isAutomatic: true)
     }
 
@@ -1633,7 +1633,7 @@ final class PlayerModel {
         if withinWindow, !showUpNext {
             showUpNext = true
             let defaults = UserDefaults.standard
-            if defaults.bool(forKey: "autoPlayNext") || (defaults.bool(forKey: "skipCredits") && segments.credits != nil) {
+            if defaults.object(forKey: "autoPlayNext") as? Bool ?? true || (defaults.bool(forKey: "skipCredits") && segments.credits != nil) {
                 startUpNextCountdown()
             }
         } else if !withinWindow, showUpNext {
