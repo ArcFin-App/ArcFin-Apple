@@ -31,7 +31,7 @@ struct TVMusicNowPlaying: View {
             if let song = player.current {
                 HStack(alignment: .center, spacing: 80) {
                     songColumn(song)
-                        .frame(width: panel == nil ? nil : 720, alignment: .leading)
+                        .frame(width: panel == nil ? nil : 760, alignment: .leading)
                         // Back from the column on the right always finds the controls.
                         .focusSection()
                     if let panel {
@@ -106,7 +106,9 @@ struct TVMusicNowPlaying: View {
                 .focused($playPauseFocused)
                 circle("forward.fill", label: "Next") { player.next() }
             }
-            TVWrapLayout(spacing: 20) {
+            // Nine at most (Timing joins while lyrics show): 9 × 64 + 8 × 16 = 704 pt, inside
+            // the column's 760, so none wraps onto a row below the screen.
+            TVWrapLayout(spacing: 16) {
                 circle("shuffle", label: "Shuffle", isOn: player.queue.isShuffled, small: true) {
                     player.setShuffled(!player.queue.isShuffled)
                 }
