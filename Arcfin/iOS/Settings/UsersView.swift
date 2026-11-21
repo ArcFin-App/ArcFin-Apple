@@ -80,12 +80,14 @@ struct UsersView: View {
             }
 
             // ── App Lock ─────────────────────────────────────────────────
-            Section {
-                Toggle(isOn: $appLockUseFaceID) {
-                    TVRowLabelText(title: "Use \(biometricLabel)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
+            if let biometricLabel {
+                Section {
+                    Toggle(isOn: $appLockUseFaceID) {
+                        TVRowLabelText(title: "Use \(biometricLabel)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
+                    }
+                } header: {
+                    Text("App Lock")
                 }
-            } header: {
-                Text("App Lock")
             }
         }
         .arcfinListStyle()
@@ -156,9 +158,16 @@ struct UsersView: View {
         }
     }
 
-    // Face ID is the only biometry iOS/iPadOS devices in this fleet ship with.
-    private var biometricLabel: String {
-        return "Face ID"
+    /// Face ID or Touch ID (iPad Air, iPad mini, iPad and iPhone SE), or nil with neither.
+    /// canEvaluatePolicy has to run first for biometryType to be filled in.
+    private var biometricLabel: String? {
+        let context = LAContext()
+        _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
+        switch context.biometryType {
+        case .faceID: return "Face ID"
+        case .touchID: return "Touch ID"
+        default: return nil
+        }
     }
 
     private func attemptBiometrics(for profile: ServerCredential) async -> Bool {
