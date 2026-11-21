@@ -20,31 +20,27 @@ struct ListenBrainzStatusFooter: View {
     }
 }
 
-/// The ListenBrainz row's status in Integrations.
+/// Goes up whenever a profile's token is saved or removed, or ListenBrainz refuses it, so
+/// what shows its status updates, wherever the change came from.
+@MainActor @Observable
+final class ListenBrainzState {
+    static let shared = ListenBrainzState()
+    private(set) var revision = 0
+    func changed() { revision += 1 }
+}
+
+/// The ListenBrainz row's status in Integrations, like TMDB's and Seerr's.
 struct ListenBrainzStatusPill: View {
     let profile: UUID?
-    @State private var status: Status = .off
-
-    private enum Status { case off, connected, refused }
 
     var body: some View {
-        Group {
-            switch status {
-            case .off: EmptyView()
-            case .connected: Text("Connected").foregroundStyle(DT.Color.palette("10b981"))
-            case .refused: Text("Token Refused").foregroundStyle(DT.Color.palette("F43F5E"))
+        let _ = ListenBrainzState.shared.revision
+        if let profile, ListenBrainzCredential.load(profile: profile) != nil {
+            if MusicScrobbler.isRefused(profile) {
+                Text("Token Refused").font(.caption2).foregroundStyle(DT.Color.palette("F43F5E"))
+            } else {
+                Text("Connected").font(.caption2).foregroundStyle(DT.Color.palette("10b981"))
             }
         }
-        .font(.caption2)
-        .onAppear(perform: refresh)
-        .onReceive(NotificationCenter.default.publisher(for: .listenBrainzTokenChanged)) { _ in refresh() }
-    }
-
-    private func refresh() {
-        guard let profile, ListenBrainzCredential.load(profile: profile) != nil else {
-            status = .off
-            return
-        }
-        status = MusicScrobbler.isRefused(profile) ? .refused : .connected
     }
 }

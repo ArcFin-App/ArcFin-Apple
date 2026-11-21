@@ -173,6 +173,7 @@ final class MusicScrobbler {
 
     static func setRefused(_ refused: Bool, profile: UUID) {
         UserDefaults.standard.set(refused, forKey: refusedKey(profile))
+        ListenBrainzState.shared.changed()
     }
 
     /// A removed profile's token and unsent listens.
@@ -181,5 +182,6 @@ final class MusicScrobbler {
         try? FileManager.default.removeItem(at: pendingURL(profile))
         UserDefaults.standard.removeObject(forKey: refusedKey(profile))
         UserDefaults.standard.removeObject(forKey: feedbackKey(profile))
+        ListenBrainzState.shared.changed()
     }
 }

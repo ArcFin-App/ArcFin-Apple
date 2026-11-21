@@ -11,7 +11,6 @@ final class ListenBrainzTokenModel {
     private(set) var savedToken: String
     var testResult: String?
     private(set) var isTesting = false
-    private(set) var isRefused: Bool
     private(set) var pendingCount: Int
     private let profile: UUID?
 
@@ -20,8 +19,13 @@ final class ListenBrainzTokenModel {
         let saved = profile.flatMap(ListenBrainzCredential.load(profile:)) ?? ""
         token = saved
         savedToken = saved
-        isRefused = profile.map(MusicScrobbler.isRefused) ?? false
         pendingCount = profile.map { MusicScrobbler.pending($0).count } ?? 0
+    }
+
+    /// ListenBrainz turned the saved token down, here or while music played.
+    var isRefused: Bool {
+        _ = ListenBrainzState.shared.revision
+        return profile.map(MusicScrobbler.isRefused) ?? false
     }
 
     var isTokenEmpty: Bool { token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
@@ -32,9 +36,7 @@ final class ListenBrainzTokenModel {
         try? ListenBrainzCredential.save(trimmed, profile: profile)
         savedToken = trimmed
         MusicScrobbler.setRefused(false, profile: profile)
-        isRefused = false
         AppServices.music.scrobbler.flush()
-        NotificationCenter.default.post(name: .listenBrainzTokenChanged, object: nil)
     }
 
     func remove() {

@@ -201,6 +201,7 @@ final class NearbySetupHost {
             }
             if let token = profile.listenBrainzToken, !token.isEmpty {
                 try? ListenBrainzCredential.save(token, profile: id)
+                ListenBrainzState.shared.changed()
             }
         }
     }
