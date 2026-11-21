@@ -89,8 +89,13 @@ struct OfflinePlayerView: View {
 
             // .idle covers the gap between the screen appearing and setup() actually calling
             // player.load() — without it the screen was just black with no spinner there.
-            if model.player.status == .idle || model.player.status == .loading || model.player.isBuffering {
+            if !model.hasFailed, model.player.status == .idle || model.player.status == .loading || model.player.isBuffering {
                 ProgressView().tint(.white).scaleEffect(1.4)
+            }
+
+            if model.hasFailed {
+                PlayerErrorView(message: String(localized: "This download couldn't be played. The file may be missing or damaged."),
+                                onClose: { closeRotatedPlayer { dismiss() } })
             }
 
             if let currentSubtitleText = model.currentSubtitleText {
@@ -127,8 +132,7 @@ struct OfflinePlayerView: View {
             if !asking, let resumeAnswer = model.resumeAnswer { Task { await startPlayback(from: resumeAnswer) } }
         }
         .onDisappear {
-            // Nothing played when the resume question was cancelled.
-            if model.player.status != .idle { model.savePosition(final: true) }
+            model.close()
             // Dismissing (back chevron, Escape) previously left VLC playing in the
             // background with no way to stop it short of killing the app — the player
             // was never actually told to stop, just visually torn down.
@@ -186,7 +190,7 @@ struct OfflinePlayerView: View {
     }
 
     private func startPlayback(from startTicks: Int64) async {
-        await model.loadAndPlay(from: startTicks, enginePreference: playbackEnginePreference)
+        guard await model.loadAndPlay(from: startTicks, enginePreference: playbackEnginePreference) else { return }
         if let aether = model.player as? AetherEnginePlayer, let layer = aether.nativePlayerLayer {
             pip.stashLayer(layer)
             pip.activateIfNeeded()

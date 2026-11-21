@@ -41,6 +41,13 @@ final class OfflinePlayerModel {
     private(set) var askedResumeTicks: Int64 = 0
     var resumeAnswer: Int64?
 
+    /// Set once the screen closes: a load that finishes after that stops instead of playing.
+    @ObservationIgnored private var isClosed = false
+    /// Playback has actually started, so there's a real position to save.
+    @ObservationIgnored private var hasStarted = false
+    /// Neither engine could open the file (missing or damaged).
+    private(set) var loadFailed = false
+
     @ObservationIgnored private var modelContext: ModelContext?
     @ObservationIgnored private var authManager: AuthManager?
     @ObservationIgnored var closePlayer: () -> Void = {}
@@ -84,7 +91,9 @@ final class OfflinePlayerModel {
         return h > 0 ? String(format: "%d:%02d:%02d", h, m, s) : String(format: "%d:%02d", m, s)
     }
 
-    func loadAndPlay(from startTicks: Int64, enginePreference: PlaybackEngineKind) async {
+    /// Whether playback started; false when the screen closed first or the file wouldn't open.
+    func loadAndPlay(from startTicks: Int64, enginePreference: PlaybackEngineKind) async -> Bool {
+        guard !isClosed else { return false }
         let videoURL = dir.appendingPathComponent(downloadedItem.videoFileName)
         // The engine picked in Settings; Aether otherwise (AVFoundation can't open most
         // downloaded containers, so it isn't offered here).
@@ -95,16 +104,37 @@ final class OfflinePlayerModel {
         do {
             try await player.load(url: videoURL, startPositionTicks: startTicks)
         } catch where player is AetherEnginePlayer {
+            // A load cut short by closing isn't Aether failing; falling back then would leave
+            // a second player going that nothing stops.
+            guard !isClosed else { return false }
             // Same runtime fallback as the online PlayerView — DownloadedItem has no stored
             // container/codec metadata to run a real pre-flight check against offline, so
             // this only ever triggers reactively, on an actual Aether load failure.
             player = VLCEnginePlayer()
-            try? await player.load(url: videoURL, startPositionTicks: startTicks)
+            do {
+                try await player.load(url: videoURL, startPositionTicks: startTicks)
+            } catch {
+                loadFailed = !isClosed
+                return false
+            }
         } catch {
-            // Nothing more to fall back to offline — surfaced via the stalled/failed state
-            // the controls overlay already reflects through player.status.
+            loadFailed = !isClosed
+            return false
+        }
+        guard !isClosed else {
+            await player.stop()
+            return false
         }
         await player.play()
+        return true
+    }
+
+    /// The screen closing: stops the timers and saves where playback got to.
+    func close() {
+        isClosed = true
+        hideControlsTask?.cancel()
+        autoSkipTask?.cancel()
+        savePosition(final: true)
     }
 
     /// Where to start: an explicit Start Over, else the local position, unless the server
@@ -140,6 +170,7 @@ final class OfflinePlayerModel {
     }
 
     func startProgressSaving() {
+        guard !isClosed else { return }
         progressSaveTask?.cancel()
         progressSaveTask = Task {
             while !Task.isCancelled {
@@ -151,6 +182,10 @@ final class OfflinePlayerModel {
     }
 
     func savePosition(final: Bool) {
+        if final { progressSaveTask?.cancel() }
+        // Before playback has started the position is still 0, which saved as a newer local
+        // change would overwrite the server's resume point.
+        guard hasStarted, player.durationTicks > 0 else { return }
         downloadedItem.playbackPositionTicks = player.positionTicks
         // Settings › Playback › Mark as Watched, with Jellyfin's own 90% for Server Default.
         // Only ever set here, never cleared: watching a finished title again doesn't make it
@@ -172,10 +207,7 @@ final class OfflinePlayerModel {
         downloadedItem.needsSync = true
         downloadedItem.progressChangedAt = Date()
         try? modelContext?.save()
-        if final {
-            progressSaveTask?.cancel()
-            syncNow()
-        }
+        if final { syncNow() }
     }
 
     /// Hands the position to the server right away when it's reachable; otherwise it waits
@@ -201,7 +233,10 @@ final class OfflinePlayerModel {
     }
 
     func statusChanged(to status: PlaybackStatus, deleteAfterWatching: Bool, downloadManager: DownloadManager) {
-        if status == .playing { scheduleAutoHide() }
+        if status == .playing {
+            hasStarted = true
+            scheduleAutoHide()
+        }
         if status == .ended {
             savePosition(final: true)
             // The player's end can come early (a converted file cut short), so only a title
@@ -405,6 +440,13 @@ final class OfflinePlayerModel {
     }
 
     var shownTicks: Int64 { isScrubbing ? Int64(scrubTicks) : player.positionTicks }
+
+    /// The file wouldn't open, or the engine gave up on it part-way.
+    var hasFailed: Bool {
+        if loadFailed { return true }
+        if case .failed = player.status { return true }
+        return false
+    }
 
     var remainingLabel: String {
         let remaining = max(player.durationTicks - player.positionTicks, 0)
