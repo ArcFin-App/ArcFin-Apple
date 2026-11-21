@@ -260,7 +260,7 @@ struct DetailSeriesSection: View {
             }
             .padding(.horizontal, DT.Spacing.pagePad)
 
-            VStack(spacing: 8) {
+            LazyVStack(spacing: 8) {
                 if model.episodesLoadFailed {
                     EpisodesLoadFailedRow { model.retryEpisodes(authManager: authManager) }
                 }

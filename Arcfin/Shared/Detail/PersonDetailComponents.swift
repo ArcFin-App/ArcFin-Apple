@@ -64,7 +64,7 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
                     if !missingCredits.isEmpty {
                         PersonSectionHeader(title: "Also Appears In")
                         ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(alignment: .top, spacing: 12) {
+                            LazyHStack(alignment: .top, spacing: 12) {
                                 ForEach(missingCredits) { credit in
                                     creditLink(credit, PersonCreditCard(credit: credit, scale: creditScale))
                                 }

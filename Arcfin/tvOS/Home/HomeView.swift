@@ -220,12 +220,15 @@ struct HomeView: View {
 
     private func load() async {
         guard await model.loadShelves(force: false, shelves: orderedShelves, authManager: authManager, mediaRepo: mediaRepo) else { return }
-        // Preheat full-res hero backdrops + logos into the Nuke decoded cache so
-        // backdrop transitions are instant with no load jump.
-        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
+        // The first hero backdrops + logos go into the decoded cache so the opening
+        // transitions are instant; the rest only to disk, two at a time. Decoding all of them
+        // (about 8 MB each at 1920 px) at once crowded out the posters on screen.
+        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in
+            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
              heroLogoURL(item)].compactMap { $0 }
         }
-        ImageCache.preheat(urls: heroURLs)
+        ImageCache.preheat(urls: Array(heroURLs.prefix(8)))
+        ImageCache.prefetch(urls: Array(heroURLs.dropFirst(8)))
         model.openPendingDeepLink(authManager: authManager, mediaRepo: mediaRepo)
         model.playPendingWatch(authManager: authManager)
         await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
@@ -538,7 +541,7 @@ struct HomeView: View {
                     .opacity(heroChromeOpacity)
 
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
+                    LazyHStack(spacing: 16) {
                         ForEach(items) { item in
                             Button {
                                 if heroChromeHidden { showHeroChrome(); return }
@@ -750,7 +753,7 @@ struct HomeView: View {
             .padding(.bottom, 14)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) { content() }
+                LazyHStack(spacing: 16) { content() }
                     .padding(.horizontal, 80)
                     .padding(.top, 20)
                     .focusSection()
