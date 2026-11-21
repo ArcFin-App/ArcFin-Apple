@@ -19,6 +19,20 @@ final class DownloadedItemDetailModel {
         if let url = Self.heroURL(for: item) { heroTint = await AverageColor.load(from: url) }
     }
 
+    enum DeleteOnClose { case delete, deleteAndIgnore }
+    /// Picked in the delete confirmation, and done once the page has gone: until then it still
+    /// reads the record, and reading a deleted SwiftData model is unsafe.
+    var deleteOnClose: DeleteOnClose?
+
+    func pageClosed(_ item: DownloadedItem, downloadManager: DownloadManager) {
+        switch deleteOnClose {
+        case .delete: downloadManager.deleteDownload(item)
+        case .deleteAndIgnore: downloadManager.deleteAndIgnore(itemIds: [item.itemId])
+        case nil: break
+        }
+        deleteOnClose = nil
+    }
+
     /// Plays from the saved position, or from `startOverride` (0 for Start Over).
     func play(_ item: DownloadedItem, startOverride: Int64?) {
         self.startOverride = startOverride
