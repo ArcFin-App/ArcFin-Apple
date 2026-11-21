@@ -63,7 +63,7 @@ struct SeerrRequestConfirmSheet: View {
         if unrequested.isEmpty { return "Already Requested" }
         if !partialRequestsEnabled { return isSubmitting ? "Sending…" : "Request Series" }
         if selectedSeasons.isEmpty { return "Select Seasons" }
-        return isSubmitting ? "Sending…" : "Request \(selectedSeasons.count) Season\(selectedSeasons.count == 1 ? "" : "s")"
+        return isSubmitting ? "Sending…" : String(localized: "Request \(selectedSeasons.count) Seasons")
     }
 
     var body: some View {
@@ -393,7 +393,7 @@ struct SeerrRequestConfirmSheet: View {
                     Text(row.label)
                         .font(.system(.footnote, design: .default, weight: .medium))
                         .foregroundStyle(DT.Color.textPrimary)
-                    Text("\(row.episodeCount) episode\(row.episodeCount == 1 ? "" : "s")")
+                    Text("\(row.episodeCount) episodes")
                         .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
@@ -475,8 +475,10 @@ struct SeerrRequestConfirmSheet: View {
             if overLimit { return "Not enough season requests remaining for the whole series." }
             if overQuota { return "That's more seasons than you have requests remaining for." }
             if remaining <= 0 { return "No season requests remaining." }
-            return "\(remaining) season request\(remaining == 1 ? "" : "s") remaining"
-                + (quota?.days.map { $0 > 0 ? " (resets every \($0) day\($0 == 1 ? "" : "s"))" : "" } ?? "")
+            if let days = quota?.days, days > 0 {
+                return String(localized: "\(remaining) season requests remaining (resets every \(days) days)")
+            }
+            return String(localized: "\(remaining) season requests remaining")
         }()
         let isWarning = overLimit || overQuota || remaining <= 0
         return Text(text)
