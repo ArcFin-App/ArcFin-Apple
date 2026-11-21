@@ -412,7 +412,7 @@ struct HomeShelfView<Card: View>: View {
             }
         case .genreShelves:
             ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
-                let title = "More \(shelf.genre)"
+                let title = String(localized: "More \(shelf.genre)")
                 ShelfRow(title: title, onSeeAll: {
                     seeAll(SeeAllShelf(title: title, items: shelf.items))
                 }) {
@@ -421,7 +421,7 @@ struct HomeShelfView<Card: View>: View {
             }
         case .becauseYouWatched:
             if let recommendation = mediaRepo.becauseYouWatched {
-                let title = "Because You Watched \(recommendation.source.name)"
+                let title = String(localized: "Because You Watched \(recommendation.source.name)")
                 ShelfRow(title: title, onSeeAll: {
                     seeAll(SeeAllShelf(title: title, items: recommendation.items))
                 }) {
@@ -473,7 +473,7 @@ struct HomeShelfView<Card: View>: View {
             if seerrRepo.hasCatalog {
                 ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
                     if let items = model.serviceRows[provider.id], !items.isEmpty {
-                        HomeSeerrShelf(title: "Popular on \(provider.name)", items: items, open: openSeerrItem)
+                        HomeSeerrShelf(title: String(localized: "Popular on \(provider.name)"), items: items, open: openSeerrItem)
                     }
                 }
             }

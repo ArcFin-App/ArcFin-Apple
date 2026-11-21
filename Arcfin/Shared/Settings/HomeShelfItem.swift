@@ -175,13 +175,13 @@ enum HomeShelfPrefs {
 enum HomeShelfLoader {
     /// Jellyfin names a recommendation row by why it was picked.
     static func recommendationTitle(_ category: MovieRecommendationCategory) -> String {
-        guard let name = category.baselineItemName, !name.isEmpty else { return "Recommended" }
+        guard let name = category.baselineItemName, !name.isEmpty else { return String(localized: "Recommended") }
         switch category.recommendationType {
-        case "SimilarToRecentlyPlayed": return "Because You Watched \(name)"
-        case "SimilarToLikedItem": return "Because You Liked \(name)"
-        case "HasDirectorFromRecentlyPlayed", "HasLikedDirector": return "Directed by \(name)"
-        case "HasActorFromRecentlyPlayed", "HasLikedActor": return "Starring \(name)"
-        default: return "Recommended"
+        case "SimilarToRecentlyPlayed": return String(localized: "Because You Watched \(name)")
+        case "SimilarToLikedItem": return String(localized: "Because You Liked \(name)")
+        case "HasDirectorFromRecentlyPlayed", "HasLikedDirector": return String(localized: "Directed by \(name)")
+        case "HasActorFromRecentlyPlayed", "HasLikedActor": return String(localized: "Starring \(name)")
+        default: return String(localized: "Recommended")
         }
     }
 

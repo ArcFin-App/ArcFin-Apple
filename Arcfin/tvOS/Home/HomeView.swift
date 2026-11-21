@@ -590,27 +590,27 @@ struct HomeView: View {
             EmptyView()
         case .nextUp:
             if !mergeContinueWatchingAndUpNext, !mediaRepo.nextUp.isEmpty {
-                mediaShelf(title: "Next Up", items: mediaRepo.nextUp)
+                mediaShelf(title: String(localized: "Next Up"), items: mediaRepo.nextUp)
             }
         case .recentlyAddedMovies:
             if !mediaRepo.recentlyAddedMovies.isEmpty {
-                mediaShelf(title: "Recently Added Movies", badge: "NEW", items: mediaRepo.recentlyAddedMovies)
+                mediaShelf(title: String(localized: "Recently Added Movies"), badge: String(localized: "NEW"), items: mediaRepo.recentlyAddedMovies)
             }
         case .recentlyAddedShows:
             if !mediaRepo.recentlyAddedShows.isEmpty {
-                mediaShelf(title: "Recently Added Shows", badge: "NEW", items: mediaRepo.recentlyAddedShows)
+                mediaShelf(title: String(localized: "Recently Added Shows"), badge: String(localized: "NEW"), items: mediaRepo.recentlyAddedShows)
             }
         case .recentlyReleasedMovies:
             if !mediaRepo.recentlyReleasedMovies.isEmpty {
-                mediaShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies)
+                mediaShelf(title: String(localized: "Recently Released Movies"), items: mediaRepo.recentlyReleasedMovies)
             }
         case .recentlyAiredEpisodes:
             if !mediaRepo.recentlyAiredEpisodes.isEmpty {
-                mediaShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes)
+                mediaShelf(title: String(localized: "Recently Aired Episodes"), items: mediaRepo.recentlyAiredEpisodes)
             }
         case .watchAgain:
             if !mediaRepo.watchAgain.isEmpty {
-                mediaShelf(title: "Watch Again", items: mediaRepo.watchAgain)
+                mediaShelf(title: String(localized: "Watch Again"), items: mediaRepo.watchAgain)
             }
         case .serverPicks:
             ForEach(mediaRepo.promotedCollections, id: \.collection.id) { shelf in
@@ -618,23 +618,23 @@ struct HomeView: View {
             }
         case .genreShelves:
             ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
-                mediaShelf(title: "More \(shelf.genre)", rowID: "genre-\(shelf.genre)", items: shelf.items)
+                mediaShelf(title: String(localized: "More \(shelf.genre)"), rowID: "genre-\(shelf.genre)", items: shelf.items)
             }
         case .becauseYouWatched:
             if let recommendation = mediaRepo.becauseYouWatched {
-                mediaShelf(title: "Because You Watched \(recommendation.source.name)", rowID: HomeShelf.becauseYouWatched.rawValue, items: recommendation.items)
+                mediaShelf(title: String(localized: "Because You Watched \(recommendation.source.name)"), rowID: HomeShelf.becauseYouWatched.rawValue, items: recommendation.items)
             }
         case .favorites:
             if !mediaRepo.favorites.isEmpty {
-                mediaShelf(title: "Favorites", items: mediaRepo.favorites)
+                mediaShelf(title: String(localized: "Favorites"), items: mediaRepo.favorites)
             }
         case .topRatedUnwatched:
             if !mediaRepo.topRatedUnwatched.isEmpty {
-                mediaShelf(title: "Top Rated, Unwatched", items: mediaRepo.topRatedUnwatched)
+                mediaShelf(title: String(localized: "Top Rated, Unwatched"), items: mediaRepo.topRatedUnwatched)
             }
         case .suggested:
             if !mediaRepo.suggestions.isEmpty {
-                mediaShelf(title: "Suggested for You", items: mediaRepo.suggestions)
+                mediaShelf(title: String(localized: "Suggested for You"), items: mediaRepo.suggestions)
             }
         case .recommendations:
             ForEach(mediaRepo.recommendations) { category in
@@ -642,31 +642,31 @@ struct HomeView: View {
             }
         case .nowAvailable:
             if seerrRepo.isConfigured, !model.nowAvailable.isEmpty {
-                mediaShelf(title: "Now Available", items: model.nowAvailable)
+                mediaShelf(title: String(localized: "Now Available"), items: model.nowAvailable)
             }
         case .streamingServices:
             if seerrRepo.hasCatalog {
                 ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
                     if let items = model.serviceRows[provider.id], !items.isEmpty {
-                        seerrShelf(title: "Popular on \(provider.name)", rowID: "service-\(provider.id)", items: items)
+                        seerrShelf(title: String(localized: "Popular on \(provider.name)"), rowID: "service-\(provider.id)", items: items)
                     }
                 }
             }
         case .seerrWatchlist:
             if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
-                seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
+                seerrShelf(title: String(localized: "Watchlist"), items: seerrRepo.watchlist)
             }
         case .seerrTrending:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
-                seerrShelf(title: "Trending", items: seerrRepo.trending)
+                seerrShelf(title: String(localized: "Trending"), items: seerrRepo.trending)
             }
         case .seerrPopularMovies:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
-                seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
+                seerrShelf(title: String(localized: "Popular Movies"), items: seerrRepo.popularMovies)
             }
         case .seerrPopularSeries:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
-                seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
+                seerrShelf(title: String(localized: "Popular Series"), items: seerrRepo.popularTV)
             }
         case .liveFavoriteChannels, .liveOnNow, .liveRecentChannels:
             if HomeShelf.hasLiveTV(in: mediaRepo) {
