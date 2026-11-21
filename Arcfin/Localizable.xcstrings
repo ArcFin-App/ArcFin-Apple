@@ -148966,6 +148966,70 @@
         }
       }
     },
+    "Unlock Arcfin to play music." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entsperre Arcfin, um Musik abzuspielen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Desbloquea Arcfin para reproducir música."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Déverrouillez Arcfin pour écouter de la musique."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sblocca Arcfin per riprodurre musica."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音楽を再生するにはArcfinのロックを解除してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "음악을 재생하려면 Arcfin 잠금을 해제하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ontgrendel Arcfin om muziek af te spelen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Desbloqueie o Arcfin para tocar música."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Разблокируйте Arcfin, чтобы включить музыку."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "解锁 Arcfin 以播放音乐。"
+          }
+        }
+      }
+    },
     "Unmute" : {
       "localizations" : {
         "de" : {

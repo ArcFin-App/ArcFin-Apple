@@ -50,6 +50,7 @@ extension AppRootModel {
     func runPendingRoutes() {
         consumeControlLink()
         startPendingDownload()
+        MusicSiriSearch.runHeld()
     }
 
     /// Signed out, or the sign-in expired: nothing outside the app keeps offering the last

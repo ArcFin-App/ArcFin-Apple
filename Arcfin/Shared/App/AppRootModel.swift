@@ -102,6 +102,7 @@ final class AppRootModel {
         links.forEach(handleDeepLink)
         runPendingRoutes()
         RemoteControl.shared.runHeld()
+        MusicSharePlay.shared.runHeld()
     }
 
     func loadProfileRules() async {
