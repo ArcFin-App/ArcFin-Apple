@@ -21,6 +21,8 @@ enum PlatformMetrics {
     static let identifiesSongs = true
     static let playsAppleMusic = true
     /// What it says it is to the phone setting it up.
+    /// How tall a music page's hero art goes: here, the full square across the screen.
+    static let musicHeroMaxHeight: CGFloat = .infinity
     static let nearbySetupKind = DeviceSetup.DeviceKind.iPad
     /// Where Local Network is turned on for the app, for setup from a phone.
     static let localNetworkSettings = URL(string: UIApplication.openSettingsURLString)

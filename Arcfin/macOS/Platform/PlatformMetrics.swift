@@ -21,6 +21,9 @@ enum PlatformMetrics {
     static let identifiesSongs = false
     static let playsAppleMusic = false
     /// What it says it is to the phone setting it up.
+    /// How tall a music page's hero art goes, as the title pages' backdrop: a square as wide
+    /// as a Mac window ran far down the page.
+    static let musicHeroMaxHeight: CGFloat = 420
     static let nearbySetupKind = DeviceSetup.DeviceKind.mac
     /// Where Local Network is turned on for the app, for setup from a phone.
     static let localNetworkSettings = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_LocalNetwork")

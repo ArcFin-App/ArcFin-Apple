@@ -13,18 +13,23 @@ struct MusicHero<Art: View, Info: View>: View {
     @ViewBuilder let art: (CGSize) -> Art
     @ViewBuilder let info: () -> Info
 
-    /// How much taller than wide: the blurred part below the square.
+    /// How much taller than the art: the blurred part below it.
     private let extent: CGFloat = 1.16
+    @State private var width: CGFloat = 0
+
+    /// The art's height: the whole square, or on a wide window a strip across it, as the
+    /// title pages' backdrop is.
+    private var artHeight: CGFloat { min(width, PlatformMetrics.musicHeroMaxHeight) }
 
     var body: some View {
         VStack(spacing: 0) {
             // Sized by the page, so the art can't push it wider.
             Color.clear
                 .frame(maxWidth: .infinity)
-                .aspectRatio(1 / extent, contentMode: .fit)
+                .frame(height: artHeight * extent)
                 .overlay {
                     GeometryReader { proxy in
-                        let side = proxy.size.width
+                        let side = proxy.size.width, artHeight = artHeight
                         ZStack(alignment: .top) {
                             // Larger than the space, so the blur's soft edges fall outside it.
                             art(proxy.size)
@@ -33,8 +38,8 @@ struct MusicHero<Art: View, Info: View>: View {
                                 .blur(radius: 40)
                                 .frame(width: side, height: proxy.size.height)
                                 .clipped()
-                            art(CGSize(width: side, height: side))
-                                .frame(width: side, height: side)
+                            art(CGSize(width: side, height: artHeight))
+                                .frame(width: side, height: artHeight)
                                 .clipped()
                                 // Darker toward the foot, so the buttons read on a light cover.
                                 .overlay {
@@ -52,11 +57,9 @@ struct MusicHero<Art: View, Info: View>: View {
                                      startPoint: .top, endPoint: .bottom))
                 .accessibilityHidden(true)
                 .overlay(alignment: .top) {
-                    GeometryReader { proxy in
-                        buttons
-                            .frame(width: proxy.size.width)
-                            .position(x: proxy.size.width / 2, y: proxy.size.width - 47)
-                    }
+                    buttons
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, max(artHeight - 72, 0))
                 }
             info()
                 .multilineTextAlignment(.center)
@@ -65,6 +68,7 @@ struct MusicHero<Art: View, Info: View>: View {
                 .padding(.top, -36)
         }
         .frame(maxWidth: .infinity)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
     }
 
     private var buttons: some View {
