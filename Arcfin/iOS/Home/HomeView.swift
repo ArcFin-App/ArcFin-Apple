@@ -26,6 +26,7 @@ struct HomeView: View {
 
     @State private var model = HomeModel()
     @State private var hero = HomeHeroCarousel()
+    @State private var heroStretch: CGFloat = 0
     @State private var showSettings = false
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
     @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
@@ -78,13 +79,11 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         // Stretchy header — on pull-to-refresh overscroll, grows the hero
                         // image upward into the revealed space instead of showing a plain
-                        // black bar above it.
-                        GeometryReader { heroGeo in
-                            let stretch = max(0, heroGeo.frame(in: .named("homeScroll")).minY)
-                            heroBanner(imageH: heroH + stretch, screenW: screenW)
-                                .offset(y: -stretch)
-                        }
-                        .frame(height: heroH)
+                        // black bar above it. The stretch comes from the scroll geometry and is
+                        // 0 except while overscrolled, so scrolling doesn't rebuild the hero.
+                        heroBanner(imageH: heroH + heroStretch, screenW: screenW)
+                            .offset(y: -heroStretch)
+                            .frame(height: heroH, alignment: .top)
 
                         VStack(spacing: 0) {
                             if (mediaRepo.connectionFailed && !mediaRepo.isLoading) || model.isSlowFirstLoad {
@@ -106,7 +105,11 @@ struct HomeView: View {
                         .padding(.trailing, insets.trailing)
                     }
                 }
-                .coordinateSpace(name: "homeScroll")
+                .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                    max(0, -(geometry.contentOffset.y + geometry.contentInsets.top))
+                } action: { _, stretch in
+                    heroStretch = stretch
+                }
                 .screenBackground()
                 .ignoresSafeArea(edges: [.top, .horizontal])
                 .navigationDestination(isPresented: $showSettings) {
