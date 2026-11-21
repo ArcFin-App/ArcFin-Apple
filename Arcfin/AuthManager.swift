@@ -575,8 +575,51 @@ final class AuthManager {
 
     // MARK: - PIN management
 
+    nonisolated enum StoredPIN: Sendable, Equatable {
+        case none
+        case set(String)
+        /// The Keychain didn't answer (the device locked, say). Counts as a PIN that can't be
+        /// checked yet, never as no PIN.
+        case unreadable
+    }
+
+    enum PINCheck: Equatable {
+        case correct, incorrect, unreadable
+
+        var message: String? {
+            switch self {
+            case .correct: nil
+            case .incorrect: String(localized: "Incorrect PIN")
+            case .unreadable: String(localized: "Couldn't check the PIN. Try again.")
+            }
+        }
+
+        /// What the PIN pad says as it opens: the PIN couldn't be read.
+        static func message(opening stored: StoredPIN, for credentialID: UUID) -> String? {
+            stored == .unreadable ? PINCheck.unreadable.message : nil
+        }
+    }
+
+    func storedPIN(for credentialID: UUID) async -> StoredPIN {
+        await keychainRead { k in
+            do { return try k.loadPin(for: credentialID).map(StoredPIN.set) ?? .none } catch { return .unreadable }
+        }
+    }
+
+    /// Nil both when there's no PIN and when it couldn't be read; deciding whether a profile
+    /// is locked goes through `storedPIN(for:)`.
     func pin(for credentialID: UUID) async -> String? {
-        await keychainRead { try? $0.loadPin(for: credentialID) }
+        if case .set(let pin) = await storedPIN(for: credentialID) { return pin }
+        return nil
+    }
+
+    /// Checks a typed PIN against the stored one, read again now.
+    func checkPIN(_ entered: String, for credentialID: UUID) async -> PINCheck {
+        switch await storedPIN(for: credentialID) {
+        case .unreadable: .unreadable
+        case .set(let pin) where pin != entered: .incorrect
+        case .set, .none: .correct
+        }
     }
 
     func savePin(_ pin: String, for credentialID: UUID) {

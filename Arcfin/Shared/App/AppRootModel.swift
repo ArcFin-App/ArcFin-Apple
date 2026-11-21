@@ -196,7 +196,7 @@ final class AppRootModel {
             activeProfileHasPIN = false
             return
         }
-        activeProfileHasPIN = await authManager.pin(for: cred.id) != nil
+        activeProfileHasPIN = await authManager.storedPIN(for: cred.id) != .none
     }
 
     func syncOfflineProgress(modelContext: ModelContext) {

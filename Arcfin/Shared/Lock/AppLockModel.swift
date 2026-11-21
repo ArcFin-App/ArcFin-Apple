@@ -11,34 +11,43 @@ final class AppLockModel {
     private(set) var pinTarget: ServerCredential?
     private(set) var errorMessage: String?
     private(set) var resetToken = 0
-    private var storedPIN: String?
+    private var isDeciding = false
 
     func hasPIN(_ profile: ServerCredential) -> Bool {
         pinStates[profile.id] == true
     }
 
-    func select(_ profile: ServerCredential, authManager: AuthManager, onUnlock: () -> Void) {
+    /// Decided from the PIN as read now, not from `pinStates`, which only draws the locks and
+    /// may not have loaded yet.
+    func select(_ profile: ServerCredential, authManager: AuthManager, onUnlock: @escaping () -> Void) {
+        guard !isDeciding else { return }
+        isDeciding = true
         HapticManager.impact(.light)
-        guard pinStates[profile.id] == true else {
-            unlock(as: profile, authManager: authManager, onUnlock: onUnlock)
-            return
-        }
-        errorMessage = nil
-        resetToken = 0
         Task {
-            storedPIN = await authManager.pin(for: profile.id)
+            defer { isDeciding = false }
+            let stored = await authManager.storedPIN(for: profile.id)
+            guard stored != .none else {
+                unlock(as: profile, authManager: authManager, onUnlock: onUnlock)
+                return
+            }
+            errorMessage = AuthManager.PINCheck.message(opening: stored, for: profile.id)
+            resetToken = 0
             pinTarget = profile
         }
     }
 
-    func enter(_ entered: String, for target: ServerCredential, authManager: AuthManager, onUnlock: () -> Void) {
-        guard entered == storedPIN else {
-            errorMessage = String(localized: "Incorrect PIN")
-            resetToken += 1
-            return
+    func enter(_ entered: String, for target: ServerCredential, authManager: AuthManager, onUnlock: @escaping () -> Void) {
+        Task {
+            let result = await authManager.checkPIN(entered, for: target.id)
+            guard pinTarget?.id == target.id else { return }
+            guard result == .correct else {
+                errorMessage = result.message
+                resetToken += 1
+                return
+            }
+            errorMessage = nil
+            unlock(as: target, authManager: authManager, onUnlock: onUnlock)
         }
-        errorMessage = nil
-        unlock(as: target, authManager: authManager, onUnlock: onUnlock)
     }
 
     func cancelPIN() {
@@ -56,7 +65,7 @@ final class AppLockModel {
     func loadPINStates(authManager: AuthManager) async {
         var states: [UUID: Bool] = [:]
         for profile in authManager.profiles {
-            states[profile.id] = await authManager.pin(for: profile.id) != nil
+            states[profile.id] = await authManager.storedPIN(for: profile.id) != .none
         }
         pinStates = states
     }

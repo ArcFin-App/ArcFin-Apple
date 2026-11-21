@@ -13,7 +13,6 @@ struct QuickProfileSwitchButton<Content: View>: View {
     @Environment(AuthManager.self) private var authManager
     @State private var pins = ProfilePINStates()
     @State private var switchTarget: ServerCredential?
-    @State private var storedPIN: String?
     @State private var resetToken = 0
     @State private var pinError: String?
 
@@ -54,7 +53,7 @@ struct QuickProfileSwitchButton<Content: View>: View {
                     PINEntrySheet(
                         title: String(localized: "Switch to \(target.displayName)"),
                         subtitle: target.baseURL.host,
-                        storedPIN: storedPIN,
+                        storedPIN: nil,
                         resetToken: resetToken,
                         errorMessage: pinError,
                         onCancel: {
@@ -62,13 +61,17 @@ struct QuickProfileSwitchButton<Content: View>: View {
                             pinError = nil
                         },
                         onComplete: { entered in
-                            if entered == storedPIN {
-                                authManager.switchTo(target)
-                                switchTarget = nil
-                                pinError = nil
-                            } else {
-                                pinError = String(localized: "Incorrect PIN")
-                                resetToken += 1
+                            Task {
+                                let result = await authManager.checkPIN(entered, for: target.id)
+                                guard switchTarget?.id == target.id else { return }
+                                if result == .correct {
+                                    authManager.switchTo(target)
+                                    switchTarget = nil
+                                    pinError = nil
+                                } else {
+                                    pinError = result.message
+                                    resetToken += 1
+                                }
                             }
                         }
                     )
@@ -76,17 +79,18 @@ struct QuickProfileSwitchButton<Content: View>: View {
         }
     }
 
+    /// Decided from the PIN as read now; `pins` only draws the locks and may not have loaded.
     private func choose(_ profile: ServerCredential) {
         HapticManager.impact(.light)
-        if pins.hasPIN(profile.id) {
-            pinError = nil
-            resetToken = 0
-            Task {
-                storedPIN = await authManager.pin(for: profile.id)
-                switchTarget = profile
+        Task {
+            let stored = await authManager.storedPIN(for: profile.id)
+            guard stored != .none else {
+                authManager.switchTo(profile)
+                return
             }
-        } else {
-            authManager.switchTo(profile)
+            pinError = AuthManager.PINCheck.message(opening: stored, for: profile.id)
+            resetToken = 0
+            switchTarget = profile
         }
     }
 }
