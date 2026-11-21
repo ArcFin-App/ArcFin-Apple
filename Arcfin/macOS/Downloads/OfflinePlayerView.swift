@@ -88,7 +88,7 @@ struct OfflinePlayerView: View {
 
             // .idle covers the gap between the screen appearing and setup() actually calling
             // player.load() — without it the screen was just black with no spinner there.
-            if model.player.status == .idle || model.player.status == .loading || model.player.isBuffering {
+            if !model.loadFailed, model.player.status == .idle || model.player.status == .loading || model.player.isBuffering {
                 ProgressView().tint(.white).scaleEffect(1.4)
             }
 
@@ -112,6 +112,14 @@ struct OfflinePlayerView: View {
                 macOfflineVolumeIndicator(macVolumeHUD)
             }
         }
+        .overlay {
+            // Above the controls, which would otherwise take the taps meant for Close.
+            if model.loadFailed {
+                OfflinePlayerFailure { closeRotatedPlayer { dismiss() } }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.ignoresSafeArea())
+            }
+        }
         .keepsScreenAwake(status: model.player.status)
         .task { await setup() }
         .onChange(of: RemoteControl.shared.command) { _, command in
@@ -126,11 +134,10 @@ struct OfflinePlayerView: View {
             if !asking, let resumeAnswer = model.resumeAnswer { Task { await startPlayback(from: resumeAnswer) } }
         }
         .onDisappear {
-            // Nothing played when the resume question was cancelled.
-            if model.player.status != .idle { model.savePosition(final: true) }
             // Dismissing (back chevron, Escape) previously left VLC playing in the
             // background with no way to stop it short of killing the app — the player
             // was never actually told to stop, just visually torn down.
+            model.close()
             Task {
                 await model.player.stop()
             }

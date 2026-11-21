@@ -33,6 +33,34 @@ struct OfflineSubtitleOverlay: View {
     }
 }
 
+/// In place of the picture when the download's file is missing or won't open.
+struct OfflinePlayerFailure: View {
+    let close: () -> Void
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(.largeTitle))
+                .foregroundStyle(DT.Color.palette("F59E0B"))
+                .accessibilityHidden(true)
+            Text("Can't Play This Download")
+                .font(.system(.headline, weight: .semibold))
+                .foregroundStyle(.white)
+            Text("The file may be missing or damaged. Delete it in Downloads and download it again.")
+                .font(.system(.subheadline))
+                .foregroundStyle(.white.opacity(0.75))
+                .multilineTextAlignment(.center)
+            Button("Close", action: close)
+                .buttonStyle(.glassProminent)
+                .tint(DT.Color.accent)
+                .foregroundStyle(DT.Color.onAccent)
+                .padding(.top, 4)
+        }
+        .frame(maxWidth: 360)
+        .padding(DT.Spacing.pagePad)
+    }
+}
+
 /// Skip Recap, Intro, Credits or Preview while one is playing, filling up while it counts down
 /// to skipping by itself.
 struct OfflinePlayerSkipButton: View {

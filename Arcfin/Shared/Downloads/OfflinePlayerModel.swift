@@ -35,6 +35,13 @@ final class OfflinePlayerModel {
     private var autoSkipped: Set<String> = []
     /// Reached Mark as Watched's point in this playback, for Delete After Watching.
     @ObservationIgnored private var finishedHere = false
+    /// Playing with a position: until then the player's position is 0, and saving it would
+    /// send that to the server as a newer resume point.
+    @ObservationIgnored private var hasStarted = false
+    /// The screen has gone: a load still under way mustn't start playing behind it.
+    @ObservationIgnored private var isClosed = false
+    /// The file is missing, or neither engine could open it.
+    private(set) var loadFailed = false
     var isFillScreen = false
     /// Settings › Playback › When Resuming is Ask, and the answer isn't in yet.
     var isAskingToResume = false
@@ -86,6 +93,10 @@ final class OfflinePlayerModel {
 
     func loadAndPlay(from startTicks: Int64, enginePreference: PlaybackEngineKind) async {
         let videoURL = dir.appendingPathComponent(downloadedItem.videoFileName)
+        guard FileManager.default.fileExists(atPath: videoURL.path) else {
+            loadFailed = true
+            return
+        }
         // The engine picked in Settings; Aether otherwise (AVFoundation can't open most
         // downloaded containers, so it isn't offered here).
         if enginePreference == .vlc, !(player is VLCEnginePlayer) {
@@ -95,16 +106,35 @@ final class OfflinePlayerModel {
         do {
             try await player.load(url: videoURL, startPositionTicks: startTicks)
         } catch where player is AetherEnginePlayer {
+            // Closing stops the load, which can throw: no fallback player for a closed screen.
+            guard !isClosed else { return }
             // Same runtime fallback as the online PlayerView — DownloadedItem has no stored
             // container/codec metadata to run a real pre-flight check against offline, so
             // this only ever triggers reactively, on an actual Aether load failure.
             player = VLCEnginePlayer()
-            try? await player.load(url: videoURL, startPositionTicks: startTicks)
+            do {
+                try await player.load(url: videoURL, startPositionTicks: startTicks)
+            } catch {
+                if !isClosed { loadFailed = true }
+                return
+            }
         } catch {
-            // Nothing more to fall back to offline — surfaced via the stalled/failed state
-            // the controls overlay already reflects through player.status.
+            if !isClosed { loadFailed = true }
+            return
+        }
+        guard !isClosed else {
+            await player.stop()
+            return
         }
         await player.play()
+    }
+
+    /// The screen going away, before the player is stopped: a load still under way stops
+    /// there, and the position is kept only if playback had got going.
+    func close() {
+        isClosed = true
+        progressSaveTask?.cancel()
+        if hasStarted { savePosition(final: true) }
     }
 
     /// Where to start: an explicit Start Over, else the local position, unless the server
@@ -140,6 +170,7 @@ final class OfflinePlayerModel {
     }
 
     func startProgressSaving() {
+        guard !isClosed, !loadFailed else { return }
         progressSaveTask?.cancel()
         progressSaveTask = Task {
             while !Task.isCancelled {
@@ -151,6 +182,7 @@ final class OfflinePlayerModel {
     }
 
     func savePosition(final: Bool) {
+        guard hasStarted else { return }
         downloadedItem.playbackPositionTicks = player.positionTicks
         // Settings › Playback › Mark as Watched, with Jellyfin's own 90% for Server Default.
         // Only ever set here, never cleared: watching a finished title again doesn't make it
@@ -196,12 +228,16 @@ final class OfflinePlayerModel {
     // MARK: - Events from the view
 
     func positionChanged(to ticks: Int64) {
+        if !hasStarted, ticks > 0, player.durationTicks > 0, player.status == .playing || player.status == .paused {
+            hasStarted = true
+        }
         updateSubtitleText(forTicks: ticks)
         autoSkipIfNeeded(positionTicks: ticks)
     }
 
     func statusChanged(to status: PlaybackStatus, deleteAfterWatching: Bool, downloadManager: DownloadManager) {
         if status == .playing { scheduleAutoHide() }
+        if case .failed = status { loadFailed = true }
         if status == .ended {
             savePosition(final: true)
             // The player's end can come early (a converted file cut short), so only a title
