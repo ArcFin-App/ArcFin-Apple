@@ -256,9 +256,8 @@ struct MediaDetailView: View {
     /// One entry → that award's own name; a few → joined; many → just the count.
     private var awardsLabel: String {
         let names = Array(Set(model.awards.map(\.name))).sorted()
-        if names.count == 1 { return "Won \(names[0])" }
-        if names.count <= 3 { return "Won \(names.joined(separator: ", "))" }
-        return "Won \(names.count) Awards"
+        if names.count <= 3 { return String(localized: "Won \(names.formatted(.list(type: .and)))") }
+        return String(localized: "Won \(names.count) Awards")
     }
 
     private var threeColumnLayout: some View {

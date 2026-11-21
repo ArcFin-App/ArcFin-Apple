@@ -27,7 +27,7 @@ final class LibraryModel {
         // The server only lists a Playlists library once a playlist exists; the tile is
         // always there so the first one can be made from it.
         if !libraries.isEmpty, !libraries.contains(where: { $0.collectionType == .playlists }) {
-            libraries.append(JellyfinLibrary(id: LibraryDetailModel.allPlaylistsID, name: "Playlists", collectionType: .playlists))
+            libraries.append(JellyfinLibrary(id: LibraryDetailModel.allPlaylistsID, name: String(localized: "Playlists"), collectionType: .playlists))
         }
         return libraries.enumerated()
             .sorted { (rank($0.element), $0.offset) < (rank($1.element), $1.offset) }

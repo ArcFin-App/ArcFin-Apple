@@ -148,10 +148,14 @@ struct AddTitlesToPlaylistSheet: View {
         guard !shows.isEmpty else { return nil }
         let episodes = shows.compactMap { episodeCounts[$0] }.reduce(0, +)
         let others = selectedIDs.count - shows.count
-        let showText = shows.count == 1 ? "1 show" : "\(shows.count) shows"
-        let episodeText = episodes > 0 && shows.allSatisfy({ episodeCounts[$0] != nil }) ? " (\(episodes) episodes)" : ""
-        let otherText = others > 0 ? " and \(others) other \(others == 1 ? "title" : "titles")" : ""
-        return "Adds \(showText)\(episodeText)\(otherText)."
+        let knowsEpisodes = episodes > 0 && shows.allSatisfy({ episodeCounts[$0] != nil })
+        // Whole sentences, so each language can word (and pluralise) them its own way.
+        switch (knowsEpisodes, others > 0) {
+        case (true, false): return String(localized: "Adds \(shows.count) shows (\(episodes) episodes).")
+        case (true, true): return String(localized: "Adds \(shows.count) shows (\(episodes) episodes) and \(others) other titles.")
+        case (false, false): return String(localized: "Adds \(shows.count) shows.")
+        case (false, true): return String(localized: "Adds \(shows.count) shows and \(others) other titles.")
+        }
     }
 
     private var suggestions: [MediaItem] {
@@ -245,13 +249,14 @@ struct AddTitlesToPlaylistSheet: View {
     }
 
     private func detail(for item: MediaItem, isIn: Bool) -> String {
-        if isIn { return "Already in this playlist" }
+        if isIn { return String(localized: "Already in this playlist") }
         switch item.type {
-        case .series: return episodeCounts[item.id].map { "Show · adds \($0) episodes" } ?? "Show · every episode"
+        case .series:
+            return episodeCounts[item.id].map { String(localized: "Show · adds \($0) episodes") } ?? String(localized: "Show · every episode")
         case .episode:
             let code = [item.parentIndexNumber.map { "S\($0)" }, item.indexNumber.map { "E\($0)" }].compactMap { $0 }.joined(separator: " · ")
             return [code, item.name].filter { !$0.isEmpty }.joined(separator: " · ")
-        default: return item.productionYear.map { "Movie · \($0)" } ?? "Movie"
+        default: return item.productionYear.map { String(localized: "Movie · \(String($0))") } ?? String(localized: "Movie")
         }
     }
 

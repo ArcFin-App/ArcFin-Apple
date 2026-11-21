@@ -548,9 +548,9 @@ final class MediaDetailModel {
         if marksUnavailable, ep.isVirtual { return MediaDetailView.unavailableText(ep).uppercased() }
         if ep.userData?.played != true, let premiere = ep.premiereDate,
            premiere <= Date(), Date().timeIntervalSince(premiere) < 14 * 86_400 {
-            return "NEW"
+            return String(localized: "NEW")
         }
-        if episodes.count > 1, ep.id == episodes.last?.id, shownSeasonHasEnded { return "FINALE" }
+        if episodes.count > 1, ep.id == episodes.last?.id, shownSeasonHasEnded { return String(localized: "FINALE") }
         return nil
     }
 
@@ -630,12 +630,12 @@ final class MediaDetailModel {
     /// error -1017.)") — translated into something a user can actually act on.
     private func friendlyDownloadError(_ raw: String) -> String {
         if raw.contains("-1017") {
-            return "One of the episodes couldn't be downloaded because of a network hiccup mid-transfer. Try downloading it again — if it keeps happening, check your connection and available storage."
+            return String(localized: "One of the episodes couldn't be downloaded because of a network hiccup mid-transfer. Try downloading it again — if it keeps happening, check your connection and available storage.")
         }
         if raw.localizedCaseInsensitiveContains("permission") {
-            return "One of the episodes couldn't be downloaded — this account doesn't have permission to download media. Ask your Jellyfin admin to enable it."
+            return String(localized: "One of the episodes couldn't be downloaded — this account doesn't have permission to download media. Ask your Jellyfin admin to enable it.")
         }
-        return "One of the episodes in this season failed to download: \(raw)"
+        return String(localized: "One of the episodes in this season failed to download: \(raw)")
     }
 
     // MARK: - Seerr
@@ -711,8 +711,8 @@ extension MediaDetailView {
     /// "Airs 30 Oct" for an episode listed before it's out; "Not on Your Server" for one missing.
     static func unavailableText(_ item: MediaItem) -> String {
         if let premiere = item.premiereDate, premiere > Date() {
-            return "Airs \(premiere.formatted(.dateTime.day().month(.abbreviated)))"
+            return String(localized: "Airs \(premiere.formatted(.dateTime.day().month(.abbreviated)))")
         }
-        return "Not on Your Server"
+        return String(localized: "Not on Your Server")
     }
 }

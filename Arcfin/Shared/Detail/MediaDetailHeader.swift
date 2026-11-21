@@ -234,12 +234,10 @@ private struct DetailAwardsRow: View {
     var body: some View {
         let names = Array(Set(awards.map(\.name))).sorted()
         let label: String
-        if names.count == 1 {
-            label = "Won \(names[0])"
-        } else if names.count <= 3 {
-            label = "Won \(names.joined(separator: ", "))"
+        if names.count <= 3 {
+            label = String(localized: "Won \(names.formatted(.list(type: .and)))")
         } else {
-            label = "Won \(names.count) Awards"
+            label = String(localized: "Won \(names.count) Awards")
         }
         return HStack(alignment: .firstTextBaseline, spacing: 4) {
             Image(systemName: "trophy.fill")

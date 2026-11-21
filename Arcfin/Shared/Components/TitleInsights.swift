@@ -78,14 +78,14 @@ struct TitleInsights: View {
                     scoreChip(
                         systemImage: score >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill",
                         tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
-                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: ratings.criticsRating ?? "Critics",
+                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: ratings.criticsRating ?? String(localized: "Critics"),
                         url: ratings.rottenTomatoesURL)
                 }
                 if let score = ratings.audienceScore {
                     scoreChip(
                         systemImage: "person.3.fill",
                         tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
-                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: "Audience", url: ratings.rottenTomatoesURL)
+                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: String(localized: "Audience"), url: ratings.rottenTomatoesURL)
                 }
                 if let imdb = ratings.imdbScore {
                     scoreChip(systemImage: "star.fill", tint: DT.Color.palette("f5c518"),
@@ -207,39 +207,49 @@ struct TitleInsights: View {
         var rows: [(String, String)] = []
         let original = detail?.originalTitle ?? info?.originalTitle
         let name = detail?.item.name
-        if let original, !original.isEmpty, original != name { rows.append(("Original Title", original)) }
+        if let original, !original.isEmpty, original != name { rows.append((String(localized: "Original Title"), original)) }
         if let language = info?.originalLanguage, let languageName = Locale.current.localizedString(forLanguageCode: language) {
-            rows.append(("Original Language", languageName))
+            rows.append((String(localized: "Original Language"), languageName))
         }
-        if let status = detail?.status ?? info?.status { rows.append(("Status", status == "Continuing" ? "Returning" : status)) }
+        if let status = detail?.status ?? info?.status { rows.append((String(localized: "Status"), Self.statusText(status))) }
         if let premiere = detail?.premiereDate {
-            rows.append((detail?.item.type == .series ? "First Aired" : "Released", premiere.formatted(date: .long, time: .omitted)))
+            rows.append((detail?.item.type == .series ? String(localized: "First Aired") : String(localized: "Released"), premiere.formatted(date: .long, time: .omitted)))
         }
-        if let end = detail?.endDate, detail?.status == "Ended" { rows.append(("Last Aired", end.formatted(date: .long, time: .omitted))) }
+        if let end = detail?.endDate, detail?.status == "Ended" { rows.append((String(localized: "Last Aired"), end.formatted(date: .long, time: .omitted))) }
         if let days = detail?.airDays, !days.isEmpty {
-            rows.append(("Airs", days.joined(separator: ", ") + (detail?.airTime.map { " at \($0)" } ?? "")))
+            let dayList = days.joined(separator: ", ")
+            rows.append((String(localized: "Airs"), detail?.airTime.map { String(localized: "\(dayList) at \($0)") } ?? dayList))
         }
-        if let seasons = info?.numberOfSeasons { rows.append(("Seasons", "\(seasons)")) }
-        if let creators = info?.createdBy, !creators.isEmpty { rows.append(("Created by", creators.joined(separator: ", "))) }
-        if let networks = info?.networks, !networks.isEmpty { rows.append(("Network", networks.prefix(3).joined(separator: ", "))) }
+        if let seasons = info?.numberOfSeasons { rows.append((String(localized: "Seasons"), seasons.formatted())) }
+        if let creators = info?.createdBy, !creators.isEmpty { rows.append((String(localized: "Created by"), creators.joined(separator: ", "))) }
+        if let networks = info?.networks, !networks.isEmpty { rows.append((String(localized: "Network"), networks.prefix(3).joined(separator: ", "))) }
         let studios = detail?.studios ?? []
-        if !studios.isEmpty, mediaType != .tv { rows.append(("Studio", studios.prefix(3).joined(separator: ", "))) }
+        if !studios.isEmpty, mediaType != .tv { rows.append((String(localized: "Studio"), studios.prefix(3).joined(separator: ", "))) }
         let countries = info?.countries.isEmpty == false ? info!.countries : (detail?.productionLocations ?? [])
-        if !countries.isEmpty { rows.append(("Country", countries.prefix(3).joined(separator: ", "))) }
-        if let budget = info?.budget { rows.append(("Budget", money(budget))) }
-        if let revenue = info?.revenue { rows.append(("Box Office", money(revenue))) }
+        if !countries.isEmpty { rows.append((String(localized: "Country"), countries.prefix(3).joined(separator: ", "))) }
+        if let budget = info?.budget { rows.append((String(localized: "Budget"), money(budget))) }
+        if let revenue = info?.revenue { rows.append((String(localized: "Box Office"), money(revenue))) }
         for file in detail?.files ?? [] {
             var parts: [String] = []
             if let container = file.container { parts.append(container.uppercased()) }
             if let size = file.sizeBytes, size > 0 { parts.append(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
             if let bitrate = file.bitrate, bitrate > 0 { parts.append("\(bitrate / 1_000_000) Mb/s") }
             if !parts.isEmpty {
-                let label = (detail?.files.count ?? 0) > 1 ? (file.name ?? "File") : "File"
+                let label = (detail?.files.count ?? 0) > 1 ? (file.name ?? String(localized: "File")) : String(localized: "File")
                 rows.append((label, parts.joined(separator: " · ")))
             }
         }
-        if let tags = detail?.tags, !tags.isEmpty { rows.append(("Tags", tags.prefix(6).joined(separator: ", "))) }
+        if let tags = detail?.tags, !tags.isEmpty { rows.append((String(localized: "Tags"), tags.prefix(6).joined(separator: ", "))) }
         return rows
+    }
+
+    /// The server's English "Continuing" and "Ended".
+    private static func statusText(_ status: String) -> String {
+        switch status {
+        case "Continuing": String(localized: "Returning")
+        case "Ended": String(localized: "Ended")
+        default: status
+        }
     }
 
     private var detailsList: some View {

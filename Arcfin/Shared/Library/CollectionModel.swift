@@ -58,9 +58,9 @@ final class CollectionModel {
     }
 
     func playLabel(by sort: CollectionSort) -> String {
-        guard let next = nextToPlay(by: sort) else { return "Play from Start" }
-        if (next.userData?.playbackPositionTicks ?? 0) > 0 { return "Resume \(next.name)" }
-        return watchedCount == 0 ? "Play" : "Continue with \(next.name)"
+        guard let next = nextToPlay(by: sort) else { return String(localized: "Play from Start") }
+        if (next.userData?.playbackPositionTicks ?? 0) > 0 { return String(localized: "Resume \(next.name)") }
+        return watchedCount == 0 ? String(localized: "Play") : String(localized: "Continue with \(next.name)")
     }
 
     func playThrough(by sort: CollectionSort) {

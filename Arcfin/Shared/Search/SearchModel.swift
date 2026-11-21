@@ -106,11 +106,11 @@ enum RecentSearches {
 enum SearchText {
     static func kindLabel(_ item: MediaItem) -> String {
         switch item.type {
-        case .movie: "Movie"
-        case .series: "Show"
-        case .episode: "Episode"
-        case .boxSet: "Collection"
-        default: "Title"
+        case .movie: String(localized: "Movie")
+        case .series: String(localized: "Show")
+        case .episode: String(localized: "Episode")
+        case .boxSet: String(localized: "Collection")
+        default: String(localized: "Title")
         }
     }
 
