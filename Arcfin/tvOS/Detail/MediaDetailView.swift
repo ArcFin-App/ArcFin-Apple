@@ -28,6 +28,7 @@ struct MediaDetailView: View {
     @Namespace private var focusNamespace
     @State private var episodeScrollID: String?
     @State private var minuteTick = Date()
+    @State private var pendingScopeChange: MediaDetailModel.WatchScopeChange?
 
     init(item: MediaItem) {
         self.item = item
@@ -108,6 +109,9 @@ struct MediaDetailView: View {
             .id(request.item.id)
         }
         .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
+        .watchScopeConfirmation($pendingScopeChange) { change in
+            model.markScopeWatched(change.scope, watched: change.watched, update: .reload, authManager: authManager)
+        }
         .appSheet(isPresented: $showSubtitleSearch, title: "Search Subtitles", systemImage: "magnifyingglass") {
             NavigationStack {
                 SubtitleSearchView(itemId: item.id)
@@ -565,7 +569,12 @@ struct MediaDetailView: View {
     }
 
     private func markScopeWatched(_ scope: MediaDetailModel.WatchScope, watched: Bool) {
-        model.markScopeWatched(scope, watched: watched, update: .reload, authManager: authManager)
+        let change = MediaDetailModel.WatchScopeChange(scope: scope, watched: watched)
+        if change.needsConfirmation {
+            pendingScopeChange = change
+        } else {
+            model.markScopeWatched(scope, watched: watched, update: .reload, authManager: authManager)
+        }
     }
 
     private var trailersFollowHero: Bool {

@@ -447,36 +447,47 @@ final class MediaDetailModel {
         return updated
     }
 
-    /// Marks a whole season or series watched/unwatched by looping markWatched over the
-    /// episode ids already available (current season) or fetched per-season (whole series).
-    /// In place, the visible `episodes` array is updated optimistically so watched indicators
-    /// refresh without a manual pull-to-refresh, matching markEpisodeWatched's single-item approach.
+    /// Marks a whole season or series watched/unwatched with one request for the season or
+    /// series item: the server applies it to every episode inside. In place, the visible
+    /// `episodes` array is updated straight away, matching markEpisodeWatched.
     func markScopeWatched(_ scope: WatchScope, watched: Bool, update: WatchedUpdate, authManager: AuthManager) {
-        guard case let (cred, header)? = session(authManager), let seriesId = seasonSeriesId else { return }
+        guard case let (cred, header)? = session(authManager), let seriesId = seasonSeriesId,
+              let targetId = scope == .series ? seriesId : loadedSeasonId else { return }
         HapticManager.impact(.light)
         if update == .inPlace {
             episodes = episodes.map { withWatchedUserData($0, watched: watched) }
         }
-        let currentEpisodes = episodes
-        let allSeasons = seasons
         Task {
-            switch scope {
-            case .season:
-                for ep in currentEpisodes {
-                    try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
-                }
-            case .series:
-                for season in allSeasons {
-                    let seasonEpisodes = (try? await client.getEpisodes(
-                        credential: cred, authHeader: header, seriesId: seriesId, seasonId: season.id
-                    )) ?? []
-                    for ep in seasonEpisodes {
-                        try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
-                    }
-                }
-            }
+            try? await client.markWatched(credential: cred, authHeader: header, itemId: targetId, watched: watched)
             if update == .reload {
                 await refreshAfterPlayback(waitForReport: false, authManager: authManager)
+            }
+        }
+    }
+
+    /// A season or series watched-state change waiting for the person to confirm it.
+    struct WatchScopeChange {
+        let scope: WatchScope
+        let watched: Bool
+
+        /// Marking a season watched is easy to undo; clearing history or changing a whole show isn't.
+        var needsConfirmation: Bool { scope == .series || !watched }
+
+        var question: LocalizedStringKey {
+            switch (scope, watched) {
+            case (.series, true): "Mark every episode of this series as watched?"
+            case (.series, false): "Mark every episode of this series as unwatched?"
+            case (.season, true): "Mark Season Watched"
+            case (.season, false): "Mark every episode of this season as unwatched?"
+            }
+        }
+
+        var actionLabel: LocalizedStringKey {
+            switch (scope, watched) {
+            case (.series, true): "Mark Series Watched"
+            case (.series, false): "Mark Series Unwatched"
+            case (.season, true): "Mark Season Watched"
+            case (.season, false): "Mark Season Unwatched"
             }
         }
     }

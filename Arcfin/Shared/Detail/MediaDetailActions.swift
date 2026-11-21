@@ -180,13 +180,19 @@ struct DetailSeriesSection: View {
     let model: MediaDetailModel
     let spoilerProtection: Bool
     let openEpisode: (MediaItem) -> Void
+    @State private var pendingScopeChange: MediaDetailModel.WatchScopeChange?
 
     private var isSeasonFullyDownloaded: Bool {
         model.isSeasonFullyDownloaded(in: downloadManager)
     }
 
     private func markScopeWatched(_ scope: MediaDetailModel.WatchScope, watched: Bool) {
-        model.markScopeWatched(scope, watched: watched, update: .inPlace, authManager: authManager)
+        let change = MediaDetailModel.WatchScopeChange(scope: scope, watched: watched)
+        if change.needsConfirmation {
+            pendingScopeChange = change
+        } else {
+            model.markScopeWatched(scope, watched: watched, update: .inPlace, authManager: authManager)
+        }
     }
 
     var body: some View {
@@ -274,6 +280,25 @@ struct DetailSeriesSection: View {
             .padding(.horizontal, DT.Spacing.pagePad)
         }
         .padding(.bottom, DT.Spacing.md)
+        .watchScopeConfirmation($pendingScopeChange) { change in
+            model.markScopeWatched(change.scope, watched: change.watched, update: .inPlace, authManager: authManager)
+        }
+    }
+}
+
+extension View {
+    /// Asks before a season or series watched-state change that's hard to undo.
+    func watchScopeConfirmation(_ pending: Binding<MediaDetailModel.WatchScopeChange?>,
+                                confirm: @escaping (MediaDetailModel.WatchScopeChange) -> Void) -> some View {
+        confirmationDialog(
+            pending.wrappedValue.map { Text($0.question) } ?? Text(verbatim: ""),
+            isPresented: Binding(get: { pending.wrappedValue != nil }, set: { if !$0 { pending.wrappedValue = nil } }),
+            titleVisibility: .visible,
+            presenting: pending.wrappedValue
+        ) { change in
+            Button(change.actionLabel, role: change.watched ? nil : .destructive) { confirm(change) }
+            Button("Cancel", role: .cancel) {}
+        }
     }
 }
 
