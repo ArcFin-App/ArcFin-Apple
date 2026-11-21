@@ -197,8 +197,7 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-                model.deepLinkItemID = id
-                model.detailItem = (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).first { $0.id == id }
+                model.openDeepLinkItem(id: id, authManager: authManager, mediaRepo: mediaRepo)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
@@ -223,12 +222,7 @@ struct HomeView: View {
              heroLogoURL(item)].compactMap { $0 }
         }
         ImageCache.preheat(urls: heroURLs)
-        let pendingID = model.deepLinkItemID ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
-        if let id = pendingID {
-            UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-            model.deepLinkItemID = nil
-            model.detailItem = (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).first { $0.id == id }
-        }
+        model.openPendingDeepLink(authManager: authManager, mediaRepo: mediaRepo)
         model.playPendingWatch(authManager: authManager)
         await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
         // Modern Home starts on its first row by itself; the same title can also be in a row
