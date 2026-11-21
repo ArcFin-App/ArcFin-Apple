@@ -20,14 +20,16 @@ struct MusicPlayerBar: View {
         if let song = player.current {
             HStack(spacing: DT.Spacing.lg) {
                 songInfo(song)
-                    .frame(minWidth: 180, maxWidth: 280, alignment: .leading)
+                    .frame(width: 260, alignment: .leading)
+                // Everything between the song and the controls, so the times and the format
+                // badge have room beside the bar.
                 VStack(spacing: DT.Spacing.xxs) {
                     transport
                     scrubber
                 }
-                .frame(maxWidth: 520)
+                .frame(maxWidth: .infinity)
                 trailingControls(song)
-                    .frame(minWidth: 180, maxWidth: 280, alignment: .trailing)
+                    .fixedSize()
             }
             .padding(.horizontal, DT.Spacing.md)
             .padding(.vertical, DT.Spacing.xs)
@@ -104,6 +106,7 @@ struct MusicPlayerBar: View {
         let position = scrubbing ?? player.position
         return HStack(spacing: DT.Spacing.xs) {
             Text(verbatim: position.musicTime)
+                .fixedSize()
             Slider(value: Binding(get: { position }, set: { value in
                 scrubbing = value
                 scrubSettle?.cancel()
@@ -120,7 +123,8 @@ struct MusicPlayerBar: View {
             .tint(DT.Color.accent)
             .accessibilityLabel("Position")
             Text(verbatim: "-" + max(duration - position, 0).musicTime)
-            if let song = player.current { MusicQualityBadge(song: song, tint: .primary) }
+                .fixedSize()
+            if let song = player.current { MusicQualityBadge(song: song, tint: .primary).fixedSize() }
         }
         .font(.caption2.monospacedDigit())
         .foregroundStyle(.secondary)
