@@ -96,6 +96,17 @@ public enum ImageCache: Sendable {
         }
     }
 
+    /// The connection failed (as opposed to the server answering with an error, such as a
+    /// title with no logo), so trying again a moment later can work.
+    public static func isConnectivityError(_ error: Error) -> Bool {
+        var underlying = error
+        if case ImagePipeline.Error.dataLoadingFailed(let inner) = error { underlying = inner }
+        guard let urlError = underlying as? URLError else { return false }
+        let codes: [URLError.Code] = [.notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotConnectToHost,
+                                      .cannotFindHost, .dnsLookupFailed, .dataNotAllowed, .internationalRoamingOff]
+        return codes.contains(urlError.code)
+    }
+
     /// Downloads images into the disk cache the image views read, two at a time and without
     /// decoding them, so a screen opened next shows them without waiting on the network.
     public static func prefetch(urls: [URL]) {

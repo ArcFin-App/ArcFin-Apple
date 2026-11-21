@@ -56,7 +56,7 @@ struct CachedAsyncImage<Content: View>: View {
     private func loadRetryingOnce(_ url: URL) async throws -> ImageCache.PlatformImage {
         do {
             return try await ImageCache.load(url)
-        } catch {
+        } catch where ImageCache.isConnectivityError(error) {
             try await Task.sleep(for: .seconds(1))
             return try await ImageCache.load(url)
         }
