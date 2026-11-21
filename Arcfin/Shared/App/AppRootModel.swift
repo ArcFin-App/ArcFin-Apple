@@ -26,6 +26,10 @@ final class AppRootModel {
     /// The lock came up over screens already open, which stay underneath, hidden and out of
     /// reach, so they're as they were once it opens. At launch nothing is built behind it.
     var keepsContentUnderLock = false
+    /// Bumped when another profile is picked over kept screens, which then start afresh rather
+    /// than show where the last one was.
+    private(set) var contentGeneration = 0
+    @ObservationIgnored private var lockedProfileID: UUID?
     var activeProfileHasPIN = false
     /// The stored sign-in and the PIN lock have been checked this launch.
     var launchChecked = false
@@ -83,11 +87,13 @@ final class AppRootModel {
     /// would stay above the lock, the tree is closed instead.
     func lockKeepingContent(_ keepsContent: Bool) {
         keepsContentUnderLock = keepsContent && isPastLock
+        lockedProfileID = authManager.state.credential?.id
         isAppLocked = true
         AppServices.hasPassedLock = false
     }
 
     func unlock() {
+        if keepsContentUnderLock, lockedProfileID != authManager.state.credential?.id { contentGeneration += 1 }
         isAppLocked = false
         keepsContentUnderLock = false
         AppServices.hasPassedLock = true

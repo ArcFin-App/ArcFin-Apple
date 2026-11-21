@@ -92,8 +92,10 @@ struct AppLockView: View {
                 }
             }
             .frame(maxWidth: gridMaxWidth)
-            // The last profile used, rather than whichever tile comes first.
+            // The last profile used, rather than whichever tile comes first; set as well, as
+            // the screens kept under the lock may still hold focus.
             .defaultFocus($focusedProfile, activeID)
+            .task { focusedProfile = activeID }
 
             Spacer()
             Spacer()

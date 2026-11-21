@@ -15,6 +15,8 @@ struct ContentView: View {
     @State private var idleTask: Task<Void, Never>?
     @State private var leftAt: Date?
     @State private var offersWhoIsWatching = false
+    @Namespace private var rootFocus
+    @Environment(\.resetFocus) private var resetFocus
     @AppStorage(WhoIsWatching.settingKey) private var alwaysAskWhoIsWatching = false
 
     private var phase: AppPhase {
@@ -50,6 +52,7 @@ struct ContentView: View {
             if model.showsContent(phase) {
                 // Kept under the lock: hidden, and out of reach of focus, presses and VoiceOver.
                 phaseContent
+                    .id(model.contentGeneration)
                     .environment(\.isBehindLock, model.isAppLocked)
                     .opacity(model.isAppLocked ? 0 : 1)
                     .disabled(model.isAppLocked)
@@ -65,6 +68,12 @@ struct ContentView: View {
                     .transition(.opacity)
                     .zIndex(10)
             }
+        }
+        .focusScope(rootFocus)
+        // The focus engine doesn't reliably move to the screens just enabled under the lock,
+        // and could leave nothing focused.
+        .onChange(of: model.isAppLocked) { _, locked in
+            if !locked { Task { resetFocus(in: rootFocus) } }
         }
         .animation(DT.Animation.standard, value: phase)
         .animation(DT.Animation.standard, value: model.isAppLocked)

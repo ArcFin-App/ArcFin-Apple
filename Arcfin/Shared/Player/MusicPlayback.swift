@@ -153,13 +153,17 @@ final class MusicPlayback {
     var isPlaying: Bool { isCasting ? !cast.isPaused : player.isPlaying }
     var position: Double { isCasting ? castPosition : player.position }
 
+    /// The remote's Play/Pause and Now Playing included: a song paused under the app lock
+    /// stays paused until it opens.
     func togglePlayPause() {
+        guard AppServices.hasPassedLock || isPlaying else { return }
         let playing = !isPlaying
         isCasting ? cast.togglePlayPause() : player.togglePlayPause()
         onUserAction?(playing)
     }
 
     func resume() {
+        guard AppServices.hasPassedLock else { return }
         isCasting ? cast.play() : player.resume()
         onUserAction?(true)
     }
