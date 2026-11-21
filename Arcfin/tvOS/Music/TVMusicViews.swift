@@ -130,6 +130,48 @@ struct TVMusicPill: View {
     }
 }
 
+/// Its views left to right, starting a new line when the next one doesn't fit.
+private struct TVWrapLayout: Layout {
+    var spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let rows = rows(width: proposal.width ?? .infinity, subviews: subviews)
+        let width = rows.map { row in row.reduce(0) { $0 + $1.width } + spacing * CGFloat(max(row.count - 1, 0)) }.max() ?? 0
+        let height = rows.map { $0.map(\.height).max() ?? 0 }.reduce(0, +) + spacing * CGFloat(max(rows.count - 1, 0))
+        return CGSize(width: width, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        var y = bounds.minY, index = 0
+        for row in rows(width: bounds.width, subviews: subviews) {
+            var x = bounds.minX
+            let height = row.map(\.height).max() ?? 0
+            for size in row {
+                subviews[index].place(at: CGPoint(x: x, y: y + (height - size.height) / 2), proposal: ProposedViewSize(size))
+                x += size.width + spacing
+                index += 1
+            }
+            y += height + spacing
+        }
+    }
+
+    private func rows(width: CGFloat, subviews: Subviews) -> [[CGSize]] {
+        var rows: [[CGSize]] = [], row: [CGSize] = [], used: CGFloat = 0
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if !row.isEmpty, used + spacing + size.width > width {
+                rows.append(row)
+                row = []
+                used = 0
+            }
+            used += (row.isEmpty ? 0 : spacing) + size.width
+            row.append(size)
+        }
+        if !row.isEmpty { rows.append(row) }
+        return rows
+    }
+}
+
 private struct TVPillButton: View {
     let title: LocalizedStringKey
     let systemImage: String
@@ -312,7 +354,8 @@ struct TVMusicLibraryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 56) {
-                HStack(spacing: 24) {
+                // Onto a second or third line where the screen's too narrow for one.
+                TVWrapLayout(spacing: 24) {
                     if AppServices.music.isActive {
                         TVPillButton(title: "Now Playing", systemImage: "waveform") {
                             TVMusicPresenter.shared.isShowingNowPlaying = true
@@ -376,17 +419,7 @@ private struct TVMusicSmartPlaylistShelf: View {
                                 if !songs.isEmpty { TVMusicPresenter.shared.play(songs, from: 0) }
                             }
                         } label: {
-                            VStack(alignment: .leading, spacing: 12) {
-                                // Plain images: the artwork view's own focus ring would light each cover.
-                                MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: 240) { url in
-                                    CachedAsyncImage(url: url) { phase in
-                                        if case .success(let image) = phase { image.resizable().scaledToFill() } else { Color.clear }
-                                    }
-                                }
-                                .clipShape(RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous))
-                                Text(playlist.detail).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-                            }
-                            .frame(width: 240, alignment: .leading)
+                            TVSmartPlaylistCard(playlist: playlist, libraryID: libraryID)
                         }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
@@ -397,6 +430,32 @@ private struct TVMusicSmartPlaylistShelf: View {
             .scrollClipDisabled()
         }
         .focusSection()
+    }
+}
+
+/// A Made for You cover, ringed and lifted when focused like the other tiles.
+private struct TVSmartPlaylistCard: View {
+    let playlist: MusicSmartPlaylist
+    let libraryID: String
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: DT.Radius.card, style: .continuous)
+        VStack(alignment: .leading, spacing: 12) {
+            // Plain images: the artwork view's own focus ring would light each cover.
+            MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: 240) { url in
+                CachedAsyncImage(url: url) { phase in
+                    if case .success(let image) = phase { image.resizable().scaledToFill() } else { Color.clear }
+                }
+            }
+            .clipShape(shape)
+            .overlay { shape.stroke(isFocused ? DT.Color.accent : .clear, lineWidth: 4) }
+            .shadow(color: isFocused ? DT.Color.accent.opacity(0.4) : .clear, radius: 14)
+            .scaleEffect(isFocused ? 1.06 : 1)
+            .animation(DT.Animation.fast, value: isFocused)
+            Text(playlist.detail).font(.caption).foregroundStyle(.secondary).lineLimit(2)
+        }
+        .frame(width: 240, alignment: .leading)
     }
 }
 
