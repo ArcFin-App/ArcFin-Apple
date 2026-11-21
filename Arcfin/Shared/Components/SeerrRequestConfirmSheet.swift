@@ -388,6 +388,7 @@ struct SeerrRequestConfirmSheet: View {
         } label: {
             HStack(spacing: 12) {
                 seasonStatusCircle(row: row, chosen: chosen)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(row.label)
                         .font(.system(.footnote, design: .default, weight: .medium))
@@ -410,6 +411,7 @@ struct SeerrRequestConfirmSheet: View {
         }
         .arcfinPlainButton(cornerRadius: DT.Radius.md)
         .disabled(!interactive)
+        .accessibilityAddTraits(chosen && partialRequestsEnabled ? .isSelected : [])
     }
 
     private func seasonStatusCircle(row: SeerrSeasonRow, chosen: Bool) -> some View {
