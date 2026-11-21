@@ -1709,6 +1709,8 @@ final class DownloadManager: NSObject {
         guard let modelContext else { return }
         let seriesId = item.seriesId
         Self.smartItemIds.remove(item.itemId)
+        // Watching here that hasn't reached the server yet would go with the row.
+        OfflineProgressSync.keepUnsyncedProgress(of: item)
         DownloadStore.deleteDirectory(for: item.itemId)
         modelContext.delete(item)
         try? modelContext.save()

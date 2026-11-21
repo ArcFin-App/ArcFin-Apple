@@ -24,10 +24,11 @@ public enum OfflineProgressSync {
         profiles: [ServerCredential],
         authHeader: (ServerCredential) -> String
     ) async {
+        let client = JellyfinMediaClient()
+        await sendKeptProgress(profiles: profiles, authHeader: authHeader, client: client)
         let descriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.needsSync })
         guard let pending = try? modelContext.fetch(descriptor), !pending.isEmpty else { return }
 
-        let client = JellyfinMediaClient()
         var syncedCount = 0
         // serverId is the ServerCredential's own id (see DownloadManager, where it's stored as
         // credential.id.uuidString) — matched against currently saved profiles rather than
@@ -74,9 +75,85 @@ public enum OfflineProgressSync {
     /// played last wins. A download from before change times were kept defers to a watch.
     @MainActor
     static func serverIsNewer(_ remote: UserData, than item: DownloadedItem) -> Bool {
-        if remote.played && !item.played { return true }
-        guard !item.played, let serverTime = remote.lastPlayedDate, let localTime = item.progressChangedAt else { return false }
+        serverIsNewer(remote, played: item.played, changedAt: item.progressChangedAt)
+    }
+
+    static func serverIsNewer(_ remote: UserData, played: Bool, changedAt: Date?) -> Bool {
+        if remote.played && !played { return true }
+        guard !played, let serverTime = remote.lastPlayedDate, let localTime = changedAt else { return false }
         return serverTime > localTime
+    }
+
+    // MARK: Progress of deleted downloads
+
+    /// What was watched here on a download deleted before it reached the server. The row that
+    /// carried it is gone, so it waits here until a sync sends it.
+    struct KeptProgress: Codable, Equatable {
+        let itemId: String
+        let serverId: String
+        let userId: String
+        let positionTicks: Int64
+        let played: Bool
+        let changedAt: Date?
+    }
+
+    static let keptProgressKey = "arcfin.offlineProgressOfDeletedDownloads"
+
+    /// Call before deleting a download: progress it hasn't sent yet is kept for the next sync.
+    @MainActor
+    public static func keepUnsyncedProgress(of item: DownloadedItem, defaults: UserDefaults = .standard) {
+        guard item.needsSync else { return }
+        let entry = KeptProgress(itemId: item.itemId, serverId: item.serverId, userId: item.userId,
+                                 positionTicks: item.playbackPositionTicks, played: item.played, changedAt: item.progressChangedAt)
+        storeKeptProgress(keptProgress(defaults: defaults).filter { !($0.itemId == entry.itemId && $0.userId == entry.userId) } + [entry],
+                          defaults: defaults)
+    }
+
+    static func keptProgress(defaults: UserDefaults = .standard) -> [KeptProgress] {
+        guard let data = defaults.data(forKey: keptProgressKey),
+              let decoded = try? JSONDecoder().decode([KeptProgress].self, from: data)
+        else { return [] }
+        return decoded
+    }
+
+    static func storeKeptProgress(_ entries: [KeptProgress], defaults: UserDefaults = .standard) {
+        if entries.isEmpty {
+            defaults.removeObject(forKey: keptProgressKey)
+        } else if let data = try? JSONEncoder().encode(entries) {
+            defaults.set(data, forKey: keptProgressKey)
+        }
+    }
+
+    /// Sends the kept progress of deleted downloads, the same way as a row's, and forgets each
+    /// once the server has it or has something newer.
+    @MainActor
+    private static func sendKeptProgress(profiles: [ServerCredential], authHeader: (ServerCredential) -> String,
+                                         client: JellyfinMediaClient) async {
+        let kept = keptProgress()
+        guard !kept.isEmpty else { return }
+        var settled: [KeptProgress] = []
+        for entries in Dictionary(grouping: kept, by: { "\($0.serverId)|\($0.userId)" }).values {
+            guard let first = entries.first,
+                  let credential = profiles.first(where: { $0.id.uuidString == first.serverId && $0.userID == first.userId })
+            else { continue }
+            let header = authHeader(credential)
+            guard let server = try? await client.getUserData(credential: credential, authHeader: header, itemIds: entries.map(\.itemId))
+            else { continue }
+            for entry in entries {
+                if let remote = server[entry.itemId], serverIsNewer(remote, played: entry.played, changedAt: entry.changedAt) {
+                    settled.append(entry)
+                    continue
+                }
+                guard (try? await client.updateUserData(credential: credential, authHeader: header, itemId: entry.itemId,
+                                                        positionTicks: entry.positionTicks, played: entry.played,
+                                                        lastPlayed: entry.changedAt ?? Date())) != nil
+                else { continue }
+                settled.append(entry)
+            }
+        }
+        guard !settled.isEmpty else { return }
+        // Read again: a download deleted while this ran added to the list.
+        storeKeptProgress(keptProgress().filter { !settled.contains($0) })
     }
 }
 
