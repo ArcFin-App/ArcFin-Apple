@@ -71813,7 +71813,6 @@
       }
     },
     "Now Playing" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
