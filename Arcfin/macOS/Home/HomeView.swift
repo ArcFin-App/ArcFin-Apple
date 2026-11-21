@@ -258,9 +258,18 @@ struct HomeView: View {
         }
     }
 
+    /// Nil until Home has loaded once, so the empty lists at launch (or offline) don't wipe the
+    /// widgets; progress is in it so the widgets' bars move as a title is watched.
+    private var widgetSignature: [String]? {
+        guard mediaRepo.loaded else { return nil }
+        return (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded)
+            .map { "\($0.id)-\(Int($0.userData?.playedPercentage ?? 0))" }
+    }
+
     var body: some View {
         homeObservers
-        .onChange(of: (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).map(\.id), initial: true) { _, _ in
+        .onChange(of: widgetSignature, initial: true) { _, signature in
+            guard signature != nil else { return }
             let items = HomeModel.continueAndNext(in: mediaRepo)
             Task {
                 await WidgetSnapshotUpdater.update(
