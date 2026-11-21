@@ -23,6 +23,7 @@ struct AuthView: View {
     @State private var signingIn: Bool = false
     @State private var signedIn: Bool = false
     @State private var authError: String? = nil
+    @FocusState private var passwordFocused: Bool
 
     // Quick Connect
     @State private var qcCode: String = ""
@@ -302,9 +303,10 @@ struct AuthView: View {
 
     private var credentialsView: some View {
         VStack(spacing: 18) {
-            LoginTextField(title: "Username", prompt: Text("Username"), text: $username, kind: .username)
+            LoginTextField(title: "Username", prompt: Text("Username"), text: $username, kind: .username,
+                           onSubmit: { passwordFocused = true })
             LoginTextField(title: "Password", prompt: Text("Password"), text: $password, kind: .password,
-                           onSubmit: submitCredentials)
+                           onSubmit: submitCredentials, isFocused: $passwordFocused)
         }
     }
 

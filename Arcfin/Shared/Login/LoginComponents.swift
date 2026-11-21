@@ -48,6 +48,8 @@ struct LoginTextField: View {
     var isValid = false
     var error: String?
     var onSubmit: () -> Void = {}
+    /// For a form that moves focus here itself, as Next on the username does.
+    var isFocused: FocusState<Bool>.Binding? = nil
 
     @State private var revealsPassword = false
 
@@ -57,7 +59,7 @@ struct LoginTextField: View {
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(DT.Color.textSecondary)
             HStack(spacing: 10) {
-                field
+                focusableField
                     .font(.body)
                     .foregroundStyle(DT.Color.textPrimary)
                     .autocorrectionDisabled()
@@ -97,6 +99,11 @@ struct LoginTextField: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
+    }
+
+    @ViewBuilder
+    private var focusableField: some View {
+        if let isFocused { field.focused(isFocused) } else { field }
     }
 
     @ViewBuilder
