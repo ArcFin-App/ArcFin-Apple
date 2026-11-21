@@ -43,7 +43,7 @@ struct AppLockView: View {
 
             if let target = model.pinTarget {
                 PINPadView(
-                    title: "Enter PIN",
+                    title: String(localized: "Enter PIN"),
                     subtitle: target.displayName,
                     errorMessage: model.errorMessage,
                     resetToken: model.resetToken,

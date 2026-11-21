@@ -45,7 +45,7 @@ struct AppLockView: View {
 
             if let target = model.pinTarget {
                 PINPadView(
-                    title: "Enter PIN",
+                    title: String(localized: "Enter PIN"),
                     subtitle: target.displayName,
                     errorMessage: model.errorMessage,
                     resetToken: model.resetToken,
@@ -100,7 +100,7 @@ struct AppLockView: View {
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return }
         guard let success = try? await context.evaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: "Unlock Arcfin"
+            localizedReason: String(localized: "Unlock Arcfin")
         ), success else { return }
         model.unlock(as: profile, authManager: authManager, onUnlock: onUnlock)
     }
