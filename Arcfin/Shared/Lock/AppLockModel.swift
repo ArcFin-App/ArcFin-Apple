@@ -56,6 +56,7 @@ final class AppLockModel {
     }
 
     func unlock(as profile: ServerCredential, authManager: AuthManager, onUnlock: () -> Void) {
+        PINAttempts.reset(for: profile.id)
         if profile.id != authManager.state.credential?.id {
             authManager.switchTo(profile)
         }

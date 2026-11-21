@@ -18881,6 +18881,70 @@
         }
       }
     },
+    "Too many tries. Try again in %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zu viele Versuche. Versuche es in %@ noch einmal."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Demasiados intentos. Vuelve a intentarlo en %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trop de tentatives. Réessayez dans %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Troppi tentativi. Riprova tra %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "試行回数が多すぎます。%@後にもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "시도 횟수가 너무 많습니다. %@ 후에 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Te veel pogingen. Probeer het over %@ opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Muitas tentativas. Tente novamente em %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Слишком много попыток. Повторите через %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "尝试次数过多。请在 %@后重试。"
+          }
+        }
+      }
+    },
     "Top movie" : {
       "localizations" : {
         "de" : {

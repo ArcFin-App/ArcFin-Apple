@@ -585,18 +585,22 @@ final class AuthManager {
 
     enum PINCheck: Equatable {
         case correct, incorrect, unreadable
+        case waiting(TimeInterval)
 
         var message: String? {
             switch self {
             case .correct: nil
             case .incorrect: String(localized: "Incorrect PIN")
             case .unreadable: String(localized: "Couldn't check the PIN. Try again.")
+            case .waiting(let seconds):
+                String(localized: "Too many tries. Try again in \(PINAttempts.formatted(seconds)).")
             }
         }
 
-        /// What the PIN pad says as it opens: the PIN couldn't be read.
+        /// What the PIN pad says as it opens: the PIN couldn't be read, or a wait is still on.
         static func message(opening stored: StoredPIN, for credentialID: UUID) -> String? {
-            stored == .unreadable ? PINCheck.unreadable.message : nil
+            if stored == .unreadable { return PINCheck.unreadable.message }
+            return PINAttempts.remainingWait(for: credentialID).flatMap { PINCheck.waiting($0).message }
         }
     }
 
@@ -613,12 +617,18 @@ final class AuthManager {
         return nil
     }
 
-    /// Checks a typed PIN against the stored one, read again now.
+    /// Checks a typed PIN against the stored one, counting wrong tries (see `PINAttempts`).
     func checkPIN(_ entered: String, for credentialID: UUID) async -> PINCheck {
+        if let wait = PINAttempts.remainingWait(for: credentialID) { return .waiting(wait) }
         switch await storedPIN(for: credentialID) {
-        case .unreadable: .unreadable
-        case .set(let pin) where pin != entered: .incorrect
-        case .set, .none: .correct
+        case .unreadable:
+            return .unreadable
+        case .set(let pin) where pin != entered:
+            PINAttempts.recordFailure(for: credentialID)
+            return PINAttempts.remainingWait(for: credentialID).map(PINCheck.waiting) ?? .incorrect
+        case .set, .none:
+            PINAttempts.reset(for: credentialID)
+            return .correct
         }
     }
 
@@ -836,6 +846,45 @@ final class AuthManager {
         return await withCheckedContinuation { continuation in
             Self.keychainQueue.async { continuation.resume(returning: work(k)) }
         }
+    }
+}
+
+/// Wrong PINs per profile, kept on this device across launches: after five, each further
+/// try waits 30 seconds, then 1, 5 and 15 minutes. Timed on the trusted clock, so changing
+/// the device's time doesn't shorten a wait; a right PIN or Face ID / Touch ID starts over.
+nonisolated enum PINAttempts {
+    private static let freeTries = 5
+    private static let waits: [TimeInterval] = [30, 60, 5 * 60, 15 * 60]
+
+    private static func failuresKey(_ id: UUID) -> String { "arcfin.pinFailures.\(id.uuidString)" }
+    private static func waitUntilKey(_ id: UUID) -> String { "arcfin.pinWaitUntil.\(id.uuidString)" }
+
+    static func remainingWait(for id: UUID) -> TimeInterval? {
+        let until = UserDefaults.standard.double(forKey: waitUntilKey(id))
+        guard until > 0 else { return nil }
+        // Capped, so a clock that went back can't make a wait longer than the longest.
+        let remaining = min(until - TrustedClock.now.timeIntervalSince1970, waits[waits.count - 1])
+        return remaining > 0 ? remaining : nil
+    }
+
+    static func recordFailure(for id: UUID) {
+        let defaults = UserDefaults.standard
+        let failures = defaults.integer(forKey: failuresKey(id)) + 1
+        defaults.set(failures, forKey: failuresKey(id))
+        guard failures >= freeTries else { return }
+        let wait = waits[min(failures - freeTries, waits.count - 1)]
+        defaults.set(TrustedClock.now.timeIntervalSince1970 + wait, forKey: waitUntilKey(id))
+    }
+
+    static func reset(for id: UUID) {
+        UserDefaults.standard.removeObject(forKey: failuresKey(id))
+        UserDefaults.standard.removeObject(forKey: waitUntilKey(id))
+    }
+
+    static func formatted(_ seconds: TimeInterval) -> String {
+        Duration.seconds(seconds.rounded(.up))
+            .formatted(.units(allowed: [.minutes, .seconds], width: .wide, maximumUnitCount: 1,
+                              fractionalPart: .hide(rounded: .up)))
     }
 }
 
