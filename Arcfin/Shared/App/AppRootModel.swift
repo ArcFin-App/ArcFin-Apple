@@ -35,6 +35,7 @@ final class AppRootModel {
     private static var heartbeatTask: Task<Void, Never>?
     private static var arcfinSyncTask: Task<Void, Never>?
     private static var seerrPollTask: Task<Void, Never>?
+    private static var lastForegroundRefresh: Date?
 
     /// Routes an arcfin:// link from a widget, Live Activity, the Top Shelf or a control, and
     /// the Apple TV's Quick Connect QR code.
@@ -187,8 +188,15 @@ final class AppRootModel {
             Task { await authManager.checkSignInStillValid() }
             startHeartbeat()
             startArcfinSyncLoop()
-            authManager.syncArcfinNow()
             startSeerrPollLoop()
+            // Control Center, Notification Center and Picture in Picture each pass through the
+            // background too, so the heavier refreshes wait a few minutes between returns.
+            if Self.lastForegroundRefresh.map({ Date().timeIntervalSince($0) > 5 * 60 }) ?? true {
+                Self.lastForegroundRefresh = Date()
+                authManager.syncArcfinNow()
+                Task { await loadProfileRules() }
+                Task { await MusicDownloads.shared.refreshSmartDownloads() }
+            }
         } else if !AppServices.scenes.anyActive {
             Self.heartbeatTask?.cancel()
             Self.arcfinSyncTask?.cancel()
@@ -202,12 +210,14 @@ final class AppRootModel {
     /// so the server's Active Devices view doesn't show a stale/offline session.
     private func startHeartbeat() {
         Self.heartbeatTask?.cancel()
+        // Sleeps first: becoming active already checks the sign-in.
         Self.heartbeatTask = Task {
             while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60))
+                guard !Task.isCancelled else { return }
                 if case .authenticated(let cred) = authManager.state {
                     _ = await authManager.authClient.validateToken(credential: cred)
                 }
-                try? await Task.sleep(for: .seconds(60))
             }
         }
     }

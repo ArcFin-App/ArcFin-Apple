@@ -76,10 +76,6 @@ struct AppRootLifecycle: ViewModifier {
                 // the system backgrounds the scene) — locking on every one of those made the
                 // PIN/Face ID prompt reappear on nearly every interaction. The PIN/Face ID
                 // gate now only ever applies at cold launch (see the initial .task above).
-                if newPhase == .active {
-                    Task { await model.loadProfileRules() }
-                    Task { await MusicDownloads.shared.refreshSmartDownloads() }
-                }
                 // Music still to download goes to the system, which carries on with it.
                 if newPhase == .background { MusicDownloads.shared.handOff() }
             }
@@ -117,7 +113,8 @@ struct AppRootLifecycle: ViewModifier {
                 model.downloadManager.refreshSmartDownloads()
             }
             // The profile's parental controls and permissions, from the server: on sign-in, a
-            // profile switch, and each return to the app (an admin may have changed them).
+            // profile switch, and on returning to the app (an admin may have changed them; see
+            // scenePhaseChanged).
             .task(id: model.authManager.state.credential?.id) { await model.loadProfileRules() }
             .task(id: LiveUpdatesKey(credentialID: model.authManager.state.credential?.id,
                                      isActive: AppServices.scenes.anyForeground || PlayerActivity.shared.isPlayerOpen)) {
