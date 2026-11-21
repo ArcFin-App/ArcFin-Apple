@@ -154,21 +154,21 @@ struct TVMusicNowPlaying: View {
         let isFavorite = MusicFavorites.shared.isFavorite(song.id, server: song.isFavorite)
         let likes = MusicRatings.shared.likes(song.id, server: song.likes)
         circle("star", label: isFavorite ? "Remove from Favorites" : "Add to Favorites", isOn: isFavorite,
-               small: true, fills: true) {
+               small: true) {
             MusicFavorites.shared.toggle(song.id, server: song.isFavorite)
         }
-        circle("hand.thumbsup", label: "Like", isOn: likes == true, small: true, fills: true) {
+        circle("hand.thumbsup", label: "Like", isOn: likes == true, small: true) {
             MusicRatings.shared.set(song.id, likes: true, server: song.likes)
         }
-        circle("hand.thumbsdown", label: "Dislike", isOn: likes == false, small: true, fills: true) {
+        circle("hand.thumbsdown", label: "Dislike", isOn: likes == false, small: true) {
             MusicRatings.shared.set(song.id, likes: false, server: song.likes)
         }
     }
 
     private func circle(_ systemImage: String, label: LocalizedStringKey, isOn: Bool = false, large: Bool = false,
-                        small: Bool = false, fills: Bool = false, action: @escaping () -> Void) -> some View {
+                        small: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            CircleControl(systemImage: systemImage, isOn: isOn, fills: fills, size: large ? 104 : small ? 64 : 80)
+            CircleControl(systemImage: systemImage, isOn: isOn, size: large ? 104 : small ? 64 : 80)
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
@@ -331,17 +331,14 @@ private struct TVMusicScrubber: View {
 private struct CircleControl: View {
     let systemImage: String
     let isOn: Bool
-    /// Favourite, Like and Dislike fill their symbol when on; the rest keep their outline, since
-    /// a filled lyrics bubble turned into a solid blob.
-    var fills = false
     let size: CGFloat
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
-        // On: the accent, so a like, a favourite, shuffle or repeat reads at a glance, focused
-        // or not.
+        // On: the filled symbol on the accent, so a like, a favourite, shuffle or repeat reads
+        // at a glance, focused or not.
         Image(systemName: systemImage)
-            .symbolVariant(isOn && fills ? .fill : .none)
+            .symbolVariant(isOn ? .fill : .none)
             .font(.system(size: size * 0.36, weight: .semibold))
             .contentTransition(.symbolEffect(.replace))
             .frame(width: size, height: size)
