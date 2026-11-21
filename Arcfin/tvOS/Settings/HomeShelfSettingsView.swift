@@ -18,10 +18,9 @@ struct HomeShelfSettingsView: View {
     private var active: Set<HomeShelf> { HomeShelfPrefs.active(from: activeString) }
 
     private var footerText: String {
-        let reorder = "Press and hold a shelf to move it."
-        return shuffleShelves
-            ? "Turning a shelf off hides it from Home — it still only shows when it actually has content."
-            : "\(reorder) Turning a shelf off hides it from Home — it still only shows when it actually has content, same as before."
+        shuffleShelves
+            ? String(localized: "Turning a shelf off hides it from Home — it still only shows when it actually has content.")
+            : String(localized: "Press and hold a shelf to move it. Turning a shelf off hides it from Home — it still only shows when it actually has content, same as before.")
     }
 
     var body: some View {

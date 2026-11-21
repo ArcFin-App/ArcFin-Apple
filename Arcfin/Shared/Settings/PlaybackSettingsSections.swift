@@ -142,43 +142,29 @@ struct PlaybackLanguageSection: View {
     @AppStorage("preferredAudioLanguage")    private var preferredAudioLanguage    = ""
     @AppStorage("preferredSubtitleLanguage") private var preferredSubtitleLanguage = ""
 
-    private static let audioLanguageOptions: [(code: String, name: String)] = [
-        ("", "None"),
-        ("eng", "English"),
-        ("spa", "Spanish"),
-        ("fre", "French"),
-        ("ger", "German"),
-        ("jpn", "Japanese"),
-        ("kor", "Korean"),
-        ("chi", "Chinese"),
-        ("ita", "Italian"),
-        ("por", "Portuguese"),
-        ("rus", "Russian"),
+    /// The server's ISO 639-2 codes, with the two-letter code the name is looked up by.
+    private static let languages: [(code: String, iso: String)] = [
+        ("eng", "en"), ("spa", "es"), ("fre", "fr"), ("ger", "de"), ("jpn", "ja"),
+        ("kor", "ko"), ("chi", "zh"), ("ita", "it"), ("por", "pt"), ("rus", "ru"),
     ]
-    private static let subtitleLanguageOptions: [(code: String, name: String)] = [
-        ("", "Off"),
-        ("eng", "English"),
-        ("spa", "Spanish"),
-        ("fre", "French"),
-        ("ger", "German"),
-        ("jpn", "Japanese"),
-        ("kor", "Korean"),
-        ("chi", "Chinese"),
-        ("ita", "Italian"),
-        ("por", "Portuguese"),
-        ("rus", "Russian"),
-    ]
+    private static let options = [""] + languages.map(\.code)
+
+    /// The language's name in the app's language.
+    private static func name(_ code: String) -> String {
+        let iso = languages.first { $0.code == code }?.iso ?? code
+        return Locale.current.localizedString(forLanguageCode: iso) ?? code
+    }
 
     var body: some View {
         Section {
             SettingsPicker("Preferred Audio Language", detail: "Starts on this language when a title has it.",
-                           selection: $preferredAudioLanguage, options: Self.audioLanguageOptions.map(\.code)) { code in
-                Text(Self.audioLanguageOptions.first { $0.code == code }?.name ?? code)
+                           selection: $preferredAudioLanguage, options: Self.options) { code in
+                code.isEmpty ? Text("None") : Text(verbatim: Self.name(code))
             }
             .syncLocked("preferredAudioLanguage", authManager)
             SettingsPicker("Preferred Subtitle Language", detail: "Starts on this language when a title has it.",
-                           selection: $preferredSubtitleLanguage, options: Self.subtitleLanguageOptions.map(\.code)) { code in
-                Text(Self.subtitleLanguageOptions.first { $0.code == code }?.name ?? code)
+                           selection: $preferredSubtitleLanguage, options: Self.options) { code in
+                code.isEmpty ? Text("Off") : Text(verbatim: Self.name(code))
             }
             .syncLocked("preferredSubtitleLanguage", authManager)
         }

@@ -22,7 +22,8 @@ final class QuickConnectModel {
                 let ok = try await authManager.authClient.authorizeQuickConnect(
                     baseURL: cred.baseURL, authHeader: header, code: code
                 )
-                result = ok ? "✓ Device authorized" : "✗ Invalid or expired code"
+                // The mark stays out of the translation: the colour is picked by it.
+                result = ok ? "✓ " + String(localized: "Device authorized") : "✗ " + String(localized: "Invalid or expired code")
                 if ok { self.code = "" }
             } catch {
                 result = "✗ \(error.localizedDescription)"

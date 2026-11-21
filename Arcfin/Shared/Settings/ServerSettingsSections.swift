@@ -21,7 +21,7 @@ final class ServerSettingsModel {
         do {
             publicInfo = try await client.getPublicInfo(baseURL: base)
         } catch {
-            infoError = "Couldn't reach the server for its public info."
+            infoError = String(localized: "Couldn't reach the server for its public info.")
         }
         isLoadingInfo = false
     }
@@ -42,10 +42,10 @@ final class ServerSettingsModel {
     }
 
     static func currentlyUsing(activeBaseURL: URL?, localURL: String, remoteURL: String) -> String {
-        guard let host = activeBaseURL?.host else { return "Unknown" }
-        if let localHost = URL(string: localURL)?.host, localHost == host { return "Local URL" }
-        if let remoteHost = URL(string: remoteURL)?.host, remoteHost == host { return "Remote URL" }
-        return "Custom"
+        guard let host = activeBaseURL?.host else { return String(localized: "Unknown") }
+        if let localHost = URL(string: localURL)?.host, localHost == host { return String(localized: "Local URL") }
+        if let remoteHost = URL(string: remoteURL)?.host, remoteHost == host { return String(localized: "Remote URL") }
+        return String(localized: "Custom")
     }
 }
 
