@@ -35,7 +35,28 @@ enum AppServices {
     /// Music, playing behind every screen (#386).
     static let music = MusicPlayback(authManager: authManager)
     static let introduction = AppIntroduction()
+    static let scenes = ScenePresence()
     /// Past the app lock (or there's none) this launch. A player window brought back on
     /// relaunch closes rather than play ahead of the lock.
     static var hasPassedLock = false
+}
+
+/// Whether any of the app's windows is in front. A window's own scene phase can't say that:
+/// on iPad and Mac one going to the background while another stays open mustn't stop what
+/// they share (#626).
+@MainActor
+@Observable
+final class ScenePresence {
+    private var phases: [UUID: ScenePhase] = [:]
+
+    var anyActive: Bool { phases.values.contains(.active) }
+    var anyForeground: Bool { phases.values.contains { $0 != .background } }
+
+    func set(_ phase: ScenePhase, for scene: UUID) {
+        if phases[scene] != phase { phases[scene] = phase }
+    }
+
+    func remove(_ scene: UUID) {
+        phases[scene] = nil
+    }
 }

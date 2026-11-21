@@ -16,14 +16,18 @@ final class LiveUpdates {
     private var connectionTask: Task<Void, Never>?
     private var watchStateTask: Task<Void, Never>?
     private var libraryTask: Task<Void, Never>?
+    private var connectedCredential: ServerCredential?
     private let log = Telemetry.logger(category: "LiveUpdates")
 
     init(mediaRepo: MediaRepository) {
         self.mediaRepo = mediaRepo
     }
 
+    /// Every window asks; a socket already open for this sign-in stays.
     func connect(credential: ServerCredential, authClient: JellyfinAuthClient) {
+        guard connectionTask == nil || connectedCredential != credential else { return }
         disconnect()
+        connectedCredential = credential
         connectionTask = Task { [weak self] in
             var retryDelay = 5
             while !Task.isCancelled {
@@ -43,6 +47,7 @@ final class LiveUpdates {
     func disconnect() {
         connectionTask?.cancel()
         connectionTask = nil
+        connectedCredential = nil
         // A cancelled refresh returns before clearing itself, and the next one waits for nil.
         watchStateTask?.cancel()
         watchStateTask = nil
@@ -103,8 +108,8 @@ final class LiveUpdates {
     }
 }
 
-/// ContentView reconnects when the profile changes, and drops the socket in the background
-/// unless a player is open (Picture in Picture, sound in the background), so it can still be
+/// ContentView reconnects when the profile changes, and drops the socket once every window is
+/// in the background unless a player is open (Picture in Picture, sound in the background), so it can still be
 /// controlled.
 struct LiveUpdatesKey: Hashable {
     let credentialID: UUID?

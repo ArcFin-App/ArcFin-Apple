@@ -14,6 +14,7 @@ struct AppRootLifecycle: ViewModifier {
 
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var modelContext
+    @State private var sceneID = UUID()
     @AppStorage("seerrURL")          private var seerrURL         = ""
     @AppStorage("seerrUsername")     private var seerrUsername    = ""
     @AppStorage("seerrAuthMethod")   private var seerrAuthMethod  = SeerrAuthMethod.jellyfin
@@ -66,6 +67,7 @@ struct AppRootLifecycle: ViewModifier {
             }
             .task { model.downloadManager.configure(modelContext: modelContext, authManager: model.authManager) }
             .onChange(of: scenePhase) { _, newPhase in
+                AppServices.scenes.set(newPhase, for: sceneID)
                 model.scenePhaseChanged(to: newPhase)
                 onScenePhase(newPhase)
                 // Deliberately no re-lock here. scenePhase drops to .background not just when
@@ -82,7 +84,10 @@ struct AppRootLifecycle: ViewModifier {
                 if newPhase == .background { MusicDownloads.shared.handOff() }
             }
             .onChange(of: model.authManager.state) { _, _ in Task { await model.refreshLockRequirement() } }
-            .onAppear { configureSeerr() }
+            .onAppear {
+                AppServices.scenes.set(scenePhase, for: sceneID)
+                configureSeerr()
+            }
             .onChange(of: seerrURL)        { configureSeerr() }
             .onChange(of: seerrUsername)   { configureSeerr() }
             .onChange(of: model.authManager.seerrPassword) { configureSeerr() }
@@ -115,15 +120,15 @@ struct AppRootLifecycle: ViewModifier {
             // profile switch, and each return to the app (an admin may have changed them).
             .task(id: model.authManager.state.credential?.id) { await model.loadProfileRules() }
             .task(id: LiveUpdatesKey(credentialID: model.authManager.state.credential?.id,
-                                     isActive: scenePhase != .background || PlayerActivity.shared.isPlayerOpen)) {
-                if scenePhase != .background || PlayerActivity.shared.isPlayerOpen,
+                                     isActive: AppServices.scenes.anyForeground || PlayerActivity.shared.isPlayerOpen)) {
+                if AppServices.scenes.anyForeground || PlayerActivity.shared.isPlayerOpen,
                    let credential = model.authManager.state.credential {
                     AppServices.liveUpdates.connect(credential: credential, authClient: model.authManager.authClient)
                 } else {
                     AppServices.liveUpdates.disconnect()
                 }
             }
-            .modifier(AppRootPrompts(model: model))
+            .modifier(AppRootPrompts(model: model, sceneID: sceneID))
             .onChange(of: offlineModeEnabled) { _, isOffline in
                 if !isOffline { model.syncOfflineProgress(modelContext: modelContext) }
             }
@@ -166,7 +171,7 @@ struct AppRootLifecycle: ViewModifier {
 /// modifiers was getting too long to type-check.
 private struct AppRootPrompts: ViewModifier {
     let model: AppRootModel
-    @Environment(\.scenePhase) private var scenePhase
+    let sceneID: UUID
     private var setupGuide: NearbySetupGuide { AppServices.nearbySetup }
 
     /// Prompts that act for the signed-in profile wait for the launch checks and the PIN lock.
@@ -175,17 +180,18 @@ private struct AppRootPrompts: ViewModifier {
     /// Looks for an Apple TV to set up only while it could be offered: signed in, in front,
     /// unlocked and not watching something.
     private var offersNearbySetup: Bool {
-        PlatformMetrics.setsUpNearbyDevices && canPrompt && scenePhase == .active
+        PlatformMetrics.setsUpNearbyDevices && canPrompt && AppServices.scenes.anyActive
             && model.authManager.state.credential != nil && !PlayerActivity.shared.isPlayerOpen
     }
 
     private var watchesOtherDevices: Bool {
-        PlatformMetrics.controlsOtherDevices && canPrompt && scenePhase == .active
+        PlatformMetrics.controlsOtherDevices && canPrompt && AppServices.scenes.anyActive
             && model.authManager.state.credential != nil
     }
 
     func body(content: Content) -> some View {
         content
+        .onDisappear { AppServices.scenes.remove(sceneID) }
         // A scanned Quick Connect code: nothing is signed in until it's confirmed here.
         .alert("Sign In Apple TV?",
                isPresented: Binding(get: { QuickConnectApproval.shared.request != nil && canPrompt },

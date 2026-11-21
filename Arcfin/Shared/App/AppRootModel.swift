@@ -30,9 +30,11 @@ final class AppRootModel {
     /// Why connecting Seerr by itself didn't work, for the prompt that asks for the password.
     var seerrSetupError: String?
     @ObservationIgnored private var isConnectingSeerr = false
-    @ObservationIgnored private var heartbeatTask: Task<Void, Never>?
-    @ObservationIgnored private var arcfinSyncTask: Task<Void, Never>?
-    @ObservationIgnored private var seerrPollTask: Task<Void, Never>?
+    // Shared by every window's model, so a second window doesn't start a second set and one
+    // going to the background doesn't stop the other's.
+    private static var heartbeatTask: Task<Void, Never>?
+    private static var arcfinSyncTask: Task<Void, Never>?
+    private static var seerrPollTask: Task<Void, Never>?
 
     /// Routes an arcfin:// link from a widget, Live Activity, the Top Shelf or a control, and
     /// the Apple TV's Quick Connect QR code.
@@ -178,7 +180,8 @@ final class AppRootModel {
         }
     }
 
-    /// Back in the app: the heartbeat, Arcfin Sync and Seerr loops start; leaving stops them.
+    /// Back in the app: the heartbeat, Arcfin Sync and Seerr loops start; once no window is
+    /// in front they stop.
     func scenePhaseChanged(to newPhase: ScenePhase) {
         if newPhase == .active {
             Task { await authManager.checkSignInStillValid() }
@@ -186,10 +189,10 @@ final class AppRootModel {
             startArcfinSyncLoop()
             authManager.syncArcfinNow()
             startSeerrPollLoop()
-        } else {
-            heartbeatTask?.cancel()
-            arcfinSyncTask?.cancel()
-            seerrPollTask?.cancel()
+        } else if !AppServices.scenes.anyActive {
+            Self.heartbeatTask?.cancel()
+            Self.arcfinSyncTask?.cancel()
+            Self.seerrPollTask?.cancel()
         }
     }
 
@@ -198,8 +201,8 @@ final class AppRootModel {
     /// periodic ping covers idle stretches (paused on a detail screen, backgrounded briefly)
     /// so the server's Active Devices view doesn't show a stale/offline session.
     private func startHeartbeat() {
-        heartbeatTask?.cancel()
-        heartbeatTask = Task {
+        Self.heartbeatTask?.cancel()
+        Self.heartbeatTask = Task {
             while !Task.isCancelled {
                 if case .authenticated(let cred) = authManager.state {
                     _ = await authManager.authClient.validateToken(credential: cred)
@@ -215,8 +218,8 @@ final class AppRootModel {
     /// effect. 15 minutes, not 60 seconds like the heartbeat — this hits a real endpoint that
     /// reads/writes a file per user, no need for it to be as cheap/frequent as a token check.
     private func startArcfinSyncLoop() {
-        arcfinSyncTask?.cancel()
-        arcfinSyncTask = Task {
+        Self.arcfinSyncTask?.cancel()
+        Self.arcfinSyncTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(900))
                 guard !Task.isCancelled else { return }
@@ -232,9 +235,9 @@ final class AppRootModel {
     /// sensitive than the Arcfin Sync loop above (a user actually wants to know promptly),
     /// but still a real per-user Seerr request, not worth a sub-minute cadence.
     private func startSeerrPollLoop() {
-        seerrPollTask?.cancel()
+        Self.seerrPollTask?.cancel()
         guard seerrRepo.isConfigured else { return }
-        seerrPollTask = Task {
+        Self.seerrPollTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(300))
                 guard !Task.isCancelled else { return }
