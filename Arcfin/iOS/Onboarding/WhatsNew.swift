@@ -36,7 +36,7 @@ enum WhatsNew {
                          detail: "Choose the audio tracks and subtitles to download, and Arcfin keeps your queue and progress if the app is closed mid-download."),
             WhatsNewItem(icon: "sparkles",
                          title: "Polished Everywhere",
-                         detail: "Hundreds of fixes: every screen now follows your language, VoiceOver reads more, new-episode alerts arrive in the background, and the player and downloads are sturdier."),
+                         detail: "Hundreds of fixes: much more of Arcfin now follows your language, VoiceOver reads more, new-episode alerts arrive in the background, and the player and downloads are sturdier."),
         ]
     }
 }

@@ -8769,66 +8769,66 @@
         }
       }
     },
-    "Hundreds of fixes: every screen now follows your language, VoiceOver reads more, new-episode alerts arrive in the background, and the player and downloads are sturdier." : {
+    "Hundreds of fixes: much more of Arcfin now follows your language, VoiceOver reads more, new-episode alerts arrive in the background, and the player and downloads are sturdier." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hunderte Korrekturen: Jeder Bildschirm folgt jetzt deiner Sprache, VoiceOver liest mehr vor, Hinweise auf neue Folgen kommen im Hintergrund an, und Player und Downloads sind robuster."
+            "value" : "Hunderte Korrekturen: Viel mehr von Arcfin folgt jetzt deiner Sprache, VoiceOver liest mehr vor, Benachrichtigungen zu neuen Folgen kommen auch im Hintergrund, und Player und Downloads sind robuster."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cientos de correcciones: todas las pantallas siguen ahora tu idioma, VoiceOver lee más cosas, los avisos de nuevos episodios llegan en segundo plano y el reproductor y las descargas son más sólidos."
+            "value" : "Cientos de correcciones: mucho más de Arcfin sigue ahora tu idioma, VoiceOver lee más, los avisos de episodios nuevos llegan en segundo plano y el reproductor y las descargas son más sólidos."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Des centaines de correctifs : chaque écran suit désormais votre langue, VoiceOver lit davantage, les alertes de nouveaux épisodes arrivent en arrière-plan, et le lecteur comme les téléchargements sont plus fiables."
+            "value" : "Des centaines de corrections : une bien plus grande partie d’Arcfin suit désormais votre langue, VoiceOver lit davantage, les alertes de nouveaux épisodes arrivent en arrière-plan, et le lecteur et les téléchargements sont plus fiables."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Centinaia di correzioni: ogni schermata ora segue la tua lingua, VoiceOver legge di più, gli avvisi dei nuovi episodi arrivano in background e il player e i download sono più solidi."
+            "value" : "Centinaia di correzioni: molto più di Arcfin ora segue la tua lingua, VoiceOver legge di più, gli avvisi sui nuovi episodi arrivano in background e il player e i download sono più solidi."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "数百件の修正：すべての画面が言語設定に従うようになり、VoiceOver の読み上げ範囲が広がり、新しいエピソードの通知がバックグラウンドで届き、プレーヤーとダウンロードの安定性も向上しました。"
+            "value" : "数百件の修正：Arcfinのより多くの部分が言語設定に従うようになり、VoiceOverの読み上げが増え、新しいエピソードの通知がバックグラウンドでも届き、プレーヤーとダウンロードがより安定しました。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "수백 가지 수정: 이제 모든 화면이 설정한 언어를 따르고, VoiceOver가 더 많은 내용을 읽어 주며, 새 에피소드 알림이 백그라운드에서도 도착하고, 플레이어와 다운로드가 더 안정적입니다."
+            "value" : "수백 가지 수정: Arcfin의 훨씬 더 많은 부분이 사용자의 언어를 따르고, VoiceOver가 더 많이 읽어 주며, 새 에피소드 알림이 백그라운드에서도 도착하고, 플레이어와 다운로드가 더 안정적입니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Honderden verbeteringen: elk scherm volgt nu je taal, VoiceOver leest meer voor, meldingen voor nieuwe afleveringen komen op de achtergrond binnen en de speler en downloads zijn steviger."
+            "value" : "Honderden verbeteringen: veel meer van Arcfin volgt nu je taal, VoiceOver leest meer voor, meldingen van nieuwe afleveringen komen ook op de achtergrond binnen, en de speler en downloads zijn steviger."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Centenas de correções: todas as telas agora seguem seu idioma, o VoiceOver lê mais coisas, os alertas de novos episódios chegam em segundo plano e o player e os downloads estão mais estáveis."
+            "value" : "Centenas de correções: muito mais do Arcfin agora segue o seu idioma, o VoiceOver lê mais, os alertas de novos episódios chegam em segundo plano e o player e os downloads estão mais robustos."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Сотни исправлений: все экраны теперь на вашем языке, VoiceOver озвучивает больше, уведомления о новых сериях приходят в фоне, а плеер и загрузки стали надёжнее."
+            "value" : "Сотни исправлений: гораздо больше в Arcfin теперь на вашем языке, VoiceOver озвучивает больше, уведомления о новых сериях приходят в фоне, а плеер и загрузки стали надёжнее."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "数百项修复：每个界面现在都会跟随你的语言，VoiceOver 能朗读更多内容，新剧集提醒可在后台送达，播放器和下载也更稳定了。"
+            "value" : "数百项修复：Arcfin 的更多部分现在会使用你的语言，VoiceOver 朗读的内容更多，新剧集提醒可在后台送达，播放器和下载也更稳定。"
           }
         }
       }

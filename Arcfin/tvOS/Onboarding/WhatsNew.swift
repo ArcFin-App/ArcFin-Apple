@@ -24,7 +24,7 @@ enum WhatsNew {
                          detail: "Seerr admins can approve or decline requests from the request's page."),
             WhatsNewItem(icon: "sparkles",
                          title: "Polished Everywhere",
-                         detail: "Hundreds of fixes: every screen now follows your language, VoiceOver reads more, new-episode alerts arrive in the background, and the player and downloads are sturdier."),
+                         detail: "Hundreds of fixes: much more of Arcfin now follows your language, VoiceOver reads more, new-episode alerts arrive in the background, and the player and downloads are sturdier."),
         ]
     }
 }
