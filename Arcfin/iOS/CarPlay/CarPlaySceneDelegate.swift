@@ -33,6 +33,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private lazy var voice = CarPlayVoiceSearch { [weak self] term in await self?.search.pushResults(for: term) }
     /// Whether the car has the keyboard off (most do while driving).
     private var session: CPSessionConfiguration?
+    private var lockObserver: NSObjectProtocol?
 
     private var music: MusicPlayback { AppServices.music }
     private var player: MusicQueuePlayer { music.player }
@@ -52,12 +53,15 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         setUpNowPlaying()
         watchProfile()
         watchSong()
+        watchLock()
         tabs.forEach(load)
     }
 
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                   didDisconnectInterfaceController interfaceController: CPInterfaceController) {
         CPNowPlayingTemplate.shared.remove(self)
+        if let lockObserver { NotificationCenter.default.removeObserver(lockObserver) }
+        lockObserver = nil
         interface = nil
     }
 
@@ -79,6 +83,17 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                 guard let self, interface != nil else { return }
                 tabs.forEach(load)
                 watchProfile()
+            }
+        }
+    }
+
+    /// Entering the PIN on the phone replaces "Unlock Arcfin on your iPhone" with the music.
+    private func watchLock() {
+        guard lockObserver == nil else { return }
+        lockObserver = NotificationCenter.default.addObserver(forName: .arcfinPassedLock, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.interface != nil else { return }
+                self.tabs.forEach(self.load)
             }
         }
     }
