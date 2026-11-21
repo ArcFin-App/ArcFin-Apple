@@ -27,15 +27,6 @@ private func formattedSpeed(_ bytesPerSecond: Double) -> String {
     ByteCountFormatter.string(fromByteCount: Int64(bytesPerSecond), countStyle: .file) + "/s"
 }
 
-/// "About 4 min left", rounded the way people say it.
-private func timeLeft(_ seconds: Double) -> String {
-    if seconds < 60 { return "Less than a minute left" }
-    let minutes = Int((seconds / 60).rounded())
-    if minutes < 60 { return "About \(minutes) min left" }
-    let hours = minutes / 60, rest = minutes % 60
-    return rest == 0 ? "About \(hours) hr left" : "About \(hours) hr \(rest) min left"
-}
-
 private func percent(_ state: DownloadState) -> String {
     "\(Int((state.fractionComplete * 100).rounded(.down)))%"
 }
@@ -326,7 +317,8 @@ private struct LockScreenView: View {
     @ViewBuilder
     private var subtitle: some View {
         let parts = [state.episodeLabel,
-                     state.isFinished ? "Ready to watch offline" : state.nextItemTitle.map { "Up next: \($0)" }]
+                     state.isFinished ? String(localized: "Ready to watch offline")
+                        : state.nextItemTitle.map { String(localized: "Up next: \($0)") }]
             .compactMap { $0 }
         if !parts.isEmpty {
             Text(parts.joined(separator: " · "))
