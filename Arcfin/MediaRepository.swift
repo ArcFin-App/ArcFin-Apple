@@ -81,6 +81,8 @@ final class MediaRepository {
     var libraryCounts: [String: Int] = [:]
     /// TMDB keys (`JellyfinMediaClient.libraryKey`) of every movie and show the server has.
     var libraryTMDBKeys: Set<String> = []
+    /// Whose library `libraryTMDBKeys` holds.
+    @ObservationIgnored private var libraryTMDBKeysUserID: String?
     var serverID: String = ""
     var isLoading: Bool = false
     /// True when the last load couldn't reach the server at all (vs. a genuinely empty
@@ -250,14 +252,18 @@ final class MediaRepository {
         // turned off load last: Search and Spotlight use some of them too.
         let userID = credential.userID
         let order = shelfOrder + HomeShelf.allCases.filter { !shelfOrder.contains($0) }
+        // The whole library's TMDB ids are kept until the library changes (LibraryChanged
+        // refreshes them in refreshRecentlyAdded), not fetched again on every Home load.
+        let needsKeys = libraryTMDBKeysUserID != userID
         rowsTask = Task {
-            async let tmdbKeys = client.getLibraryTMDBKeys(credential: credential, authHeader: header)
+            async let tmdbKeys = needsKeys ? client.getLibraryTMDBKeys(credential: credential, authHeader: header) : nil
             for shelf in order {
                 guard !Task.isCancelled else { return }
                 await loadRow(shelf, credential: credential, header: header, userID: userID)
             }
             if let keys = try? await tmdbKeys, !Task.isCancelled, lastLoadedUserID == userID || loadingUserID == userID {
                 libraryTMDBKeys = keys
+                libraryTMDBKeysUserID = userID
             }
         }
 
@@ -384,7 +390,10 @@ final class MediaRepository {
         if let laValue { recentlyAdded = laValue }
         if let raMovValue { recentlyAddedMovies = raMovValue }
         if let raShowValue { recentlyAddedShows = raShowValue }
-        if let keysValue { libraryTMDBKeys = keysValue }
+        if let keysValue {
+            libraryTMDBKeys = keysValue
+            libraryTMDBKeysUserID = credential.userID
+        }
     }
 
     /// Whether the server already has a Seerr title: Seerr says so, or the library holds its
