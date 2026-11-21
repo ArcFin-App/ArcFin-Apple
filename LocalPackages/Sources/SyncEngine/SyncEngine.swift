@@ -328,7 +328,7 @@ public enum SettingsSyncRegistry {
         // Downloads
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),
-        .init("offlineModeEnabled", .bool),
+        // offlineModeEnabled is left out: it says what this device is doing right now.
         .init("deleteDownloadsAfterWatching", .bool),
         .init("smartDownloadsEnabled", .bool),
         .init("smartDownloadsEpisodeCount", .int),

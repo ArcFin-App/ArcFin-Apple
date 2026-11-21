@@ -162,7 +162,6 @@ struct DownloadsSettingsView: View {
                 Toggle(isOn: $offlineModeEnabled) {
                     TVRowLabelText(title: "Offline Mode", detail: "Shows only what's downloaded, without connecting to your server.")
                 }
-                .syncLocked("offlineModeEnabled", authManager)
             }
         }
         .arcfinListStyle()
