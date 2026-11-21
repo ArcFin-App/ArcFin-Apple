@@ -56,14 +56,14 @@ struct SeerrRequestConfirmSheet: View {
         ))
     }
     private var requestLabel: String {
-        if alreadyRequested { return "Already Requested" }
-        guard isSeries else { return isSubmitting ? "Sending…" : "Confirm Request" }
+        if alreadyRequested { return String(localized: "Already Requested") }
+        guard isSeries else { return isSubmitting ? String(localized: "Sending…") : String(localized: "Confirm Request") }
         // No detail means the seasons aren't known yet, not that they're all requested.
-        if detail == nil { return "Select Seasons" }
-        if unrequested.isEmpty { return "Already Requested" }
-        if !partialRequestsEnabled { return isSubmitting ? "Sending…" : "Request Series" }
-        if selectedSeasons.isEmpty { return "Select Seasons" }
-        return isSubmitting ? "Sending…" : String(localized: "Request \(selectedSeasons.count) Seasons")
+        if detail == nil { return String(localized: "Select Seasons") }
+        if unrequested.isEmpty { return String(localized: "Already Requested") }
+        if !partialRequestsEnabled { return isSubmitting ? String(localized: "Sending…") : String(localized: "Request Series") }
+        if selectedSeasons.isEmpty { return String(localized: "Select Seasons") }
+        return isSubmitting ? String(localized: "Sending…") : String(localized: "Request \(selectedSeasons.count) Seasons")
     }
 
     var body: some View {
@@ -442,11 +442,11 @@ struct SeerrRequestConfirmSheet: View {
 
     private func seasonBadgeLabel(_ badge: SeerrSeasonBadge) -> String {
         switch badge {
-        case .notRequested:        "Not Requested"
-        case .pending:              "Pending"
-        case .requested:            "Requested"
-        case .partiallyAvailable:   "Partial"
-        case .available:            "Available"
+        case .notRequested:        String(localized: "Not Requested")
+        case .pending:              String(localized: "Pending")
+        case .requested:            String(localized: "Requested")
+        case .partiallyAvailable:   String(localized: "Partial")
+        case .available:            String(localized: "Available")
         }
     }
 
@@ -472,9 +472,9 @@ struct SeerrRequestConfirmSheet: View {
 
     private var quotaBanner: some View {
         let text: String = {
-            if overLimit { return "Not enough season requests remaining for the whole series." }
-            if overQuota { return "That's more seasons than you have requests remaining for." }
-            if remaining <= 0 { return "No season requests remaining." }
+            if overLimit { return String(localized: "Not enough season requests remaining for the whole series.") }
+            if overQuota { return String(localized: "That's more seasons than you have requests remaining for.") }
+            if remaining <= 0 { return String(localized: "No season requests remaining.") }
             if let days = quota?.days, days > 0 {
                 return String(localized: "\(remaining) season requests remaining (resets every \(days) days)")
             }
