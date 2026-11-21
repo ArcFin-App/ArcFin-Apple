@@ -206,10 +206,10 @@ struct CollectionDetailView: View {
     private var nextToPlay: MediaItem? { playable.first { $0.userData?.played != true } }
 
     private var metaLine: String {
-        var parts = ["\(items.count) title\(items.count == 1 ? "" : "s")"]
+        var parts = [items.count == 1 ? String(localized: "1 title") : String(localized: "\(items.count) titles")]
         let years = items.compactMap(\.productionYear)
         if let first = years.min(), let last = years.max() { parts.append(first == last ? "\(first)" : "\(first)–\(last)") }
-        parts.append(watchedCount == items.count ? "All watched" : "\(watchedCount) of \(items.count) watched")
+        parts.append(watchedCount == items.count ? String(localized: "All watched") : String(localized: "\(watchedCount) of \(items.count) watched"))
         return parts.joined(separator: " · ")
     }
 
@@ -460,9 +460,11 @@ private struct TVLibraryFilterList: View {
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark").foregroundStyle(DT.Color.accent)
+                        .accessibilityHidden(true)
                 }
             }
         }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func toggle<T: Hashable>(_ value: T, in set: inout Set<T>) {

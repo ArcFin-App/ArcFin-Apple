@@ -55,7 +55,9 @@ struct SearchView: View {
                         .tvFocusRing(cornerRadius: DT.Radius.md)
                 }
             } else if query.isEmpty || foundNothing {
-                SearchEmptyState(query: query)
+                SearchEmptyState(query: query, failed: model.libraryFailed) {
+                    model.search(query, authManager: authManager, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
+                }
             } else if !modernSearch {
                 classicResults
             } else {

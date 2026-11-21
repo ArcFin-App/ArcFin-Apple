@@ -7,9 +7,9 @@ import JellyfinAPI
 enum HomeText {
     static func title(_ item: MediaItem) -> String {
         if item.type == .episode {
-            return item.seriesName?.nilIfEmpty ?? item.name.nilIfEmpty ?? "Unknown"
+            return item.seriesName?.nilIfEmpty ?? item.name.nilIfEmpty ?? String(localized: "Unknown")
         }
-        return item.name.nilIfEmpty ?? "Unknown"
+        return item.name.nilIfEmpty ?? String(localized: "Unknown")
     }
 
     static func subtitle(_ item: MediaItem) -> String? {
@@ -27,9 +27,9 @@ enum HomeText {
         var parts: [String] = []
         if let year = item.productionYear { parts.append(String(year)) }
         switch item.type {
-        case .series:  parts.append("Series")
-        case .episode: parts.append(subtitle(item) ?? "Episode")
-        default:       parts.append("Movie")
+        case .series:  parts.append(String(localized: "Series"))
+        case .episode: parts.append(subtitle(item) ?? String(localized: "Episode"))
+        default:       parts.append(String(localized: "Movie"))
         }
         return parts.joined(separator: " · ")
     }
@@ -45,4 +45,16 @@ enum HomeText {
 
 extension String {
     var nilIfEmpty: String? { isEmpty ? nil : self }
+}
+
+extension Double {
+    /// A score with one decimal, in the locale's own number format ("7,5" in German).
+    var ratingText: String { formatted(.number.precision(.fractionLength(1))) }
+}
+
+enum DurationText {
+    /// "1h 20m", "45m", with the locale's own unit names.
+    static func minutes(_ minutes: Int) -> String {
+        Duration.seconds(minutes * 60).formatted(.units(allowed: [.hours, .minutes], width: .narrow))
+    }
 }

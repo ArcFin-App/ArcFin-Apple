@@ -66,6 +66,7 @@ struct EpisodeRow: View {
                                 Text("E\(epNum)")
                                     .contentFont(.caption2, design: .default, weight: .semibold)
                                     .foregroundStyle(DT.Color.accent)
+                                    .accessibilityLabel(Text("Episode \(epNum)"))
                             }
                             if let badge {
                                 Text(badge)
@@ -99,6 +100,11 @@ struct EpisodeRow: View {
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.05), lineWidth: 1))
         }
         .buttonStyle(.plain)
+        // Watched and progress are only drawn on the thumbnail otherwise.
+        .accessibilityValue(watchState(isWatched: isWatched, percent: pct))
+        .accessibilityAction(named: isWatched ? Text("Mark as Unwatched") : Text("Mark as Watched")) {
+            onToggleWatched()
+        }
         .contextMenu(menuItems: {
             Button {
                 HapticManager.impact(.light)
@@ -111,6 +117,12 @@ struct EpisodeRow: View {
             EpisodeRowPreview(episode: ep, imageURL: mediaRepo.episodeThumbnailURL(for: ep))
         })
     }
+}
+
+private func watchState(isWatched: Bool, percent: Double) -> Text {
+    if isWatched { return Text("Watched") }
+    guard percent > 0 else { return Text(verbatim: "") }
+    return Text("\((percent / 100).formatted(.percent.precision(.fractionLength(0)))) watched")
 }
 
 /// Gets its image URL handed in: a context menu's preview is drawn outside the app's

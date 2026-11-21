@@ -54,7 +54,9 @@ struct SearchView: View {
                         .buttonStyle(.plain)
                 }
             } else if query.isEmpty || foundNothing {
-                SearchEmptyState(query: query)
+                SearchEmptyState(query: query, failed: model.libraryFailed) {
+                    model.search(query, authManager: authManager, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
+                }
             } else if !modernSearch {
                 classicResults
             } else {
@@ -101,7 +103,8 @@ struct SearchView: View {
             }
         }
         .screenBackground()
-        .onChange(of: query) { _, newValue in
+        // The view is created with a whole pasted, dictated or suggested term already in place.
+        .onChange(of: query, initial: true) { _, newValue in
             model.search(newValue, authManager: authManager, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
             liveTV.searchQuery = searchesLiveTV ? newValue : ""
             liveTV.search(authManager: authManager)

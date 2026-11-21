@@ -41,23 +41,21 @@ struct LibraryDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .screenBackground()
-            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive {
+            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "Empty Playlist",
                     description: "Add movies, shows and episodes, or long-press any title and choose Add to Playlist.",
                     buttonTitle: "Add Titles"
                 ) { model.showAddTitles = true }
-            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive {
+            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "No Playlists",
                     description: "Make a playlist, then add movies, shows and episodes to it.",
                     buttonTitle: "New Playlist"
                 ) { model.showNewPlaylist = true }
             } else if model.items.isEmpty {
-                ContentUnavailableView(model.library.name,
-                                      systemImage: model.library.collectionType.systemIcon,
-                                      description: Text("Nothing found in this library."))
-                .screenBackground()
+                LibraryEmptyResults(model: model, retry: reload)
+                    .screenBackground()
             } else {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
@@ -80,6 +78,10 @@ struct LibraryDetailView: View {
 
                             if model.isLoadingMore {
                                 ProgressView()
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                            } else if model.loadMoreFailed {
+                                Button("Try Again") { Task { await model.loadMore(authManager: authManager) } }
                                     .frame(maxWidth: .infinity)
                                     .padding()
                             }
@@ -124,6 +126,7 @@ struct LibraryDetailView: View {
                             Text("Filter & Sort").contentFont(.subheadline, design: .default, weight: .semibold)
                             Spacer()
                             Button("Done") { showFilterSheet = false }
+                                .keyboardShortcut(.defaultAction)
                         }
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
@@ -136,6 +139,10 @@ struct LibraryDetailView: View {
                         )
                     }
                     .frame(width: 380, height: 480)
+                    // The hand-built panel lost a sheet's keyboard handling: Esc closes it, and
+                    // keyboard focus stays inside it rather than reaching the grid behind.
+                    .onExitCommand { showFilterSheet = false }
+                    .focusSection()
                     .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
                     .overlay(RoundedRectangle(cornerRadius: 14).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
                     .shadow(color: .black.opacity(0.3), radius: 30)
@@ -144,11 +151,23 @@ struct LibraryDetailView: View {
             }
         }
         .animation(DT.Animation.motion(.easeInOut(duration: 0.15)), value: showFilterSheet)
-        .onChange(of: model.selectedGenres) { _, _ in reload() }
-        .onChange(of: model.selectedYears) { _, _ in reload() }
-        .onChange(of: model.extraFilters) { _, _ in reload() }
-        .onChange(of: model.watchedFilter) { _, _ in reload() }
-        .onChange(of: model.favoritesOnly) { _, _ in reload() }
+        .confirmationDialog(
+            Text("Remove \(model.pendingGroupRemoval?.count ?? 0) Episodes from Playlist"),
+            isPresented: Binding(get: { model.pendingGroupRemoval != nil },
+                                 set: { if !$0 { model.pendingGroupRemoval = nil } }),
+            titleVisibility: .visible,
+            presenting: model.pendingGroupRemoval
+        ) { episodes in
+            Button("Remove", role: .destructive) {
+                model.removeFromPlaylist(episodes, authManager: authManager, mediaRepo: mediaRepo)
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .onChange(of: model.selectedGenres) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.selectedYears) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.extraFilters) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.watchedFilter) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.favoritesOnly) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
         .quickPlayback($quickPlayRequest, trailer: $trailerLaunchItem)
         .navigationDestination(item: $model.randomPick) { pick in
             if pick.type == .boxSet {
@@ -256,7 +275,7 @@ struct LibraryDetailView: View {
         .menuIndicator(.hidden)
         .buttonStyle(PressableButtonStyle())
         .contextMenu {
-            Button(role: .destructive) { model.removeFromPlaylist(episodes, authManager: authManager, mediaRepo: mediaRepo) } label: {
+            Button(role: .destructive) { model.pendingGroupRemoval = episodes } label: {
                 Label("Remove \(episodes.count) Episodes from Playlist", systemImage: "minus.circle")
             }
         }
@@ -278,6 +297,6 @@ struct LibraryDetailView: View {
         Button { trailerLaunchItem = item } label: {
             Label("Play Trailer", systemImage: "play.rectangle")
         }
-        LibraryQuickLookMenu(item: item)
+        LibraryQuickLookMenu(item: item) { model.replace($0) }
     }
 }

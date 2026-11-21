@@ -10,6 +10,7 @@ struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
@@ -151,7 +152,11 @@ struct HomeView: View {
             .onAppear { isHomeShowing = true }
             .onDisappear { isHomeShowing = false }
             .navigationDestination(item: $model.detailItem) { item in
-                MediaDetailView(item: item)
+                if item.type == .boxSet {
+                    CollectionDetailView(collection: item)
+                } else {
+                    MediaDetailView(item: item)
+                }
             }
             .navigationDestination(for: MediaItem.self) { item in
                 MediaDetailView(item: item)
@@ -197,8 +202,7 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-                model.deepLinkItemID = id
-                model.detailItem = (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).first { $0.id == id }
+                model.openDeepLinkItem(id: id, authManager: authManager, mediaRepo: mediaRepo)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
@@ -211,24 +215,28 @@ struct HomeView: View {
             await model.loadNowAvailable(HomeShelfLoader.recentlyAvailable(seerrRepo.requests), authManager: authManager)
         }
         .onDisappear { if shuffleHomeShelves { model.reshuffleShelves() } }
+        // Apple TV has no pull to refresh: Home catches up when the app comes back to the
+        // front (at most once a minute, as MediaRepository's load allows).
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { _ = await model.loadShelves(force: false, shelves: orderedShelves, authManager: authManager, mediaRepo: mediaRepo) }
+        }
     }
 
     // MARK: - Load
 
     private func load() async {
         guard await model.loadShelves(force: false, shelves: orderedShelves, authManager: authManager, mediaRepo: mediaRepo) else { return }
-        // Preheat full-res hero backdrops + logos into the Nuke decoded cache so
-        // backdrop transitions are instant with no load jump.
-        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
+        // The first hero backdrops + logos go into the decoded cache so the opening
+        // transitions are instant; the rest only to disk, two at a time. Decoding all of them
+        // (about 8 MB each at 1920 px) at once crowded out the posters on screen.
+        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in
+            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
              heroLogoURL(item)].compactMap { $0 }
         }
-        ImageCache.preheat(urls: heroURLs)
-        let pendingID = model.deepLinkItemID ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
-        if let id = pendingID {
-            UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-            model.deepLinkItemID = nil
-            model.detailItem = (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).first { $0.id == id }
-        }
+        ImageCache.preheat(urls: Array(heroURLs.prefix(8)))
+        ImageCache.prefetch(urls: Array(heroURLs.dropFirst(8)))
+        model.openPendingDeepLink(authManager: authManager, mediaRepo: mediaRepo)
         model.playPendingWatch(authManager: authManager)
         await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
         // Modern Home starts on its first row by itself; the same title can also be in a row
@@ -356,7 +364,13 @@ struct HomeView: View {
                         // focus target stuck on this (now-hidden) screen instead of the
                         // player, which claims its own initial focus via .prefersDefaultFocus.
                         focusedCard = nil
-                        model.playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+                        if item.type == .boxSet {
+                            model.detailItem = item
+                        } else if item.type == .series {
+                            Task { model.playbackRequest = await HomeModel.seriesPlayback(item, authManager: authManager) }
+                        } else {
+                            model.playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+                        }
                     } label: {
                         TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
                             .opacity(heroChromeOpacity)
@@ -407,7 +421,7 @@ struct HomeView: View {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
-                    Text(String(format: "%.1f", rating))
+                    Text(rating.ratingText)
                         .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
@@ -534,7 +548,7 @@ struct HomeView: View {
                     .opacity(heroChromeOpacity)
 
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
+                    LazyHStack(spacing: 16) {
                         ForEach(items) { item in
                             Button {
                                 if heroChromeHidden { showHeroChrome(); return }
@@ -746,7 +760,7 @@ struct HomeView: View {
             .padding(.bottom, 14)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) { content() }
+                LazyHStack(spacing: 16) { content() }
                     .padding(.horizontal, 80)
                     .padding(.top, 20)
                     .focusSection()
@@ -1029,7 +1043,7 @@ struct HomeView: View {
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear { Label(String(year), systemImage: "calendar") }
         if let rating = item.communityRating {
-            Label(String(format: "%.1f / 10", rating), systemImage: "star.fill")
+            Label(String(localized: "\(rating.ratingText) / 10"), systemImage: "star.fill")
         }
     }
 

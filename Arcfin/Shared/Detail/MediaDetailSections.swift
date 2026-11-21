@@ -7,13 +7,35 @@ import SeerrAPI
 // The title page's sections below the hero, each its own view.
 
 struct DetailSectionTitle: View {
-    let title: String
+    let title: Text
+
+    init(title: LocalizedStringKey) { self.title = Text(title) }
+    /// A title already made (a server-provided name, or one built elsewhere).
+    init(text: Text) { self.title = text }
 
     var body: some View {
-        Text(title)
+        title
             .contentFont(.callout, design: .default, weight: .bold)
             .foregroundStyle(DT.Color.textPrimary)
             .tracking(-0.3)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// The title's details couldn't be fetched: says so, with a way to ask again.
+struct DetailLoadFailedRow: View {
+    let retry: () -> Void
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Text("Couldn't load this title's details.")
+                .contentFont(.callout)
+                .foregroundStyle(DT.Color.textSecondary)
+                .multilineTextAlignment(.center)
+            Button("Try Again", action: retry)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DT.Spacing.md)
     }
 }
 
@@ -173,7 +195,7 @@ struct DetailCrewSection: View {
 }
 
 private struct DetailCrewRow: View {
-    let label: String
+    let label: LocalizedStringKey
     let people: [MediaPerson]
 
     var body: some View {
@@ -194,14 +216,15 @@ private struct DetailCrewRow: View {
 /// recommendation rows.
 struct DetailTitleShelf<Link: View>: View {
     @Environment(MediaRepository.self) private var mediaRepo
-    let title: String
+    /// Text, as the server's recommendation rows come with their own names.
+    let title: Text
     let items: [MediaItem]
     /// Each platform's link around a title's poster.
     @ViewBuilder let link: (MediaItem, PosterCard) -> Link
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            DetailSectionTitle(title: title).padding(.horizontal, DT.Spacing.pagePad)
+            DetailSectionTitle(text: title).padding(.horizontal, DT.Spacing.pagePad)
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 10) {
                     ForEach(items) { rec in
@@ -223,7 +246,7 @@ struct DetailTitleShelf<Link: View>: View {
 /// The collections or playlists this title is in, laid out like More Like This.
 struct DetailSetShelf: View {
     @Environment(MediaRepository.self) private var mediaRepo
-    let title: String
+    let title: LocalizedStringKey
     let sets: [MediaItem]
     let open: (MediaItem) -> Void
 

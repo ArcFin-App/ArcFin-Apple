@@ -7,6 +7,7 @@ import JellyfinAPI
 import SeerrAPI
 import Telemetry
 import Network
+import ImageCache
 import os
 
 /// Races a one-shot NWPathMonitor read against a timeout — mirrors AuthManager's
@@ -80,6 +81,8 @@ final class MediaRepository {
     var libraryCounts: [String: Int] = [:]
     /// TMDB keys (`JellyfinMediaClient.libraryKey`) of every movie and show the server has.
     var libraryTMDBKeys: Set<String> = []
+    /// Whose library `libraryTMDBKeys` holds.
+    @ObservationIgnored private var libraryTMDBKeysUserID: String?
     var serverID: String = ""
     var isLoading: Bool = false
     /// True when the last load couldn't reach the server at all (vs. a genuinely empty
@@ -249,14 +252,18 @@ final class MediaRepository {
         // turned off load last: Search and Spotlight use some of them too.
         let userID = credential.userID
         let order = shelfOrder + HomeShelf.allCases.filter { !shelfOrder.contains($0) }
+        // The whole library's TMDB ids are kept until the library changes (LibraryChanged
+        // refreshes them in refreshRecentlyAdded), not fetched again on every Home load.
+        let needsKeys = libraryTMDBKeysUserID != userID
         rowsTask = Task {
-            async let tmdbKeys = client.getLibraryTMDBKeys(credential: credential, authHeader: header)
+            async let tmdbKeys = needsKeys ? client.getLibraryTMDBKeys(credential: credential, authHeader: header) : nil
             for shelf in order {
                 guard !Task.isCancelled else { return }
                 await loadRow(shelf, credential: credential, header: header, userID: userID)
             }
             if let keys = try? await tmdbKeys, !Task.isCancelled, lastLoadedUserID == userID || loadingUserID == userID {
                 libraryTMDBKeys = keys
+                libraryTMDBKeysUserID = userID
             }
         }
 
@@ -343,10 +350,33 @@ final class MediaRepository {
         let cwValue = try? await cw, nUpValue = try? await nUp, wAgainValue = try? await wAgain, favsValue = try? await favs
         // A profile switch while this was out: these are the old profile's, not the shelves'.
         guard credential.userID == lastLoadedUserID, !isLoading else { return }
-        if let cwValue { continueWatching = cwValue }
-        if let nUpValue { nextUp = nUpValue }
-        if let wAgainValue { watchAgain = wAgainValue }
-        if let favsValue { favorites = favsValue }
+        // Only what changed: this runs every few seconds while anything plays, and each
+        // assignment re-renders Home behind the player.
+        if let cwValue, cwValue != continueWatching { continueWatching = cwValue }
+        if let nUpValue, nUpValue != nextUp { nextUp = nUpValue }
+        if let wAgainValue, wAgainValue != watchAgain { watchAgain = wAgainValue }
+        if let favsValue, favsValue != favorites { favorites = favsValue }
+    }
+
+    /// Puts a title's changed watched or favourite state on every shelf card showing it.
+    func applyUserData(of item: MediaItem) {
+        func apply(_ items: inout [MediaItem]) {
+            for index in items.indices where items[index].id == item.id {
+                items[index].userData = item.userData
+            }
+        }
+        apply(&continueWatching)
+        apply(&recentlyAdded)
+        apply(&nextUp)
+        apply(&recentlyAddedMovies)
+        apply(&recentlyAddedShows)
+        apply(&recentlyReleasedMovies)
+        apply(&recentlyAiredEpisodes)
+        apply(&watchAgain)
+        apply(&featuredItems)
+        apply(&favorites)
+        apply(&topRatedUnwatched)
+        apply(&suggestions)
     }
 
     /// Shelves that follow what's in the library, after titles are added or removed.
@@ -362,7 +392,10 @@ final class MediaRepository {
         if let laValue { recentlyAdded = laValue }
         if let raMovValue { recentlyAddedMovies = raMovValue }
         if let raShowValue { recentlyAddedShows = raShowValue }
-        if let keysValue { libraryTMDBKeys = keysValue }
+        if let keysValue {
+            libraryTMDBKeys = keysValue
+            libraryTMDBKeysUserID = credential.userID
+        }
     }
 
     /// Whether the server already has a Seerr title: Seerr says so, or the library holds its
@@ -372,13 +405,14 @@ final class MediaRepository {
             || libraryTMDBKeys.contains(JellyfinMediaClient.libraryKey(tmdbId: item.id, isSeries: item.mediaType == .tv))
     }
 
-    func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem] {
+    /// nil when the server couldn't be asked, as opposed to no matches.
+    func search(query: String, credential: ServerCredential, authClient: JellyfinAuthClient) async -> [MediaItem]? {
         guard !query.isEmpty else { return [] }
         let header = authClient.authHeader(token: credential.accessToken)
-        return (try? await client.search(credential: credential, authHeader: header, query: query)) ?? []
+        return try? await client.search(credential: credential, authHeader: header, query: query)
     }
 
-    func searchIfAuthenticated(query: String, authState: AuthState, authClient: JellyfinAuthClient) async -> [MediaItem] {
+    func searchIfAuthenticated(query: String, authState: AuthState, authClient: JellyfinAuthClient) async -> [MediaItem]? {
         guard case .authenticated(let cred) = authState else { return [] }
         return await search(query: query, credential: cred, authClient: authClient)
     }
@@ -501,15 +535,9 @@ final class MediaRepository {
         prefetch(urls: urls)
     }
 
+    /// Into the image pipeline's own disk cache: URLSession's cache, used before, was never
+    /// read by the image views, so every prefetched image downloaded twice.
     func prefetch(urls: [URL]) {
-        let uniqueURLs = Array(Set(urls))
-        guard !uniqueURLs.isEmpty else { return }
-
-        Task.detached(priority: .utility) {
-            for url in uniqueURLs {
-                let req = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 12)
-                _ = try? await URLSession.arcfin.data(for: req)
-            }
-        }
+        ImageCache.prefetch(urls: urls)
     }
 }

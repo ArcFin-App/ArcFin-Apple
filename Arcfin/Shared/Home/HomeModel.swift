@@ -70,10 +70,11 @@ final class HomeModel {
         guard seerrRepo.hasCatalog && enabled else { return }
         await seerrRepo.loadDiscover()
         await seerrRepo.loadWatchlist()
-        let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist).flatMap { item in
-            [item.backdropURL, item.posterURL].compactMap { $0 }
-        }
-        mediaRepo.prefetch(urls: seerrQuickLookURLs)
+        // Only the posters the rows show; a full-size backdrop for every title was mostly for
+        // pages nobody opened.
+        let seerrPosterURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist)
+            .compactMap(\.posterURL)
+        mediaRepo.prefetch(urls: seerrPosterURLs)
     }
 
     func saveTopShelf(mediaRepo: MediaRepository, title: (MediaItem) -> String, subtitle: (MediaItem) -> String?) {
@@ -91,7 +92,7 @@ final class HomeModel {
                     .compactMap { $0 }.joined(separator: " · "),
                 logoURL: mediaRepo.logoURL(itemID: item.type == .episode ? item.seriesId ?? item.id : item.id, fillWidth: 800),
                 ratingTitle: String(localized: "Rating"),
-                ratingValue: item.communityRating.flatMap { $0 > 0 ? String(format: "★ %.1f", $0) : nil }
+                ratingValue: item.communityRating.flatMap { $0 > 0 ? "★ \($0.ratingText)" : nil }
             )
         }
         let resumeContext = String(localized: "Continue Watching")
@@ -168,6 +169,13 @@ final class HomeModel {
     }
 
     // MARK: - Opening titles
+
+    /// What Play on a series starts: its next episode, else its first.
+    static func seriesPlayback(_ series: MediaItem, authManager: AuthManager) async -> PlaybackRequest? {
+        guard let cred = authManager.state.credential else { return nil }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        return await WatchRoute.resolve(id: series.id, credential: cred, authHeader: header)
+    }
 
     /// Opens a title from a widget, Spotlight, Siri or the Top Shelf. Titles that aren't on
     /// one of Home's shelves (an Up Next episode, a Spotlight result) are fetched by id.

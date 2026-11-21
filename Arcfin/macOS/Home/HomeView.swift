@@ -22,10 +22,20 @@ struct HomeView: View {
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleHomeShelves = false
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
-    @Query private var downloadedItems: [DownloadedItem]
+    @Environment(\.modelContext) private var modelContext
 
     @State private var model = HomeModel()
     @State private var hero = HomeHeroCarousel()
+    @State private var heroStretch: CGFloat = 0
+
+    /// Counted when the offline banner or prompt can show, not a @Query: a query of every
+    /// download re-rendered all of Home on each save to any of them (position writes, each
+    /// finished download).
+    @State private var hasDownloads = false
+
+    private func countDownloads() {
+        hasDownloads = ((try? modelContext.fetchCount(FetchDescriptor<DownloadedItem>())) ?? 0) > 0
+    }
     @State private var showSettings = false
     @Environment(\.openWindow) private var openWindow
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
@@ -74,17 +84,15 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         // Stretchy header — on pull-to-refresh overscroll, grows the hero
                         // image upward into the revealed space instead of showing a plain
-                        // black bar above it.
-                        GeometryReader { heroGeo in
-                            let stretch = max(0, heroGeo.frame(in: .named("homeScroll")).minY)
-                            heroBanner(imageH: heroH + stretch, screenW: screenW)
-                                .offset(y: -stretch)
-                        }
-                        .frame(height: heroH)
+                        // black bar above it. The stretch comes from the scroll geometry and is
+                        // 0 except while overscrolled, so scrolling doesn't rebuild the hero.
+                        heroBanner(imageH: heroH + heroStretch, screenW: screenW)
+                            .offset(y: -heroStretch)
+                            .frame(height: heroH, alignment: .top)
 
                         VStack(spacing: 0) {
                             if (mediaRepo.connectionFailed && !mediaRepo.isLoading) || model.isSlowFirstLoad {
-                                HomeConnectionBanner(hasDownloads: !downloadedItems.isEmpty)
+                                HomeConnectionBanner(hasDownloads: hasDownloads)
                             }
                             ForEach(orderedVisibleShelves) { shelf in
                                 if HomeModel.showsShelfSkeleton(shuffled: shuffleHomeShelves, mediaRepo: mediaRepo),
@@ -100,7 +108,11 @@ struct HomeView: View {
                         .padding(.top, 12)
                     }
                 }
-                .coordinateSpace(name: "homeScroll")
+                .onScrollGeometryChange(for: CGFloat.self) { geometry in
+                    max(0, -(geometry.contentOffset.y + geometry.contentInsets.top))
+                } action: { _, stretch in
+                    heroStretch = stretch
+                }
                 .screenBackground()
                 .ignoresSafeArea(edges: .top)
                 .navigationDestination(isPresented: $showSettings) {
@@ -114,7 +126,11 @@ struct HomeView: View {
                         .zoomNavigationTransition(id: item.id, in: zoomNamespace)
                 }
                 .navigationDestination(item: $model.detailItem) { item in
-                    MediaDetailView(item: item)
+                    if item.type == .boxSet {
+                        CollectionDetailView(collection: item)
+                    } else {
+                        MediaDetailView(item: item)
+                    }
                 }
                 .navigationDestination(item: $seeAllShelf) { shelf in
                     ShelfSeeAllView(title: shelf.title, items: shelf.items, isLandscape: shelf.isLandscape)
@@ -184,6 +200,8 @@ struct HomeView: View {
         .onChange(of: mediaRepo.connectionFailed) { wasFailed, isFailed in
             if isFailed && !wasFailed { showOfflinePrompt = true }
         }
+        .onChange(of: mediaRepo.connectionFailed, initial: true) { _, _ in countDownloads() }
+        .onChange(of: model.isSlowFirstLoad) { _, _ in countDownloads() }
         .alert(
             "Can't reach your server", isPresented: $showOfflinePrompt
         ) {
@@ -191,7 +209,7 @@ struct HomeView: View {
                 guard case .authenticated(let cred) = authManager.state else { return }
                 Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
             }
-            if !downloadedItems.isEmpty {
+            if hasDownloads {
                 Button("Watch Downloads Instead") { offlineModeEnabled = true }
             }
             Button("Dismiss", role: .cancel) {}

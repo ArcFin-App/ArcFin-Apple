@@ -2,6 +2,7 @@
 
 import Foundation
 import SwiftUI
+import Network
 import Nuke
 import AuthCore
 import JellyfinAPI
@@ -28,12 +29,16 @@ public enum ImageCache: Sendable {
             if let cached, cached.headers == headers { return cached.pipeline }
             var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
             config.dataCachePolicy = .automatic
+            let session = URLSessionConfiguration.default
             if !headers.isEmpty {
-                let session = URLSessionConfiguration.default
                 session.httpAdditionalHeaders = headers
-                session.urlCache = nil
-                config.dataLoader = DataLoader(configuration: session)
             }
+            session.urlCache = nil
+            // A poster asked for at cold launch, before the network path is up, otherwise fails
+            // at once and the card keeps its placeholder.
+            session.waitsForConnectivity = true
+            session.timeoutIntervalForResource = 30
+            config.dataLoader = DataLoader(configuration: session)
             let pipeline = ImagePipeline(configuration: config)
             cached = (headers, pipeline)
             return pipeline
@@ -64,9 +69,21 @@ public enum ImageCache: Sendable {
         shared.cache[ImageRequest(url: url)]?.image
     }
 
+    /// Waited on once, before the first load: waitsForConnectivity alone doesn't cover a
+    /// request made before the system has any network path to report.
+    private static let networkPathReady = Task {
+        await withCheckedContinuation { continuation in
+            PathWait(continuation: continuation).start(timeoutSeconds: 6)
+        }
+    }
+
     /// Loads through the shared pipeline: memory cache, then disk cache, then network, with
     /// decoding off the main thread and duplicate in-flight requests coalesced.
     public static func load(_ url: URL) async throws -> PlatformImage {
+        let pipeline = shared
+        if !pipeline.cache.containsCachedImage(for: ImageRequest(url: url)) {
+            await networkPathReady.value
+        }
         do {
             return try await shared.image(for: url)
         } catch {
@@ -76,6 +93,40 @@ public enum ImageCache: Sendable {
             let image = try await shared.image(for: original)
             shared.cache[ImageRequest(url: url)] = ImageContainer(image: image)
             return image
+        }
+    }
+
+    /// The connection failed (as opposed to the server answering with an error, such as a
+    /// title with no logo), so trying again a moment later can work.
+    public static func isConnectivityError(_ error: Error) -> Bool {
+        var underlying = error
+        if case ImagePipeline.Error.dataLoadingFailed(let inner) = error { underlying = inner }
+        guard let urlError = underlying as? URLError else { return false }
+        let codes: [URLError.Code] = [.notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotConnectToHost,
+                                      .cannotFindHost, .dnsLookupFailed, .dataNotAllowed, .internationalRoamingOff]
+        return codes.contains(urlError.code)
+    }
+
+    /// Downloads images into the disk cache the image views read, two at a time and without
+    /// decoding them, so a screen opened next shows them without waiting on the network.
+    public static func prefetch(urls: [URL]) {
+        let unique = Array(Set(urls))
+        guard !unique.isEmpty else { return }
+        PrefetcherBox.prefetcher(for: shared).startPrefetching(with: unique)
+    }
+
+    /// The prefetcher cancels its downloads when released, so one is kept per pipeline.
+    private enum PrefetcherBox {
+        private static let lock = NSLock()
+        nonisolated(unsafe) private static var cached: (pipeline: ImagePipeline, prefetcher: ImagePrefetcher)?
+
+        static func prefetcher(for pipeline: ImagePipeline) -> ImagePrefetcher {
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached, cached.pipeline === pipeline { return cached.prefetcher }
+            let prefetcher = ImagePrefetcher(pipeline: pipeline, destination: .diskCache)
+            cached = (pipeline, prefetcher)
+            return prefetcher
         }
     }
 
@@ -90,6 +141,43 @@ public enum ImageCache: Sendable {
                 }
             }
         }
+    }
+}
+
+/// Races a one-shot NWPathMonitor read against a timeout, resuming once — the same pattern
+/// as the HTTP clients' own path waits.
+private final class PathWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private let continuation: CheckedContinuation<Void, Never>
+    private let monitor = NWPathMonitor()
+
+    init(continuation: CheckedContinuation<Void, Never>) {
+        self.continuation = continuation
+    }
+
+    func start(timeoutSeconds: Double) {
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            self?.finish()
+        }
+        monitor.start(queue: DispatchQueue(label: "arcfin.imagecache.pathwait"))
+        Task {
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            self.finish()
+        }
+    }
+
+    private func finish() {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            return
+        }
+        finished = true
+        lock.unlock()
+        monitor.cancel()
+        continuation.resume()
     }
 }
 

@@ -195,9 +195,7 @@ struct MediaDetailView: View {
         // it would show the new title's name over the old one's details: start it over.
         .task(id: item.id) {
             if model.item.id != item.id { model = MediaDetailModel(item: item) }
-            await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: downloadManager,
-                             trailers: trailersEnabled ? .alongside(youTubeFallback: youtubeTrailersEnabled) : .skipped,
-                             seriesOpensOnSeasonInProgress: true)
+            await loadPage()
         }
         // Apart from load(): the first lookup reads every collection and playlist.
         .task(id: item.id) { await model.loadContainingSets(authManager: authManager) }
@@ -205,6 +203,12 @@ struct MediaDetailView: View {
         .onChange(of: model.selectedSeason) { _, season in
             model.showSeason(season, authManager: authManager)
         }
+    }
+
+    private func loadPage() async {
+        await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: downloadManager,
+                         trailers: trailersEnabled ? .alongside(youTubeFallback: youtubeTrailersEnabled) : .skipped,
+                         seriesOpensOnSeasonInProgress: true)
     }
 
     private func playerDismissed() {
@@ -226,6 +230,9 @@ struct MediaDetailView: View {
     @ViewBuilder
     private var detailContent: some View {
         DetailPlayButton(model: model)
+        if model.detailFailed {
+            DetailLoadFailedRow { Task { await loadPage() } }
+        }
         if model.hasPlayableTrailer(trailersEnabled: trailersEnabled, youTubeTrailersEnabled: youtubeTrailersEnabled) {
             DetailTrailerButton(model: model) { youTubeTrailer = $0 }
         }
@@ -268,10 +275,10 @@ struct MediaDetailView: View {
                 model.seerrRelatedSubtitle($0, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
             }, onSelect: openSeerrRelated)
         } else if !model.similarItems.isEmpty {
-            DetailTitleShelf(title: "More Like This", items: model.similarItems) { rec, poster in titleLink(rec, poster) }
+            DetailTitleShelf(title: Text("More Like This"), items: model.similarItems) { rec, poster in titleLink(rec, poster) }
         }
         if let jellyfinRecommended = model.jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
-            DetailTitleShelf(title: jellyfinRecommended.title, items: jellyfinRecommended.items) { rec, poster in titleLink(rec, poster) }
+            DetailTitleShelf(title: Text(verbatim: jellyfinRecommended.title), items: jellyfinRecommended.items) { rec, poster in titleLink(rec, poster) }
         }
         if !model.containingCollections.isEmpty {
             DetailSetShelf(title: model.containingCollections.count == 1 ? "Collection" : "Collections", sets: model.containingCollections) { openedCollection = $0 }

@@ -2,13 +2,16 @@
 
 import SwiftUI
 import JellyfinAPI
+import AuthCore
 
 struct LibraryView: View {
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(AuthManager.self) private var authManager
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var model = LibraryModel()
+    @State private var isSearchPresented = false
 
     private var isWide: Bool { horizontalSizeClass == .regular }
 
@@ -27,7 +30,9 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if model.searchQuery.isEmpty {
+                // Kept on screen while the field is active, so Recent Searches can show before
+                // anything is typed.
+                if model.searchQuery.isEmpty && !isSearchPresented {
                     browseContent
                 } else {
                     SearchView(query: $model.searchQuery)
@@ -40,7 +45,7 @@ struct LibraryView: View {
                 MusicDestination(route: route)
             }
             .navigationTitle("Browse")
-            .searchable(text: $model.searchQuery, prompt: "Movies, shows, music, live TV, people…")
+            .searchable(text: $model.searchQuery, isPresented: $isSearchPresented, prompt: "Movies, shows, music, live TV, people…")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: JellyfinLibrary.self) { library in
@@ -106,6 +111,8 @@ struct LibraryView: View {
                 // ── Your Libraries ──────────────────────────────────────
                 if !supportedLibraries.isEmpty {
                     librariesSection
+                } else {
+                    BrowseLibrariesStatus()
                 }
 
                 // ── Your Requests ───────────────────────────────────────
@@ -131,6 +138,11 @@ struct LibraryView: View {
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.top, 8)
             .padding(.bottom, 32)
+        }
+        // Libraries added or removed on the server since Home last loaded.
+        .refreshable {
+            guard case .authenticated(let cred) = authManager.state else { return }
+            await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: true)
         }
     }
 

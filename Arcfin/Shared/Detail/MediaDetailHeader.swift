@@ -177,7 +177,7 @@ private struct DetailMetaRow: View {
             }
             if let mins = detail?.runtimeMinutes {
                 Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).contentFont(.caption, design: .default)
-                Text("\(mins)m")
+                Text(DurationText.minutes(mins))
                     .contentFont(.caption, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -187,7 +187,7 @@ private struct DetailMetaRow: View {
                     Image(systemName: "star.fill")
                         .contentFont(.caption2)
                         .foregroundStyle(DT.Color.accent)
-                    Text(String(format: "%.1f", rating))
+                    Text(rating.ratingText)
                         .contentFont(.caption2, design: .default, weight: .bold)
                         .foregroundStyle(DT.Color.accent)
                 }
@@ -234,12 +234,10 @@ private struct DetailAwardsRow: View {
     var body: some View {
         let names = Array(Set(awards.map(\.name))).sorted()
         let label: String
-        if names.count == 1 {
-            label = "Won \(names[0])"
-        } else if names.count <= 3 {
-            label = "Won \(names.joined(separator: ", "))"
+        if names.count <= 3 {
+            label = String(localized: "Won \(names.formatted(.list(type: .and)))")
         } else {
-            label = "Won \(names.count) Awards"
+            label = String(localized: "Won \(names.count) Awards")
         }
         return HStack(alignment: .firstTextBaseline, spacing: 4) {
             Image(systemName: "trophy.fill")

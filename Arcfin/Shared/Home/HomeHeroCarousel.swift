@@ -45,12 +45,21 @@ final class HomeHeroCarousel {
         return items.filter { seen.insert($0.id).inserted }
     }
 
-    func play(_ item: MediaItem) {
-        let resumable = (item.userData?.playbackPositionTicks ?? 0) > 0 && !(item.userData?.played ?? false)
-        playbackRequest = HeroPlaybackRequest(
-            item: item,
-            startTicks: resumable ? (item.userData?.playbackPositionTicks ?? 0) : 0
-        )
+    /// A series in the hero (Recently Added, an admin's pick) plays its next episode, or its
+    /// first: the player can't play the series item itself.
+    func play(_ item: MediaItem, authManager: AuthManager) {
+        guard item.type == .series else {
+            let resumable = (item.userData?.playbackPositionTicks ?? 0) > 0 && !(item.userData?.played ?? false)
+            playbackRequest = HeroPlaybackRequest(
+                item: item,
+                startTicks: resumable ? (item.userData?.playbackPositionTicks ?? 0) : 0
+            )
+            return
+        }
+        Task {
+            guard let request = await HomeModel.seriesPlayback(item, authManager: authManager) else { return }
+            playbackRequest = HeroPlaybackRequest(item: request.item, startTicks: request.startTicks)
+        }
     }
 
     /// The rotation timer's tick.
@@ -75,13 +84,10 @@ final class HomeHeroCarousel {
         index = max(0, newCount - 1)
     }
 
-    /// Warms the URL cache with every hero logo, so flipping between slides shows each one
+    /// Warms the image cache with every hero logo, so flipping between slides shows each one
     /// straight away instead of waiting on a fresh request.
-    func prefetchLogos(_ items: [MediaItem], mediaRepo: MediaRepository) async {
-        for item in items {
-            guard let url = mediaRepo.logoURL(for: item) else { continue }
-            _ = try? await URLSession.shared.data(from: url)
-        }
+    func prefetchLogos(_ items: [MediaItem], mediaRepo: MediaRepository) {
+        mediaRepo.prefetch(urls: items.compactMap { mediaRepo.logoURL(for: $0) })
     }
 
     private func stopVideoBackdrop() {

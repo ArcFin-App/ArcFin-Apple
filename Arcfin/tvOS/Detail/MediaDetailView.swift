@@ -28,6 +28,7 @@ struct MediaDetailView: View {
     @Namespace private var focusNamespace
     @State private var episodeScrollID: String?
     @State private var minuteTick = Date()
+    @State private var pendingScopeChange: MediaDetailModel.WatchScopeChange?
 
     init(item: MediaItem) {
         self.item = item
@@ -71,8 +72,7 @@ struct MediaDetailView: View {
         // it would show the new title's name over the old one's details: start it over.
         .task(id: item.id) {
             if model.item.id != item.id { model = MediaDetailModel(item: item) }
-            await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: nil,
-                             trailers: .withPage, seriesOpensOnSeasonInProgress: false)
+            await loadPage()
         }
         .task(id: item.id) { await model.loadContainingSets(authManager: authManager) }
         .task {
@@ -108,6 +108,9 @@ struct MediaDetailView: View {
             .id(request.item.id)
         }
         .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
+        .watchScopeConfirmation($pendingScopeChange) { change in
+            model.markScopeWatched(change.scope, watched: change.watched, update: .reload, authManager: authManager)
+        }
         .appSheet(isPresented: $showSubtitleSearch, title: "Search Subtitles", systemImage: "magnifyingglass") {
             NavigationStack {
                 SubtitleSearchView(itemId: item.id)
@@ -119,6 +122,11 @@ struct MediaDetailView: View {
     }
 
     // MARK: - Showcase (above fold)
+
+    private func loadPage() async {
+        await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: nil,
+                         trailers: .withPage, seriesOpensOnSeasonInProgress: false)
+    }
 
     private func showcaseSection(screenW: CGFloat, screenH: CGFloat) -> some View {
         ZStack(alignment: .bottomLeading) {
@@ -203,7 +211,7 @@ struct MediaDetailView: View {
             }
             if let mins = model.detail?.runtimeMinutes {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
-                Text("\(mins)m").font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
+                Text(DurationText.minutes(mins)).font(.system(size: 23)).foregroundStyle(.white.opacity(0.7))
             }
             // Counts from the resume point; minuteTick redraws it each minute so it stays right
             // on a page left open. A TimelineView(.everyMinute) here redrew the whole page every
@@ -218,7 +226,7 @@ struct MediaDetailView: View {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
-                    Text(String(format: "%.1f", rating))
+                    Text(rating.ratingText)
                         .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
@@ -248,9 +256,8 @@ struct MediaDetailView: View {
     /// One entry → that award's own name; a few → joined; many → just the count.
     private var awardsLabel: String {
         let names = Array(Set(model.awards.map(\.name))).sorted()
-        if names.count == 1 { return "Won \(names[0])" }
-        if names.count <= 3 { return "Won \(names.joined(separator: ", "))" }
-        return "Won \(names.count) Awards"
+        if names.count <= 3 { return String(localized: "Won \(names.formatted(.list(type: .and)))") }
+        return String(localized: "Won \(names.count) Awards")
     }
 
     private var threeColumnLayout: some View {
@@ -268,7 +275,7 @@ struct MediaDetailView: View {
             if let total = item.type == .series ? nil : model.detail?.runTimeTicks,
                let position = playTarget.userData?.playbackPositionTicks, total > position {
                 let minutes = Int(Double(total - position) / 10_000_000 / 60)
-                let left = minutes >= 60 ? "\(minutes / 60)h \(minutes % 60)m" : "\(minutes)m"
+                let left = DurationText.minutes(minutes)
                 return "Resume · \(left) left"
             }
             return episode.map { "Resume \($0)" } ?? "Resume"
@@ -281,6 +288,12 @@ struct MediaDetailView: View {
         let isResumable = model.isResumable
         return VStack(spacing: 14) {
             Button {
+                // Play has focus before the page has loaded which episode is next; the series
+                // itself can't play, so look it up now.
+                if playTarget.type == .series {
+                    Task { playbackRequest = await HomeModel.seriesPlayback(item, authManager: authManager) }
+                    return
+                }
                 playbackRequest = Arcfin.PlaybackRequest(item: playTarget, startTicks: isResumable ? (playTarget.userData?.playbackPositionTicks ?? 0) : 0)
             } label: {
                 TVDetailButtonLabel(icon: "play.fill", text: playLabel, isPrimary: true)
@@ -386,7 +399,7 @@ struct MediaDetailView: View {
         }
     }
 
-    private func infoRow(label: String, value: String) -> some View {
+    private func infoRow(label: LocalizedStringKey, value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 23, weight: .bold))
@@ -404,10 +417,15 @@ struct MediaDetailView: View {
     // them. Each section brings its own 56 pt below it.
     private var belowFoldSection: some View {
         VStack(alignment: .leading, spacing: 0) {
+            if model.detailFailed {
+                DetailLoadFailedRow { Task { await loadPage() } }
+                    .padding(.horizontal, 80)
+                    .focusSection()
+            }
             // Room under the hero's buttons, which grow when focused, so they don't cover the heading.
             if !model.seasons.isEmpty { seriesSection.padding(.top, 48).trackSectionOffset().focusSection() }
             if let seriesItem = model.seriesItem, item.type == .episode {
-                itemRow("Series", [seriesItem]).trackSectionOffset().focusSection()
+                itemRow(Text("Series"), [seriesItem]).trackSectionOffset().focusSection()
             }
             if !model.trailers.isEmpty {
                 trailersSection.padding(.top, trailersFollowHero ? 48 : 0).trackSectionOffset().focusSection()
@@ -422,7 +440,7 @@ struct MediaDetailView: View {
                 similarSection.trackSectionOffset().focusSection()
             }
             if let jellyfinRecommended = model.jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
-                itemRow(jellyfinRecommended.title, jellyfinRecommended.items).trackSectionOffset().focusSection()
+                itemRow(Text(verbatim: jellyfinRecommended.title), jellyfinRecommended.items).trackSectionOffset().focusSection()
             }
             if !model.containingCollections.isEmpty {
                 setRow(model.containingCollections.count == 1 ? "Collection" : "Collections", model.containingCollections) { openedCollection = $0 }
@@ -438,11 +456,11 @@ struct MediaDetailView: View {
         }
     }
 
-    private func itemRow(_ title: String, _ items: [MediaItem]) -> some View {
+    private func itemRow(_ title: Text, _ items: [MediaItem]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle(title).padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                LazyHStack(spacing: 16) {
                     ForEach(items) { rec in
                         NavigationLink(value: rec) {
                             PosterCard(
@@ -465,11 +483,11 @@ struct MediaDetailView: View {
     }
 
     /// Collections or playlists, which open their own pages rather than a title's.
-    private func setRow(_ title: String, _ sets: [MediaItem], open: @escaping (MediaItem) -> Void) -> some View {
+    private func setRow(_ title: LocalizedStringKey, _ sets: [MediaItem], open: @escaping (MediaItem) -> Void) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle(title).padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                LazyHStack(spacing: 16) {
                     ForEach(sets) { set in
                         Button { open(set) } label: {
                             PosterCard(title: set.name, imageURL: mediaRepo.tvImageURL(for: set, fillWidth: 640))
@@ -498,7 +516,7 @@ struct MediaDetailView: View {
                     Button("Mark Series Watched") { markScopeWatched(.series, watched: true) }
                     Button("Mark Series Unwatched") { markScopeWatched(.series, watched: false) }
                 } label: {
-                    TVSeasonPickerLabel(name: "Watched", systemImage: "checkmark.circle")
+                    TVSeasonPickerLabel(name: Text("Watched"), systemImage: "checkmark.circle")
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -507,15 +525,21 @@ struct MediaDetailView: View {
                         Button(season.name) { model.selectedSeason = season }
                     }
                 } label: {
-                    TVSeasonPickerLabel(name: model.selectedSeason?.name ?? "Season")
+                    TVSeasonPickerLabel(name: model.selectedSeason.map { Text(verbatim: $0.name) } ?? Text("Season"))
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
             }
             .padding(.horizontal, 80)
 
+            if model.episodesLoadFailed {
+                EpisodesLoadFailedRow { model.retryEpisodes(authManager: authManager) }
+                    .padding(.horizontal, 80)
+                    .focusSection()
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
+                    LazyHStack(spacing: 16) {
                         ForEach(model.episodes) { ep in
                             let watched = ep.userData?.played == true
                             Button { selectedEpisode = ep } label: {
@@ -558,8 +582,23 @@ struct MediaDetailView: View {
         .padding(.bottom, 56)
     }
 
+    /// A title the library already has opens its own page, not Seerr's request page.
+    private func openSeerrRelated(_ related: SeerrItem) {
+        Task {
+            switch await model.destination(forRelated: related, authManager: authManager, seerrRepo: seerrRepo) {
+            case .library(let local): selectedEpisode = local
+            case .seerrPage(let item), .request(let item): openSeerrItem = item
+            }
+        }
+    }
+
     private func markScopeWatched(_ scope: MediaDetailModel.WatchScope, watched: Bool) {
-        model.markScopeWatched(scope, watched: watched, update: .reload, authManager: authManager)
+        let change = MediaDetailModel.WatchScopeChange(scope: scope, watched: watched)
+        if change.needsConfirmation {
+            pendingScopeChange = change
+        } else {
+            model.markScopeWatched(scope, watched: watched, update: .reload, authManager: authManager)
+        }
     }
 
     private var trailersFollowHero: Bool {
@@ -574,7 +613,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Trailers").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                LazyHStack(spacing: 16) {
                     ForEach(model.trailers) { trailer in
                         Button {
                             playbackRequest = Arcfin.PlaybackRequest(item: trailer, startTicks: 0)
@@ -601,7 +640,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Cast").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(alignment: .top, spacing: 16) {
+                LazyHStack(alignment: .top, spacing: 16) {
                     ForEach(d.cast) { person in
                         Button { selectedPerson = person } label: {
                             TVCastPersonCard(
@@ -638,7 +677,7 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("More Like This").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                LazyHStack(spacing: 16) {
                     ForEach(model.similarItems) { sim in
                         NavigationLink(value: sim) {
                             PosterCard(
@@ -664,9 +703,9 @@ struct MediaDetailView: View {
         VStack(alignment: .leading, spacing: 16) {
             sectionTitle("Recommended").padding(.horizontal, 80)
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
+                LazyHStack(spacing: 16) {
                     ForEach(model.seerrRelatedItems) { sim in
-                        Button { openSeerrItem = sim } label: {
+                        Button { openSeerrRelated(sim) } label: {
                             PosterCard(
                                 title: sim.title,
                                 subtitle: sim.year,
@@ -732,23 +771,28 @@ struct MediaDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 4))
     }
 
-    private func sectionTitle(_ title: String) -> some View {
-        Text(title)
+    private func sectionTitle(_ title: LocalizedStringKey) -> some View {
+        sectionTitle(Text(title))
+    }
+
+    private func sectionTitle(_ title: Text) -> some View {
+        title
             .font(.system(size: 28, weight: .bold))
             .foregroundStyle(DT.Color.textPrimary)
+            .accessibilityAddTraits(.isHeader)
     }
 }
 
 // MARK: - Season picker label
 
 private struct TVSeasonPickerLabel: View {
-    let name: String
+    let name: Text
     var systemImage = "chevron.down"
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
         HStack(spacing: 6) {
-            Text(name)
+            name
                 .font(.system(size: 23, weight: .semibold))
                 .foregroundStyle(isFocused ? .white : DT.Color.accent)
             Image(systemName: systemImage)

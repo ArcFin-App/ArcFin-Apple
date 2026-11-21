@@ -774,9 +774,11 @@ public struct JellyfinMediaClient: Sendable {
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.timeoutInterval = 30
         let (data, _) = try await URLSession.arcfin.data(for: req)
-        let items = try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+        // Only the two fields used: the whole library decoded into full items was a large
+        // decode on every refresh.
+        let items = try JSONDecoder().decode(ProviderIdsPage.self, from: data).items
         return Set(items.compactMap { item in
-            item.tmdbId.map { Self.libraryKey(tmdbId: $0, isSeries: item.type == .series) }
+            item.providerIds?["Tmdb"].flatMap(Int.init).map { Self.libraryKey(tmdbId: $0, isSeries: item.type == "Series") }
         })
     }
 
@@ -1385,6 +1387,21 @@ private struct TaggedCollectionsPage: Decodable {
     }
     let items: [Collection]
     enum CodingKeys: String, CodingKey { case items = "Items" }
+}
+
+private struct ProviderIdsPage: Decodable {
+    struct Entry: Decodable {
+        let type: String?
+        let providerIds: [String: String]?
+        enum CodingKeys: String, CodingKey {
+            case type = "Type"
+            case providerIds = "ProviderIds"
+        }
+    }
+    let items: [Entry]
+    enum CodingKeys: String, CodingKey {
+        case items = "Items"
+    }
 }
 
 struct ItemsPage: Decodable {
