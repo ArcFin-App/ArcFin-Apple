@@ -29,7 +29,7 @@ struct TVMusicNowPlaying: View {
     var body: some View {
         Group {
             if let song = player.current {
-                HStack(alignment: panel == nil ? .center : .top, spacing: 80) {
+                HStack(alignment: .center, spacing: 80) {
                     songColumn(song)
                         .frame(width: panel == nil ? nil : 720, alignment: .leading)
                         // Back from the column on the right always finds the controls.
@@ -46,8 +46,11 @@ struct TVMusicNowPlaying: View {
                     }
                 }
                 .padding(.horizontal, 100)
-                .padding(.vertical, 60)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: panel == nil ? .center : .topLeading)
+                // Clear of the tab bar along the top, and centred in what's left with or
+                // without a column, so turning one on doesn't move everything.
+                .padding(.top, 150)
+                .padding(.bottom, 60)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .background { backdrop(MusicAPI.artworkURL(song, width: 600)) }
                 .task(id: song.id) {
                     lyrics = nil
@@ -67,14 +70,15 @@ struct TVMusicNowPlaying: View {
     private func songColumn(_ song: MusicSong) -> some View {
         let wide = panel == nil
         let layout = wide ? AnyLayout(HStackLayout(alignment: .center, spacing: 80))
-                          : AnyLayout(VStackLayout(alignment: .leading, spacing: 36))
+                          : AnyLayout(VStackLayout(alignment: .leading, spacing: 28))
         return layout {
             TVMusicArtwork(url: MusicAPI.artworkURL(song, width: 1000))
                 .overlay { MusicArtworkVisualizer(bars: 36, spacing: 3, cornerRadius: DT.Radius.card) }
-                .frame(width: wide ? 640 : 380, height: wide ? 640 : 380)
+                .frame(width: wide ? 600 : 280, height: wide ? 600 : 280)
                 .shadow(color: .black.opacity(0.5), radius: 30, y: 16)
                 .focusable(false)
-            VStack(alignment: .leading, spacing: 32) {
+            // Tighter beside a column, so the cover, song and controls fit under the tab bar.
+            VStack(alignment: .leading, spacing: wide ? 32 : 22) {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(verbatim: song.name).font(.title.weight(.bold)).lineLimit(2)
                     if let artist = song.artistLine {
