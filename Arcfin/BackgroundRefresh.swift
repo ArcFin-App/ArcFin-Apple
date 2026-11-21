@@ -39,7 +39,8 @@ nonisolated enum BackgroundRefresh {
     /// instead of announcing its whole library.
     static func resetState() {
         let defaults = UserDefaults.standard
-        for key in [seenFilmsKey, seenEpisodesKey, lastActivityKey, seerrStatusKey, announcedWatchlistKey] {
+        for key in [seenFilmsKey, seenEpisodesKey, lastActivityKey, seerrStatusKey, announcedWatchlistKey,
+                    NotificationManager.sentRequestNoticesKey] {
             defaults.removeObject(forKey: key)
         }
     }

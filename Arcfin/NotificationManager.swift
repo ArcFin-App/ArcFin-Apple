@@ -126,7 +126,7 @@ enum NotificationManager {
         await send(title: String(localized: "Now Available"), body: title, identifier: identifier, route: .discover)
     }
 
-    private static let sentRequestNoticesKey = "arcfin.notify.sentRequestNotices"
+    nonisolated static let sentRequestNoticesKey = "arcfin.notify.sentRequestNotices"
 
     /// Nil when Request Updates is off, or this change of this request was already announced:
     /// the in-app Seerr refresh and the background check can both find the same one.
