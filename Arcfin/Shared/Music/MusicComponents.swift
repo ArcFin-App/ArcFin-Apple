@@ -199,17 +199,21 @@ struct MusicListState<Item: Identifiable & Sendable>: View {
     let empty: LocalizedStringKey
 
     var body: some View {
-        if !list.hasLoaded {
-            ProgressView().frame(maxWidth: .infinity, minHeight: 200)
-        } else if list.items.isEmpty, list.hasFailed {
-            ContentUnavailableView {
-                Label("Can’t Load Music", systemImage: "wifi.exclamationmark")
-            } actions: {
-                Button("Try Again") { Task { await list.reload() } }
+        Group {
+            if !list.hasLoaded {
+                ProgressView().frame(maxWidth: .infinity, minHeight: 200)
+            } else if list.items.isEmpty, list.hasFailed {
+                ContentUnavailableView {
+                    Label("Can’t Load Music", systemImage: "wifi.exclamationmark")
+                } actions: {
+                    Button("Try Again") { Task { await list.reload() } }
+                }
+            } else if list.items.isEmpty {
+                ContentUnavailableView(empty, systemImage: "music.note")
             }
-        } else if list.items.isEmpty {
-            ContentUnavailableView(empty, systemImage: "music.note")
         }
+        // In a list the line under it would start at the centred text, partway across.
+        .listRowSeparator(.hidden)
     }
 }
 
