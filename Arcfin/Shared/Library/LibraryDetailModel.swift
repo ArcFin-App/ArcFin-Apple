@@ -49,6 +49,9 @@ final class LibraryDetailModel {
     /// Set by the letter index; the grid scrolls (on Apple TV, moves focus) to this title.
     var jumpTarget: MediaItem.ID?
     private var isJumping = false
+    /// The newest letter asked for while a jump or page load was still running; dragging
+    /// along the index asks for every letter it passes.
+    private var pendingJumpLetter: String?
     private let pageSize = 100
     /// Every filter/sort change spawns its own uncancelled fetchFirstPage() Task (see the
     /// onChange handlers in each LibraryDetailView) — nothing stopped an older, still-in-flight
@@ -404,22 +407,39 @@ final class LibraryDetailModel {
         let fetched = try? await fetchPage(credential: cred, header: header, startIndex: serverOffset)
         isLoadingMore = false
         // The filters or sort changed while this page loaded: it belongs to the old query.
-        guard generation == fetchGeneration else { return }
-        guard let fetched else {
-            loadMoreFailed = true
-            return
+        if generation == fetchGeneration {
+            if let fetched {
+                items.append(contentsOf: fetched.items)
+                serverOffset = fetched.nextOffset
+                totalItems = fetched.total
+            } else {
+                loadMoreFailed = true
+            }
         }
-        items.append(contentsOf: fetched.items)
-        serverOffset = fetched.nextOffset
-        totalItems = fetched.total
+        await runPendingJump(authManager: authManager)
     }
 
     /// The server counts the titles that sort before the letter, which is where it starts in
     /// the grid; the grid loads through that point if it hasn't yet, then jumps there.
     func jump(to letter: String, authManager: AuthManager) async {
-        guard let cred = authManager.state.credential, !isJumping, !isLoadingMore else { return }
+        guard let cred = authManager.state.credential else { return }
+        guard !isJumping, !isLoadingMore else {
+            pendingJumpLetter = letter
+            return
+        }
         isJumping = true
-        defer { isJumping = false }
+        await performJump(to: letter, credential: cred, authManager: authManager)
+        isJumping = false
+        await runPendingJump(authManager: authManager)
+    }
+
+    private func runPendingJump(authManager: AuthManager) async {
+        guard let next = pendingJumpLetter, !isJumping, !isLoadingMore else { return }
+        pendingJumpLetter = nil
+        await jump(to: next, authManager: authManager)
+    }
+
+    private func performJump(to letter: String, credential cred: ServerCredential, authManager: AuthManager) async {
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         let generation = fetchGeneration
         var index = 0
