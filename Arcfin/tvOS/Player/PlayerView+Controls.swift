@@ -96,38 +96,34 @@ extension PlayerView {
         .focusSection()
     }
 
-    @ViewBuilder
-    private var subtitleTimingMenu: some View {
-        if !model.subtitleCues.isEmpty {
-            Menu {
-                Button("Later by 0.5 s") { model.subtitleDelay += 0.5 }
-                Button("Earlier by 0.5 s") { model.subtitleDelay -= 0.5 }
-                Button("Later by 0.1 s") { model.subtitleDelay += 0.1 }
-                Button("Earlier by 0.1 s") { model.subtitleDelay -= 0.1 }
-                Button("Reset", role: .destructive) { model.subtitleDelay = 0 }
-                    .disabled(model.subtitleDelay == 0)
-            } label: {
-                Label(
-                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)",
-                    systemImage: "clock.arrow.2.circlepath")
-            }
-        }
+    private var subtitleTimingEntry: TVMenuEntry {
+        let title = model.subtitleDelay == 0
+            ? String(localized: "Subtitle Timing")
+            : String(localized: "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)")
+        return TVMenuEntry(title: title, systemImage: "clock.arrow.2.circlepath", children: [
+            TVMenuEntry(title: String(localized: "Later by 0.5 s")) { model.subtitleDelay += 0.5 },
+            TVMenuEntry(title: String(localized: "Earlier by 0.5 s")) { model.subtitleDelay -= 0.5 },
+            TVMenuEntry(title: String(localized: "Later by 0.1 s")) { model.subtitleDelay += 0.1 },
+            TVMenuEntry(title: String(localized: "Earlier by 0.1 s")) { model.subtitleDelay -= 0.1 },
+            TVMenuEntry(title: String(localized: "Reset"), isDestructive: true, isDisabled: model.subtitleDelay == 0) {
+                model.subtitleDelay = 0
+            },
+        ])
     }
 
-    private var sleepTimerMenu: some View {
-        Menu {
-            Button("Off") { model.setSleepTimer(minutes: nil) }
-            ForEach([15, 30, 45, 60], id: \.self) { minutes in
-                Button("\(minutes) minutes") { model.setSleepTimer(minutes: minutes) }
-            }
-            if item.type == .episode {
-                Button("End of Episode") { model.setSleepTimer(minutes: nil, atEndOfItem: true) }
-            }
-        } label: {
-            Label(
-                model.sleepTimerEndsAt != nil || model.sleepAtEndOfItem ? "Sleep Timer (On)" : "Sleep Timer",
-                systemImage: "moon.zzz")
+    private var sleepTimerEntry: TVMenuEntry {
+        var choices = [TVMenuEntry(title: String(localized: "Off")) { model.setSleepTimer(minutes: nil) }]
+        choices += [15, 30, 45, 60].map { (minutes: Int) in
+            TVMenuEntry(title: String(localized: "\(minutes) minutes")) { model.setSleepTimer(minutes: minutes) }
         }
+        if item.type == .episode {
+            choices.append(TVMenuEntry(title: String(localized: "End of Episode")) {
+                model.setSleepTimer(minutes: nil, atEndOfItem: true)
+            })
+        }
+        let isOn = model.sleepTimerEndsAt != nil || model.sleepAtEndOfItem
+        return TVMenuEntry(title: isOn ? String(localized: "Sleep Timer (On)") : String(localized: "Sleep Timer"),
+                           systemImage: "moon.zzz", children: choices)
     }
 
     /// Every button already has a 44 pt target; the gaps keep thumbs off the neighbouring one.
@@ -260,14 +256,8 @@ extension PlayerView {
                 TVPlayerControlLabel(systemImage: "info.circle", size: 14, diameter: 32)
             }
             .accessibilityLabel("Media Info")
-            Menu {
-                tvMoreMenuContent
-            } label: {
-                TVPlayerControlLabel(systemImage: "ellipsis", size: 14, diameter: 32)
-            }
-            .menuStyle(.button)
-            .menuIndicator(.hidden)
-            .accessibilityLabel("More options")
+            TVMenuButton(systemImage: "ellipsis", accessibilityLabel: String(localized: "More options"),
+                         entries: moreMenuEntries) { model.handleMenuVisibilityChange($0) }
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
@@ -363,33 +353,32 @@ extension PlayerView {
     }
 
     /// What the touch and Mac players keep in their More menu and have no button of their own here.
-    @ViewBuilder
-    private var tvMoreMenuContent: some View {
+    private var moreMenuEntries: [TVMenuEntry] {
+        var entries: [TVMenuEntry] = []
         if !model.castMembers.isEmpty {
-            Button { openCastPanel() } label: {
-                Label("Cast & Characters", systemImage: "person.2")
-            }
+            entries.append(TVMenuEntry(title: String(localized: "Cast & Characters"), systemImage: "person.2") { openCastPanel() })
         }
         // SyncPlay keeps everyone at the same position; a channel has none to share.
         if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive {
-            Button { showSyncPlayMenu = true } label: {
-                Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
-            }
+            entries.append(TVMenuEntry(title: String(localized: "SyncPlay"),
+                                       systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2") {
+                showSyncPlayMenu = true
+            })
         }
-        if !model.isLive { sharePlayMenuItem }
-        Button { withAnimation { audioOnly.toggle() } } label: {
-            Label(audioOnly ? "Show Video" : "Audio Only", systemImage: audioOnly ? "video" : "waveform")
-        }
+        if !model.isLive, let sharePlayEntry { entries.append(sharePlayEntry) }
+        entries.append(TVMenuEntry(title: audioOnly ? String(localized: "Show Video") : String(localized: "Audio Only"),
+                                   systemImage: audioOnly ? "video" : "waveform") {
+            withAnimation { audioOnly.toggle() }
+        })
         if let info = model.playbackInfo, info.versions.count > 1 {
-            Picker(selection: Binding(get: { info.mediaSourceId }, set: { model.changeVersion($0) })) {
-                ForEach(info.versions) { Text($0.name).tag($0.id) }
-            } label: {
-                Label("Version", systemImage: "square.stack")
-            }
-            .pickerStyle(.menu)
+            entries.append(TVMenuEntry(title: String(localized: "Version"), systemImage: "square.stack",
+                                       children: info.versions.map { version in
+                TVMenuEntry(title: version.name, isSelected: version.id == info.mediaSourceId) { model.changeVersion(version.id) }
+            }))
         }
-        subtitleTimingMenu
-        sleepTimerMenu
+        if !model.subtitleCues.isEmpty { entries.append(subtitleTimingEntry) }
+        entries.append(sleepTimerEntry)
+        return entries
     }
 
     private var scrubber: some View {
@@ -533,17 +522,14 @@ extension PlayerView {
 
     /// In a FaceTime call SharePlay starts straight away; otherwise the share sheet offers it.
     /// Apple TV has no share sheet, so there it only shows during a call.
-    @ViewBuilder
-    var sharePlayMenuItem: some View {
+    var sharePlayEntry: TVMenuEntry? {
         if sharePlay.isActive {
-            Button(role: .destructive) { sharePlay.leave() } label: {
-                Label(sharePlay.participantCount > 1 ? "Leave SharePlay (\(sharePlay.participantCount))" : "Leave SharePlay",
-                      systemImage: "shareplay.slash")
-            }
+            let title = sharePlay.participantCount > 1
+                ? String(localized: "Leave SharePlay (\(sharePlay.participantCount))") : String(localized: "Leave SharePlay")
+            return TVMenuEntry(title: title, systemImage: "shareplay.slash", isDestructive: true) { sharePlay.leave() }
         } else if groupState.isEligibleForGroupSession {
-            Button { sharePlay.start(item) } label: {
-                Label("SharePlay", systemImage: "shareplay")
-            }
+            return TVMenuEntry(title: String(localized: "SharePlay"), systemImage: "shareplay") { sharePlay.start(item) }
         }
+        return nil
     }
 }
