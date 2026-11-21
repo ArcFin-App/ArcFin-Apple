@@ -101,13 +101,13 @@ enum QuickActions {
     static func update(resumeItemID: String?, title: String?) {
         var items = [
             UIApplicationShortcutItem(
-                type: downloadsType, localizedTitle: "Downloads", localizedSubtitle: nil,
+                type: downloadsType, localizedTitle: String(localized: "Downloads"), localizedSubtitle: nil,
                 icon: UIApplicationShortcutIcon(systemImageName: "arrow.down.circle"), userInfo: nil)
         ]
         if let resumeItemID, let title {
             items.insert(
                 UIApplicationShortcutItem(
-                    type: resumeType, localizedTitle: "Continue Watching", localizedSubtitle: title,
+                    type: resumeType, localizedTitle: String(localized: "Continue Watching"), localizedSubtitle: title,
                     icon: UIApplicationShortcutIcon(systemImageName: "play.fill"),
                     userInfo: ["itemID": resumeItemID as NSString]),
                 at: 0)

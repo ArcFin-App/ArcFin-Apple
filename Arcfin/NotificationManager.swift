@@ -98,11 +98,11 @@ enum NotificationManager {
 
     static func notifyRequestDeclined(title: String, requestID: Int? = nil) async {
         guard let identifier = requestIdentifier("seerr-declined", requestID: requestID) else { return }
-        await send(title: "Request Declined", body: title, identifier: identifier, route: .discover)
+        await send(title: String(localized: "Request Declined"), body: title, identifier: identifier, route: .discover)
     }
 
     static func notifyWatchlistAvailable(title: String) async {
-        await send(title: "On Your Watchlist: Now Available", body: title, identifier: "watchlist-available.\(UUID().uuidString)", route: .discover)
+        await send(title: String(localized: "On Your Watchlist: Now Available"), body: title, identifier: "watchlist-available.\(UUID().uuidString)", route: .discover)
     }
 
     static func notifyDownloadComplete(title: String) async {
@@ -118,12 +118,12 @@ enum NotificationManager {
 
     static func notifyRequestApproved(title: String, requestID: Int? = nil) async {
         guard let identifier = requestIdentifier("seerr-approved", requestID: requestID) else { return }
-        await send(title: "Request Approved", body: title, identifier: identifier, route: .discover)
+        await send(title: String(localized: "Request Approved"), body: title, identifier: identifier, route: .discover)
     }
 
     static func notifyRequestAvailable(title: String, requestID: Int? = nil) async {
         guard let identifier = requestIdentifier("seerr-available", requestID: requestID) else { return }
-        await send(title: "Now Available", body: title, identifier: identifier, route: .discover)
+        await send(title: String(localized: "Now Available"), body: title, identifier: identifier, route: .discover)
     }
 
     private static let sentRequestNoticesKey = "arcfin.notify.sentRequestNotices"
