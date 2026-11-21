@@ -456,41 +456,47 @@ public actor SeerrHTTPClient {
         // every one of those rows came back as "Unknown".
         let maxConcurrentDetailFetches = 4
         var items = [SeerrRequestItem?](repeating: nil, count: raw.count)
-        await withTaskGroup(of: (Int, SeerrRequestItem).self) { group in
-            func fetchItem(_ index: Int) async -> (Int, SeerrRequestItem) {
+        // The cache is read and written only here, on the actor, never from the child tasks:
+        // they ran at the same time and corrupted it.
+        var misses: [Int] = []
+        for (index, r) in raw.enumerated() {
+            if let cached = titleDetails[Self.detailKey(r)], now.timeIntervalSince(cached.fetched) < Self.titleDetailLifetime {
+                items[index] = r.toItem(detail: cached.item)
+            } else {
+                misses.append(index)
+            }
+        }
+        await withTaskGroup(of: (Int, SeerrItem?).self) { group in
+            var next = 0
+            func addFetch() {
+                let index = misses[next]
                 let r = raw[index]
-                let key = "\(r.media.mediaType ?? "movie"):\(r.media.tmdbId ?? -1)"
-                if let cached = titleDetails[key], now.timeIntervalSince(cached.fetched) < Self.titleDetailLifetime {
-                    return (index, r.toItem(detail: cached.item))
+                next += 1
+                group.addTask {
+                    do {
+                        return (index, try await self.mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType))
+                    } catch {
+                        let nsError = error as NSError
+                        Telemetry.logger(category: "SeerrHTTPClient").error(
+                            "getRequests: detail fetch failed for tmdbId=\(r.media.tmdbId ?? -1, privacy: .public) mediaType=\(r.media.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                        )
+                        return (index, nil)
+                    }
                 }
-                var detail: SeerrItem?
-                do {
-                    detail = try await mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
-                    if let detail { titleDetails[key] = (detail, now) }
-                } catch {
-                    let nsError = error as NSError
-                    Telemetry.logger(category: "SeerrHTTPClient").error(
-                        "getRequests: detail fetch failed for tmdbId=\(r.media.tmdbId ?? -1, privacy: .public) mediaType=\(r.media.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
-                    )
-                }
-                return (index, r.toItem(detail: detail))
             }
-            var nextIndex = 0
-            while nextIndex < min(maxConcurrentDetailFetches, raw.count) {
-                let index = nextIndex
-                group.addTask { await fetchItem(index) }
-                nextIndex += 1
-            }
-            for await (index, item) in group {
-                items[index] = item
-                if nextIndex < raw.count {
-                    let next = nextIndex
-                    group.addTask { await fetchItem(next) }
-                    nextIndex += 1
-                }
+            while next < min(maxConcurrentDetailFetches, misses.count) { addFetch() }
+            for await (index, detail) in group {
+                let r = raw[index]
+                if let detail { titleDetails[Self.detailKey(r)] = (detail, now) }
+                items[index] = r.toItem(detail: detail)
+                if next < misses.count { addFetch() }
             }
         }
         return items.compactMap { $0 }
+    }
+
+    private static func detailKey(_ r: SeerrRequestResponse) -> String {
+        "\(r.media.mediaType ?? "movie"):\(r.media.tmdbId ?? -1)"
     }
 
     private func mediaDetail(tmdbId: Int?, mediaType: String?) async throws -> SeerrItem? {
