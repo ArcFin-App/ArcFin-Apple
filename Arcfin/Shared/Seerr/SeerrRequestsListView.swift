@@ -109,10 +109,12 @@ struct SeerrRequestsListView: View {
                         Label("View Details", systemImage: "info.circle")
                     }
                     SeerrRequestReviewMenu(request: req, review: review)
-                    Button(role: .destructive) {
-                        Task { try? await seerrRepo.cancelRequest(id: req.id) }
-                    } label: {
-                        Label("Remove Request", systemImage: "trash")
+                    if seerrRepo.canRemove(req) {
+                        Button(role: .destructive) {
+                            review.removing = req
+                        } label: {
+                            Label("Remove Request", systemImage: "trash")
+                        }
                     }
                 }, preview: {
                     requestRowPreview(req)

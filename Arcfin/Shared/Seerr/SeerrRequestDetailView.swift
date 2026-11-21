@@ -29,7 +29,9 @@ struct SeerrRequestDetailView: View {
                 SeerrRequestReviewButtons(request: current, review: review)
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.sm)
-                removeRequestButton
+                if seerrRepo.canRemove(current) {
+                    removeRequestButton
+                }
                 if let key = detail?.trailerYouTubeKey {
                     SeerrTrailerButton(videoID: key, title: request.mediaTitle)
                 }
@@ -368,7 +370,7 @@ struct SeerrRequestDetailView: View {
                 try await seerrRepo.cancelRequest(id: request.id)
                 dismiss()
             } catch {
-                errorMessage = "Couldn't remove request: \(error.localizedDescription)"
+                errorMessage = String(localized: "Seerr didn't remove “\(request.mediaTitle)”. Check your connection and try again.")
                 isCancelling = false
             }
         }
