@@ -424,7 +424,7 @@ struct PlayerView: View {
                 if dragAxis == .volume { dragAxis = nil }
             }
         }
-        await model.setup()
+        await model.startSetup()
         // Opened with the sound already off: the observer above only hears changes.
         if AVAudioSession.sharedInstance().outputVolume < 0.01 { model.soundMutedChanged(true) }
     }

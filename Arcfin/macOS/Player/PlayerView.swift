@@ -178,7 +178,7 @@ struct PlayerView: View {
         .onAppear { connectModel() }
         .task {
             if model.handOffToDefaultPlayer() { closePlayer(); return }
-            if !model.isAskingToResume { await model.setup() }
+            if !model.isAskingToResume { await model.startSetup() }
         }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
@@ -192,7 +192,7 @@ struct PlayerView: View {
             Button("Cancel", role: .cancel) { closePlayer() }
         }
         .onChange(of: model.isAskingToResume) { _, asking in
-            if !asking, model.resumeAnswered { Task { await model.setup() } }
+            if !asking, model.resumeAnswered { Task { await model.startSetup() } }
         }
         .onDisappear {
             Task { await teardown() }

@@ -645,7 +645,21 @@ final class PlayerModel {
         }
     }
 
-    func setup() async {
+    /// Runs setup() as a task the model holds, so closing the player stops it wherever it has
+    /// got to, however it was started (opening, the resume question, Try Again, the AV1 retry).
+    func startSetup() async {
+        setupTask?.cancel()
+        let task = Task { await setup() }
+        setupTask = task
+        await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
+    }
+
+    /// Closed, or started over, since this setup began.
+    private func setupAbandoned(_ generation: Int) -> Bool {
+        isClosed || Task.isCancelled || generation != setupGeneration
+    }
+
+    private func setup() async {
         guard !isClosed else { return }
         // Before the connection check below, which downloads running alongside would skew.
         if !holdsPlayerActivity {
@@ -671,6 +685,7 @@ final class PlayerModel {
         if quality == .auto {
             loadingStage = "Checking your connection…"
             await primeAutoLadder(credential: credential, authHeader: authHeader)
+            guard !setupAbandoned(generation) else { return }
         }
         loadingStage = "Contacting the server…"
         do {
@@ -758,6 +773,11 @@ final class PlayerModel {
             ) {
                 info = reInfo
             }
+            // Assigned after close, nothing would report it stopped or close its tuner stream.
+            guard !setupAbandoned(generation) else {
+                if let liveStreamId = info.liveStreamId { closeLiveStream(liveStreamId) }
+                return
+            }
             playbackInfo = info
             if isLive { followLiveProgram() }
             // PlaybackInfo's own TrickplayInfo field isn't reliably populated by Jellyfin —
@@ -784,9 +804,13 @@ final class PlayerModel {
             applyEngineOptions()
             // Armed before the load: a conversion that never starts can hold the load itself.
             watchAV1Conversion(startedFrom: resumeFrom)
+            guard !setupAbandoned(generation) else { return }
             do {
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             } catch where player is AetherEnginePlayer {
+                // A load cut short by closing (or by starting over) isn't Aether failing, and
+                // falling back would open a second stream nobody stops.
+                guard !setupAbandoned(generation) else { throw CancellationError() }
                 player = legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
                 if !decodesNatively {
                     info = try await client.getPlaybackInfo(
@@ -794,9 +818,16 @@ final class PlayerModel {
                         quality: qualityCap(for: quality),
                         audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
                     )
+                    guard !setupAbandoned(generation) else {
+                        if let liveStreamId = info.liveStreamId, liveStreamId != playbackInfo?.liveStreamId {
+                            closeLiveStream(liveStreamId)
+                        }
+                        throw CancellationError()
+                    }
                     playbackInfo = info
                     await loadSubtitleCues(from: info, credential: credential)
                 }
+                guard !setupAbandoned(generation) else { throw CancellationError() }
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
             guard !isClosed else {
@@ -804,7 +835,7 @@ final class PlayerModel {
                 return
             }
             // The AV1 watchdog started over while this load hung; that attempt owns the player now.
-            guard generation == setupGeneration else { return }
+            guard !setupAbandoned(generation) else { return }
             await player.play()
             playStartedAt = Date()
             applyEngineOptions()
@@ -1183,6 +1214,7 @@ final class PlayerModel {
         liveProgramTask?.cancel()
         av1Watchdog?.cancel()
         cancelUpNextCountdown()
+        setupTask?.cancel()
         if holdsPlayerActivity {
             holdsPlayerActivity = false
             PlayerActivity.shared.closed()
@@ -1419,7 +1451,7 @@ final class PlayerModel {
     /// The error screen's Try Again: starts over from asking the server for a stream.
     func retry() {
         errorMessage = nil
-        Task { await setup() }
+        Task { await startSetup() }
     }
 
     /// The track Show Subtitles When Muted turned on, to turn off again when the sound returns.
@@ -1461,6 +1493,7 @@ final class PlayerModel {
     @ObservationIgnored private var playStartedAt: Date?
     @ObservationIgnored private var av1Watchdog: Task<Void, Never>?
     @ObservationIgnored private var setupGeneration = 0
+    @ObservationIgnored private var setupTask: Task<Void, Never>?
     @ObservationIgnored private var holdsPlayerActivity = false
 
     /// A server whose AV1 encoder doesn't exist never sends a first segment, and the engine
@@ -1489,7 +1522,7 @@ final class PlayerModel {
         AV1Encoding.markFailed(on: credential.baseURL)
         log.notice("AV1 conversion failed on \(credential.baseURL.host ?? "", privacy: .public); using HEVC from now on")
         errorMessage = nil
-        Task { await setup() }
+        Task { await startSetup() }
         return true
     }
 
