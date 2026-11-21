@@ -583,6 +583,16 @@ struct MediaDetailView: View {
         .padding(.bottom, 56)
     }
 
+    /// A title the library already has opens its own page, not Seerr's request page.
+    private func openSeerrRelated(_ related: SeerrItem) {
+        Task {
+            switch await model.destination(forRelated: related, authManager: authManager, seerrRepo: seerrRepo) {
+            case .library(let local): selectedEpisode = local
+            case .seerrPage(let item), .request(let item): openSeerrItem = item
+            }
+        }
+    }
+
     private func markScopeWatched(_ scope: MediaDetailModel.WatchScope, watched: Bool) {
         let change = MediaDetailModel.WatchScopeChange(scope: scope, watched: watched)
         if change.needsConfirmation {
@@ -696,7 +706,7 @@ struct MediaDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: 16) {
                     ForEach(model.seerrRelatedItems) { sim in
-                        Button { openSeerrItem = sim } label: {
+                        Button { openSeerrRelated(sim) } label: {
                             PosterCard(
                                 title: sim.title,
                                 subtitle: sim.year,

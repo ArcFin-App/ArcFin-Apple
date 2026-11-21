@@ -2,9 +2,11 @@
 
 import SwiftUI
 import JellyfinAPI
+import AuthCore
 
 struct LibraryView: View {
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(AuthManager.self) private var authManager
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -136,6 +138,11 @@ struct LibraryView: View {
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.top, 8)
             .padding(.bottom, 32)
+        }
+        // Libraries added or removed on the server since Home last loaded.
+        .refreshable {
+            guard case .authenticated(let cred) = authManager.state else { return }
+            await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: true)
         }
     }
 

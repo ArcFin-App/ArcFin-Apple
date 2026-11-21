@@ -26,6 +26,8 @@ final class LibraryDetailModel {
     private(set) var entryIds: [String: String] = [:]
     var playlistPlayback: MediaDetailView.PlaybackRequest?
     var showAddTitles = false
+    /// A whole show's episodes waiting for the person to confirm removing them.
+    var pendingGroupRemoval: [MediaItem]?
     var showRename = false
     var renameText = ""
     var confirmDeletePlaylist = false
@@ -67,6 +69,7 @@ final class LibraryDetailModel {
     /// stale response for an earlier, narrower selection last, silently blanking out the
     /// correct one.
     private var fetchGeneration = 0
+    private var filterReloadTask: Task<Void, Never>?
 
     // Filters
     private(set) var availableGenres: [String] = []
@@ -328,6 +331,17 @@ final class LibraryDetailModel {
     /// filter or sort option changes, not just on first appearance.
     func reload(authManager: AuthManager, mediaRepo: MediaRepository) async {
         await fetchFirstPage(authManager: authManager, mediaRepo: mediaRepo)
+    }
+
+    /// Filter changes come in bursts (a slider dragged across its range, Clear All resetting
+    /// five filters): only the last of a burst fetches.
+    func filtersChanged(authManager: AuthManager, mediaRepo: MediaRepository) {
+        filterReloadTask?.cancel()
+        filterReloadTask = Task {
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            await reload(authManager: authManager, mediaRepo: mediaRepo)
+        }
     }
 
     /// Remembers the sort for this library, and reloads unless load() just restored it.

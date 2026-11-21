@@ -112,11 +112,23 @@ struct LibraryDetailView: View {
                 extraFilters: $model.extraFilters, sortOptions: model.sortOptions
             )
         }
-        .onChange(of: model.selectedGenres) { _, _ in reload() }
-        .onChange(of: model.selectedYears) { _, _ in reload() }
-        .onChange(of: model.extraFilters) { _, _ in reload() }
-        .onChange(of: model.watchedFilter) { _, _ in reload() }
-        .onChange(of: model.favoritesOnly) { _, _ in reload() }
+        .confirmationDialog(
+            Text("Remove \(model.pendingGroupRemoval?.count ?? 0) Episodes from Playlist"),
+            isPresented: Binding(get: { model.pendingGroupRemoval != nil },
+                                 set: { if !$0 { model.pendingGroupRemoval = nil } }),
+            titleVisibility: .visible,
+            presenting: model.pendingGroupRemoval
+        ) { episodes in
+            Button("Remove", role: .destructive) {
+                model.removeFromPlaylist(episodes, authManager: authManager, mediaRepo: mediaRepo)
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .onChange(of: model.selectedGenres) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.selectedYears) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.extraFilters) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.watchedFilter) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.favoritesOnly) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
         .fullScreenCover(item: $model.playlistPlayback, onDismiss: {
             PlayQueue.clear()
             reload()
@@ -282,7 +294,7 @@ struct LibraryDetailView: View {
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
         .contextMenu {
-            Button(role: .destructive) { model.removeFromPlaylist(episodes, authManager: authManager, mediaRepo: mediaRepo) } label: {
+            Button(role: .destructive) { model.pendingGroupRemoval = episodes } label: {
                 Label("Remove \(episodes.count) Episodes from Playlist", systemImage: "minus.circle")
             }
         }

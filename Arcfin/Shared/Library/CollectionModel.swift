@@ -85,13 +85,29 @@ final class CollectionModel {
         }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         async let fetchedDetail = client.getItemDetail(credential: cred, authHeader: header, itemId: collection.id)
-        async let fetchedItems = client.getLibraryItems(
-            credential: cred, authHeader: header, libraryId: collection.id, limit: 200,
-            recursive: false, sortBy: "PremiereDate,ProductionYear,SortName"
-        )
+        async let fetchedItems = allItems(in: collection.id, credential: cred, header: header)
         detail = try? await fetchedDetail
-        if let fetched = try? await fetchedItems { items = fetched.items }
+        if let fetched = try? await fetchedItems { items = fetched }
         isLoading = false
+    }
+
+    /// Every title, a page at a time: one page of 200 cut large collections off silently, and
+    /// Play All and Shuffle with them.
+    private func allItems(in collectionId: String, credential cred: ServerCredential, header: String) async throws -> [MediaItem] {
+        var items: [MediaItem] = []
+        var offset = 0
+        var total = 0
+        repeat {
+            let page = try await client.getLibraryItems(
+                credential: cred, authHeader: header, libraryId: collectionId, startIndex: offset, limit: 200,
+                recursive: false, sortBy: "PremiereDate,ProductionYear,SortName"
+            )
+            items += page.items
+            total = page.total
+            offset += page.consumed
+            if page.consumed == 0 { break }
+        } while offset < total
+        return items
     }
 
     func loadHeroTint(_ collection: MediaItem, mediaRepo: MediaRepository) async {

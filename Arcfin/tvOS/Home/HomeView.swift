@@ -10,6 +10,7 @@ struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
@@ -214,6 +215,12 @@ struct HomeView: View {
             await model.loadNowAvailable(HomeShelfLoader.recentlyAvailable(seerrRepo.requests), authManager: authManager)
         }
         .onDisappear { if shuffleHomeShelves { model.reshuffleShelves() } }
+        // Apple TV has no pull to refresh: Home catches up when the app comes back to the
+        // front (at most once a minute, as MediaRepository's load allows).
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { _ = await model.loadShelves(force: false, shelves: orderedShelves, authManager: authManager, mediaRepo: mediaRepo) }
+        }
     }
 
     // MARK: - Load
