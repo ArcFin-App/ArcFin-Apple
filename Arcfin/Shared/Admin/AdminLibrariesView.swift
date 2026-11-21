@@ -90,7 +90,7 @@ struct AdminLibrariesView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(library.name).foregroundStyle(DT.Color.textPrimary)
                             Text([AdminLibrariesModel.kindName(library.collectionType),
-                                  library.locations.count == 1 ? String(localized: "1 folder") : String(localized: "\(library.locations.count) folders")]
+                                  String(localized: "\(library.locations.count) folders")]
                                 .joined(separator: " · "))
                                 .font(.system(.caption))
                                 .foregroundStyle(DT.Color.textSecondary)
