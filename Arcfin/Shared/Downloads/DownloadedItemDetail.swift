@@ -285,7 +285,7 @@ struct DownloadedItemDetailPage: View {
         }
     }
 
-    private func detailRow(_ label: String, _ value: String) -> some View {
+    private func detailRow(_ label: LocalizedStringKey, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(label)
                 .font(.system(.footnote, weight: .semibold))

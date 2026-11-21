@@ -40,10 +40,10 @@ struct DownloadsContent<Manage: View>: View {
                         if !downloadManager.activeItemTitles.isEmpty { downloadingSection }
                         if !model.isSelecting {
                             if mergeContinueAndUpNext {
-                                if !(inProgress + upNext).isEmpty { continueSection(String(localized: "Continue Watching"), inProgress + upNext) }
+                                if !(inProgress + upNext).isEmpty { continueSection("Continue Watching", inProgress + upNext) }
                             } else {
-                                if !inProgress.isEmpty { continueSection(String(localized: "Continue Watching"), inProgress) }
-                                if !upNext.isEmpty { continueSection(String(localized: "Up Next"), upNext) }
+                                if !inProgress.isEmpty { continueSection("Continue Watching", inProgress) }
+                                if !upNext.isEmpty { continueSection("Up Next", upNext) }
                             }
                         }
                         if !seriesGroups.isEmpty { showsSection }
@@ -100,7 +100,7 @@ struct DownloadsContent<Manage: View>: View {
             .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous).stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1))
     }
 
-    private func sectionHeader(_ title: String, count: Int? = nil) -> some View {
+    private func sectionHeader(_ title: LocalizedStringKey, count: Int? = nil) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 6) {
             Text(title)
                 .font(DT.Font.cardTitle)
@@ -210,7 +210,7 @@ struct DownloadsContent<Manage: View>: View {
 
     // MARK: - Continue watching
 
-    private func continueSection(_ title: String, _ shelf: [DownloadedItem]) -> some View {
+    private func continueSection(_ title: LocalizedStringKey, _ shelf: [DownloadedItem]) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             sectionHeader(title)
             ScrollView(.horizontal, showsIndicators: false) {
