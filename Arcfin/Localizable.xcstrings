@@ -4162,6 +4162,7 @@
       }
     },
     "Cannot reach server — check the address and try again." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -5058,6 +5059,7 @@
       }
     },
     "Couldn't authorize that code." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9410,6 +9412,7 @@
       }
     },
     "Invalid server URL." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -9474,6 +9477,7 @@
       }
     },
     "Invalid username or password." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12162,6 +12166,7 @@
       }
     },
     "No server found with that name." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12226,6 +12231,7 @@
       }
     },
     "Not connected to the internet." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -12674,6 +12680,7 @@
       }
     },
     "Nothing answered at that address and port." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -14658,6 +14665,7 @@
       }
     },
     "Quick Connect is not enabled on this server." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -14786,6 +14794,7 @@
       }
     },
     "Quick Connect request failed (server returned HTTP %lld). If Quick Connect is enabled in Dashboard > General, check the server URL and try again." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -14850,6 +14859,7 @@
       }
     },
     "Quick Connect sign-in failed." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16450,6 +16460,7 @@
       }
     },
     "Server addresses start with http:// or https://, not %@://." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16834,6 +16845,7 @@
       }
     },
     "Sign-in failed (HTTP %lld)." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -17986,6 +17998,7 @@
       }
     },
     "The address answered, but not as a Jellyfin server." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -18242,6 +18255,7 @@
       }
     },
     "The server answered with HTTP %lld." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -18306,6 +18320,7 @@
       }
     },
     "The server didn't answer in time." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -18434,6 +18449,7 @@
       }
     },
     "The server's certificate isn't trusted." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -19586,6 +19602,7 @@
       }
     },
     "Unexpected server response." : {
+      "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
