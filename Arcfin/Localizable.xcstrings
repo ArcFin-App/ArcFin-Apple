@@ -62264,6 +62264,70 @@
         }
       }
     },
+    "Enter your server's address first. These headers are only sent to that server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gib zuerst die Adresse deines Servers ein. Diese Header werden nur an diesen Server gesendet."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primero introduce la dirección de tu servidor. Estas cabeceras solo se envían a ese servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saisissez d’abord l’adresse de votre serveur. Ces en-têtes ne sont envoyés qu’à ce serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inserisci prima l’indirizzo del tuo server. Queste intestazioni vengono inviate solo a quel server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先にサーバのアドレスを入力してください。これらのヘッダはそのサーバにのみ送信されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "먼저 서버 주소를 입력하세요. 이 헤더는 해당 서버로만 전송됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voer eerst het adres van je server in. Deze headers worden alleen naar die server gestuurd."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primeiro digite o endereço do seu servidor. Esses cabeçalhos só são enviados para esse servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сначала введите адрес сервера. Эти заголовки отправляются только на этот сервер."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请先输入服务器地址。这些标头只会发送到该服务器。"
+          }
+        }
+      }
+    },
     "Enter the address of your Jellyfin server, or pick one found on your network." : {
       "localizations" : {
         "de" : {

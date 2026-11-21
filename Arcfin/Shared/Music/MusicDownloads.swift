@@ -432,7 +432,7 @@ final class MusicDownloads {
                                                        container: song.container,
                                                        bitrateCap: MusicSettings.downloadBitrate) else { return nil }
         var request = URLRequest(url: url)
-        for (name, value) in CustomHTTPHeaders.current { request.setValue(value, forHTTPHeaderField: name) }
+        for (name, value) in CustomHTTPHeaders.headers(for: url) { request.setValue(value, forHTTPHeaderField: name) }
         // The system carries on with it in the background, where the Wi-Fi check can't run.
         if !UserDefaults.standard.bool(forKey: MusicSettings.downloadOnMobileDataKey) {
             request.allowsCellularAccess = false
