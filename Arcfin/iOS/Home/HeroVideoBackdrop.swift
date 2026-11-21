@@ -64,6 +64,8 @@ final class LoopingPlayerUIView: UIView {
         item.add(videoOutput)
         let player = AVPlayer(playerItem: item)
         player.isMuted = muted
+        // A backdrop: never sent to AirPlay, where it would take over from music or a video.
+        player.allowsExternalPlayback = false
         player.actionAtItemEnd = loops ? .none : .pause
         player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player

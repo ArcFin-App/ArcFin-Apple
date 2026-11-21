@@ -54,6 +54,8 @@ final class LoopingPlayerNSView: NSView {
         item.add(videoOutput)
         let player = AVPlayer(playerItem: item)
         player.isMuted = true
+        // A backdrop: never sent to AirPlay, where it would take over from music or a video.
+        player.allowsExternalPlayback = false
         player.actionAtItemEnd = .none
         player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player
