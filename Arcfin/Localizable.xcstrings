@@ -2241,6 +2241,70 @@
         }
       }
     },
+    "Admin Tools" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Admin-Tools"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herramientas de administración"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outils d’administration"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Strumenti di amministrazione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理ツール"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "관리 도구"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beheertools"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferramentas de admin"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Инструменты администратора"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理工具"
+          }
+        }
+      }
+    },
     "After the restart, this device may not reach the server: Arcfin connects to it at %@." : {
       "localizations" : {
         "de" : {
@@ -2753,6 +2817,70 @@
         }
       }
     },
+    "Approve Requests" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Anfragen genehmigen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprobar solicitudes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approuver les demandes"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Approva le richieste"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リクエストを承認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "요청 승인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aanvragen goedkeuren"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aprovar solicitações"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Одобрение запросов"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "批准请求"
+          }
+        }
+      }
+    },
     "Arcfin can't send any of these until you allow notifications." : {
       "localizations" : {
         "de" : {
@@ -3261,6 +3389,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "因为你喜欢《%@》"
+          }
+        }
+      }
+    },
+    "Better Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bessere Downloads"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descargas mejoradas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Des téléchargements améliorés"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download migliorati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロードがさらに便利に"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 좋아진 다운로드"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Betere downloads"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads melhores"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Улучшенные загрузки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更好的下载体验"
           }
         }
       }
@@ -3905,6 +4097,70 @@
         }
       }
     },
+    "CarPlay and Apple Watch" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay und Apple Watch"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay y Apple Watch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay et Apple Watch"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay e Apple Watch"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay と Apple Watch"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay 및 Apple Watch"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay en Apple Watch"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay e Apple Watch"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay и Apple Watch"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay 和 Apple Watch"
+          }
+        }
+      }
+    },
     "Chapter %lld" : {
       "localizations" : {
         "de" : {
@@ -4093,6 +4349,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在检查连接…"
+          }
+        }
+      }
+    },
+    "Choose the audio tracks and subtitles to download, and Arcfin keeps your queue and progress if the app is closed mid-download." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle die Audiospuren und Untertitel zum Herunterladen, und Arcfin behält deine Warteschlange und den Fortschritt, auch wenn die App mitten im Download geschlossen wird."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige las pistas de audio y los subtítulos que quieres descargar, y Arcfin conserva tu cola y el progreso aunque la app se cierre a mitad de la descarga."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez les pistes audio et les sous-titres à télécharger : Arcfin conserve votre file d’attente et la progression même si l’app est fermée en plein téléchargement."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli le tracce audio e i sottotitoli da scaricare: Arcfin mantiene la coda e i progressi anche se l’app viene chiusa durante il download."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロードするオーディオトラックと字幕を選べます。ダウンロード中にアプリを閉じても、Arcfin はキューと進行状況を保持します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드할 오디오 트랙과 자막을 선택하세요. 다운로드 도중 앱이 닫혀도 Arcfin이 대기열과 진행 상황을 유지합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kies welke audiosporen en ondertitels je downloadt, en Arcfin onthoudt je wachtrij en voortgang als de app halverwege een download wordt gesloten."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha as faixas de áudio e as legendas para baixar, e o Arcfin mantém sua fila e o progresso mesmo se o app for fechado no meio do download."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выбирайте звуковые дорожки и субтитры для загрузки — Arcfin сохранит очередь и прогресс, даже если приложение закроется посреди загрузки."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择要下载的音轨和字幕；即使下载中途关闭了 App，Arcfin 也会保留你的下载队列和进度。"
           }
         }
       }
@@ -7169,6 +7489,134 @@
         }
       }
     },
+    "Download songs, albums, playlists or everything by an artist, and keep favourites downloaded automatically." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lade Songs, Alben, Playlists oder alles von einem Künstler herunter und lass Favoriten automatisch heruntergeladen halten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descarga canciones, álbumes, listas o todo lo de un artista, y mantén tus favoritos descargados automáticamente."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Téléchargez des morceaux, des albums, des listes de lecture ou tout un artiste, et gardez vos favoris téléchargés automatiquement."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scarica brani, album, playlist o tutto di un artista e tieni i preferiti scaricati automaticamente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曲、アルバム、プレイリスト、またはアーティストの全曲をダウンロードでき、お気に入りは自動でダウンロードしておけます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "노래, 앨범, 재생 목록 또는 아티스트의 모든 곡을 다운로드하고, 즐겨찾기는 자동으로 다운로드된 상태로 유지하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download nummers, albums, afspeellijsten of alles van een artiest, en houd favorieten automatisch gedownload."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baixe músicas, álbuns, playlists ou tudo de um artista e mantenha seus favoritos baixados automaticamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загружайте песни, альбомы, плейлисты или всё от одного исполнителя, а избранное пусть загружается автоматически."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载歌曲、专辑、播放列表或某位艺人的全部作品，并让收藏内容自动保持下载。"
+          }
+        }
+      }
+    },
+    "Download songs, albums, playlists or everything by an artist, and play them from the music bar without a connection." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lade Songs, Alben, Playlists oder alles von einem Künstler herunter und spiele sie ohne Verbindung über die Musikleiste ab."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descarga canciones, álbumes, listas o todo lo de un artista y reprodúcelos desde la barra de música sin conexión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Téléchargez des morceaux, des albums, des listes de lecture ou tout un artiste, et écoutez-les depuis la barre musicale sans connexion."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scarica brani, album, playlist o tutto di un artista e ascoltali dalla barra della musica anche senza connessione."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "曲、アルバム、プレイリスト、またはアーティストの全曲をダウンロードして、接続がなくてもミュージックバーから再生できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "노래, 앨범, 재생 목록 또는 아티스트의 모든 곡을 다운로드하고 연결 없이도 음악 바에서 재생하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download nummers, albums, afspeellijsten of alles van een artiest, en speel ze zonder verbinding af via de muziekbalk."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Baixe músicas, álbuns, playlists ou tudo de um artista e ouça pela barra de música mesmo sem conexão."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загружайте песни, альбомы, плейлисты или всё от одного исполнителя и слушайте их из музыкальной панели без подключения."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载歌曲、专辑、播放列表或某位艺人的全部作品，无需联网即可从音乐栏播放。"
+          }
+        }
+      }
+    },
     "Downloading…" : {
       "localizations" : {
         "de" : {
@@ -8321,6 +8769,134 @@
         }
       }
     },
+    "Hundreds of fixes: every screen now follows your language, VoiceOver reads more, new-episode alerts arrive in the background, and the player and downloads are sturdier." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hunderte Korrekturen: Jeder Bildschirm folgt jetzt deiner Sprache, VoiceOver liest mehr vor, Hinweise auf neue Folgen kommen im Hintergrund an, und Player und Downloads sind robuster."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cientos de correcciones: todas las pantallas siguen ahora tu idioma, VoiceOver lee más cosas, los avisos de nuevos episodios llegan en segundo plano y el reproductor y las descargas son más sólidos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Des centaines de correctifs : chaque écran suit désormais votre langue, VoiceOver lit davantage, les alertes de nouveaux épisodes arrivent en arrière-plan, et le lecteur comme les téléchargements sont plus fiables."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Centinaia di correzioni: ogni schermata ora segue la tua lingua, VoiceOver legge di più, gli avvisi dei nuovi episodi arrivano in background e il player e i download sono più solidi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数百件の修正：すべての画面が言語設定に従うようになり、VoiceOver の読み上げ範囲が広がり、新しいエピソードの通知がバックグラウンドで届き、プレーヤーとダウンロードの安定性も向上しました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "수백 가지 수정: 이제 모든 화면이 설정한 언어를 따르고, VoiceOver가 더 많은 내용을 읽어 주며, 새 에피소드 알림이 백그라운드에서도 도착하고, 플레이어와 다운로드가 더 안정적입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Honderden verbeteringen: elk scherm volgt nu je taal, VoiceOver leest meer voor, meldingen voor nieuwe afleveringen komen op de achtergrond binnen en de speler en downloads zijn steviger."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Centenas de correções: todas as telas agora seguem seu idioma, o VoiceOver lê mais coisas, os alertas de novos episódios chegam em segundo plano e o player e os downloads estão mais estáveis."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Сотни исправлений: все экраны теперь на вашем языке, VoiceOver озвучивает больше, уведомления о новых сериях приходят в фоне, а плеер и загрузки стали надёжнее."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "数百项修复：每个界面现在都会跟随你的语言，VoiceOver 能朗读更多内容，新剧集提醒可在后台送达，播放器和下载也更稳定了。"
+          }
+        }
+      }
+    },
+    "If you run the server, the Admin tab shows who's watching, and lets you manage users, libraries, scheduled tasks and backups." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn du den Server betreibst, zeigt dir der Admin-Tab, wer gerade schaut, und du kannst Benutzer, Mediatheken, geplante Aufgaben und Backups verwalten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si administras el servidor, la pestaña Administración muestra quién está viendo algo y te permite gestionar usuarios, bibliotecas, tareas programadas y copias de seguridad."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si vous gérez le serveur, l’onglet Admin montre qui regarde quoi et vous permet de gérer les utilisateurs, les bibliothèques, les tâches planifiées et les sauvegardes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se gestisci il server, la scheda Admin ti mostra chi sta guardando e ti permette di gestire utenti, librerie, attività pianificate e backup."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバを運営しているなら、「管理」タブで視聴中のユーザを確認し、ユーザ、ライブラリ、スケジュールされたタスク、バックアップを管理できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서버를 운영한다면 관리 탭에서 누가 시청 중인지 확인하고 사용자, 보관함, 예약된 작업, 백업을 관리할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beheer je de server, dan zie je op het tabblad Beheer wie er kijkt, en kun je gebruikers, bibliotheken, geplande taken en back-ups beheren."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se você administra o servidor, a aba Admin mostra quem está assistindo e permite gerenciar usuários, bibliotecas, tarefas agendadas e backups."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Если вы управляете сервером, на вкладке «Админ» видно, кто сейчас смотрит, и можно управлять пользователями, медиатеками, задачами по расписанию и резервными копиями."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果你是服务器管理员，“管理”标签页会显示谁正在观看，还能管理用户、媒体库、计划任务和备份。"
+          }
+        }
+      }
+    },
     "In Production" : {
       "localizations" : {
         "de" : {
@@ -9149,6 +9725,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "就像这样。"
+          }
+        }
+      }
+    },
+    "Listen Together" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gemeinsam hören"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escuchad juntos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écouter ensemble"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ascoltate insieme"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一緒に聴く"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "함께 듣기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Samen luisteren"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouçam juntos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Слушайте вместе"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "一起聆听"
           }
         }
       }
@@ -10237,6 +10877,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Arcfin 中的音乐"
+          }
+        }
+      }
+    },
+    "Music Offline" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musik offline"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Música sin conexión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musique hors ligne"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Musica offline"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "オフラインでミュージック"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "오프라인 음악"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muziek offline"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Música offline"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Музыка офлайн"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "离线听音乐"
           }
         }
       }
@@ -12289,6 +12993,70 @@
         }
       }
     },
+    "On a FaceTime call, choose SharePlay in Now Playing and everyone hears the same song at the same time, each from their own account." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle während eines FaceTime-Anrufs in „Läuft gerade“ SharePlay, und alle hören gleichzeitig denselben Song, jeweils mit dem eigenen Konto."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "En una llamada de FaceTime, elige SharePlay en En reproducción y todos escucharán la misma canción a la vez, cada uno desde su propia cuenta."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pendant un appel FaceTime, choisissez SharePlay dans À l’écoute : tout le monde entend le même morceau au même moment, chacun avec son propre compte."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durante una chiamata FaceTime, scegli SharePlay in In riproduzione e tutti ascolteranno lo stesso brano nello stesso momento, ciascuno con il proprio account."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FaceTime 通話中に「再生中」で SharePlay を選ぶと、全員がそれぞれ自分のアカウントで同じ曲を同時に聴けます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "FaceTime 통화 중 지금 재생 중에서 SharePlay를 선택하면 모두가 각자의 계정으로 같은 노래를 동시에 들을 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kies tijdens een FaceTime-gesprek SharePlay in Nu aan het spelen, en iedereen hoort tegelijk hetzelfde nummer, elk via een eigen account."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Em uma ligação do FaceTime, escolha SharePlay em Reproduzindo e todos ouvem a mesma música ao mesmo tempo, cada um com sua própria conta."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Во время звонка FaceTime выберите SharePlay в разделе «Исполняется», и все услышат одну и ту же песню одновременно, каждый со своей учётной записи."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 FaceTime 通话中，在“正在播放”中选择同播共享，大家就能用各自的账户同时收听同一首歌。"
+          }
+        }
+      }
+    },
     "On a watching day" : {
       "localizations" : {
         "de" : {
@@ -12669,6 +13437,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "本季有一集下载失败：%@"
+          }
+        }
+      }
+    },
+    "Open Arcfin on an Apple TV and your iPhone offers to sign it in, no typing needed." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne Arcfin auf einem Apple TV, und dein iPhone bietet an, es anzumelden – ganz ohne Tippen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre Arcfin en un Apple TV y tu iPhone se ofrecerá a iniciar sesión por ti, sin tener que escribir nada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrez Arcfin sur une Apple TV et votre iPhone propose de la connecter, sans rien saisir."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apri Arcfin su un Apple TV e il tuo iPhone si offre di accedere, senza dover digitare nulla."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple TV で Arcfin を開くと、iPhone がサインインを提案します。入力は不要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple TV에서 Arcfin을 열면 iPhone이 로그인을 제안합니다. 입력할 필요가 없습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Arcfin op een Apple TV en je iPhone biedt aan hem in te loggen, zonder typen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abra o Arcfin em uma Apple TV e seu iPhone oferece para iniciar a sessão nela, sem precisar digitar nada."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Откройте Arcfin на Apple TV, и iPhone предложит выполнить вход — ничего вводить не нужно."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 Apple TV 上打开 Arcfin，你的 iPhone 就会提示帮它登录，无需输入任何内容。"
           }
         }
       }
@@ -13057,6 +13889,70 @@
         }
       }
     },
+    "Play your music in CarPlay, and control what's playing from your Apple Watch." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spiele deine Musik in CarPlay ab und steuere die Wiedergabe mit deiner Apple Watch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reproduce tu música en CarPlay y controla lo que suena desde tu Apple Watch."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Écoutez votre musique dans CarPlay et contrôlez la lecture depuis votre Apple Watch."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ascolta la tua musica in CarPlay e controlla ciò che è in riproduzione dal tuo Apple Watch."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay で音楽を再生し、再生中の曲を Apple Watch から操作できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "CarPlay에서 음악을 재생하고, Apple Watch에서 지금 재생 중인 항목을 제어하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Speel je muziek af in CarPlay en bedien wat er speelt vanaf je Apple Watch."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouça suas músicas no CarPlay e controle o que está tocando pelo Apple Watch."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Слушайте музыку в CarPlay и управляйте воспроизведением с Apple Watch."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在 CarPlay 中播放音乐，并用 Apple Watch 控制正在播放的内容。"
+          }
+        }
+      }
+    },
     "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC." : {
       "localizations" : {
         "de" : {
@@ -13117,6 +14013,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "播放一直卡顿，降低画质也没有改善——此来源可能无法用当前播放引擎正常播放。请前往“设置 > 播放 > 播放引擎”切换到 VLC。"
+          }
+        }
+      }
+    },
+    "Polished Everywhere" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rundum verfeinert"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pulido en todas partes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peaufiné partout"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rifinito ovunque"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すみずみまで改良"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "곳곳이 더 매끄럽게"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overal verfijnd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refinado em tudo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Улучшения повсюду"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全面打磨"
           }
         }
       }
@@ -14977,6 +15937,70 @@
         }
       }
     },
+    "Seerr admins can approve or decline requests from the request's page." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seerr-Admins können Anfragen direkt auf der Seite der Anfrage genehmigen oder ablehnen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Los administradores de Seerr pueden aprobar o rechazar solicitudes desde la página de cada solicitud."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les administrateurs Seerr peuvent approuver ou refuser une demande depuis sa page."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gli amministratori di Seerr possono approvare o rifiutare le richieste dalla pagina della richiesta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seerr の管理者は、リクエストのページから承認または却下できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seerr 관리자는 요청 페이지에서 바로 요청을 승인하거나 거절할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seerr-beheerders kunnen aanvragen goedkeuren of afwijzen vanaf de pagina van de aanvraag."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Administradores do Seerr podem aprovar ou recusar solicitações na página de cada solicitação."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Администраторы Seerr могут одобрять или отклонять запросы прямо на странице запроса."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seerr 管理员可以在请求页面直接批准或拒绝请求。"
+          }
+        }
+      }
+    },
     "Seerr didn't accept the sign-in. Try again, or check Settings › Plugins › Seerr." : {
       "localizations" : {
         "de" : {
@@ -15297,6 +16321,70 @@
         }
       }
     },
+    "Set Up Apple TV with Your iPhone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple TV mit dem iPhone einrichten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configura el Apple TV con tu iPhone"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configurez l’Apple TV avec votre iPhone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configura Apple TV con il tuo iPhone"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone で Apple TV を設定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone으로 Apple TV 설정하기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apple TV instellen met je iPhone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configure a Apple TV com seu iPhone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Настройка Apple TV с iPhone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用 iPhone 设置 Apple TV"
+          }
+        }
+      }
+    },
     "Show · adds %lld episodes" : {
       "localizations" : {
         "de" : {
@@ -15485,6 +16573,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "已看完的剧集"
+          }
+        }
+      }
+    },
+    "Sign In with Your iPhone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit dem iPhone anmelden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inicia sesión con tu iPhone"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connectez-vous avec votre iPhone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accedi con il tuo iPhone"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone でサインイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone으로 로그인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inloggen met je iPhone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entre com seu iPhone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Вход с помощью iPhone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用 iPhone 登录"
           }
         }
       }
@@ -15997,6 +17149,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "请先发起 FaceTime 通话，然后选择“同播共享”。"
+          }
+        }
+      }
+    },
+    "Steadier Picture" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ruhigeres Bild"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imagen más estable"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Image plus stable"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Immagine più stabile"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "より安定した映像"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "더 안정적인 화면"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stabieler beeld"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Imagem mais estável"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Стабильнее картинка"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "画面更稳定"
           }
         }
       }
@@ -17085,6 +18301,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "服务器的证书不受信任。"
+          }
+        }
+      }
+    },
+    "The TV stays in the video's mode between episodes, and the player's menus no longer flicker." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Fernseher bleibt zwischen Folgen im Modus des Videos, und die Menüs des Players flackern nicht mehr."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tele se mantiene en el modo del vídeo entre episodios y los menús del reproductor ya no parpadean."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le téléviseur reste dans le mode de la vidéo d’un épisode à l’autre, et les menus du lecteur ne scintillent plus."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il televisore resta nella modalità del video tra un episodio e l’altro e i menu del player non sfarfallano più."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "エピソードが切り替わってもテレビは映像に合ったモードのままになり、プレーヤーのメニューもちらつかなくなりました。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "에피소드 사이에도 TV가 영상에 맞는 모드를 유지하며, 플레이어 메뉴가 더 이상 깜박이지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De tv blijft tussen afleveringen in de modus van de video, en de menu’s van de speler flikkeren niet meer."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A TV continua no modo do vídeo entre um episódio e outro, e os menus do player não piscam mais."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Телевизор остаётся в режиме видео между сериями, а меню плеера больше не мерцают."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在剧集之间，电视会保持与视频匹配的模式，播放器菜单也不再闪烁。"
           }
         }
       }
@@ -18625,6 +19905,70 @@
         }
       }
     },
+    "Watch your server's channels, browse the guide, and set recordings from a programme's details." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Schau die Sender deines Servers, stöbere im Programm und plane Aufnahmen direkt in den Details einer Sendung."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mira los canales de tu servidor, explora la guía y programa grabaciones desde los detalles de un programa."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Regardez les chaînes de votre serveur, parcourez le guide et programmez des enregistrements depuis la fiche d’un programme."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Guarda i canali del tuo server, sfoglia la guida e programma le registrazioni dai dettagli di un programma."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバのチャンネルを視聴したり、番組表を見たり、番組の詳細から録画を予約したりできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서버의 채널을 시청하고, 편성표를 둘러보고, 프로그램 상세 정보에서 녹화를 예약하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kijk naar de zenders van je server, blader door de gids en plan opnames vanuit de details van een programma."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Assista aos canais do seu servidor, navegue pelo guia e agende gravações nos detalhes de um programa."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Смотрите каналы своего сервера, листайте телегид и ставьте записи прямо из описания передачи."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "观看服务器上的频道，浏览节目指南，并在节目详情中设置录制。"
+          }
+        }
+      }
+    },
     "Watched %lld times" : {
       "localizations" : {
         "de" : {
@@ -19201,6 +20545,70 @@
         }
       }
     },
+    "Your iPhone offers to sign this Apple TV in when it's nearby, or scan the code on screen." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dein iPhone bietet an, dieses Apple TV anzumelden, wenn es in der Nähe ist – oder scanne den Code auf dem Bildschirm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu iPhone se ofrece a iniciar sesión en este Apple TV cuando está cerca, o escanea el código de la pantalla."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre iPhone propose de connecter cette Apple TV lorsqu’il est à proximité, ou scannez le code affiché à l’écran."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il tuo iPhone si offre di accedere a questo Apple TV quando è nelle vicinanze, oppure scansiona il codice sullo schermo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone が近くにあると、この Apple TV へのサインインを提案します。画面のコードをスキャンすることもできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone이 가까이 있으면 이 Apple TV에 로그인하도록 제안합니다. 화면의 코드를 스캔해도 됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je iPhone biedt aan deze Apple TV in te loggen als hij in de buurt is, of scan de code op het scherm."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seu iPhone oferece para iniciar a sessão nesta Apple TV quando estiver por perto, ou escaneie o código na tela."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Если iPhone рядом, он предложит выполнить вход на этом Apple TV. Или отсканируйте код на экране."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "iPhone 在附近时会提示帮这台 Apple TV 登录，你也可以扫描屏幕上的代码。"
+          }
+        }
+      }
+    },
     "Your Jellyfin movies, shows, music and collections, in an app made for iPhone, iPad, Mac and Apple TV." : {
       "localizations" : {
         "de" : {
@@ -19261,6 +20669,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的 Jellyfin 电影、剧集、音乐和合集，尽在专为 iPhone、iPad、Mac 和 Apple TV 打造的 App 中。"
+          }
+        }
+      }
+    },
+    "Your Jellyfin music library has its own tab: albums, artists, playlists and Made for You mixes, with lyrics, a queue, shuffle and repeat, and gapless playback." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Jellyfin-Musikmediathek hat jetzt einen eigenen Tab: Alben, Künstler, Playlists und „Für dich“-Mixe, mit Liedtexten, Warteschlange, Zufallswiedergabe, Wiederholen und lückenloser Wiedergabe."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu biblioteca de música de Jellyfin tiene su propia pestaña: álbumes, artistas, listas y mezclas Hecho para ti, con letras, cola, reproducción aleatoria, repetición y reproducción sin pausas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre bibliothèque musicale Jellyfin a son propre onglet : albums, artistes, listes de lecture et mix Pour vous, avec paroles, file d’attente, lecture aléatoire, répétition et lecture sans blanc."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tua libreria musicale di Jellyfin ha una scheda tutta sua: album, artisti, playlist e mix Creati per te, con testi, coda, riproduzione casuale, ripetizione e riproduzione senza pause."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ミュージックに専用のタブができました。Jellyfin の音楽ライブラリのアルバム、アーティスト、プレイリスト、「あなたへのおすすめ」ミックスを、歌詞、再生キュー、シャッフル、リピート、ギャップレス再生とともに楽しめます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jellyfin 음악 보관함에 전용 탭이 생겼습니다. 앨범, 아티스트, 재생 목록, 당신을 위한 추천 믹스를 가사, 대기열, 임의 재생, 반복, 끊김 없는 재생과 함께 즐겨 보세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je Jellyfin-muziekbibliotheek heeft een eigen tabblad: albums, artiesten, afspeellijsten en Voor jou-mixen, met songteksten, een wachtrij, willekeurig afspelen, herhalen en naadloos afspelen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sua biblioteca de música do Jellyfin ganhou uma aba própria: álbuns, artistas, playlists e mixes Feito para você, com letras, fila, reprodução aleatória, repetição e reprodução contínua sem pausas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "У музыкальной медиатеки Jellyfin теперь своя вкладка: альбомы, исполнители, плейлисты и подборки «Для вас» — с текстами песен, очередью, перемешиванием, повтором и воспроизведением без пауз."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的 Jellyfin 音乐资料库现在有了专属标签页：专辑、艺人、播放列表和“为你推荐”混音，还有歌词、播放队列、随机播放、重复播放和无缝播放。"
+          }
+        }
+      }
+    },
+    "Your Jellyfin music on the big screen: albums, artists and playlists, with lyrics and the queue beside Now Playing. Press Play/Pause on the remote to jump back to it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Jellyfin-Musik auf dem großen Bildschirm: Alben, Künstler und Playlists, mit Liedtext und Warteschlange neben „Läuft gerade“. Drücke Play/Pause auf der Fernbedienung, um dorthin zurückzukehren."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tu música de Jellyfin en la pantalla grande: álbumes, artistas y listas, con la letra y la cola junto a En reproducción. Pulsa Reproducir/Pausa en el mando para volver."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre musique Jellyfin sur grand écran : albums, artistes et listes de lecture, avec les paroles et la file d’attente à côté d’À l’écoute. Appuyez sur Lecture/Pause sur la télécommande pour y revenir."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La tua musica di Jellyfin sul grande schermo: album, artisti e playlist, con testo e coda accanto a In riproduzione. Premi Play/Pausa sul telecomando per tornarci."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jellyfin の音楽を大画面で。アルバム、アーティスト、プレイリストを、「再生中」の横に歌詞とキューを表示して楽しめます。リモコンの再生/一時停止ボタンを押すとすぐに戻れます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "큰 화면에서 즐기는 Jellyfin 음악: 앨범, 아티스트, 재생 목록과 함께 지금 재생 중 옆에 가사와 대기열이 표시됩니다. 리모컨의 재생/일시 정지 버튼을 누르면 바로 돌아갑니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je Jellyfin-muziek op het grote scherm: albums, artiesten en afspeellijsten, met songteksten en de wachtrij naast Nu aan het spelen. Druk op Afspelen/Pauze op de afstandsbediening om ernaar terug te gaan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suas músicas do Jellyfin na tela grande: álbuns, artistas e playlists, com letra e fila ao lado de Reproduzindo. Pressione Reproduzir/Pausar no controle remoto para voltar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Музыка Jellyfin на большом экране: альбомы, исполнители и плейлисты, а рядом с «Исполняется» — текст песни и очередь. Нажмите «Воспроизведение/Пауза» на пульте, чтобы вернуться туда."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在大屏幕上欣赏 Jellyfin 音乐：专辑、艺人和播放列表，“正在播放”旁边显示歌词和播放队列。按遥控器上的播放/暂停键即可回到这里。"
           }
         }
       }

@@ -14,7 +14,7 @@ import Observation
 @Observable
 final class AppIntroduction {
     static let onboardingVersion = 1
-    static let whatsNewVersion = 3
+    static let whatsNewVersion = 4
 
     enum Presentation: Equatable {
         case onboarding, whatsNew
