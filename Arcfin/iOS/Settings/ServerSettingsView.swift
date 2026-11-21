@@ -46,7 +46,7 @@ struct ServerSettingsView: View {
             }
 
             Section {
-                ServerURLField(placeholder: "http://10.0.1.50:8096", kind: .local, saved: $localURL,
+                ServerURLField(placeholder: "http://192.168.1.10:8096", kind: .local, saved: $localURL,
                                serverID: model.publicInfo?.id)
 
                 HStack {

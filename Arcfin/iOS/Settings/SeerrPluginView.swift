@@ -75,7 +75,7 @@ struct SeerrPluginView: View {
     private var editingForm: some View {
         // Server URL
         Section {
-            TextField("http://10.0.1.122:5055", text: $form.url)
+            TextField("https://seerr.example.com" as String, text: $form.url)
                 .textContentType(.URL)
                 .autocorrectionDisabled()
                 .textInputAutocapitalization(.never)
