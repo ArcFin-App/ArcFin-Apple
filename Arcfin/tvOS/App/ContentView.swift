@@ -45,7 +45,13 @@ struct ContentView: View {
     var body: some View {
         ZStack {
             if model.showsContent(phase) {
+                // Kept under the lock: hidden, and out of reach of focus, presses and VoiceOver.
                 phaseContent
+                    .environment(\.isBehindLock, model.isAppLocked)
+                    .opacity(model.isAppLocked ? 0 : 1)
+                    .disabled(model.isAppLocked)
+                    .allowsHitTesting(!model.isAppLocked)
+                    .accessibilityHidden(model.isAppLocked)
             } else {
                 DT.Color.backgroundPrimary.ignoresSafeArea()
             }

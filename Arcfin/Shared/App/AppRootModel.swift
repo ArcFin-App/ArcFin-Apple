@@ -23,6 +23,9 @@ final class AppRootModel {
     let introduction = AppServices.introduction
     var splashDone = false
     var isAppLocked = false
+    /// The lock came up over screens already open, which stay underneath, hidden and out of
+    /// reach, so they're as they were once it opens. At launch nothing is built behind it.
+    var keepsContentUnderLock = false
     var activeProfileHasPIN = false
     /// The stored sign-in and the PIN lock have been checked this launch.
     var launchChecked = false
@@ -76,8 +79,17 @@ final class AppRootModel {
         isAppLocked = true
     }
 
+    /// Raises the lock over what's open. Covered by a screen of the signed-in tree, which
+    /// would stay above the lock, the tree is closed instead.
+    func lockKeepingContent(_ keepsContent: Bool) {
+        keepsContentUnderLock = keepsContent && isPastLock
+        isAppLocked = true
+        AppServices.hasPassedLock = false
+    }
+
     func unlock() {
         isAppLocked = false
+        keepsContentUnderLock = false
         AppServices.hasPassedLock = true
         runHeldRoutes()
     }
@@ -87,10 +99,10 @@ final class AppRootModel {
     var isPastLock: Bool { launchChecked && !isAppLocked }
 
     /// Whether the phase's screens are built: the signed-in ones once the lock is decided and
-    /// open, offline Downloads while it isn't up.
+    /// open, or kept under a lock raised over them; offline Downloads while it isn't up.
     func showsContent(_ phase: AppPhase) -> Bool {
         switch phase {
-        case .main: isPastLock
+        case .main: isPastLock || keepsContentUnderLock
         case .offline: !isAppLocked
         default: true
         }
@@ -197,6 +209,7 @@ final class AppRootModel {
         if authManager.signOutsToNextProfile != handledSignOuts {
             handledSignOuts = authManager.signOutsToNextProfile
             isAppLocked = true
+            keepsContentUnderLock = false
         }
         guard case .authenticated(let cred) = authManager.state else {
             activeProfileHasPIN = false
@@ -204,6 +217,7 @@ final class AppRootModel {
             // and links meant for that profile go with it.
             if authManager.profiles.isEmpty, isAppLocked {
                 isAppLocked = false
+                keepsContentUnderLock = false
                 heldLinks = []
             }
             return
@@ -312,4 +326,9 @@ final class AppRootModel {
             await seerrRepo.loadRequests()
         }
     }
+}
+
+extension EnvironmentValues {
+    /// The screens are kept, hidden, under the lock: nothing in them may play or open.
+    @Entry var isBehindLock = false
 }

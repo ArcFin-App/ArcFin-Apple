@@ -428,6 +428,7 @@
 				tvOS/Platform/PlayerOverlayButton.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/PressableHover.swift = (tvos, );
+				tvOS/Platform/RootPresentation.swift = (tvos, );
 				tvOS/Platform/RowLabelText.swift = (tvos, );
 				tvOS/Platform/ScrubGesture.swift = (tvos, );
 				tvOS/Platform/ShelfScrollButtons.swift = (tvos, );
