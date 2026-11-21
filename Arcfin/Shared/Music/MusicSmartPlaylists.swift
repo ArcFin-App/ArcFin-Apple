@@ -57,13 +57,14 @@ struct MusicSmartPlaylistView: View {
             if let songs {
                 if songs.isEmpty {
                     ContentUnavailableView("No Songs", systemImage: playlist.systemImage)
+                        .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                 }
                 ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
                     MusicSongRow(song: song) { MusicActions.play(songs, from: index) }
                 }
             } else {
-                ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear)
+                ProgressView().frame(maxWidth: .infinity).listRowSeparator(.hidden).listRowBackground(Color.clear)
             }
         }
         .listStyle(.plain)

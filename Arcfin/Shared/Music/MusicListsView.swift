@@ -542,9 +542,11 @@ struct MusicPlaylistView: View {
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
             if !hasLoaded {
-                ProgressView().frame(maxWidth: .infinity).listRowBackground(Color.clear)
+                ProgressView().frame(maxWidth: .infinity).listRowSeparator(.hidden).listRowBackground(Color.clear)
             } else if songs.isEmpty {
-                ContentUnavailableView("No Songs", systemImage: "music.note").listRowBackground(Color.clear)
+                ContentUnavailableView("No Songs", systemImage: "music.note")
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             }
             ForEach(Array(songs.enumerated()), id: \.offset) { index, song in
                 MusicSongRow(song: song, onRemove: { Task { await MusicPlaylistEditor.shared.remove(song, from: playlist) } }) {
