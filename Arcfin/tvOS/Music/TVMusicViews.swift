@@ -139,7 +139,7 @@ struct TVMusicPill: View {
 }
 
 /// Its views left to right, starting a new line when the next one doesn't fit.
-private struct TVWrapLayout: Layout {
+struct TVWrapLayout: Layout {
     var spacing: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {

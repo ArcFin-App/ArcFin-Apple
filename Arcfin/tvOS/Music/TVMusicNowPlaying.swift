@@ -4,60 +4,53 @@ import SwiftUI
 import JellyfinAPI
 import MediaEngine
 
-/// Now Playing on Apple TV: the cover over its own colours, the song, where it is, the
-/// transport, and below either what plays next or the lyrics. Play/Pause on the remote works
+/// Now Playing on Apple TV: the cover over its own colours, the song, where it is and the
+/// controls, with Playing Next or the lyrics in a column on the right when one is turned on,
+/// and the song across the whole screen when neither is. Play/Pause on the remote works
 /// anywhere on the screen; Back leaves the music playing.
 struct TVMusicNowPlaying: View {
-    enum Panel { case upNext, lyrics }
+    enum Panel: String { case upNext, lyrics }
 
     @Environment(\.dismiss) private var dismiss
-    @State private var panel = Panel.upNext
+    /// The right-hand column, kept between songs and visits; empty for none.
+    @AppStorage("tvMusicNowPlayingPanel") private var panelName = ""
     @State private var lyrics: Lyrics?
     @State private var showsSleepTimer = false
     private var player: MusicQueuePlayer { AppServices.music.player }
 
+    private var panel: Panel? { Panel(rawValue: panelName) }
+
+    private func toggle(_ panel: Panel) {
+        withAnimation(DT.Animation.standard) { panelName = self.panel == panel ? "" : panel.rawValue }
+    }
+
     var body: some View {
         Group {
             if let song = player.current {
-                VStack(alignment: .leading, spacing: 36) {
-                    HStack(alignment: .center, spacing: 80) {
-                        TVMusicArtwork(url: MusicAPI.artworkURL(song, width: 1000))
-                            .overlay { MusicArtworkVisualizer(bars: 36, spacing: 3, cornerRadius: DT.Radius.card) }
-                            // Leaves the room below for Playing Next's larger tiles.
-                            .frame(width: 440, height: 440)
-                            .shadow(color: .black.opacity(0.5), radius: 30, y: 16)
-                            .focusable(false)
-                        VStack(alignment: .leading, spacing: 32) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text(verbatim: song.name).font(.title.weight(.bold)).lineLimit(2)
-                                if let artist = song.artistLine {
-                                    Text(verbatim: artist).font(.title3).foregroundStyle(.white.opacity(0.7))
-                                }
-                                if let album = song.albumName {
-                                    Text(verbatim: album).font(.callout).foregroundStyle(.white.opacity(0.5))
-                                }
-                                MusicQualityBadge(song: song)
+                HStack(alignment: panel == nil ? .center : .top, spacing: 80) {
+                    songColumn(song)
+                        .frame(width: panel == nil ? nil : 720, alignment: .leading)
+                        // Back from the column on the right always finds the controls.
+                        .focusSection()
+                    if let panel {
+                        Group {
+                            switch panel {
+                            case .upNext: upNext
+                            case .lyrics: lyricsView
                             }
-                            TVMusicScrubber(player: player)
-                            controls(song)
                         }
-                    }
-                    // Up from anywhere in the queue, even its first song under the cover, lands
-                    // on the controls.
-                    .focusSection()
-                    switch panel {
-                    case .upNext: upNext
-                    case .lyrics: lyricsView
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
                 }
                 .padding(.horizontal, 100)
                 .padding(.vertical, 60)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: panel == nil ? .center : .topLeading)
                 .background { backdrop(MusicAPI.artworkURL(song, width: 600)) }
                 .task(id: song.id) {
                     lyrics = nil
                     lyrics = await MusicLyricsSource.shared.lyrics(for: song)
-                    if lyrics == nil, panel == .lyrics { panel = .upNext }
+                    if lyrics == nil, panel == .lyrics, !MusicLyricsSource.shared.isAvailable(song) { panelName = "" }
                 }
             } else {
                 Color.black.onAppear { dismiss() }
@@ -67,29 +60,64 @@ struct TVMusicNowPlaying: View {
         .onPlayPauseCommand { player.togglePlayPause() }
     }
 
+    /// The cover beside the song across the screen, or above it in the left column.
+    private func songColumn(_ song: MusicSong) -> some View {
+        let wide = panel == nil
+        let layout = wide ? AnyLayout(HStackLayout(alignment: .center, spacing: 80))
+                          : AnyLayout(VStackLayout(alignment: .leading, spacing: 36))
+        return layout {
+            TVMusicArtwork(url: MusicAPI.artworkURL(song, width: 1000))
+                .overlay { MusicArtworkVisualizer(bars: 36, spacing: 3, cornerRadius: DT.Radius.card) }
+                .frame(width: wide ? 640 : 380, height: wide ? 640 : 380)
+                .shadow(color: .black.opacity(0.5), radius: 30, y: 16)
+                .focusable(false)
+            VStack(alignment: .leading, spacing: 32) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text(verbatim: song.name).font(.title.weight(.bold)).lineLimit(2)
+                    if let artist = song.artistLine {
+                        Text(verbatim: artist).font(.title3).foregroundStyle(.white.opacity(0.7))
+                    }
+                    if let album = song.albumName {
+                        Text(verbatim: album).font(.callout).foregroundStyle(.white.opacity(0.5))
+                    }
+                    MusicQualityBadge(song: song)
+                }
+                TVMusicScrubber(player: player)
+                controls(song)
+            }
+            .frame(maxWidth: wide ? 860 : nil, alignment: .leading)
+        }
+    }
+
     private func controls(_ song: MusicSong) -> some View {
-        HStack(spacing: 28) {
-            circle("backward.fill", label: "Previous") { player.previous() }
-            circle(player.isPlaying ? "pause.fill" : "play.fill", label: player.isPlaying ? "Pause" : "Play", large: true) {
-                player.togglePlayPause()
-            }
-            circle("forward.fill", label: "Next") { player.next() }
-            circle("shuffle", label: "Shuffle", isOn: player.queue.isShuffled) { player.setShuffled(!player.queue.isShuffled) }
-            circle(player.repeatMode == .one ? "repeat.1" : "repeat", label: "Repeat", isOn: player.repeatMode != .off) {
-                player.repeatMode = switch player.repeatMode {
-                case .off: .all
-                case .all: .one
-                case .one: .off
+        VStack(alignment: .leading, spacing: 28) {
+            HStack(spacing: 28) {
+                circle("backward.fill", label: "Previous") { player.previous() }
+                circle(player.isPlaying ? "pause.fill" : "play.fill", label: player.isPlaying ? "Pause" : "Play", large: true) {
+                    player.togglePlayPause()
                 }
+                circle("forward.fill", label: "Next") { player.next() }
             }
-            ratingCircles(song)
-            if MusicLyricsSource.shared.isAvailable(song) {
-                circle("quote.bubble", label: "Lyrics", isOn: panel == .lyrics) {
-                    panel = panel == .lyrics ? .upNext : .lyrics
+            TVWrapLayout(spacing: 20) {
+                circle("shuffle", label: "Shuffle", isOn: player.queue.isShuffled, small: true) {
+                    player.setShuffled(!player.queue.isShuffled)
                 }
-            }
-            circle("moon.zzz", label: "Sleep Timer", isOn: AppServices.music.sleepTimer != nil) {
-                showsSleepTimer = true
+                circle(player.repeatMode == .one ? "repeat.1" : "repeat", label: "Repeat", isOn: player.repeatMode != .off,
+                       small: true) {
+                    player.repeatMode = switch player.repeatMode {
+                    case .off: .all
+                    case .all: .one
+                    case .one: .off
+                    }
+                }
+                ratingCircles(song)
+                circle("list.bullet", label: "Playing Next", isOn: panel == .upNext, small: true) { toggle(.upNext) }
+                if MusicLyricsSource.shared.isAvailable(song) {
+                    circle("quote.bubble", label: "Lyrics", isOn: panel == .lyrics, small: true) { toggle(.lyrics) }
+                }
+                circle("moon.zzz", label: "Sleep Timer", isOn: AppServices.music.sleepTimer != nil, small: true) {
+                    showsSleepTimer = true
+                }
             }
         }
         .focusSection()
@@ -104,21 +132,22 @@ struct TVMusicNowPlaying: View {
     private func ratingCircles(_ song: MusicSong) -> some View {
         let isFavorite = MusicFavorites.shared.isFavorite(song.id, server: song.isFavorite)
         let likes = MusicRatings.shared.likes(song.id, server: song.likes)
-        circle(isFavorite ? "star.fill" : "star", label: isFavorite ? "Remove from Favorites" : "Add to Favorites", isOn: isFavorite) {
+        circle(isFavorite ? "star.fill" : "star", label: isFavorite ? "Remove from Favorites" : "Add to Favorites", isOn: isFavorite,
+               small: true) {
             MusicFavorites.shared.toggle(song.id, server: song.isFavorite)
         }
-        circle("hand.thumbsup", label: "Like", isOn: likes == true) {
+        circle("hand.thumbsup", label: "Like", isOn: likes == true, small: true) {
             MusicRatings.shared.set(song.id, likes: true, server: song.likes)
         }
-        circle("hand.thumbsdown", label: "Dislike", isOn: likes == false) {
+        circle("hand.thumbsdown", label: "Dislike", isOn: likes == false, small: true) {
             MusicRatings.shared.set(song.id, likes: false, server: song.likes)
         }
     }
 
     private func circle(_ systemImage: String, label: LocalizedStringKey, isOn: Bool = false, large: Bool = false,
-                        action: @escaping () -> Void) -> some View {
+                        small: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
-            CircleControl(systemImage: systemImage, isOn: isOn, size: large ? 104 : 80)
+            CircleControl(systemImage: systemImage, isOn: isOn, size: large ? 104 : small ? 64 : 80)
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
@@ -126,24 +155,19 @@ struct TVMusicNowPlaying: View {
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
+    /// What plays next, as a grid filling the column: as many across as fit at about 220 pt.
     private var upNext: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Playing Next").font(.headline).foregroundStyle(.white.opacity(0.7))
             if player.queue.upNext.isEmpty {
                 Text("Nothing Up Next").font(.callout).foregroundStyle(.white.opacity(0.5))
             } else {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    LazyHStack(alignment: .top, spacing: 36) {
-                        ForEach(Array(player.queue.upNext.prefix(30))) { entry in
+                ScrollView(showsIndicators: false) {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 36, alignment: .top)], spacing: 36) {
+                        ForEach(Array(player.queue.upNext.prefix(60))) { entry in
                             Button { player.jump(to: entry.id) } label: {
                                 TVMusicTile(url: MusicAPI.artworkURL(entry.track, width: 480), title: entry.track.name,
                                             subtitle: entry.track.artistLine)
-                            }
-                            // As many as fit across at about 240 pt, sized to fill the row
-                            // exactly: more on a large screen, fewer on a small one.
-                            .containerRelativeFrame(.horizontal) { width, _ in
-                                let count = max(3, ((width + 36) / (240 + 36)).rounded(.down))
-                                return (width - 36 * (count - 1)) / count
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
@@ -152,31 +176,44 @@ struct TVMusicNowPlaying: View {
                             }
                         }
                     }
-                    .padding(.vertical, 20)
+                    .padding(20)
                 }
+                .scrollClipDisabled()
                 .focusSection()
             }
         }
     }
 
+    /// The words down the column, the line being sung bright and kept in the middle.
     @ViewBuilder
     private var lyricsView: some View {
         if let lyrics, !lyrics.lines.isEmpty {
             let songID = player.current?.id ?? ""
             let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: songID, at: player.position)
-            let lines = Array(lyrics.lines.enumerated())
-            let shown = current.map { index in lines.filter { $0.offset >= index - 1 && $0.offset <= index + 2 } }
-                ?? Array(lines.prefix(4))
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(shown, id: \.offset) { index, line in
-                    Text(verbatim: line.text)
-                        .font(.title3.weight(.bold))
-                        .foregroundStyle(.white.opacity(lyrics.isSynced && index != current ? 0.35 : 1))
-                        .lineLimit(1)
-                }
+            VStack(alignment: .leading, spacing: 16) {
                 if lyrics.isSynced {
-                    MusicLyricsTimingMenu(songID: songID)
-                        .font(.callout)
+                    MusicLyricsTimingMenu(songID: songID).font(.callout)
+                }
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 22) {
+                            ForEach(Array(lyrics.lines.enumerated()), id: \.offset) { index, line in
+                                Text(verbatim: line.text)
+                                    .font(.title2.weight(.bold))
+                                    .foregroundStyle(.white.opacity(lyrics.isSynced && index != current ? 0.35 : 1))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .id(index)
+                            }
+                        }
+                        .padding(.vertical, 200)
+                    }
+                    .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.15),
+                                                 .init(color: .black, location: 0.85), .init(color: .clear, location: 1)],
+                                         startPoint: .top, endPoint: .bottom))
+                    .onChange(of: current, initial: true) { _, line in
+                        guard let line else { return }
+                        withAnimation(DT.Animation.standard) { proxy.scrollTo(line, anchor: .center) }
+                    }
                 }
             }
             .animation(DT.Animation.standard, value: current)
