@@ -610,13 +610,6 @@ final class AuthManager {
         }
     }
 
-    /// Nil both when there's no PIN and when it couldn't be read; deciding whether a profile
-    /// is locked goes through `storedPIN(for:)`.
-    func pin(for credentialID: UUID) async -> String? {
-        if case .set(let pin) = await storedPIN(for: credentialID) { return pin }
-        return nil
-    }
-
     /// Checks a typed PIN against the stored one, counting wrong tries (see `PINAttempts`).
     func checkPIN(_ entered: String, for credentialID: UUID) async -> PINCheck {
         if let wait = PINAttempts.remainingWait(for: credentialID) { return .waiting(wait) }

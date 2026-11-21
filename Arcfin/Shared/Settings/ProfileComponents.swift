@@ -104,10 +104,10 @@ struct ProfileDetailView: View {
         .tint(DT.Color.accent)
         .navigationTitle(profile.displayName)
         .inlineNavigationTitle()
-        .task { hasPIN = await authManager.pin(for: profile.id) != nil }
+        .task { hasPIN = await authManager.storedPIN(for: profile.id) != .none }
         .appSheet(item: $pinFlow) { flow in
             PINFlowSheet(profile: profile, flow: flow) {
-                hasPIN = await authManager.pin(for: profile.id) != nil
+                hasPIN = await authManager.storedPIN(for: profile.id) != .none
             }
         }
     }
