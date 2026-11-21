@@ -730,11 +730,9 @@ public actor SeerrHTTPClient {
         if mediaType == .tv { body["seasons"] = seasons }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 15
-        let (data, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-            let bodyText = String(data: data, encoding: .utf8) ?? ""
-            throw SeerrError.requestFailed(status: status, body: bodyText)
+        let (data, status) = try await sendWrite(req)
+        guard (200...299).contains(status) else {
+            throw SeerrError.requestFailed(status: status, body: Self.message(in: data))
         }
     }
 
@@ -869,11 +867,14 @@ public actor SeerrHTTPClient {
     private static func check(_ response: URLResponse, data: Data) throws {
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         guard (200...299).contains(http.statusCode) else {
-            struct Message: Decodable { let message: String? }
-            let message = (try? JSONDecoder().decode(Message.self, from: data))?.message
-                ?? String(data: data.prefix(200), encoding: .utf8) ?? ""
-            throw SeerrError.requestFailed(status: http.statusCode, body: message)
+            throw SeerrError.requestFailed(status: http.statusCode, body: message(in: data))
         }
+    }
+
+    private static func message(in data: Data) -> String {
+        struct Message: Decodable { let message: String? }
+        return (try? JSONDecoder().decode(Message.self, from: data))?.message
+            ?? String(data: data.prefix(200), encoding: .utf8) ?? ""
     }
 }
 

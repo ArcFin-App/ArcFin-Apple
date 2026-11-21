@@ -508,9 +508,12 @@ struct SeerrRequestConfirmSheet: View {
                 } catch is SeerrRepository.AlreadyRequested {
                     isSubmitting = false
                     alreadyRequested = true
+                } catch SeerrError.requestFailed(status: 403, body: _) {
+                    isSubmitting = false
+                    submitError = String(localized: "Your Seerr account can't request this. Ask your Seerr admin for request permission, or check your request limit.")
                 } catch {
                     isSubmitting = false
-                    submitError = "Couldn't send request: \(error.localizedDescription)"
+                    submitError = String(localized: "Couldn't send request: \(error.localizedDescription)")
                 }
             }
         } label: {

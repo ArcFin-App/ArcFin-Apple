@@ -110,14 +110,22 @@ public struct SeerrPermission: OptionSet, Sendable {
 
     public static let admin = SeerrPermission(rawValue: 2)
     public static let manageRequests = SeerrPermission(rawValue: 16)
+    public static let request = SeerrPermission(rawValue: 32)
     public static let autoApprove = SeerrPermission(rawValue: 128)
     public static let autoApproveTV = SeerrPermission(rawValue: 512)
+    public static let requestMovie = SeerrPermission(rawValue: 262_144)
+    public static let requestTV = SeerrPermission(rawValue: 524_288)
 
     /// True if the admin bit is set (which Seerr treats as "can do anything") or any of
     /// `permissions` is present in `value`.
     public static func hasAny(of permissions: [SeerrPermission], in value: Int) -> Bool {
         if value & SeerrPermission.admin.rawValue != 0 { return true }
         return permissions.contains { value & $0.rawValue != 0 }
+    }
+
+    /// Seerr takes a request from anyone with Request, or the one for that media type.
+    public static func canRequest(_ mediaType: RequestMediaType, in value: Int) -> Bool {
+        hasAny(of: [.request, mediaType == .tv ? .requestTV : .requestMovie], in: value)
     }
 }
 
