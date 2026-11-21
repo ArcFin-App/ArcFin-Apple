@@ -122,17 +122,23 @@ final class MusicPagedList<Item: Identifiable & Sendable> {
 final class MusicFavorites {
     static let shared = MusicFavorites()
     private var changed: [String: Bool] = [:]
+    /// Favourites are per user, so changes made under another profile don't apply.
+    private var owner: UUID?
     @ObservationIgnored private var edits = MusicEdits()
 
-    func isFavorite(_ id: String, server: Bool) -> Bool { changed[id] ?? server }
+    func isFavorite(_ id: String, server: Bool) -> Bool {
+        owner == MusicEdits.activeProfile ? changed[id] ?? server : server
+    }
 
     /// What the server said when asked at `asked`, unless it's been changed here since.
     func sync(_ id: String, isFavorite: Bool, asked: Date) {
+        claim()
         guard !edits.changed(id, since: asked) else { return }
         changed[id] = isFavorite
     }
 
     func toggle(_ id: String, server: Bool) {
+        claim()
         let before = isFavorite(id, server: server), favorite = !before
         changed[id] = favorite
         let edit = edits.begin(id)
@@ -149,11 +155,21 @@ final class MusicFavorites {
             Task { await MusicDownloads.shared.downloadFavorite(id) }
         }
     }
+
+    private func claim() {
+        let profile = MusicEdits.activeProfile
+        guard owner != profile else { return }
+        owner = profile
+        changed = [:]
+        edits = MusicEdits()
+    }
 }
 
 /// Which favourites and ratings are being saved, so an older answer from the server can't
 /// put back what was just changed.
 struct MusicEdits {
+    @MainActor static var activeProfile: UUID? { AppServices.authManager.state.credential?.id }
+
     private var pending: [String: Int] = [:]
     private var last: [String: Date] = [:]
     private var count = 0
@@ -180,26 +196,31 @@ struct MusicEdits {
 final class MusicRatings {
     static let shared = MusicRatings()
     private var changed: [String: Bool?] = [:]
+    /// Likes are per user, so changes made under another profile don't apply.
+    private var owner: UUID?
     @ObservationIgnored private var edits = MusicEdits()
 
     func likes(_ id: String, server: Bool?) -> Bool? {
-        if let local = changed[id] { return local }
+        if owner == MusicEdits.activeProfile, let local = changed[id] { return local }
         return server
     }
 
     /// What the server said when asked at `asked`, unless it's been changed here since.
     func sync(_ id: String, likes: Bool?, asked: Date) {
+        claim()
         guard !edits.changed(id, since: asked) else { return }
         changed[id] = .some(likes)
     }
 
     /// Rated elsewhere (ListenBrainz): shown here and saved to Jellyfin, not sent back.
     func adopt(_ id: String, likes: Bool) {
+        claim()
         save(id, likes, before: changed[id] ?? nil)
     }
 
     /// Tapping the one already chosen clears it.
     func set(_ id: String, likes: Bool, server: Bool?) {
+        claim()
         let before = self.likes(id, server: server)
         let value: Bool? = before == likes ? nil : likes
         save(id, value, before: before)
@@ -218,6 +239,14 @@ final class MusicRatings {
                 AppServices.music.ratingsChanged()
             }
         }
+    }
+
+    private func claim() {
+        let profile = MusicEdits.activeProfile
+        guard owner != profile else { return }
+        owner = profile
+        changed = [:]
+        edits = MusicEdits()
     }
 }
 
