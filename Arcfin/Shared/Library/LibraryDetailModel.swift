@@ -41,6 +41,8 @@ final class LibraryDetailModel {
     /// The last next-page request failed; the grid offers to try it again, since the cell
     /// that triggered it has already appeared.
     private(set) var loadMoreFailed = false
+    /// The first page couldn't be fetched, as opposed to the library or filters having no titles.
+    private(set) var loadFailed = false
     private(set) var totalItems = 0
     /// Where the next server page starts. Equals `items.count` unless genres are matched
     /// with "all", where the client drops titles from each server page.
@@ -98,6 +100,14 @@ final class LibraryDetailModel {
     var filtersActive: Bool {
         !selectedGenres.isEmpty || !selectedYears.isEmpty || watchedFilter != .all || favoritesOnly
             || extraFilters.isActive
+    }
+
+    func clearFilters() {
+        selectedGenres.removeAll()
+        selectedYears.removeAll()
+        extraFilters = LibraryExtraFilters()
+        watchedFilter = .all
+        favoritesOnly = false
     }
 
     private var matchesAllGenres: Bool { extraFilters.matchAllGenres && selectedGenres.count > 1 }
@@ -332,6 +342,7 @@ final class LibraryDetailModel {
             // Playlist order with no filters is the playlist itself, as it was put together.
             if sortOption == .playlistOrder, !filtersActive {
                 guard generation == fetchGeneration else { return }
+                loadFailed = false
                 items = entries.map(\.item)
                 serverOffset = items.count
                 totalItems = items.count
@@ -351,6 +362,7 @@ final class LibraryDetailModel {
         // in flight — applying this now-stale response would overwrite that newer request's
         // correct result with whatever this older, possibly narrower selection matched.
         guard generation == fetchGeneration else { return }
+        loadFailed = fetched == nil
         items = fetched?.items ?? []
         serverOffset = fetched?.nextOffset ?? 0
         totalItems = fetched?.total ?? 0

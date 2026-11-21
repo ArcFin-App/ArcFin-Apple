@@ -93,6 +93,37 @@ struct PlaylistEmptyState: View {
     }
 }
 
+/// A library grid with nothing in it: a load that failed (with Try Again), filters that match
+/// nothing (with Clear Filters), or a library that really is empty.
+struct LibraryEmptyResults: View {
+    let model: LibraryDetailModel
+    let retry: () -> Void
+
+    var body: some View {
+        if model.loadFailed {
+            ContentUnavailableView {
+                Label("Couldn't Load This Library", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text("Couldn't reach your server. Check your connection, then try again.")
+            } actions: {
+                Button("Try Again", action: retry)
+            }
+        } else if model.filtersActive {
+            ContentUnavailableView {
+                Label("Nothing Found", systemImage: "line.3.horizontal.decrease.circle")
+            } description: {
+                Text("Nothing in this library matches these filters.")
+            } actions: {
+                Button("Clear Filters") { model.clearFilters() }
+            }
+        } else {
+            ContentUnavailableView(model.library.name,
+                                   systemImage: model.library.collectionType.systemIcon,
+                                   description: Text("Nothing found in this library."))
+        }
+    }
+}
+
 /// A playlist's page opens like a collection's: the first title's artwork as the hero,
 /// its first posters fanned out with the name and length, then Play and Shuffle.
 struct PlaylistHeader: View {

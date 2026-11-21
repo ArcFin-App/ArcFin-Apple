@@ -41,23 +41,21 @@ struct LibraryDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .screenBackground()
-            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive {
+            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "Empty Playlist",
                     description: "Add movies, shows and episodes, or long-press any title and choose Add to Playlist.",
                     buttonTitle: "Add Titles"
                 ) { model.showAddTitles = true }
-            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive {
+            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "No Playlists",
                     description: "Make a playlist, then add movies, shows and episodes to it.",
                     buttonTitle: "New Playlist"
                 ) { model.showNewPlaylist = true }
             } else if model.items.isEmpty {
-                ContentUnavailableView(model.library.name,
-                                      systemImage: model.library.collectionType.systemIcon,
-                                      description: Text("Nothing found in this library."))
-                .screenBackground()
+                LibraryEmptyResults(model: model, retry: reload)
+                    .screenBackground()
             } else {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
