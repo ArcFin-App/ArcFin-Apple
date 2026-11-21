@@ -893,9 +893,15 @@ struct TVMusicSearchView: View {
 
     var body: some View {
         ScrollView {
-            TVMusicSearchSection(results: search.results)
-                .padding(.horizontal, 80)
-                .padding(.vertical, 48)
+            if search.isSearching {
+                ProgressView().frame(maxWidth: .infinity).padding(.vertical, 120)
+            } else if search.results.isEmpty, query.trimmingCharacters(in: .whitespaces).count >= 2 {
+                ContentUnavailableView.search(text: query).padding(.vertical, 80)
+            } else {
+                TVMusicSearchSection(results: search.results)
+                    .padding(.horizontal, 80)
+                    .padding(.vertical, 48)
+            }
         }
         .screenBackground()
         .searchable(text: $query, prompt: "Artists, albums and songs")
