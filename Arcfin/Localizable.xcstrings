@@ -257,6 +257,134 @@
         }
       }
     },
+    "Song recognition in What's Playing? is provided by Shazam." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Songerkennung in „Was läuft gerade?“ stammt von Shazam."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El reconocimiento de canciones de ¿Qué está sonando? lo proporciona Shazam."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La reconnaissance des morceaux dans « Qu’est-ce qui passe ? » est fournie par Shazam."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il riconoscimento dei brani in “Cosa sta suonando?” è fornito da Shazam."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「この曲は？」の曲の認識はShazamによって提供されています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "'무슨 노래일까요?'의 노래 인식은 Shazam에서 제공합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Muziekherkenning in ‘Wat speelt er?’ wordt geleverd door Shazam."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O reconhecimento de músicas em “O que está tocando?” é fornecido pelo Shazam."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Распознавание песен в разделе «Что играет?» обеспечивает Shazam."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“正在播放什么？”中的歌曲识别由 Shazam 提供。"
+          }
+        }
+      }
+    },
+    "Songs not on your server can play from Apple Music, with a subscription." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Songs, die nicht auf deinem Server sind, können mit einem Abo über Apple Music abgespielt werden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las canciones que no están en tu servidor pueden reproducirse desde Apple Music con una suscripción."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les morceaux absents de votre serveur peuvent être lus depuis Apple Music, avec un abonnement."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I brani che non sono sul tuo server possono essere riprodotti da Apple Music, con un abbonamento."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバにない曲は、サブスクリプションがあればApple Musicから再生できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서버에 없는 노래는 구독이 있으면 Apple Music에서 재생할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nummers die niet op je server staan, kunnen met een abonnement via Apple Music worden afgespeeld."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "As músicas que não estão no seu servidor podem ser reproduzidas pelo Apple Music, com uma assinatura."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Песни, которых нет на вашем сервере, можно воспроизводить из Apple Music по подписке."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器上没有的歌曲可通过 Apple Music 播放（需订阅）。"
+          }
+        }
+      }
+    },
     "·" : {
       "localizations" : {
         "de" : {
