@@ -66,6 +66,14 @@ extension AppRootModel {
             downloadManager.refreshSmartDownloads()
             syncOfflineProgress(modelContext: modelContext)
         }
+        // From here rather than the app delegate, which a scene-based app never tells about
+        // going to the background or becoming active.
+        if newPhase == .active {
+            BackgroundRefresh.startWhileOpen()
+        } else if !AppServices.scenes.anyActive {
+            BackgroundRefresh.stopWhileOpen()
+        }
+        if newPhase == .background, !AppServices.scenes.anyForeground { BackgroundRefresh.schedule() }
     }
 }
 

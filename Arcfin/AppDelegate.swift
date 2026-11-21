@@ -35,18 +35,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         intent is INPlayMediaIntent ? MusicSiriHandler() : nil
     }
 
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        BackgroundRefresh.schedule()
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        BackgroundRefresh.startWhileOpen()
-    }
-
-    func applicationWillResignActive(_ application: UIApplication) {
-        BackgroundRefresh.stopWhileOpen()
-    }
-
     func application(
         _ application: UIApplication,
         handleEventsForBackgroundURLSession identifier: String,
