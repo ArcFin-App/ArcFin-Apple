@@ -649,6 +649,8 @@ final class PlayerModel {
     /// got to, however it was started (opening, the resume question, Try Again, the AV1 retry).
     func startSetup() async {
         setupTask?.cancel()
+        reloadTask?.cancel()
+        reloadGeneration += 1
         let task = Task { await setup() }
         setupTask = task
         await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
@@ -1215,6 +1217,7 @@ final class PlayerModel {
         av1Watchdog?.cancel()
         cancelUpNextCountdown()
         setupTask?.cancel()
+        reloadTask?.cancel()
         if holdsPlayerActivity {
             holdsPlayerActivity = false
             PlayerActivity.shared.closed()
@@ -1494,6 +1497,8 @@ final class PlayerModel {
     @ObservationIgnored private var av1Watchdog: Task<Void, Never>?
     @ObservationIgnored private var setupGeneration = 0
     @ObservationIgnored private var setupTask: Task<Void, Never>?
+    @ObservationIgnored private var reloadTask: Task<Void, Never>?
+    @ObservationIgnored private var reloadGeneration = 0
     @ObservationIgnored private var holdsPlayerActivity = false
 
     /// A server whose AV1 encoder doesn't exist never sends a first segment, and the engine
@@ -1919,7 +1924,10 @@ final class PlayerModel {
             currentSubtitleText = nil
             return
         }
-        subtitleCues = await SubtitleLoader.loadCues(deliveryUrl: deliveryUrl, credential: credential)
+        let cues = await SubtitleLoader.loadCues(deliveryUrl: deliveryUrl, credential: credential)
+        // A newer pick may have loaded while this one was fetching.
+        guard selectedSubtitleIndex == index else { return }
+        subtitleCues = cues
         log.notice("Subtitles: track \(index, privacy: .public) has \(self.subtitleCues.count, privacy: .public) cues (server link: \(stream.deliveryUrl != nil, privacy: .public))")
     }
 
@@ -1952,10 +1960,20 @@ final class PlayerModel {
         if bitmapCue?.id != currentBitmapCue?.id { currentBitmapCue = bitmapCue }
     }
 
+    /// Each reload replaces the one before it: the last track or quality picked is the one
+    /// that plays, however the requests finish. One asked for while setup() is still loading
+    /// waits for it, so the two never load on the same engine at once.
     private func reload(errorContext: String, resumeTicks overrideTicks: Int64? = nil) {
         guard let credential, let authHeader else { return }
-        let resumeTicks = isLive ? 0 : overrideTicks ?? player.positionTicks
-        Task {
+        reloadTask?.cancel()
+        reloadGeneration += 1
+        let generation = reloadGeneration
+        let pendingSetup = setupTask
+        reloadTask = Task {
+            await pendingSetup?.value
+            guard reloadIsCurrent(generation) else { return }
+            // Read once any setup is done: before that, the position is still 0.
+            let resumeTicks = isLive ? 0 : overrideTicks ?? player.positionTicks
             do {
                 let info = try await client.getPlaybackInfo(
                     credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
@@ -1963,8 +1981,13 @@ final class PlayerModel {
                     audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
                     nativeDecoder: decodesNatively
                 )
+                guard reloadIsCurrent(generation) else {
+                    if let liveStreamId = info.liveStreamId { closeLiveStream(liveStreamId) }
+                    return
+                }
                 playbackInfo = info
                 await loadSubtitleCues(from: info, credential: credential)
+                guard reloadIsCurrent(generation) else { return }
                 lastLoadStartedAt = Date()
                 watchAV1Conversion(startedFrom: resumeTicks)
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
@@ -1972,6 +1995,7 @@ final class PlayerModel {
                     await player.stop()
                     return
                 }
+                guard reloadIsCurrent(generation) else { return }
                 await player.play()
                 watchForMissingPicture()
                 if selectedAudioIndex != nil { await selectAudioInEngine() }
@@ -1980,10 +2004,17 @@ final class PlayerModel {
                 updateNowPlayingInfo()
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
             } catch {
+                // A load cut short by a newer reload or by closing isn't a failure to show.
+                guard reloadIsCurrent(generation), !(error is CancellationError),
+                      (error as? URLError)?.code != .cancelled else { return }
                 log.error("Couldn't \(errorContext, privacy: .public): \(error, privacy: .public)")
                 errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
             }
         }
+    }
+
+    private func reloadIsCurrent(_ generation: Int) -> Bool {
+        !Task.isCancelled && !isClosed && generation == reloadGeneration
     }
 
     // MARK: - Controls visibility
