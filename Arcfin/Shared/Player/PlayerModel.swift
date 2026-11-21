@@ -1239,7 +1239,7 @@ final class PlayerModel {
         nowPlayingManager.clear()
         if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
-            let stoppedAt = player.positionTicks
+            let stoppedAt = reportedPositionTicks
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
                                                itemId: item.id, mediaSourceId: info.mediaSourceId,
                                                positionTicks: stoppedAt, liveStreamId: info.liveStreamId)
@@ -1277,6 +1277,19 @@ final class PlayerModel {
         closePlayer()
     }
 
+    /// While casting, the local engine sits paused where casting began; the receiver's
+    /// position and state are the ones to report.
+    private var reportedPositionTicks: Int64 {
+        if CastManager.shared.isConnected, let seconds = CastManager.shared.lastKnownPositionSeconds {
+            return Int64(seconds * 10_000_000)
+        }
+        return player.positionTicks
+    }
+
+    private var reportedIsPaused: Bool {
+        CastManager.shared.isConnected ? CastManager.shared.isPaused : player.status == .paused
+    }
+
     private func startProgressReporting(mediaSourceId: String) {
         progressReportTask?.cancel()
         progressReportTask = Task {
@@ -1285,8 +1298,8 @@ final class PlayerModel {
                 guard !Task.isCancelled, let credential, let authHeader else { continue }
                 await client.reportPlaybackProgress(
                     credential: credential, authHeader: authHeader, itemId: item.id,
-                    mediaSourceId: mediaSourceId, positionTicks: player.positionTicks,
-                    isPaused: player.status == .paused, liveStreamId: playbackInfo?.liveStreamId,
+                    mediaSourceId: mediaSourceId, positionTicks: reportedPositionTicks,
+                    isPaused: reportedIsPaused, liveStreamId: playbackInfo?.liveStreamId,
                     volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil
                 )
             }
