@@ -15,16 +15,17 @@ struct DownloadedItemDetailView: View {
             .task(id: item.itemId) { await model.load(item, downloadManager: downloadManager) }
             .alert("Delete this download?", isPresented: $model.showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
-                    downloadManager.deleteDownload(item)
+                    model.deleteOnClose = .delete
                     dismiss()
                 }
                 if downloadManager.smartIgnoreTarget(itemId: item.itemId) != nil {
                     Button("Delete & Ignore in Smart Downloads", role: .destructive) {
-                        downloadManager.deleteAndIgnore(itemIds: [item.itemId])
+                        model.deleteOnClose = .deleteAndIgnore
                         dismiss()
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             }
+            .onDisappear { model.pageClosed(item, downloadManager: downloadManager) }
     }
 }
