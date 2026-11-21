@@ -238,6 +238,7 @@ struct AdminBackupsView: View {
     @State private var backups: [JellyfinBackup] = []
     @State private var isLoading = true
     @State private var unsupported = false
+    @State private var loadFailed = false
     @State private var isCreating = false
     @State private var includeMetadata = false
     @State private var includeTrickplay = false
@@ -269,7 +270,9 @@ struct AdminBackupsView: View {
                     Text("The database and settings are always included. Backups are saved on the server, in its backup folder.")
                 }
                 Section("Backups") {
-                    if !isLoading && backups.isEmpty {
+                    if loadFailed {
+                        Text("Couldn't load the server's backups.").foregroundStyle(DT.Color.textSecondary)
+                    } else if !isLoading && backups.isEmpty {
                         Text("No backups yet.").foregroundStyle(DT.Color.textSecondary)
                     }
                     ForEach(backups) { backup in
@@ -305,8 +308,12 @@ struct AdminBackupsView: View {
         do {
             backups = try await JellyfinAdminClient().backups(credential: access.credential, authHeader: access.header)
             unsupported = false
+            loadFailed = false
         } catch {
-            unsupported = true
+            // Only an older server has no backups; anything else is a failure to say so.
+            let version = await ServerVersions.version(for: access.credential)
+            unsupported = version.map { $0 < ServerVersion(10, 11) } ?? false
+            loadFailed = !unsupported
         }
         isLoading = false
     }
