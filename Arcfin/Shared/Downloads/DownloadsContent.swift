@@ -250,7 +250,8 @@ struct DownloadsContent<Manage: View>: View {
                         PosterTile(
                             artwork: DownloadsModel.seriesPosterURL(group.seriesId, fallback: group.episodes.first),
                             title: group.seriesName,
-                            caption: "\(group.episodes.count) episode\(group.episodes.count == 1 ? "" : "s") · \(ByteCountFormatter.string(fromByteCount: size, countStyle: .file))",
+                            caption: [group.episodes.count == 1 ? String(localized: "1 episode") : String(localized: "\(group.episodes.count) episodes"),
+                                      ByteCountFormatter.string(fromByteCount: size, countStyle: .file)].joined(separator: " · "),
                             badge: "\(group.episodes.count)",
                             progress: nil, isWatched: group.episodes.allSatisfy(\.played),
                             selection: model.isSelecting ? model.selection.contains(id) : nil
@@ -389,7 +390,8 @@ struct DownloadsAlerts: ViewModifier {
             } message: {
                 Text("What's already downloaded of them is discarded.")
             }
-            .alert("Delete \(model.selection.count) selected download\(model.selection.count == 1 ? "" : "s")?", isPresented: $model.showBulkDeleteConfirm) {
+            .alert(model.selection.count == 1 ? "Delete 1 selected download?" : "Delete \(model.selection.count) selected downloads?",
+                   isPresented: $model.showBulkDeleteConfirm) {
                 Button("Delete", role: .destructive) {
                     model.deleteSelection(in: items, downloadManager: downloadManager)
                 }

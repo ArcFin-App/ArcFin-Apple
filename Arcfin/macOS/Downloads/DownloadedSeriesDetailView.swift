@@ -81,7 +81,8 @@ struct DownloadedSeriesDetailView: View {
             }
             Button("Cancel", role: .cancel) { model.pendingDelete = nil }
         }
-        .alert("Delete \(model.selection.count) selected episode\(model.selection.count == 1 ? "" : "s")?", isPresented: $model.showBulkDeleteConfirm) {
+        .alert(model.selection.count == 1 ? "Delete 1 selected episode?" : "Delete \(model.selection.count) selected episodes?",
+               isPresented: $model.showBulkDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 model.deleteSelection(of: episodes, downloadManager: downloadManager)
                 isSelectingMac = false

@@ -127,7 +127,7 @@ struct DownloadedSeriesHeader: View {
                         .font(.system(.title3, weight: .heavy))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(3)
-                    Label("\(episodes.count) episode\(episodes.count == 1 ? "" : "s") downloaded", systemImage: "arrow.down.circle.fill")
+                    Label(episodes.count == 1 ? "1 episode downloaded" : "\(episodes.count) episodes downloaded", systemImage: "arrow.down.circle.fill")
                         .font(.system(.caption2, weight: .semibold))
                         .foregroundStyle(DT.Color.accent)
                 }
