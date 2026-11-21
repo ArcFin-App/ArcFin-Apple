@@ -8,6 +8,7 @@ import JellyfinAPI
 import SyncEngine
 import Telemetry
 import os
+import Security
 #if os(iOS)
 import NetworkExtension
 import CoreLocation
@@ -104,20 +105,25 @@ final class AuthManager {
             return
         }
         #endif
+        // A locked device (a CarPlay, Lock Screen, Siri or background launch, for sign-ins
+        // saved before they moved to after-first-unlock) isn't "no profiles": the check waits
+        // for the unlock and reads again, so the launch, and the PIN lock after it, see the
+        // real profiles. Any other failure counts as none, as before.
+        var read = await readStoredServers()
+        var waits = 0
+        while case .locked = read, waits < 3, await Self.protectedDataAvailable() {
+            waits += 1
+            read = await readStoredServers()
+        }
+        let all: [ServerCredential]
+        if case .servers(let servers) = read {
+            all = servers
+            upgradeKeychainAccessibilityOnce()
+        } else {
+            all = []
+        }
         seerrPassword = await keychainRead { (try? $0.loadSeerrPassword()) ?? "" }
-        let read = await Self.withTimeout(seconds: 5, fallback: [ServerCredential]?.none) {
-            await self.backgroundKeychainRead()
-        }
-        guard let all = read else {
-            // Not "no profiles": the device is locked (a CarPlay, Lock Screen, Siri or
-            // background launch before the items moved to after-first-unlock) or the Keychain
-            // failed. The next caller tries again, and so does unlocking.
-            storedAuthCheck = nil
-            retryStoredAuthWhenUnlocked()
-            return
-        }
         profiles = all
-        upgradeKeychainAccessibilityOnce()
         guard !all.isEmpty else { return }
         let storedID = UserDefaults.standard.string(forKey: "arcfin.activeProfileID")
             .flatMap { UUID(uuidString: $0) }
@@ -697,7 +703,7 @@ final class AuthManager {
     // MARK: - Stored servers (async — always off main thread)
 
     func fetchStoredServers() async -> [ServerCredential] {
-        await backgroundKeychainRead() ?? []
+        await backgroundKeychainRead()
     }
 
     // MARK: - Private
@@ -715,9 +721,29 @@ final class AuthManager {
         UserDefaults.standard.set(credential.id.uuidString, forKey: "arcfin.activeProfileID")
     }
 
-    /// Nil when the Keychain couldn't be read, which isn't the same as having no sign-ins.
-    private func backgroundKeychainRead() async -> [ServerCredential]? {
-        await keychainRead { try? $0.allServers() }
+    private func backgroundKeychainRead() async -> [ServerCredential] {
+        await keychainRead { (try? $0.allServers()) ?? [] }
+    }
+
+    private enum StoredServersRead: Sendable {
+        case servers([ServerCredential])
+        /// The device is locked and the items are only readable when it isn't.
+        case locked
+        case failed
+    }
+
+    private func readStoredServers() async -> StoredServersRead {
+        await Self.withTimeout(seconds: 5, fallback: StoredServersRead.failed) {
+            await self.keychainRead { k -> StoredServersRead in
+                do {
+                    return .servers(try k.allServers())
+                } catch KeychainError.unexpectedStatus(let status) where status == errSecInteractionNotAllowed {
+                    return .locked
+                } catch {
+                    return .failed
+                }
+            }
+        }
     }
 
     private nonisolated static let keychainUpgradedKey = "arcfin.keychainAfterFirstUnlock"
@@ -732,27 +758,18 @@ final class AuthManager {
         }
     }
 
-    #if os(iOS) || os(tvOS)
-    @ObservationIgnored private var unlockObserver: NSObjectProtocol?
-
-    private func retryStoredAuthWhenUnlocked() {
-        guard unlockObserver == nil else { return }
-        unlockObserver = NotificationCenter.default.addObserver(
-            forName: UIApplication.protectedDataDidBecomeAvailableNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self else { return }
-                if let observer = self.unlockObserver { NotificationCenter.default.removeObserver(observer) }
-                self.unlockObserver = nil
-                // Someone may have signed in by hand in the meantime.
-                guard self.state == .unauthenticated, self.profiles.isEmpty else { return }
-                Task { await self.checkStoredAuthOnce() }
-            }
-        }
+    /// Waits until the device is unlocked; true when it is. Nothing to wait for on the Mac.
+    private static func protectedDataAvailable() async -> Bool {
+        #if os(iOS) || os(tvOS)
+        // Made before the check, so an unlock in between isn't missed.
+        let unlocks = NotificationCenter.default.notifications(named: UIApplication.protectedDataDidBecomeAvailableNotification)
+        if UIApplication.shared.isProtectedDataAvailable { return true }
+        for await _ in unlocks { return true }
+        return false
+        #else
+        return false
+        #endif
     }
-    #else
-    private func retryStoredAuthWhenUnlocked() {}
-    #endif
 
     // MARK: - Keychain queue
 
