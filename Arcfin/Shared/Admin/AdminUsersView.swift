@@ -15,7 +15,11 @@ final class AdminUsersModel {
     let admin = JellyfinAdminClient()
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         do {
             users = try await admin.users(credential: access.credential, authHeader: access.header)
                 .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
@@ -325,7 +329,11 @@ private struct AdminUserDetailView: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            model.actionError = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         version = await ServerVersions.version(for: access.credential)
         async let policyData = model.admin.policy(userId: user.id, credential: access.credential, authHeader: access.header)
         async let folders = model.admin.libraries(credential: access.credential, authHeader: access.header)
@@ -450,7 +458,11 @@ struct AdminDevicesView: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            error = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         if let fetched = try? await JellyfinAdminClient().devices(credential: access.credential, authHeader: access.header) {
             devices = fetched.sorted { ($0.lastActivity ?? .distantPast) > ($1.lastActivity ?? .distantPast) }
         } else {

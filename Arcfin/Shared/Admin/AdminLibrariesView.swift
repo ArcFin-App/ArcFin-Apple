@@ -15,7 +15,11 @@ final class AdminLibrariesModel {
     let admin = JellyfinAdminClient()
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         do {
             libraries = try await admin.libraries(credential: access.credential, authHeader: access.header)
             errorMessage = nil
@@ -365,7 +369,11 @@ struct AdminFolderPicker: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            failed = true
+            isLoading = false
+            return
+        }
         isLoading = true
         do {
             entries = try await JellyfinAdminClient().directories(at: path, credential: access.credential, authHeader: access.header)

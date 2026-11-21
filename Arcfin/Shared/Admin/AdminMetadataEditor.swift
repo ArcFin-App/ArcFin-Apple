@@ -168,7 +168,11 @@ struct AdminMetadataEditor: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            message = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         version = await ServerVersions.version(for: access.credential)
         if let data = try? await JellyfinAdminClient().item(id: item.id, credential: access.credential, authHeader: access.header),
            let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
@@ -413,7 +417,11 @@ private struct AdminImagePicker: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            message = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         isLoading = true
         images = (try? await JellyfinAdminClient().remoteImages(itemId: item.id, type: type,
                                                                 credential: access.credential, authHeader: access.header)) ?? []

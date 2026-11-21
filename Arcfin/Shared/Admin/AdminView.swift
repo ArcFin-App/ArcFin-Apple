@@ -11,6 +11,10 @@ enum AdminAccess {
         guard authManager.isAdmin, case .authenticated(let credential) = authManager.state else { return nil }
         return (credential, authManager.authClient.authHeader(token: credential.accessToken))
     }
+
+    static var unavailableMessage: String {
+        String(localized: "This profile isn't an admin, or the server can't be reached.")
+    }
 }
 
 @MainActor @Observable
@@ -31,7 +35,11 @@ final class AdminDashboardModel {
     var converting: Int { playing.filter { $0.playMethod == "Transcode" }.count }
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         async let info = admin.systemInfo(credential: access.credential, authHeader: access.header)
         async let sessions = media.getActiveSessions(credential: access.credential, authHeader: access.header)
         async let tasks = admin.scheduledTasks(credential: access.credential, authHeader: access.header)

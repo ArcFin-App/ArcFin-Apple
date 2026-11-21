@@ -81,7 +81,11 @@ struct AdminAPIKeysView: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            error = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         if let fetched = try? await JellyfinAdminClient().apiKeys(credential: access.credential, authHeader: access.header) {
             keys = fetched.sorted { ($0.created ?? .distantPast) > ($1.created ?? .distantPast) }
         } else {
@@ -151,7 +155,11 @@ struct AdminLogsView: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            failed = true
+            isLoading = false
+            return
+        }
         if let fetched = try? await JellyfinAdminClient().logFiles(credential: access.credential, authHeader: access.header) {
             files = fetched
             failed = false
@@ -215,7 +223,10 @@ private struct AdminLogView: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            isLoading = false
+            return
+        }
         text = (try? await JellyfinAdminClient().logFile(named: file.name, credential: access.credential, authHeader: access.header)) ?? ""
         lines = text.split(separator: "\n", omittingEmptySubsequences: true).reversed().enumerated().map { (id: $0.offset, text: String($0.element)) }
         filter()
@@ -316,7 +327,11 @@ struct AdminBackupsView: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            loadFailed = true
+            isLoading = false
+            return
+        }
         do {
             backups = try await JellyfinAdminClient().backups(credential: access.credential, authHeader: access.header)
             unsupported = false

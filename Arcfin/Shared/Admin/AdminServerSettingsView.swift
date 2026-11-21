@@ -43,7 +43,11 @@ final class AdminConfigModel {
     }
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            error = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         version = await ServerVersions.version(for: access.credential)
         do {
             let data = try await JellyfinAdminClient().configuration(section, credential: access.credential, authHeader: access.header)

@@ -15,7 +15,11 @@ final class AdminActivityModel {
     private let pageSize = 50
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         do {
             entries = try await admin.activity(limit: pageSize, credential: access.credential, authHeader: access.header)
             reachedEnd = entries.count < pageSize

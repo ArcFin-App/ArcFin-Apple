@@ -26,7 +26,11 @@ final class AdminTasksModel {
     }
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         do {
             tasks = try await admin.scheduledTasks(credential: access.credential, authHeader: access.header)
             errorMessage = nil
