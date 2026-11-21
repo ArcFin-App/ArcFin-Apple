@@ -9,11 +9,6 @@ import MediaEngine
 /// and repeat, volume, AirPlay, and buttons for lyrics and the queue.
 struct MusicPlayerBar: View {
     @State private var nowPlaying: MusicMacNowPlaying.Panel?
-    @State private var scrubbing: Double?
-    /// A held drag seeks when it's let go. A flick doesn't always say it's finished, so a
-    /// value that stops changing seeks too: at once off a drag, after a pause in one.
-    @State private var isDragging = false
-    @State private var scrubSettle: Task<Void, Never>?
     private var player: MusicQueuePlayer { AppServices.music.player }
 
     var body: some View {
@@ -25,7 +20,7 @@ struct MusicPlayerBar: View {
                 // badge have room beside the bar.
                 VStack(spacing: DT.Spacing.xxs) {
                     transport
-                    scrubber
+                    MusicBarScrubber()
                 }
                 .frame(maxWidth: .infinity)
                 trailingControls(song)
@@ -89,43 +84,6 @@ struct MusicPlayerBar: View {
         .font(.body)
     }
 
-    private func finishScrub() {
-        scrubSettle?.cancel()
-        scrubSettle = nil
-        guard let scrubbing else { return }
-        AppServices.music.seek(to: scrubbing)
-        self.scrubbing = nil
-    }
-
-    private var scrubber: some View {
-        let duration = max(player.duration, 1)
-        let position = scrubbing ?? player.position
-        return HStack(spacing: DT.Spacing.xs) {
-            Text(verbatim: position.musicTime)
-                .fixedSize()
-            Slider(value: Binding(get: { position }, set: { value in
-                scrubbing = value
-                scrubSettle?.cancel()
-                scrubSettle = Task {
-                    try? await Task.sleep(for: .milliseconds(isDragging ? 700 : 150))
-                    guard !Task.isCancelled else { return }
-                    finishScrub()
-                }
-            }), in: 0...duration) { editing in
-                isDragging = editing
-                if !editing { finishScrub() }
-            }
-            .controlSize(.mini)
-            .tint(DT.Color.accent)
-            .accessibilityLabel("Position")
-            Text(verbatim: "-" + max(duration - position, 0).musicTime)
-                .fixedSize()
-            if let song = player.current { MusicQualityBadge(song: song, tint: .primary).fixedSize() }
-        }
-        .font(.caption2.monospacedDigit())
-        .foregroundStyle(.secondary)
-    }
-
     private func trailingControls(_ song: MusicSong) -> some View {
         HStack(spacing: DT.Spacing.sm) {
             MusicRatingButtons(song: song)
@@ -172,6 +130,54 @@ struct MusicPlayerBar: View {
     }
 }
 
+/// Where the song is, with the times and its format beside it. Its own view, so the position
+/// ticking twice a second redraws only this, not the whole bar.
+private struct MusicBarScrubber: View {
+    @State private var scrubbing: Double?
+    /// A held drag seeks when it's let go. A flick doesn't always say it's finished, so a
+    /// value that stops changing seeks too: at once off a drag, after a pause in one.
+    @State private var isDragging = false
+    @State private var scrubSettle: Task<Void, Never>?
+    private var player: MusicQueuePlayer { AppServices.music.player }
+
+    private func finishScrub() {
+        scrubSettle?.cancel()
+        scrubSettle = nil
+        guard let scrubbing else { return }
+        AppServices.music.seek(to: scrubbing)
+        self.scrubbing = nil
+    }
+
+    var body: some View {
+        let duration = max(player.duration, 1)
+        let position = scrubbing ?? player.position
+        HStack(spacing: DT.Spacing.xs) {
+            Text(verbatim: position.musicTime)
+                .fixedSize()
+            Slider(value: Binding(get: { position }, set: { value in
+                scrubbing = value
+                scrubSettle?.cancel()
+                scrubSettle = Task {
+                    try? await Task.sleep(for: .milliseconds(isDragging ? 700 : 150))
+                    guard !Task.isCancelled else { return }
+                    finishScrub()
+                }
+            }), in: 0...duration) { editing in
+                isDragging = editing
+                if !editing { finishScrub() }
+            }
+            .controlSize(.mini)
+            .tint(DT.Color.accent)
+            .accessibilityLabel("Position")
+            Text(verbatim: "-" + max(duration - position, 0).musicTime)
+                .fixedSize()
+            if let song = player.current { MusicQualityBadge(song: song, tint: .primary).fixedSize() }
+        }
+        .font(.caption2.monospacedDigit())
+        .foregroundStyle(.secondary)
+    }
+}
+
 /// The song large, and beside it Playing Next or the lyrics.
 struct MusicMacNowPlaying: View {
     enum Panel: String, Identifiable {
@@ -212,7 +218,7 @@ struct MusicMacNowPlaying: View {
                         .labelsHidden()
                         switch panel {
                         case .queue: queue
-                        case .lyrics: lyricsView(song)
+                        case .lyrics: MusicMacLyrics(song: song, lyrics: lyrics)
                         }
                     }
                 }
@@ -285,9 +291,16 @@ struct MusicMacNowPlaying: View {
             }
         }
     }
+}
 
-    @ViewBuilder
-    private func lyricsView(_ song: MusicSong) -> some View {
+/// The words, the line being sung picked out. Its own view, so following the song redraws only
+/// this, not the whole sheet.
+private struct MusicMacLyrics: View {
+    let song: MusicSong
+    let lyrics: Lyrics?
+    private var player: MusicQueuePlayer { AppServices.music.player }
+
+    var body: some View {
         if let lyrics, !lyrics.lines.isEmpty {
             let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: song.id, at: player.position)
             ScrollViewReader { proxy in

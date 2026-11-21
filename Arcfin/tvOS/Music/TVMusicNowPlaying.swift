@@ -210,12 +210,33 @@ struct TVMusicNowPlaying: View {
     private var lyricsView: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Lyrics").font(.headline).foregroundStyle(.white.opacity(0.7))
-            lyricsLines
+            TVMusicLyricsLines(lyrics: lyrics)
         }
     }
 
-    @ViewBuilder
-    private var lyricsLines: some View {
+    private func backdrop(_ url: URL?) -> some View {
+        Color.black
+            .overlay {
+                CachedAsyncImage(url: url) { phase in
+                    if case .success(let image) = phase { image.resizable().scaledToFill() }
+                }
+                .blur(radius: 80)
+                .scaleEffect(1.3)
+            }
+            .overlay(.black.opacity(0.5))
+            .clipped()
+            .ignoresSafeArea()
+            .accessibilityHidden(true)
+    }
+}
+
+/// The words, the line being sung bright and kept in the middle. Its own view, so following
+/// the song redraws only this, not the whole screen.
+private struct TVMusicLyricsLines: View {
+    let lyrics: Lyrics?
+    private var player: MusicQueuePlayer { AppServices.music.player }
+
+    var body: some View {
         if let lyrics, !lyrics.lines.isEmpty {
             let songID = player.current?.id ?? ""
             let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: songID, at: player.position)
@@ -246,21 +267,6 @@ struct TVMusicNowPlaying: View {
         } else {
             ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-
-    private func backdrop(_ url: URL?) -> some View {
-        Color.black
-            .overlay {
-                CachedAsyncImage(url: url) { phase in
-                    if case .success(let image) = phase { image.resizable().scaledToFill() }
-                }
-                .blur(radius: 80)
-                .scaleEffect(1.3)
-            }
-            .overlay(.black.opacity(0.5))
-            .clipped()
-            .ignoresSafeArea()
-            .accessibilityHidden(true)
     }
 }
 

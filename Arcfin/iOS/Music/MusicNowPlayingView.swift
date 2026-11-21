@@ -107,11 +107,6 @@ struct MusicNowPlayingView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var panel = Panel.artwork
-    @State private var scrubbing: Double?
-    /// A held drag seeks when it's let go. A flick doesn't always say it's finished, so a
-    /// value that stops changing seeks too: at once off a drag, after a pause in one.
-    @State private var isDragging = false
-    @State private var scrubSettle: Task<Void, Never>?
     @State private var lyrics: Lyrics?
     private var player: MusicQueuePlayer { AppServices.music.player }
     private var music: MusicPlayback { AppServices.music }
@@ -132,7 +127,7 @@ struct MusicNowPlayingView: View {
                     } else {
                         compactTitleRow(song)
                     }
-                    scrubber
+                    MusicNowPlayingScrubber()
                     transport
                     volume
                     bottomBar(song)
@@ -294,47 +289,6 @@ struct MusicNowPlayingView: View {
         MusicNavigator.shared.open(route)
     }
 
-    private func finishScrub() {
-        scrubSettle?.cancel()
-        scrubSettle = nil
-        guard let scrubbing else { return }
-        music.seek(to: scrubbing)
-        self.scrubbing = nil
-    }
-
-    private var scrubber: some View {
-        let duration = max(player.duration, 1)
-        let position = scrubbing ?? music.position
-        return VStack(spacing: DT.Spacing.xxs) {
-            Slider(value: Binding(get: { position }, set: { value in
-                scrubbing = value
-                scrubSettle?.cancel()
-                scrubSettle = Task {
-                    try? await Task.sleep(for: .milliseconds(isDragging ? 700 : 150))
-                    guard !Task.isCancelled else { return }
-                    finishScrub()
-                }
-            }), in: 0...duration) { editing in
-                isDragging = editing
-                if !editing { finishScrub() }
-            }
-            .tint(.white)
-            .accessibilityLabel("Position")
-            .accessibilityValue(Text(verbatim: position.musicTime))
-            ZStack {
-                HStack {
-                    Text(verbatim: position.musicTime)
-                    Spacer()
-                    Text(verbatim: "-" + max(duration - position, 0).musicTime)
-                }
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.white.opacity(0.6))
-                .accessibilityHidden(true)
-                if let song = player.current { MusicQualityBadge(song: song) }
-            }
-        }
-    }
-
     private var transport: some View {
         HStack {
             Spacer()
@@ -432,6 +386,59 @@ struct MusicNowPlayingView: View {
         lyrics = nil
         lyrics = await MusicLyricsSource.shared.lyrics(for: song)
         if lyrics == nil, panel == .lyrics { panel = .artwork }
+    }
+}
+
+/// Where the song is, and the times either side. Its own view, so the position ticking twice
+/// a second redraws only this, not the whole of Now Playing.
+private struct MusicNowPlayingScrubber: View {
+    @State private var scrubbing: Double?
+    /// A held drag seeks when it's let go. A flick doesn't always say it's finished, so a
+    /// value that stops changing seeks too: at once off a drag, after a pause in one.
+    @State private var isDragging = false
+    @State private var scrubSettle: Task<Void, Never>?
+    private var player: MusicQueuePlayer { AppServices.music.player }
+    private var music: MusicPlayback { AppServices.music }
+
+    private func finishScrub() {
+        scrubSettle?.cancel()
+        scrubSettle = nil
+        guard let scrubbing else { return }
+        music.seek(to: scrubbing)
+        self.scrubbing = nil
+    }
+
+    var body: some View {
+        let duration = max(player.duration, 1)
+        let position = scrubbing ?? music.position
+        VStack(spacing: DT.Spacing.xxs) {
+            Slider(value: Binding(get: { position }, set: { value in
+                scrubbing = value
+                scrubSettle?.cancel()
+                scrubSettle = Task {
+                    try? await Task.sleep(for: .milliseconds(isDragging ? 700 : 150))
+                    guard !Task.isCancelled else { return }
+                    finishScrub()
+                }
+            }), in: 0...duration) { editing in
+                isDragging = editing
+                if !editing { finishScrub() }
+            }
+            .tint(.white)
+            .accessibilityLabel("Position")
+            .accessibilityValue(Text(verbatim: position.musicTime))
+            ZStack {
+                HStack {
+                    Text(verbatim: position.musicTime)
+                    Spacer()
+                    Text(verbatim: "-" + max(duration - position, 0).musicTime)
+                }
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.white.opacity(0.6))
+                .accessibilityHidden(true)
+                if let song = player.current { MusicQualityBadge(song: song) }
+            }
+        }
     }
 }
 
