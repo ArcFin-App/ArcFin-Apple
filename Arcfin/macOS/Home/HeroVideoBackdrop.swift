@@ -48,7 +48,7 @@ final class LoopingPlayerNSView: NSView {
     init(url: URL) {
         super.init(frame: .zero)
         wantsLayer = true
-        let headers = CustomHTTPHeaders.current
+        let headers = CustomHTTPHeaders.headers(for: url)
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
         item.add(videoOutput)

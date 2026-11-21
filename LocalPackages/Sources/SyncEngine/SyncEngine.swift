@@ -23,6 +23,13 @@ public enum OfflineProgressSync {
     @MainActor private static var isSyncing = false
     @MainActor private static var syncRequestedMeanwhile = false
 
+    /// The saved profile a download is for: its own, or the same user on the same server
+    /// signed in again since.
+    public static func credential(for profile: DownloadProfile, in profiles: [ServerCredential]) -> ServerCredential? {
+        profiles.first { $0.id.uuidString == profile.id && $0.userID == profile.userId }
+            ?? profiles.first { profile.owns(DownloadProfile($0)) }
+    }
+
     @MainActor
     public static func syncPending(
         modelContext: ModelContext,
@@ -59,7 +66,7 @@ public enum OfflineProgressSync {
         let byProfile = Dictionary(grouping: pending) { "\($0.serverId)|\($0.userId)" }
         for items in byProfile.values {
             guard let first = items.first,
-                  let credential = profiles.first(where: { $0.id.uuidString == first.serverId && $0.userID == first.userId })
+                  let credential = credential(for: first.profile, in: profiles)
             else { continue }
             let header = authHeader(credential)
             // What's being sent: a save that lands while a request is out is newer than it, so
@@ -182,6 +189,12 @@ public enum OfflineProgressSync {
         guard !settled.isEmpty else { return }
         // Read again: a download deleted while this ran added to the list.
         storeKeptProgress(keptProgress().filter { !settled.contains($0) })
+    }
+}
+
+extension DownloadProfile {
+    public init(_ credential: ServerCredential) {
+        self.init(id: credential.id.uuidString, userId: credential.userID, serverBaseURL: credential.baseURL.absoluteString)
     }
 }
 

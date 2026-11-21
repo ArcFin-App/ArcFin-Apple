@@ -524,7 +524,7 @@ final class NearbySetupGuide {
         var withPIN: Set<UUID> = []
         let active = authManager.state.credential?.id
         for profile in authManager.profiles where profile.id != active {
-            if await authManager.pin(for: profile.id) != nil { withPIN.insert(profile.id) }
+            if await authManager.storedPIN(for: profile.id) != .none { withPIN.insert(profile.id) }
         }
         locked = withPIN
         let free = authManager.profiles.filter { !(onTV?.contains($0.userID) ?? false) && !withPIN.contains($0.id) }

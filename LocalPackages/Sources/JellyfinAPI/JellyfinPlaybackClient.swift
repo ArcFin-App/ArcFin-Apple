@@ -356,7 +356,7 @@ extension JellyfinMediaClient {
         req.timeoutInterval = 8
 
         let probe = ThroughputProbe()
-        let session = URLSession(configuration: URLSession.arcfin.configuration, delegate: probe, delegateQueue: nil)
+        let session = URLSession(configuration: URLSession.arcfin.configuration(for: req.url), delegate: probe, delegateQueue: nil)
         defer { session.invalidateAndCancel() }
         session.dataTask(with: req).resume()
         let deadline = ContinuousClock.now + duration

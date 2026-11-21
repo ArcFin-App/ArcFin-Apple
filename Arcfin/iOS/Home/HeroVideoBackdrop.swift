@@ -58,7 +58,7 @@ final class LoopingPlayerUIView: UIView {
         self.onStart = onStart
         self.onEnd = onEnd
         super.init(frame: .zero)
-        let headers = CustomHTTPHeaders.current
+        let headers = CustomHTTPHeaders.headers(for: url)
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
         item.add(videoOutput)

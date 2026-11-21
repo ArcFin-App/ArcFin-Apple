@@ -14,34 +14,31 @@ public enum ImageCache: Sendable {
 
     private static let log = Telemetry.logger(category: "ImageCache")
 
-    /// Rebuilt when the custom headers change, keeping the same on-disk cache.
-    public static var shared: ImagePipeline {
-        PipelineBox.pipeline(for: CustomHTTPHeaders.current)
-    }
+    public static let shared: ImagePipeline = {
+        var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
+        config.dataCachePolicy = .automatic
+        let session = URLSessionConfiguration.default
+        session.urlCache = nil
+        // A poster asked for at cold launch, before the network path is up, otherwise fails
+        // at once and the card keeps its placeholder.
+        session.waitsForConnectivity = true
+        session.timeoutIntervalForResource = 30
+        config.dataLoader = ServerHeadersDataLoader(base: DataLoader(configuration: session))
+        return ImagePipeline(configuration: config)
+    }()
 
-    private enum PipelineBox {
-        private static let lock = NSLock()
-        nonisolated(unsafe) private static var cached: (headers: [String: String], pipeline: ImagePipeline)?
+    /// Adds each server's custom headers to that server's own images.
+    private struct ServerHeadersDataLoader: DataLoading {
+        let base: DataLoader
 
-        static func pipeline(for headers: [String: String]) -> ImagePipeline {
-            lock.lock()
-            defer { lock.unlock() }
-            if let cached, cached.headers == headers { return cached.pipeline }
-            var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
-            config.dataCachePolicy = .automatic
-            let session = URLSessionConfiguration.default
-            if !headers.isEmpty {
-                session.httpAdditionalHeaders = headers
+        func loadData(with request: URLRequest,
+                      didReceiveData: @escaping @Sendable (Data, URLResponse) -> Void,
+                      completion: @escaping @Sendable (Error?) -> Void) -> any Cancellable {
+            var request = request
+            for (name, value) in CustomHTTPHeaders.headers(for: request.url) where request.value(forHTTPHeaderField: name) == nil {
+                request.setValue(value, forHTTPHeaderField: name)
             }
-            session.urlCache = nil
-            // A poster asked for at cold launch, before the network path is up, otherwise fails
-            // at once and the card keeps its placeholder.
-            session.waitsForConnectivity = true
-            session.timeoutIntervalForResource = 30
-            config.dataLoader = DataLoader(configuration: session)
-            let pipeline = ImagePipeline(configuration: config)
-            cached = (headers, pipeline)
-            return pipeline
+            return base.loadData(with: request, didReceiveData: didReceiveData, completion: completion)
         }
     }
 

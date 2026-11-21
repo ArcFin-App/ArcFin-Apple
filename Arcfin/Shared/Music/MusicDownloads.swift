@@ -27,6 +27,8 @@ final class MusicDownloads {
     }
 
     nonisolated private struct Index: Codable, Sendable {
+        /// By profile and song (see key), so two profiles keep the same song apart. An index
+        /// from before was by song alone, and is keyed again as it's read.
         var songs: [String: Saved] = [:]
         var albums: [String: MusicAlbum] = [:]
     }
@@ -35,16 +37,23 @@ final class MusicDownloads {
     nonisolated private struct Pending: Codable, Sendable {
         var queue: [MusicSong] = []
         var failed: [MusicSong] = []
+        /// Who asked for each song, by song id. Songs queued before this was kept are anyone's.
+        var owners: [String: String]?
     }
 
-    private enum Outcome { case saved, cancelled, retry, failed }
+    nonisolated private static func key(_ userID: String, _ songID: String) -> String { "\(userID)/\(songID)" }
+
+    /// `waiting`: another profile's song, left queued until that profile is in use again.
+    private enum Outcome { case saved, cancelled, retry, failed, waiting }
 
     private var index = Index() { didSet { cache = nil } }
     /// This profile's songs, and their albums, worked out once for each change to the index:
     /// every row's downloaded mark and the page read them, and a big queue changes it often.
     @ObservationIgnored private var cache: (userID: String?, songs: [Saved], albums: [(album: MusicAlbum?, songs: [MusicSong])]?)?
-    /// Waiting or downloading, in order.
+    /// Waiting or downloading, in order, for every profile: each downloads only its own.
     private(set) var queue: [MusicSong] = [] { didSet { queuedIDs = Set(queue.map(\.id)) } }
+    /// Who asked for each song waiting or failed, by song id.
+    private var owners: [String: String] = [:]
     /// The queue's songs, so a row asking whether its song is queued doesn't search it.
     private var queuedIDs: Set<String> = []
     /// Songs that failed every try, until Retry puts them back in the queue.
@@ -102,12 +111,14 @@ final class MusicDownloads {
     ]
 
     private init() {
-        if let data = try? Data(contentsOf: Self.indexURL), let saved = try? JSONDecoder().decode(Index.self, from: data) {
+        if let data = try? Data(contentsOf: Self.indexURL), var saved = try? JSONDecoder().decode(Index.self, from: data) {
+            saved.songs = Dictionary(saved.songs.values.map { (Self.key($0.userID, $0.song.id), $0) }, uniquingKeysWith: { first, _ in first })
             index = saved
         }
         if let data = try? Data(contentsOf: Self.pendingURL), let pending = try? JSONDecoder().decode(Pending.self, from: data) {
             queue = pending.queue
             failed = pending.failed
+            owners = pending.owners ?? [:]
             queuedIDs = Set(queue.map(\.id))
         }
         pathMonitor.pathUpdateHandler = { path in
@@ -144,17 +155,31 @@ final class MusicDownloads {
     var songCount: Int { mine.count }
     var totalBytes: Int64 { mine.reduce(0) { $0 + $1.bytes } }
 
-    func bytes(of songs: [MusicSong]) -> Int64 {
-        songs.reduce(0) { $0 + (index.songs[$1.id]?.bytes ?? 0) }
+    /// This profile's saved copy of a song.
+    private func saved(_ songID: String) -> Saved? {
+        userID.flatMap { index.songs[Self.key($0, songID)] }
     }
 
-    func isDownloaded(_ songID: String) -> Bool { index.songs[songID]?.userID == userID && index.songs[songID] != nil }
-    func isQueued(_ songID: String) -> Bool { queuedIDs.contains(songID) }
-    func hasFailed(_ songID: String) -> Bool { failed.contains { $0.id == songID } }
+    func bytes(of songs: [MusicSong]) -> Int64 {
+        songs.reduce(0) { $0 + (saved($1.id)?.bytes ?? 0) }
+    }
+
+    func isDownloaded(_ songID: String) -> Bool { saved(songID) != nil }
+    func isQueued(_ songID: String) -> Bool { queuedIDs.contains(songID) && isMine(songID) }
+    func hasFailed(_ songID: String) -> Bool { failed.contains { $0.id == songID } && isMine(songID) }
+
+    /// Asked for by the profile in use, or queued before songs kept who asked.
+    private func isMine(_ songID: String) -> Bool {
+        owners[songID].map { $0 == userID } ?? true
+    }
+
+    /// This profile's songs waiting or downloading, and failed.
+    var myQueue: [MusicSong] { queue.filter { isMine($0.id) } }
+    var myFailed: [MusicSong] { failed.filter { isMine($0.id) } }
 
     /// The saved file, to play instead of streaming.
     func localURL(for songID: String) -> URL? {
-        guard let saved = index.songs[songID], saved.userID == userID else { return nil }
+        guard let saved = saved(songID) else { return nil }
         let url = Self.folder.appendingPathComponent(saved.file)
         return FileManager.default.fileExists(atPath: url.path) ? url : nil
     }
@@ -212,6 +237,7 @@ final class MusicDownloads {
         for song in songs where !isDownloaded(song.id) && !adding.contains(song.id) {
             adding.insert(song.id)
             added.append(song)
+            owners[song.id] = userID
         }
         if !added.isEmpty { queue.append(contentsOf: added) }
         saveIndex()
@@ -249,7 +275,7 @@ final class MusicDownloads {
         }
     }
 
-    func retryFailed() { download(failed) }
+    func retryFailed() { download(myFailed) }
 
     func download(album: MusicAlbum) {
         Task { download(await MusicActions.albumSongs(album), album: album) }
@@ -275,13 +301,18 @@ final class MusicDownloads {
         mine.map(\.song).filter { $0.albumId.map(ids.contains) ?? false }
     }
 
+    /// This profile's copies: a file another profile saved the same song to stays for it.
     func remove(_ songs: [MusicSong]) {
         let ids = Set(songs.map(\.id))
         stop(ids)
+        guard let userID else { return saveIndex() }
         for id in ids {
-            guard let saved = index.songs.removeValue(forKey: id) else { continue }
-            try? FileManager.default.removeItem(at: Self.folder.appendingPathComponent(saved.file))
-            try? FileManager.default.removeItem(at: Self.lyricsURL(id))
+            guard let saved = index.songs.removeValue(forKey: Self.key(userID, id)) else { continue }
+            let others = index.songs.values.filter { $0.song.id == id }
+            if !others.contains(where: { $0.file == saved.file }) {
+                try? FileManager.default.removeItem(at: Self.folder.appendingPathComponent(saved.file))
+            }
+            if others.isEmpty { try? FileManager.default.removeItem(at: Self.lyricsURL(id)) }
         }
         dropUnusedAlbums()
         saveIndex()
@@ -293,7 +324,7 @@ final class MusicDownloads {
     }
 
     func cancelAll() {
-        stop(Set(queue.map(\.id) + failed.map(\.id)))
+        stop(Set(myQueue.map(\.id) + myFailed.map(\.id)))
     }
 
     func removeAll() {
@@ -301,7 +332,9 @@ final class MusicDownloads {
         remove(mine.map(\.song))
     }
 
+    /// This profile's songs: one another profile is waiting for carries on for it.
     private func stop(_ ids: Set<String>) {
+        let ids = ids.filter(isMine)
         queue.removeAll { ids.contains($0.id) }
         failed.removeAll { ids.contains($0.id) }
         for id in ids {
@@ -330,7 +363,8 @@ final class MusicDownloads {
             while let self, !queue.isEmpty {
                 await waitUntilAllowed()
                 refreshActivity(force: true)
-                let batch = Array(queue.prefix(Self.parallel))
+                // Another profile's songs wait for it to be in use again.
+                let batch = Array(myQueue.prefix(Self.parallel))
                 guard !batch.isEmpty else { break }
                 let started = batch.map { song in
                     let transfer = Task { await self.download(song) }
@@ -378,7 +412,7 @@ final class MusicDownloads {
                 await waitUntilAllowed()
                 log.notice("Trying \(song.id, privacy: .public) again (\(attempt + 1, privacy: .public) of \(Self.attempts, privacy: .public))")
             }
-            guard !Task.isCancelled, isQueued(song.id) else {
+            guard !Task.isCancelled, queuedIDs.contains(song.id) else {
                 outcome = .cancelled
                 break
             }
@@ -389,16 +423,18 @@ final class MusicDownloads {
         bytes[song.id] = nil
         lastProgressUpdate[song.id] = nil
         transfers[song.id] = nil
+        if outcome == .waiting { return false }
         if outcome == .saved { runSaved += 1 }
-        let wasQueued = isQueued(song.id)
+        let wasQueued = queuedIDs.contains(song.id)
         queue.removeAll { $0.id == song.id }
         if outcome != .saved { resumeData[song.id] = nil }
-        if wasQueued, outcome == .retry || outcome == .failed, !hasFailed(song.id) { failed.append(song) }
+        if wasQueued, outcome == .retry || outcome == .failed, !failed.contains(where: { $0.id == song.id }) { failed.append(song) }
         saveQueue()
         return outcome == .saved
     }
 
     private func fetch(_ song: MusicSong) async -> Outcome {
+        guard isMine(song.id) else { return .waiting }
         guard let credential = AppServices.authManager.state.credential, let request = request(for: song, credential) else {
             return .retry
         }
@@ -420,11 +456,12 @@ final class MusicDownloads {
             return finished.status >= 500 || finished.status == 429 ? .retry : .failed
         }
         // Cancelled while it downloaded.
-        guard isQueued(id) else {
+        guard queuedIDs.contains(id) else {
             try? FileManager.default.removeItem(at: file)
             return .cancelled
         }
-        return await keep(song, file: file, fileExtension: finished.fileExtension, userID: credential.userID) ? .saved : .failed
+        // Whoever asked for it, should another profile be in use by now.
+        return await keep(song, file: file, fileExtension: finished.fileExtension, userID: owners[id] ?? credential.userID) ? .saved : .failed
     }
 
     private func request(for song: MusicSong, _ credential: ServerCredential) -> URLRequest? {
@@ -432,7 +469,7 @@ final class MusicDownloads {
                                                        container: song.container,
                                                        bitrateCap: MusicSettings.downloadBitrate) else { return nil }
         var request = URLRequest(url: url)
-        for (name, value) in CustomHTTPHeaders.current { request.setValue(value, forHTTPHeaderField: name) }
+        for (name, value) in CustomHTTPHeaders.headers(for: url) { request.setValue(value, forHTTPHeaderField: name) }
         // The system carries on with it in the background, where the Wi-Fi check can't run.
         if !UserDefaults.standard.bool(forKey: MusicSettings.downloadOnMobileDataKey) {
             request.allowsCellularAccess = false
@@ -445,15 +482,21 @@ final class MusicDownloads {
     private func keep(_ song: MusicSong, file: URL, fileExtension: String, userID: String) async -> Bool {
         let name = "\(song.id).\(fileExtension)"
         let destination = Self.folder.appendingPathComponent(name)
-        try? FileManager.default.removeItem(at: destination)
-        do {
-            try FileManager.default.moveItem(at: file, to: destination)
-        } catch {
-            log.error("Couldn't save \(song.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
-            return false
+        // Another profile saved this song already: the two share its file.
+        if index.songs.values.contains(where: { $0.file == name && $0.userID != userID }),
+           FileManager.default.fileExists(atPath: destination.path) {
+            try? FileManager.default.removeItem(at: file)
+        } else {
+            try? FileManager.default.removeItem(at: destination)
+            do {
+                try FileManager.default.moveItem(at: file, to: destination)
+            } catch {
+                log.error("Couldn't save \(song.id, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                return false
+            }
         }
         let size = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
-        index.songs[song.id] = Saved(song: song, file: name, userID: userID, bytes: size, savedAt: .now)
+        index.songs[Self.key(userID, song.id)] = Saved(song: song, file: name, userID: userID, bytes: size, savedAt: .now)
         saveIndex()
         savedThisRun.insert(song.id)
         await saveCover(for: song)
@@ -471,7 +514,7 @@ final class MusicDownloads {
         // At launch the profile is still being read.
         for _ in 0..<30 where userID == nil { try? await Task.sleep(for: .seconds(1)) }
         guard (200...299).contains(finished.status), let song = queue.first(where: { $0.id == finished.songID }),
-              let userID = userID else {
+              let userID = owners[song.id] ?? userID else {
             try? FileManager.default.removeItem(at: file)
             return
         }
@@ -490,7 +533,7 @@ final class MusicDownloads {
         flushSaves()
         guard !queue.isEmpty, isOnline, !MusicSettings.downloadsWaitForWiFi,
               let credential = AppServices.authManager.state.credential else { return }
-        for song in queue where progress[song.id] == nil {
+        for song in myQueue where progress[song.id] == nil {
             if let request = request(for: song, credential) { MusicTransfers.shared.handOff(request, songID: song.id) }
         }
     }
@@ -530,7 +573,7 @@ final class MusicDownloads {
         }
         let wanted = Set(recent.map(\.id))
         // Ones that dropped off the list go, unless they're favorites.
-        let dropped = keptRecent.subtracting(wanted).compactMap { index.songs[$0]?.song }
+        let dropped = keptRecent.subtracting(wanted).compactMap { saved($0)?.song }
             .filter { !MusicFavorites.shared.isFavorite($0.id, server: $0.isFavorite) }
         if !dropped.isEmpty { remove(dropped) }
         let missing = recent.filter { !isDownloaded($0.id) && !isQueued($0.id) }
@@ -626,6 +669,8 @@ final class MusicDownloads {
     }
 
     private func saveQueue() {
+        let waiting = Set(queue.map(\.id) + failed.map(\.id))
+        owners = owners.filter { waiting.contains($0.key) }
         unsaved.queue = true
         scheduleSave()
     }
@@ -659,7 +704,7 @@ final class MusicDownloads {
             }
         }
         if queue {
-            let snapshot = Pending(queue: self.queue, failed: failed), url = Self.pendingURL
+            let snapshot = Pending(queue: self.queue, failed: failed, owners: owners), url = Self.pendingURL
             Task.detached(priority: .utility) {
                 await MusicDownloadsWriter.shared.write(to: url, version: version) { try? JSONEncoder().encode(snapshot) }
             }

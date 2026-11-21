@@ -14,7 +14,8 @@ struct DownloadsView: View {
 
     @Environment(DownloadManager.self) private var downloadManager
     @Environment(AuthManager.self) private var authManager
-    @Query(sort: [SortDescriptor(\DownloadedItem.downloadedAt, order: .reverse)]) private var items: [DownloadedItem]
+    @Query(sort: [SortDescriptor(\DownloadedItem.downloadedAt, order: .reverse)]) private var allItems: [DownloadedItem]
+    private var items: [DownloadedItem] { downloadManager.ownDownloads(allItems) }
 
     @State private var model = DownloadsModel()
 

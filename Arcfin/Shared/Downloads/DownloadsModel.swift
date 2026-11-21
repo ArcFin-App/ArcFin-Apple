@@ -129,14 +129,14 @@ final class DownloadsModel {
 
     // MARK: - Artwork
 
-    static func fileURL(_ name: String?, in itemId: String) -> URL? {
+    static func fileURL(_ name: String?, of item: DownloadedItem) -> URL? {
         guard let name, !name.isEmpty else { return nil }
-        return DownloadStore.directory(for: itemId).appendingPathComponent(name)
+        return DownloadStore.directory(for: item).appendingPathComponent(name)
     }
 
     static func seriesPosterURL(_ seriesId: String, fallback: DownloadedItem?) -> URL? {
         let poster = DownloadStore.directory(for: seriesId).appendingPathComponent("poster.jpg")
         if FileManager.default.fileExists(atPath: poster.path) { return poster }
-        return fallback.flatMap { fileURL($0.posterFileName, in: $0.itemId) }
+        return fallback.flatMap { fileURL($0.posterFileName, of: $0) }
     }
 }

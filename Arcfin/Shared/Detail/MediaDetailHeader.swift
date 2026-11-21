@@ -3,6 +3,7 @@
 import SwiftUI
 import JellyfinAPI
 import Persistence
+import SwiftData
 
 struct MediaDetailHero: View {
     @Environment(MediaRepository.self) private var mediaRepo
@@ -82,12 +83,22 @@ private struct DetailFallbackHero: View {
 
 /// Artwork kept with a download, for when the server's can't be reached.
 private struct SavedDownloadArtwork: View {
+    @Environment(DownloadManager.self) private var downloadManager
+    @Environment(\.modelContext) private var modelContext
     let item: MediaItem
     let fileName: String
 
+    /// This profile's copy of the title, then the show's folder if this profile has an episode of it.
+    private var folders: [URL] {
+        var folders = downloadManager.ownDownload(itemId: item.id).map { [DownloadStore.directory(for: $0)] } ?? []
+        let seriesId = item.seriesId ?? item.id
+        let episodes = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.seriesId == seriesId }))) ?? []
+        if !downloadManager.ownDownloads(episodes).isEmpty { folders.append(DownloadStore.directory(for: seriesId)) }
+        return folders
+    }
+
     var body: some View {
-        let url = [item.id, item.seriesId].compactMap { $0 }
-            .map { DownloadStore.directory(for: $0).appendingPathComponent(fileName) }
+        let url = folders.map { $0.appendingPathComponent(fileName) }
             .first { FileManager.default.fileExists(atPath: $0.path) }
         if let url {
             CachedAsyncImage(url: url) { phase in

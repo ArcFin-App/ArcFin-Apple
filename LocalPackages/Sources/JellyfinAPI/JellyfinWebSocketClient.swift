@@ -43,7 +43,7 @@ public final class JellyfinWebSocketClient: NSObject, @unchecked Sendable {
         var request = URLRequest(url: comps.url!)
         // A gateway in front of the server (Cloudflare Access, Pangolin) refuses the upgrade
         // without the same headers every other request carries.
-        for (name, value) in CustomHTTPHeaders.current { request.setValue(value, forHTTPHeaderField: name) }
+        for (name, value) in CustomHTTPHeaders.headers(for: credential.baseURL) { request.setValue(value, forHTTPHeaderField: name) }
         request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         task = Self.session.webSocketTask(with: request)
         (events, continuation) = AsyncStream.makeStream(of: JellyfinWSEvent.self)

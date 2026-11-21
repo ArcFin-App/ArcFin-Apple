@@ -44,10 +44,15 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            phaseContent
+            if model.showsContent(phase) {
+                phaseContent
+            } else {
+                DT.Color.backgroundPrimary.ignoresSafeArea()
+            }
 
             if model.isAppLocked {
                 AppLockView(useFaceID: appLockUseFaceID) { model.unlock() }
+                    .accessibilityAddTraits(.isModal)
                     .transition(.opacity)
                     .zIndex(10)
             }

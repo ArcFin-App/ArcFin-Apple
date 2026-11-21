@@ -19,7 +19,8 @@ enum MusicIntentCommand: Sendable {
 
 @MainActor
 enum MusicIntentPerformer {
-    static var handle: ((MusicIntentCommand) async -> Void)?
+    /// Throws when the app lock is up and the command would start music.
+    static var handle: ((MusicIntentCommand) async throws -> Void)?
 }
 
 struct ToggleMusicPlaybackIntent: AudioPlaybackIntent {
@@ -28,7 +29,7 @@ struct ToggleMusicPlaybackIntent: AudioPlaybackIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        await MusicIntentPerformer.handle?(.togglePlayPause)
+        try await MusicIntentPerformer.handle?(.togglePlayPause)
         return .result()
     }
 }
@@ -39,7 +40,7 @@ struct NextSongIntent: AudioPlaybackIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        await MusicIntentPerformer.handle?(.next)
+        try await MusicIntentPerformer.handle?(.next)
         return .result()
     }
 }
@@ -50,7 +51,7 @@ struct PreviousSongIntent: AudioPlaybackIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        await MusicIntentPerformer.handle?(.previous)
+        try await MusicIntentPerformer.handle?(.previous)
         return .result()
     }
 }
@@ -66,7 +67,7 @@ struct PlayRecentSongIntent: AudioPlaybackIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        await MusicIntentPerformer.handle?(.play(songID: songID))
+        try await MusicIntentPerformer.handle?(.play(songID: songID))
         return .result()
     }
 }
@@ -80,7 +81,7 @@ struct SetMusicPlayingIntent: SetValueIntent, AudioPlaybackIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        await MusicIntentPerformer.handle?(.setPlaying(value))
+        try await MusicIntentPerformer.handle?(.setPlaying(value))
         return .result()
     }
 }

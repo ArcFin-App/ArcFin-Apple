@@ -202,7 +202,7 @@ struct DownloadedEpisodeRowContent: View {
     private var episodeThumbnail: some View {
         Group {
             if let fileName = episode.posterFileName,
-               let image = PlatformImage.from(contentsOfFile: DownloadStore.directory(for: episode.itemId).appendingPathComponent(fileName).path) {
+               let image = PlatformImage.from(contentsOfFile: DownloadStore.directory(for: episode).appendingPathComponent(fileName).path) {
                 Image(platformImage: image).resizable().scaledToFill()
             } else {
                 DT.Color.backgroundSecondary
@@ -228,7 +228,7 @@ struct DownloadedEpisodeRowPreview: View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
                 if let fileName = episode.posterFileName,
-                   let image = PlatformImage.from(contentsOfFile: DownloadStore.directory(for: episode.itemId).appendingPathComponent(fileName).path) {
+                   let image = PlatformImage.from(contentsOfFile: DownloadStore.directory(for: episode).appendingPathComponent(fileName).path) {
                     Image(platformImage: image).resizable().scaledToFill()
                 } else {
                     DT.Color.backgroundSecondary

@@ -42,7 +42,7 @@ struct MusicArtistDownloadButton: View {
         let ids = Set(albums.map(\.id))
         let saved = downloads.savedSongs(inAlbums: ids)
         let expected = albums.reduce(0) { $0 + ($1.trackCount ?? 0) }
-        if downloads.queue.contains(where: { $0.albumId.map(ids.contains) ?? false }) {
+        if downloads.myQueue.contains(where: { $0.albumId.map(ids.contains) ?? false }) {
             Button("Downloading", systemImage: "arrow.down.circle.dotted") {}
                 .disabled(true)
         } else if !albums.isEmpty, expected > 0, saved.count >= expected {
@@ -83,20 +83,20 @@ struct MusicDownloadsView: View {
 
     var body: some View {
         Group {
-            if downloads.isEmpty && downloads.queue.isEmpty && downloads.failed.isEmpty {
+            if downloads.isEmpty && downloads.myQueue.isEmpty && downloads.myFailed.isEmpty {
                 ContentUnavailableView("No Downloaded Music", systemImage: "arrow.down.circle",
                                        description: Text("Download a song, album or playlist from its menu to listen offline."))
             } else {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 28) {
                         storageCard
-                        if !downloads.queue.isEmpty || !downloads.failed.isEmpty { downloadingSection }
+                        if !downloads.myQueue.isEmpty || !downloads.myFailed.isEmpty { downloadingSection }
                         if !downloads.isEmpty { albumsSection }
                     }
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.top, 8)
                     .padding(.bottom, 32)
-                    .animation(DT.Animation.standard, value: (downloads.queue + downloads.failed).map(\.id))
+                    .animation(DT.Animation.standard, value: (downloads.myQueue + downloads.myFailed).map(\.id))
                 }
             }
         }
@@ -116,7 +116,7 @@ struct MusicDownloadsView: View {
         .confirmationDialog("Remove all downloaded music?", isPresented: $confirmRemoveAll, titleVisibility: .visible) {
             Button("Remove All Downloads", role: .destructive) { downloads.removeAll() }
         }
-        .confirmationDialog(Text("Cancel all \(downloads.queue.count + downloads.failed.count) downloads?"),
+        .confirmationDialog(Text("Cancel all \(downloads.myQueue.count + downloads.myFailed.count) downloads?"),
                             isPresented: $confirmCancelAll, titleVisibility: .visible) {
             Button("Cancel All", role: .destructive) { downloads.cancelAll() }
             Button("Keep Downloading", role: .cancel) {}
@@ -172,9 +172,9 @@ struct MusicDownloadsView: View {
     private var downloadingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                MusicDownloadsHeader(title: "Downloading", count: downloads.queue.count + downloads.failed.count)
+                MusicDownloadsHeader(title: "Downloading", count: downloads.myQueue.count + downloads.myFailed.count)
                 Spacer()
-                if !downloads.failed.isEmpty {
+                if !downloads.myFailed.isEmpty {
                     Button("Retry All") { downloads.retryFailed() }
                         .font(.subheadline.weight(.semibold))
                         .buttonStyle(.plain)
@@ -188,7 +188,7 @@ struct MusicDownloadsView: View {
             }
             // Lazy: Download All Albums can queue thousands of songs.
             LazyVStack(spacing: 0) {
-                ForEach(Array((downloads.queue + downloads.failed).enumerated()), id: \.element.id) { index, song in
+                ForEach(Array((downloads.myQueue + downloads.myFailed).enumerated()), id: \.element.id) { index, song in
                     if index > 0 {
                         Divider().overlay(DT.Color.textPrimary.opacity(0.06)).padding(.leading, 68)
                     }

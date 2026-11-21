@@ -19,7 +19,7 @@ struct DownloadedSeriesDetailView: View {
     @State private var isSelectingMac = false
 
     private var series: DownloadedSeries? { DownloadedSeriesDetailModel.series(seriesId, in: allSeries) }
-    private var episodes: [DownloadedItem] { DownloadedSeriesDetailModel.episodes(of: seriesId, in: allItems) }
+    private var episodes: [DownloadedItem] { DownloadedSeriesDetailModel.episodes(of: seriesId, in: downloadManager.ownDownloads(allItems)) }
 
     var body: some View {
         List {
