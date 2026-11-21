@@ -76,6 +76,10 @@ struct LibraryDetailView: View {
                                 ProgressView()
                                     .frame(maxWidth: .infinity)
                                     .padding()
+                            } else if model.loadMoreFailed {
+                                Button("Try Again") { Task { await model.loadMore(authManager: authManager) } }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
                             }
                         }
                         .padding(DT.Spacing.pagePad)

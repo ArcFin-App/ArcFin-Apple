@@ -38,6 +38,9 @@ final class LibraryDetailModel {
     private(set) var items: [MediaItem] = []
     private(set) var isLoading = true
     private(set) var isLoadingMore = false
+    /// The last next-page request failed; the grid offers to try it again, since the cell
+    /// that triggered it has already appeared.
+    private(set) var loadMoreFailed = false
     private(set) var totalItems = 0
     /// Where the next server page starts. Equals `items.count` unless genres are matched
     /// with "all", where the client drops titles from each server page.
@@ -312,6 +315,7 @@ final class LibraryDetailModel {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoading = true
+        loadMoreFailed = false
         fetchGeneration += 1
         let generation = fetchGeneration
         // try? previously swallowed whatever went wrong here outright — a filter/sort
@@ -395,13 +399,19 @@ final class LibraryDetailModel {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoadingMore = true
+        loadMoreFailed = false
+        let generation = fetchGeneration
         let fetched = try? await fetchPage(credential: cred, header: header, startIndex: serverOffset)
-        items.append(contentsOf: fetched?.items ?? [])
-        if let fetched {
-            serverOffset = fetched.nextOffset
-            totalItems = fetched.total
-        }
         isLoadingMore = false
+        // The filters or sort changed while this page loaded: it belongs to the old query.
+        guard generation == fetchGeneration else { return }
+        guard let fetched else {
+            loadMoreFailed = true
+            return
+        }
+        items.append(contentsOf: fetched.items)
+        serverOffset = fetched.nextOffset
+        totalItems = fetched.total
     }
 
     /// The server counts the titles that sort before the letter, which is where it starts in
