@@ -44,6 +44,7 @@ extension JellyfinMediaClient {
             var request = URLRequest(url: baseURL.appendingPathComponent("System/Ping"))
             request.timeoutInterval = timeout
             request.cachePolicy = .reloadIgnoringLocalCacheData
+            for (name, value) in CustomHTTPHeaders.headers(for: baseURL) { request.setValue(value, forHTTPHeaderField: name) }
             let start = ContinuousClock.now
             guard let (_, response) = try? await Self.diagnosticsSession.data(for: request),
                   let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else { continue }
@@ -59,8 +60,6 @@ extension JellyfinMediaClient {
         let config = URLSessionConfiguration.ephemeral
         config.waitsForConnectivity = false
         config.timeoutIntervalForResource = 15
-        let headers = CustomHTTPHeaders.current
-        config.httpAdditionalHeaders = headers.isEmpty ? nil : headers
         return URLSession(configuration: config)
     }()
 }

@@ -22,7 +22,10 @@ extension AppRootModel {
     /// No controls or Siri links on Apple TV.
     func handleRoutingLink(_ url: URL) {}
 
-    func runPendingRoutes() {}
+    /// Music Siri was asked for while the lock was up.
+    func runPendingRoutes() {
+        MusicSiriSearch.runHeld()
+    }
 
     /// Signed out, or the sign-in expired: a title the Top Shelf asked for before this doesn't
     /// open for whoever signs in next.

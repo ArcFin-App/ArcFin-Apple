@@ -123,7 +123,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                 return
             }
             // A profile with a PIN stays locked until it's entered on the phone.
-            if !AppServices.hasPassedLock, await auth.pin(for: credential.id) != nil {
+            if !AppServices.hasPassedLock, await auth.storedPIN(for: credential.id) != .none {
                 show(String(localized: "Unlock Arcfin on your iPhone"), in: list)
                 return
             }

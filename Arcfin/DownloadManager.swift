@@ -667,7 +667,7 @@ final class DownloadManager: NSObject {
             guard let dir = try? DownloadStore.ensureDirectory(forFolder: folder) else { continue }
             var req = URLRequest(url: JellyfinMediaClient.originalFileDownloadURL(
                 baseURL: entry.credential.baseURL, itemID: itemId, token: entry.credential.accessToken))
-            for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+            for (name, value) in CustomHTTPHeaders.headers(for: req.url) { req.setValue(value, forHTTPHeaderField: name) }
             req.setValue(entry.authHeader, forHTTPHeaderField: "Authorization")
             req.timeoutInterval = 60 * 60
             let task = session.downloadTask(with: req)
@@ -2324,7 +2324,7 @@ final class DownloadManager: NSObject {
                 task = session.downloadTask(withResumeData: resumeData)
             } else {
                 var req = URLRequest(url: url)
-                for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+                for (name, value) in CustomHTTPHeaders.headers(for: req.url) { req.setValue(value, forHTTPHeaderField: name) }
                 req.setValue(authHeader, forHTTPHeaderField: "Authorization")
                 req.timeoutInterval = 60 * 60
                 task = session.downloadTask(with: req)
@@ -2397,7 +2397,7 @@ final class DownloadManager: NSObject {
     private func downloadPart(url: URL, authHeader: String, range: ClosedRange<Int64>, to partURL: URL, itemId: String) async throws {
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             var req = URLRequest(url: url)
-            for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+            for (name, value) in CustomHTTPHeaders.headers(for: req.url) { req.setValue(value, forHTTPHeaderField: name) }
             req.setValue(authHeader, forHTTPHeaderField: "Authorization")
             req.setValue("bytes=\(range.lowerBound)-\(range.upperBound)", forHTTPHeaderField: "Range")
             req.timeoutInterval = 60 * 60
@@ -2419,7 +2419,7 @@ final class DownloadManager: NSObject {
     /// The file's size, when the server answers a one-byte range request with 206.
     private nonisolated static func rangeSupportedSize(of url: URL, authHeader: String) async -> Int64? {
         var req = URLRequest(url: url)
-        for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
+        for (name, value) in CustomHTTPHeaders.headers(for: req.url) { req.setValue(value, forHTTPHeaderField: name) }
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
         req.setValue("bytes=0-0", forHTTPHeaderField: "Range")
         req.timeoutInterval = 15

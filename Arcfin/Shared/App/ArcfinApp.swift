@@ -3,6 +3,7 @@
 import SwiftUI
 import SwiftData
 import Persistence
+import AuthCore
 
 @main
 struct ArcfinApp: App {
@@ -44,6 +45,13 @@ enum AppServices {
         didSet {
             if hasPassedLock, !oldValue { NotificationCenter.default.post(name: .arcfinPassedLock, object: nil) }
         }
+    }
+
+    /// The profile in use has a PIN that hasn't been entered this launch. Started by Siri or a
+    /// widget with no window yet, `hasPassedLock` alone would hold back a profile without one.
+    static func isLocked() async -> Bool {
+        guard !hasPassedLock, let id = authManager.state.credential?.id else { return false }
+        return await authManager.storedPIN(for: id) != .none
     }
 }
 

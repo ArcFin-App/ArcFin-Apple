@@ -32,7 +32,7 @@ struct ServerURLView: View {
         .appSheet(isPresented: $showSetupGuide) { SetupGuideSheet() }
         .appSheet(isPresented: $showCustomHeaders, title: "Custom Headers", systemImage: "key.horizontal") {
             NavigationStack {
-                CustomHeadersView()
+                CustomHeadersView(serverAddress: serverURL)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) { Button("Done") { showCustomHeaders = false } }
                     }

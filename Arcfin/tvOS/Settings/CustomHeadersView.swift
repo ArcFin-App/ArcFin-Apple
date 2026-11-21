@@ -6,10 +6,21 @@ import AuthCore
 /// Extra headers sent to the Jellyfin server, for one behind an access gateway such as
 /// Cloudflare Access or Pangolin.
 struct CustomHeadersView: View {
-    @State private var model = CustomHeadersModel()
+    @State private var model: CustomHeadersModel
+
+    /// `serverAddress`: the address being signed in to; without one, the profile in use's server.
+    init(serverAddress: String? = nil) {
+        _model = State(initialValue: CustomHeadersModel(serverAddress: serverAddress))
+    }
 
     var body: some View {
         List {
+            if model.needsAddress {
+                Text("Enter your server's address first. These headers are only sent to that server.")
+                    .font(.footnote)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
             Section {
                 ForEach($model.headers) { $header in
                     VStack(alignment: .leading, spacing: 6) {

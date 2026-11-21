@@ -14,16 +14,49 @@ extension URLSession {
     /// waiting for it — so the existing 8-20s per-request timeouts stay meaningful instead of
     /// racing the same startup window they're meant to bound.
     ///
-    /// Carries the user's custom headers (see CustomHTTPHeaders), rebuilt when they change.
-    public static var arcfin: URLSession {
-        ArcfinSessionBox.standard.session(for: CustomHTTPHeaders.current)
-    }
+    /// Adds a server's custom headers (see CustomHTTPHeaders) to requests for that server only.
+    public static let arcfin = ArcfinSession(resourceTimeout: 30)
 
     /// The same as `arcfin`, for the few calls the server only answers once a long job is
     /// done (a backup) or that return a lot (a server log): `arcfin` caps a whole transfer at
     /// 30 s.
-    public static var arcfinLongRunning: URLSession {
-        ArcfinSessionBox.longRunning.session(for: CustomHTTPHeaders.current)
+    public static let arcfinLongRunning = ArcfinSession(resourceTimeout: 600)
+}
+
+/// Wraps a URLSession to add the custom headers per request, since each server has its own
+/// and a session's httpAdditionalHeaders can't depend on the host.
+public struct ArcfinSession: Sendable {
+    private let session: URLSession
+    private let resourceTimeout: TimeInterval
+
+    init(resourceTimeout: TimeInterval) {
+        self.resourceTimeout = resourceTimeout
+        session = URLSession(configuration: Self.configuration(resourceTimeout: resourceTimeout, headers: [:]))
+    }
+
+    private static func configuration(resourceTimeout: TimeInterval, headers: [String: String]) -> URLSessionConfiguration {
+        let config = URLSessionConfiguration.default
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForResource = resourceTimeout
+        config.httpAdditionalHeaders = headers.isEmpty ? nil : headers
+        return config
+    }
+
+    /// For a session of its own (one with a delegate) whose requests all go to `url`'s server.
+    public func configuration(for url: URL?) -> URLSessionConfiguration {
+        Self.configuration(resourceTimeout: resourceTimeout, headers: CustomHTTPHeaders.headers(for: url))
+    }
+
+    public func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        try await session.data(for: Self.withHeaders(request))
+    }
+
+    public func data(from url: URL) async throws -> (Data, URLResponse) {
+        try await session.data(for: Self.withHeaders(URLRequest(url: url)))
+    }
+
+    public func download(for request: URLRequest) async throws -> (URL, URLResponse) {
+        try await session.download(for: Self.withHeaders(request))
     }
 
     /// An image's bytes, or nil. Jellyfin's resize cache can answer one size of an image
@@ -40,31 +73,13 @@ extension URLSession {
         else { return nil }
         return data
     }
-}
 
-private final class ArcfinSessionBox: @unchecked Sendable {
-    static let standard = ArcfinSessionBox(resourceTimeout: 30)
-    static let longRunning = ArcfinSessionBox(resourceTimeout: 600)
-
-    private let resourceTimeout: TimeInterval
-    private let lock = NSLock()
-    private var cached: (headers: [String: String], session: URLSession)?
-
-    private init(resourceTimeout: TimeInterval) {
-        self.resourceTimeout = resourceTimeout
-    }
-
-    func session(for headers: [String: String]) -> URLSession {
-        lock.lock()
-        defer { lock.unlock() }
-        if let cached, cached.headers == headers { return cached.session }
-        let config = URLSessionConfiguration.default
-        config.waitsForConnectivity = true
-        config.timeoutIntervalForResource = resourceTimeout
-        config.httpAdditionalHeaders = headers.isEmpty ? nil : headers
-        let session = URLSession(configuration: config)
-        cached?.session.finishTasksAndInvalidate()
-        cached = (headers, session)
-        return session
+    /// A header the caller set itself (Authorization above all) wins.
+    private static func withHeaders(_ request: URLRequest) -> URLRequest {
+        var request = request
+        for (name, value) in CustomHTTPHeaders.headers(for: request.url) where request.value(forHTTPHeaderField: name) == nil {
+            request.setValue(value, forHTTPHeaderField: name)
+        }
+        return request
     }
 }

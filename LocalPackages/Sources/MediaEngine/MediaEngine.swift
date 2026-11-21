@@ -371,7 +371,7 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         positionTicks = 0
         durationTicks = 0
 
-        let headers = CustomHTTPHeaders.current
+        let headers = CustomHTTPHeaders.headers(for: url)
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
         // Stereo films get spatial audio too when the listener has Spatialize Stereo on.

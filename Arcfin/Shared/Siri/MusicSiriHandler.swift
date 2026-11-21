@@ -18,6 +18,10 @@ final class MusicSiriHandler: NSObject, INPlayMediaIntentHandling {
         if let picked = intent.mediaItems?.first, picked.identifier?.contains(":") == true {
             return INPlayMediaMediaItemResolutionResult.successes(with: [picked])
         }
+        // Nothing is looked up while the app lock is up; it's asked again once it opens.
+        if await MusicSiriSearch.isLocked() {
+            return INPlayMediaMediaItemResolutionResult.successes(with: [MusicSiriSearch.lockedItem])
+        }
         switch await MusicSiriSearch.find(MusicSiriSearch.Query(intent.mediaSearch)) {
         case .found(let found):
             return INPlayMediaMediaItemResolutionResult.successes(with: [found.item])
@@ -33,6 +37,15 @@ final class MusicSiriHandler: NSObject, INPlayMediaIntentHandling {
 
     func handle(intent: INPlayMediaIntent) async -> INPlayMediaIntentResponse {
         guard let identifier = intent.mediaItems?.first?.identifier else { return .init(code: .failure, userActivity: nil) }
+        // The app comes forward to its lock screen and plays it once it's unlocked.
+        let isLocked = await MusicSiriSearch.isLocked()
+        if isLocked || identifier == MusicSiriSearch.lockedID {
+            let request: MusicSiriSearch.Request = identifier == MusicSiriSearch.lockedID
+                ? .query(MusicSiriSearch.Query(intent.mediaSearch)) : .item(identifier)
+            MusicSiriSearch.holdUntilUnlocked(request, shuffled: intent.playShuffled == true)
+            if !isLocked { MusicSiriSearch.runHeld() }
+            return .init(code: .continueInApp, userActivity: nil)
+        }
         // Video can't start in the background: the app comes forward and Home plays it.
         if identifier.hasPrefix("video:") {
             WatchRoute.open(id: String(identifier.dropFirst("video:".count)))
@@ -97,6 +110,43 @@ enum MusicSiriSearch {
 
     private static let log = Telemetry.logger(category: "Siri")
     private static var held: (identifier: String, shuffled: Bool)?
+
+    enum Request: Sendable { case query(Query), item(String) }
+
+    static let lockedID = "locked"
+    static var lockedItem: INMediaItem { INMediaItem(identifier: lockedID, title: nil, type: .music, artwork: nil) }
+    private static var lockedRequest: (request: Request, shuffled: Bool, profileID: UUID?)?
+
+    static func isLocked() async -> Bool {
+        await AppServices.authManager.checkStoredAuthOnce()
+        return await AppServices.isLocked()
+    }
+
+    static func holdUntilUnlocked(_ request: Request, shuffled: Bool) {
+        lockedRequest = (request, shuffled, AppServices.authManager.state.credential?.id)
+    }
+
+    /// Once the lock opens; a different profile picked there doesn't get the other's request.
+    static func runHeld() {
+        guard let request = lockedRequest else { return }
+        lockedRequest = nil
+        guard request.profileID == AppServices.authManager.state.credential?.id else { return }
+        Task {
+            let identifier: String
+            switch request.request {
+            case .item(let id):
+                identifier = id
+            case .query(let query):
+                guard case .found(let found) = await find(query) else { return }
+                identifier = found.identifier
+            }
+            if identifier.hasPrefix("video:") {
+                WatchRoute.open(id: String(identifier.dropFirst("video:".count)))
+            } else {
+                _ = await play(identifier, shuffled: request.shuffled)
+            }
+        }
+    }
 
     static func hold(_ identifier: String, shuffled: Bool) {
         log.notice("Siri asked for \(identifier, privacy: .public)")
