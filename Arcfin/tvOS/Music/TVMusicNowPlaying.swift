@@ -11,16 +11,12 @@ import MediaEngine
 struct TVMusicNowPlaying: View {
     enum Panel: String { case upNext, lyrics }
 
-    /// In the tab bar rather than over everything: focus isn't taken on appearing, since
-    /// moving along the tabs passes through it.
-    var isTab = false
-    @Environment(\.dismiss) private var dismiss
     /// The right-hand column, kept between songs and visits; empty for none.
     @AppStorage("tvMusicNowPlayingPanel") private var panelName = ""
     @State private var lyrics: Lyrics?
     @State private var showsSleepTimer = false
     @State private var showsLyricsTiming = false
-    /// Play/Pause has focus when it opens, not the first thing on the screen.
+    /// Play/Pause has focus when focus comes down into the tab, not the first thing on it.
     @FocusState private var playPauseFocused: Bool
     private var player: MusicQueuePlayer { AppServices.music.player }
 
@@ -58,15 +54,12 @@ struct TVMusicNowPlaying: View {
                     lyrics = await MusicLyricsSource.shared.lyrics(for: song)
                     if lyrics == nil, panel == .lyrics, !MusicLyricsSource.shared.isAvailable(song) { panelName = "" }
                 }
-            } else if isTab {
-                ContentUnavailableView("Nothing Playing", systemImage: "music.note")
             } else {
-                Color.black.onAppear { dismiss() }
+                ContentUnavailableView("Nothing Playing", systemImage: "music.note")
             }
         }
         .foregroundStyle(.white)
         .defaultFocus($playPauseFocused, true)
-        .onAppear { if !isTab { playPauseFocused = true } }
         .onPlayPauseCommand { player.togglePlayPause() }
     }
 

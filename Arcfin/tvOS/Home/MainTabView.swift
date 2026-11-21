@@ -16,6 +16,8 @@ struct MainTabView: View {
     @Bindable private var music = TVMusicPresenter.shared
     /// Each tab by name, so Now Playing coming and going doesn't move the selection.
     @State private var selection = "home"
+    /// Asked for before the music had started, so its tab wasn't there yet.
+    @State private var wantsNowPlaying = false
 
     var body: some View {
         if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
@@ -25,7 +27,7 @@ struct MainTabView: View {
                 // While music is playing or paused, its Now Playing is a tab of its own.
                 if AppServices.music.isActive {
                     Tab("Now Playing", systemImage: "waveform", value: "nowPlaying") {
-                        TVMusicNowPlaying(isTab: true)
+                        TVMusicNowPlaying()
                     }
                 }
                 Tab("Home", systemImage: "house", value: "home") {
@@ -71,9 +73,16 @@ struct MainTabView: View {
             .onPlayPauseCommand { music.playPausePressed() }
             // The music stopped while its tab was showing: back to Home.
             .onChange(of: AppServices.music.isActive) { _, active in
+                if active, wantsNowPlaying { selection = "nowPlaying" }
+                wantsNowPlaying = false
                 if !active, selection == "nowPlaying" { selection = "home" }
             }
-            .fullScreenCover(isPresented: $music.isShowingNowPlaying) { TVMusicNowPlaying() }
+            // Starting a song, or Play/Pause on the remote, brings the Now Playing tab forward.
+            .onChange(of: music.isShowingNowPlaying) { _, show in
+                guard show else { return }
+                music.isShowingNowPlaying = false
+                if AppServices.music.isActive { selection = "nowPlaying" } else { wantsNowPlaying = true }
+            }
             .appSheet(item: $tagEditor.item, title: "Tags", systemImage: "tag") { item in
                 EditTagsSheet(item: item)
             }
