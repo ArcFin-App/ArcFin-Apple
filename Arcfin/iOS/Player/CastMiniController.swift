@@ -496,6 +496,7 @@ final class RemotePlaybackActivity {
     private var shown: Attributes.ContentState?
     private var artworkItemID: String?
     private var artwork: Data?
+    private static let pausedStaleAfter: TimeInterval = 5 * 60
 
     func install() {
         activity = Activity<Attributes>.activities.first
@@ -545,7 +546,11 @@ final class RemotePlaybackActivity {
             updatedAt: .now,
             artwork: artwork
         )
-        let content = ActivityContent(state: state, staleDate: state.playbackSpan?.upperBound.addingTimeInterval(60))
+        // Paused (or no runtime) has no end to go stale after, so it goes stale a few minutes
+        // after the last word from the server: once the app stops refreshing, a session that
+        // since stopped is marked stale instead of looking current for hours.
+        let content = ActivityContent(state: state, staleDate: state.playbackSpan?.upperBound.addingTimeInterval(60)
+                                                    ?? state.updatedAt.addingTimeInterval(Self.pausedStaleAfter))
         if let activity {
             guard needsUpdate(state) else { return }
             await activity.update(content)
@@ -567,6 +572,10 @@ final class RemotePlaybackActivity {
         guard let shown else { return true }
         if shown.title != state.title || shown.subtitle != state.subtitle || shown.deviceName != state.deviceName
             || shown.isPaused != state.isPaused || shown.durationSeconds != state.durationSeconds || shown.artwork != state.artwork {
+            return true
+        }
+        // Pushes the paused stale date on while the list keeps coming back.
+        if shown.playbackSpan == nil, state.updatedAt.timeIntervalSince(shown.updatedAt) > Self.pausedStaleAfter / 2 {
             return true
         }
         let expected = shown.isPaused ? shown.positionSeconds
