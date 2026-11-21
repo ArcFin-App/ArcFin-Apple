@@ -41,10 +41,12 @@ final class RemoteControl {
     func handle(_ remote: JellyfinRemoteCommand) {
         switch remote {
         case .play(let ids, let startTicks, let startIndex):
+            // Some clients send -1.
+            let index = max(0, min(startIndex ?? 0, ids.count - 1))
             Task {
                 // Songs go to the music player; anything else opens as a title.
-                if await AppServices.music.playFromRemote(ids, startIndex: startIndex ?? 0, startTicks: startTicks) { return }
-                play(id: ids[min(startIndex ?? 0, ids.count - 1)], startTicks: startTicks)
+                if await AppServices.music.playFromRemote(ids, startIndex: index, startTicks: startTicks) { return }
+                play(id: ids[index], startTicks: startTicks)
             }
         case .queue(let ids, let next):
             Task { _ = await AppServices.music.queueFromRemote(ids, next: next) }
