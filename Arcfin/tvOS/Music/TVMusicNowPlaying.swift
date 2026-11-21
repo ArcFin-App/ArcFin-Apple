@@ -234,6 +234,9 @@ struct TVMusicNowPlaying: View {
 /// the song redraws only this, not the whole screen.
 private struct TVMusicLyricsLines: View {
     let lyrics: Lyrics?
+    /// Each line takes focus, so the remote scrolls through words longer than the screen;
+    /// while one has it, the column stays where the remote put it.
+    @FocusState private var focusedLine: Int?
     private var player: MusicQueuePlayer { AppServices.music.player }
 
     var body: some View {
@@ -245,10 +248,13 @@ private struct TVMusicLyricsLines: View {
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 22) {
                             ForEach(Array(lyrics.lines.enumerated()), id: \.offset) { index, line in
+                                let dim = focusedLine.map { $0 != index } ?? (lyrics.isSynced && index != current)
                                 Text(verbatim: line.text)
                                     .font(.title2.weight(.bold))
-                                    .foregroundStyle(.white.opacity(lyrics.isSynced && index != current ? 0.35 : 1))
+                                    .foregroundStyle(.white.opacity(dim ? 0.35 : 1))
                                     .frame(maxWidth: .infinity, alignment: .leading)
+                                    .focusable()
+                                    .focused($focusedLine, equals: index)
                                     .id(index)
                             }
                         }
@@ -257,13 +263,15 @@ private struct TVMusicLyricsLines: View {
                     .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.15),
                                                  .init(color: .black, location: 0.85), .init(color: .clear, location: 1)],
                                          startPoint: .top, endPoint: .bottom))
+                    .focusSection()
                     .onChange(of: current, initial: true) { _, line in
-                        guard let line else { return }
+                        guard let line, focusedLine == nil else { return }
                         withAnimation(DT.Animation.standard) { proxy.scrollTo(line, anchor: .center) }
                     }
                 }
             }
             .animation(DT.Animation.standard, value: current)
+            .animation(DT.Animation.fast, value: focusedLine)
         } else {
             ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
         }
