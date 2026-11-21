@@ -12,12 +12,12 @@ struct PlaybackSkipIntervalSection: View {
         Section {
             SettingsPicker("Skip Forward", detail: "For the skip buttons, double-tap and the arrow keys.", selection: $skipForwardSeconds,
                            options: skipIntervalOptions) { seconds in
-                Text("\(seconds)s")
+                Text(Duration.seconds(seconds).formatted(.units(allowed: [.seconds], width: .narrow)))
             }
             .syncLocked("skipForwardSeconds", authManager)
             SettingsPicker("Skip Backward", detail: "For the skip buttons, double-tap and the arrow keys.", selection: $skipBackwardSeconds,
                            options: skipIntervalOptions) { seconds in
-                Text("\(seconds)s")
+                Text(Duration.seconds(seconds).formatted(.units(allowed: [.seconds], width: .narrow)))
             }
             .syncLocked("skipBackwardSeconds", authManager)
         }
@@ -74,7 +74,7 @@ struct PlaybackAutomationSection: View {
                                selection: Binding(get: { min(max(upNextCountdownSeconds, 3), 5) },
                                                   set: { upNextCountdownSeconds = $0 }),
                                options: [3, 4, 5]) { seconds in
-                    Text("\(seconds)s")
+                    Text(Duration.seconds(seconds).formatted(.units(allowed: [.seconds], width: .narrow)))
                 }
                 .syncLocked("upNextCountdownSeconds", authManager)
             }
