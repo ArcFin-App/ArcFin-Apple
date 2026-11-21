@@ -130,6 +130,7 @@ private struct AdminLibraryDetailView: View {
     @State private var showRename = false
     @State private var newName = ""
     @State private var confirmRemove = false
+    @State private var confirmReplace = false
     @State private var removingFolder: String?
 
     private var current: JellyfinLibraryFolder { model.libraries.first { $0.id == library.id } ?? library }
@@ -145,12 +146,7 @@ private struct AdminLibraryDetailView: View {
                 } label: {
                     Label("Scan for New Files", systemImage: "arrow.triangle.2.circlepath")
                 }
-                Button {
-                    model.perform(authManager, done: String(localized: "Every title in “\(current.name)” is getting its details again."),
-                                  failure: String(localized: "The refresh didn't start.")) { admin, credential, header in
-                        try await admin.scanLibrary(id: current.id, replaceMetadata: true, credential: credential, authHeader: header)
-                    }
-                } label: {
+                Button { confirmReplace = true } label: {
                     Label("Replace All Metadata", systemImage: "text.badge.checkmark")
                 }
             } footer: {
@@ -195,6 +191,17 @@ private struct AdminLibraryDetailView: View {
                     try await admin.addLibraryFolder(library: current.name, path: path, credential: credential, authHeader: header)
                 }
             }
+        }
+        .alert("Replace All Metadata?", isPresented: $confirmReplace) {
+            Button("Replace", role: .destructive) {
+                model.perform(authManager, done: String(localized: "Every title in “\(current.name)” is getting its details again."),
+                              failure: String(localized: "The refresh didn't start.")) { admin, credential, header in
+                    try await admin.scanLibrary(id: current.id, replaceMetadata: true, credential: credential, authHeader: header)
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Every detail and image is fetched again, and edits made by hand are lost.")
         }
         .alert("Rename Library", isPresented: $showRename) {
             TextField("Name", text: $newName)
