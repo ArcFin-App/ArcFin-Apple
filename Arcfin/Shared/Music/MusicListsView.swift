@@ -306,6 +306,7 @@ struct MusicArtistView: View {
     @State private var topSongs: [MusicSong] = []
     @State private var appearsOn: [MusicAlbum] = []
     @State private var similar: [MusicArtist] = []
+    @State private var confirmDownloadAll = false
 
     init(artist: MusicArtist, libraryID: String?) {
         self.libraryID = libraryID
@@ -413,8 +414,15 @@ struct MusicArtistView: View {
                         let id = artist.id
                         Task { await MusicActions.instantMix(from: id) }
                     }
-                    MusicArtistDownloadButton(artist: artist, albums: albums.items)
+                    MusicArtistDownloadButton(artist: artist, albums: albums.items) { confirmDownloadAll = true }
                 }
+            }
+        }
+        .confirmationDialog(Text("Download all \(max(albums.total, albums.items.count)) albums by \(artist.name)?"),
+                            isPresented: $confirmDownloadAll, titleVisibility: .visible) {
+            Button("Download All Albums") {
+                let artist = artist
+                Task { await MusicDownloads.shared.download(artist: artist) }
             }
         }
         .task {
