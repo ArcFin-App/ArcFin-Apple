@@ -273,6 +273,7 @@ private struct AdminUserDetailView: View {
                           || ServerEditGuard.changedKeys(from: originalPolicy, to: policy).isEmpty)
             }
         }
+        .adminDiscardChangesGuard(!ServerEditGuard.changedKeys(from: originalPolicy, to: policy).isEmpty)
         .task { await load() }
         .untestedServerConfirmation(isPresented: $confirmUntested, status: ServerCompatibility.status(version)) { save() }
         .alert("Not All Saved", isPresented: Binding(get: { !notKept.isEmpty }, set: { if !$0 { notKept = [] } })) {

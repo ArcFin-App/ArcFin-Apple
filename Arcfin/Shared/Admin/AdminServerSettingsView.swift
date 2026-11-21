@@ -154,6 +154,7 @@ private struct AdminConfigPage<Content: View>: View {
                 .disabled(!model.hasChanges || model.isSaving || !model.compatibility.canSave)
             }
         }
+        .adminDiscardChangesGuard(model.hasChanges)
         .task { await model.load(authManager: authManager) }
         .untestedServerConfirmation(isPresented: $confirmUntested, status: model.compatibility) {
             model.save(authManager: authManager)
@@ -174,6 +175,38 @@ private struct AdminConfigPage<Content: View>: View {
             Text(restartNote ? String(localized: "The server has the new settings. Restart it for all of them to take effect.")
                  : String(localized: "The server has the new settings."))
         }
+    }
+}
+
+extension View {
+    /// With unsaved changes, going back asks before throwing them away.
+    func adminDiscardChangesGuard(_ hasChanges: Bool) -> some View {
+        modifier(AdminDiscardChangesGuard(hasChanges: hasChanges))
+    }
+}
+
+private struct AdminDiscardChangesGuard: ViewModifier {
+    let hasChanges: Bool
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirming = false
+
+    func body(content: Content) -> some View {
+        content
+            .navigationBarBackButtonHidden(hasChanges)
+            .toolbar {
+                if hasChanges {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Back") { confirming = true }
+                    }
+                }
+            }
+            .alert("Discard Changes?", isPresented: $confirming) {
+                Button("Discard Changes", role: .destructive) { dismiss() }
+                Button("Keep Editing", role: .cancel) {}
+            } message: {
+                Text("What you changed on this page hasn't been saved to the server.")
+            }
     }
 }
 
