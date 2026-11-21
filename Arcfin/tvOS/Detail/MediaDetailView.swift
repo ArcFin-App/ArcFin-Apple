@@ -285,6 +285,12 @@ struct MediaDetailView: View {
         let isResumable = model.isResumable
         return VStack(spacing: 14) {
             Button {
+                // Play has focus before the page has loaded which episode is next; the series
+                // itself can't play, so look it up now.
+                if playTarget.type == .series {
+                    Task { playbackRequest = await HomeModel.seriesPlayback(item, authManager: authManager) }
+                    return
+                }
                 playbackRequest = Arcfin.PlaybackRequest(item: playTarget, startTicks: isResumable ? (playTarget.userData?.playbackPositionTicks ?? 0) : 0)
             } label: {
                 TVDetailButtonLabel(icon: "play.fill", text: playLabel, isPrimary: true)

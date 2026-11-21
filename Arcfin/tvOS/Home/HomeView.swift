@@ -151,7 +151,11 @@ struct HomeView: View {
             .onAppear { isHomeShowing = true }
             .onDisappear { isHomeShowing = false }
             .navigationDestination(item: $model.detailItem) { item in
-                MediaDetailView(item: item)
+                if item.type == .boxSet {
+                    CollectionDetailView(collection: item)
+                } else {
+                    MediaDetailView(item: item)
+                }
             }
             .navigationDestination(for: MediaItem.self) { item in
                 MediaDetailView(item: item)
@@ -350,7 +354,13 @@ struct HomeView: View {
                         // focus target stuck on this (now-hidden) screen instead of the
                         // player, which claims its own initial focus via .prefersDefaultFocus.
                         focusedCard = nil
-                        model.playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+                        if item.type == .boxSet {
+                            model.detailItem = item
+                        } else if item.type == .series {
+                            Task { model.playbackRequest = await HomeModel.seriesPlayback(item, authManager: authManager) }
+                        } else {
+                            model.playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+                        }
                     } label: {
                         TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
                             .opacity(heroChromeOpacity)

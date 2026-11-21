@@ -170,6 +170,13 @@ final class HomeModel {
 
     // MARK: - Opening titles
 
+    /// What Play on a series starts: its next episode, else its first.
+    static func seriesPlayback(_ series: MediaItem, authManager: AuthManager) async -> PlaybackRequest? {
+        guard let cred = authManager.state.credential else { return nil }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        return await WatchRoute.resolve(id: series.id, credential: cred, authHeader: header)
+    }
+
     /// Opens a title from a widget, Spotlight, Siri or the Top Shelf. Titles that aren't on
     /// one of Home's shelves (an Up Next episode, a Spotlight result) are fetched by id.
     func openDeepLinkItem(id: String, authManager: AuthManager, mediaRepo: MediaRepository) {

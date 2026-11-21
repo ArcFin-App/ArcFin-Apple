@@ -45,12 +45,21 @@ final class HomeHeroCarousel {
         return items.filter { seen.insert($0.id).inserted }
     }
 
-    func play(_ item: MediaItem) {
-        let resumable = (item.userData?.playbackPositionTicks ?? 0) > 0 && !(item.userData?.played ?? false)
-        playbackRequest = HeroPlaybackRequest(
-            item: item,
-            startTicks: resumable ? (item.userData?.playbackPositionTicks ?? 0) : 0
-        )
+    /// A series in the hero (Recently Added, an admin's pick) plays its next episode, or its
+    /// first: the player can't play the series item itself.
+    func play(_ item: MediaItem, authManager: AuthManager) {
+        guard item.type == .series else {
+            let resumable = (item.userData?.playbackPositionTicks ?? 0) > 0 && !(item.userData?.played ?? false)
+            playbackRequest = HeroPlaybackRequest(
+                item: item,
+                startTicks: resumable ? (item.userData?.playbackPositionTicks ?? 0) : 0
+            )
+            return
+        }
+        Task {
+            guard let request = await HomeModel.seriesPlayback(item, authManager: authManager) else { return }
+            playbackRequest = HeroPlaybackRequest(item: request.item, startTicks: request.startTicks)
+        }
     }
 
     /// The rotation timer's tick.

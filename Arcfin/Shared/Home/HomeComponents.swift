@@ -81,6 +81,7 @@ private struct HomeHeroInfo: View {
     let openItem: (MediaItem) -> Void
 
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(AuthManager.self) private var authManager
 
     private var heroIsResumable: Bool {
         guard let ud = items[safe: carousel.index]?.userData else { return false }
@@ -151,7 +152,8 @@ private struct HomeHeroInfo: View {
                 HStack(spacing: 12) {
                     Button {
                         guard let item = items[safe: carousel.index] else { return }
-                        carousel.play(item)
+                        // A collection has nothing to play; its page lists what's in it.
+                        if item.type == .boxSet { openItem(item) } else { carousel.play(item, authManager: authManager) }
                     } label: {
                         HStack(spacing: 6) {
                             Image(systemName: "play.fill").scaledFont(size: 12)

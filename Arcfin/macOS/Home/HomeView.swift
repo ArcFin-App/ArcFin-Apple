@@ -114,7 +114,11 @@ struct HomeView: View {
                         .zoomNavigationTransition(id: item.id, in: zoomNamespace)
                 }
                 .navigationDestination(item: $model.detailItem) { item in
-                    MediaDetailView(item: item)
+                    if item.type == .boxSet {
+                        CollectionDetailView(collection: item)
+                    } else {
+                        MediaDetailView(item: item)
+                    }
                 }
                 .navigationDestination(item: $seeAllShelf) { shelf in
                     ShelfSeeAllView(title: shelf.title, items: shelf.items, isLandscape: shelf.isLandscape)
