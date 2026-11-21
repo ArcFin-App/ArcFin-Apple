@@ -202,6 +202,9 @@ struct PlayerView: View {
         .onChange(of: model.player.status) { _, newStatus in
             model.statusChanged(to: newStatus)
         }
+        .onChange(of: model.player.isBuffering) { _, isBuffering in
+            model.bufferingChanged(isBuffering)
+        }
         .onChange(of: scenePhase) { _, phase in
             model.scenePhaseChanged(to: phase)
         }

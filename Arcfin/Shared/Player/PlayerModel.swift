@@ -113,7 +113,6 @@ final class PlayerModel {
     /// server. Rapid skip taps must accumulate on this, not on the stale confirmed
     /// position, or they collapse into far less than the sum requested.
     var pendingSeekTargetTicks: Int64?
-    @ObservationIgnored var stallObserver: NSObjectProtocol?
     /// Auto's current cap, nil = uncapped. Only meaningful while `quality == .auto` — a
     /// manual pick never touches this.
     var autoCap: StreamQualityCap?
@@ -1237,7 +1236,6 @@ final class PlayerModel {
     /// The last part of closing: reports where playback stopped and stops the engine.
     func stopPlayback() async {
         nowPlayingManager.clear()
-        if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
             let stoppedAt = reportedPositionTicks
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
@@ -1348,7 +1346,7 @@ final class PlayerModel {
     /// Only acts while on Auto — a deliberate manual pick (including "Max") is never
     /// silently overridden by this.
     ///
-    /// AVPlayerItemPlaybackStalled fires for plenty of non-network reasons too (seeking,
+    /// A stall happens for plenty of non-network reasons too (seeking,
     /// a reload's own startup buffering, backgrounding) — a single stall is not a reliable
     /// "network can't keep up" signal on its own, and reacting to one caused a reload loop
     /// twice (each reload's startup buffering looked like another stall). Now requires
@@ -1428,7 +1426,14 @@ final class PlayerModel {
         }
     }
 
-    func handlePlaybackStall() {
+    /// The engine running dry once playback is under way, whichever engine it is: Auto's
+    /// signal that the connection may not be keeping up.
+    func bufferingChanged(_ isBuffering: Bool) {
+        guard isBuffering, playStartedAt != nil, !CastManager.shared.isConnected else { return }
+        handlePlaybackStall()
+    }
+
+    private func handlePlaybackStall() {
         guard quality == .auto else { return }
         let now = Date()
         guard AutoQuality.countsStall(at: now, lastLoad: lastLoadStartedAt, lastSeek: lastSeekAt,

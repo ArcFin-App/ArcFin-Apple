@@ -222,6 +222,9 @@ struct PlayerView: View {
         .onChange(of: model.player.status) { _, newStatus in
             model.statusChanged(to: newStatus)
         }
+        .onChange(of: model.player.isBuffering) { _, isBuffering in
+            model.bufferingChanged(isBuffering)
+        }
         .onChange(of: scenePhase) { _, phase in
             model.scenePhaseChanged(to: phase)
         }
@@ -393,13 +396,6 @@ struct PlayerView: View {
 
     private func setup() async {
         volumeController = SystemVolumeController()
-        // Playback stalling (buffer underrun) is the standard signal for "network can't
-        // keep up" — auto-step quality down when the user hasn't manually picked one.
-        model.stallObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemPlaybackStalled, object: nil, queue: .main
-        ) { [model = model] _ in
-            Task { @MainActor in model.handlePlaybackStall() }
-        }
         // AVAudioSession's setCategory/setActive are synchronous, blocking calls — Xcode's
         // Hang Risk diagnostic flags calling them on the main thread. The async activate()
         // API needs iOS 27 (min target here is 26), so instead this just runs the same
