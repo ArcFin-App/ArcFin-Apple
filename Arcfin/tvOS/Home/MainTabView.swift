@@ -14,22 +14,30 @@ struct MainTabView: View {
     @State private var searchQuery = ""
     @AppStorage(BottomNavPrefs.activeKey) private var activeString = ""
     @Bindable private var music = TVMusicPresenter.shared
+    /// Each tab by name, so Now Playing coming and going doesn't move the selection.
+    @State private var selection = "home"
 
     var body: some View {
         if mediaRepo.connectionFailed && !mediaRepo.hasAnyContent {
             NoConnectionView()
         } else {
-            TabView {
-                Tab("Home", systemImage: "house") {
+            TabView(selection: $selection) {
+                // While music is playing or paused, its Now Playing is a tab of its own.
+                if AppServices.music.isActive {
+                    Tab("Now Playing", systemImage: "waveform", value: "nowPlaying") {
+                        TVMusicNowPlaying(isTab: true)
+                    }
+                }
+                Tab("Home", systemImage: "house", value: "home") {
                     HomeView()
                 }
-                Tab("Library", systemImage: "square.grid.2x2") {
+                Tab("Library", systemImage: "square.grid.2x2", value: "library") {
                     LibraryView()
                 }
                 // Declared right after Library so it renders right after Library — on-device
                 // testing showed role: .search does NOT always pin to the far end of the bar
                 // regardless of declaration order the way it was previously assumed to.
-                Tab("Search", systemImage: "magnifyingglass", role: .search) {
+                Tab("Search", systemImage: "magnifyingglass", value: "search", role: .search) {
                     NavigationStack {
                         SearchView(query: $searchQuery)
                             .searchable(text: $searchQuery, prompt: "Movies, shows, music, live TV, people…")
@@ -43,15 +51,16 @@ struct MainTabView: View {
                             .musicDestinations()
                     }
                 }
-                Tab(BottomNavItem.requests.title, systemImage: BottomNavItem.requests.icon) {
+                Tab(BottomNavItem.requests.title, systemImage: BottomNavItem.requests.icon, value: "requests") {
                     SeerrView()
                 }
                 if BottomNavPrefs.active(from: activeString).contains(.stats) {
-                    Tab("Stats", systemImage: "chart.xyaxis.line") {
+                    Tab("Stats", systemImage: "chart.xyaxis.line", value: "stats") {
                         StatsView()
                     }
                 }
-                Tab("Settings", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle") {
+                Tab("Settings", systemImage: seerrRepo.authFailed ? "person.crop.circle.badge.exclamationmark" : "person.circle",
+                    value: "settings") {
                     NavigationStack { SettingsView() }
                 }
             }
@@ -60,6 +69,10 @@ struct MainTabView: View {
             // the system visual highlight is replaced by per-element custom styling.
             .focusEffectDisabled()
             .onPlayPauseCommand { music.playPausePressed() }
+            // The music stopped while its tab was showing: back to Home.
+            .onChange(of: AppServices.music.isActive) { _, active in
+                if !active, selection == "nowPlaying" { selection = "home" }
+            }
             .fullScreenCover(isPresented: $music.isShowingNowPlaying) { TVMusicNowPlaying() }
             .appSheet(item: $tagEditor.item, title: "Tags", systemImage: "tag") { item in
                 EditTagsSheet(item: item)
