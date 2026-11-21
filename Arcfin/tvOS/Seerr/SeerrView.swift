@@ -43,6 +43,16 @@ struct SeerrView: View {
         .task(id: model.mediaType) { await model.loadLanguageItems(seerrRepo: seerrRepo) }
     }
 
+    @ViewBuilder
+    private func requestMenu(_ req: SeerrRequestItem) -> some View {
+        SeerrRequestReviewMenu(request: req, review: review)
+        if seerrRepo.canRemove(req) {
+            Button(role: .destructive) { review.removing = req } label: {
+                Label("Remove Request", systemImage: "trash")
+            }
+        }
+    }
+
     // MARK: - Auth failed
 
     private var authFailedView: some View {
@@ -286,12 +296,12 @@ struct SeerrView: View {
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
-                            // Press and hold to approve or decline.
-                            .contextMenu { SeerrRequestReviewMenu(request: req, review: review) }
+                            // Press and hold to approve, decline or remove.
+                            .contextMenu { requestMenu(req) }
                         } else {
                             TVRequestRow(req: req, requester: seerrRepo.requesterName(of: req))
                                 .focusable()
-                                .contextMenu { SeerrRequestReviewMenu(request: req, review: review) }
+                                .contextMenu { requestMenu(req) }
                         }
                     }
                 }
