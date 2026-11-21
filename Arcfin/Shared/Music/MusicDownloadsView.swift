@@ -272,6 +272,9 @@ private struct MusicDownloadingRow: View {
                         .foregroundStyle(DT.Color.textSecondary)
                 }
             }
+            // Only the progress bar spans the row by itself; waiting, the text alone left the
+            // row squeezed to its width.
+            .frame(maxWidth: .infinity, alignment: .leading)
             if let progress {
                 Text(progress, format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
                     .font(.caption.weight(.semibold))
