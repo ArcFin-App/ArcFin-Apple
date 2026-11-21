@@ -10,6 +10,7 @@ struct UsersView: View {
     @State private var pins = ProfilePINStates()
     @State private var pinTask: TVPINTask?
     @State private var signOutTarget: ServerCredential?
+    @AppStorage(WhoIsWatching.settingKey) private var alwaysAskWhoIsWatching = false
 
     private var activeID: UUID? { authManager.state.credential?.id }
 
@@ -65,6 +66,12 @@ struct UsersView: View {
                     TVAddProfileFlowView(onProfileAdded: { dismiss() })
                 } label: {
                     Label("Add Profile", systemImage: "plus")
+                }
+                if authManager.profiles.count >= 2 {
+                    Toggle(isOn: $alwaysAskWhoIsWatching) {
+                        TVRowLabelText(title: "Always Ask Who's Watching",
+                                       detail: "Shows the profiles when Arcfin opens, and when you come back after 30 minutes or more with nothing playing.")
+                    }
                 }
             }
             .buttonStyle(TVSettingsRowStyle())

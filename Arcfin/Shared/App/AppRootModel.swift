@@ -118,6 +118,18 @@ final class AppRootModel {
         MusicSharePlay.shared.runHeld()
     }
 
+    /// Apple TV's Who's Watching on a return: asked then or not at all, over the screens as
+    /// they were.
+    func askWhoIsWatchingOnReturn(secondsAway: TimeInterval, keepsContent: Bool) {
+        guard isPastLock, authManager.state.credential != nil,
+              WhoIsWatching.shouldAsk(isOn: WhoIsWatching.isOn, profileCount: authManager.profiles.count,
+                                      isColdLaunch: false, secondsAway: secondsAway,
+                                      isPlayerOpen: PlayerActivity.shared.isPlayerOpen,
+                                      isMusicPlaying: AppServices.music.isPlaying)
+        else { return }
+        lockKeepingContent(keepsContent)
+    }
+
     func loadProfileRules() async {
         guard let credential = authManager.state.credential else { return }
         await ProfileRules.shared.load(credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken))
@@ -140,7 +152,9 @@ final class AppRootModel {
     func checkLaunch() async {
         await authManager.checkStoredAuthOnce()
         await refreshLockRequirement()
-        if activeProfileHasPIN { isAppLocked = true } else { AppServices.hasPassedLock = true }
+        let asksWhoIsWatching = authManager.state.credential != nil
+            && WhoIsWatching.asksAtLaunch(profileCount: authManager.profiles.count)
+        if activeProfileHasPIN || asksWhoIsWatching { isAppLocked = true } else { AppServices.hasPassedLock = true }
         launchChecked = true
         if !isAppLocked { runHeldRoutes() }
     }

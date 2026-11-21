@@ -47,10 +47,12 @@ enum AppServices {
         }
     }
 
-    /// The profile in use has a PIN that hasn't been entered this launch. Started by Siri or a
-    /// widget with no window yet, `hasPassedLock` alone would hold back a profile without one.
+    /// The profile in use has a PIN that hasn't been entered this launch, or Apple TV's Who's
+    /// Watching hasn't been answered. Started by Siri or a widget with no window yet,
+    /// `hasPassedLock` alone would hold back a profile without either.
     static func isLocked() async -> Bool {
         guard !hasPassedLock, let id = authManager.state.credential?.id else { return false }
+        if WhoIsWatching.asksAtLaunch(profileCount: authManager.profiles.count) { return true }
         return await authManager.storedPIN(for: id) != .none
     }
 }
