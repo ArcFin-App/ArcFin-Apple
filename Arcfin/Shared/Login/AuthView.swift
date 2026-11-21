@@ -29,6 +29,8 @@ struct AuthView: View {
     @State private var qcSecret: String? = nil
     @State private var qcLoading: Bool = false
     @State private var qcPolling: Bool = false
+    /// The server has Quick Connect turned off, so the page moved to the password.
+    @State private var qcDisabled: Bool = false
 
     var body: some View {
         if signedIn {
@@ -86,6 +88,8 @@ struct AuthView: View {
             }
             .pickerStyle(.segmented)
 
+            quickConnectOffNotice
+
             if mode == .quickConnect {
                 quickConnectView
             } else {
@@ -139,23 +143,26 @@ struct AuthView: View {
             .foregroundStyle(DT.Color.accent)
             .arcfinPlainButton(cornerRadius: DT.Radius.pill)
         } trailing: {
-            Group {
-                if qcPolling, let link = QuickConnectLink.url(server: serverURL, code: qcCode.filter(\.isNumber)),
-                   let image = QuickConnectQR.image(for: link) {
-                    Image(decorative: image, scale: 1)
-                        .interpolation(.none)
-                        .resizable()
-                } else {
-                    ProgressView()
+            // No panel without a code coming: a failed request left it spinning for good.
+            if qcLoading || qcPolling {
+                Group {
+                    if qcPolling, let link = QuickConnectLink.url(server: serverURL, code: qcCode.filter(\.isNumber)),
+                       let image = QuickConnectQR.image(for: link) {
+                        Image(decorative: image, scale: 1)
+                            .interpolation(.none)
+                            .resizable()
+                    } else {
+                        ProgressView()
+                    }
                 }
+                .frame(width: 400, height: 400)
+                .padding(24)
+                .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .accessibilityLabel("QR code to sign in")
+                Text("Scan with your iPhone's Camera")
+                    .font(.footnote)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
-            .frame(width: 400, height: 400)
-            .padding(24)
-            .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .accessibilityLabel("QR code to sign in")
-            Text("Scan with your iPhone's Camera")
-                .font(.footnote)
-                .foregroundStyle(DT.Color.textSecondary)
             if !qcCode.isEmpty {
                 Text(qcCode)
                     .font(.system(.largeTitle, design: .rounded, weight: .bold))
@@ -182,6 +189,7 @@ struct AuthView: View {
             LoginBackButton(title: serverName, action: onBack)
             LoginSplitHeader(title: "Sign In", message: Text("Use your Jellyfin username and password for \(serverName)."))
             expiredNotice
+            quickConnectOffNotice
             Button { mode = .quickConnect } label: {
                 Label("Sign In with Quick Connect", systemImage: "qrcode").loginLinkPadding()
             }
@@ -202,6 +210,16 @@ struct AuthView: View {
     private var expiredNotice: some View {
         if authManager.expiredCredential?.baseURL == serverURL {
             Label("Your sign-in to this server has ended, usually because the password changed or this device was removed from the server. Sign in again to carry on.", systemImage: "person.crop.circle.badge.exclamationmark")
+                .font(.footnote)
+                .foregroundStyle(DT.Color.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
+    private var quickConnectOffNotice: some View {
+        if qcDisabled && mode == .credentials {
+            Label("Quick Connect is turned off on this server, so sign in with your username and password.", systemImage: "info.circle")
                 .font(.footnote)
                 .foregroundStyle(DT.Color.textSecondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -379,6 +397,9 @@ struct AuthView: View {
             qcCode = formatCode(code)
             qcSecret = secret
             qcPolling = true
+        } catch JellyfinAuthError.quickConnectDisabled {
+            qcDisabled = true
+            mode = .credentials
         } catch {
             authError = error.localizedDescription
         }
