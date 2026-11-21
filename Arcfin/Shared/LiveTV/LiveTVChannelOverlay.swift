@@ -62,8 +62,6 @@ struct LiveTVChannelOverlay: View {
                         .padding(.bottom, 20)
                     }
                     .onAppear { proxy.scrollTo(currentID, anchor: .center) }
-                    // Apple TV: start on the playing channel, not Close.
-                    .defaultFocus($focusedChannel, currentID)
                 }
             }
         }
@@ -71,6 +69,8 @@ struct LiveTVChannelOverlay: View {
         .background(.ultraThinMaterial.opacity(0.95))
         .background(Color.black.opacity(0.45))
         .environment(\.colorScheme, .dark)
+        // Apple TV: start on the playing channel, not Close.
+        .defaultFocus($focusedChannel, currentID)
         .tvFocusSection()
     }
 
