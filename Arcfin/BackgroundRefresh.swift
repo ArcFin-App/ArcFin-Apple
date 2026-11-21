@@ -89,8 +89,10 @@ nonisolated enum BackgroundRefresh {
     @MainActor private static var whileOpen: Task<Void, Never>?
     private static let lastOpenCheckKey = "arcfin.notify.lastOpenCheck"
 
+    /// Each window calls this as it becomes active; one already running carries on, so a
+    /// check in progress isn't cut short after it has recorded what it saw.
     @MainActor static func startWhileOpen() {
-        whileOpen?.cancel()
+        guard whileOpen == nil else { return }
         whileOpen = Task {
             let last = UserDefaults.standard.object(forKey: lastOpenCheckKey) as? Date ?? .distantPast
             if Date().timeIntervalSince(last) > 5 * 60 {
