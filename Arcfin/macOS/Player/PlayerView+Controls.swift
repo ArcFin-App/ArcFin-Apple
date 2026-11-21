@@ -279,11 +279,9 @@ extension PlayerView {
                 if model.isLive {
                     LivePositionBadge(behindSeconds: model.secondsBehindLive) { model.jumpToLive() }
                 } else {
-                    Text(model.timeLabel(ticks: model.elapsedTicks))
+                    PlayerTimeLabel(model: model, remaining: false)
                         .font(.system(.caption, design: .monospaced, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
                 }
 
                 Spacer()
@@ -340,11 +338,9 @@ extension PlayerView {
                     // Balances the badge so the transport stays centred.
                     LiveBadge().hidden()
                 } else {
-                    Text(model.remainingLabel)
+                    PlayerTimeLabel(model: model, remaining: true)
                         .font(.system(.caption, design: .monospaced, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(.default, value: model.remainingTicks)
                 }
             }
         }

@@ -236,8 +236,9 @@ final class OfflinePlayerModel {
     }
 
     private func updateSubtitleText(forTicks ticks: Int64) {
-        guard !subtitleCues.isEmpty else { currentSubtitleText = nil; return }
-        currentSubtitleText = SubtitleLoader.cue(at: Double(ticks) / 10_000_000, in: subtitleCues)
+        let text = subtitleCues.isEmpty ? nil : SubtitleLoader.cue(at: Double(ticks) / 10_000_000, in: subtitleCues)
+        // Only on a change: the screen reads it, and this runs on every tick.
+        if text != currentSubtitleText { currentSubtitleText = text }
     }
 
     // MARK: - Skipping segments

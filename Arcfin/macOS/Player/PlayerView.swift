@@ -88,6 +88,7 @@ struct PlayerView: View {
     private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            PlaybackPositionObserver(player: model.player) { model.positionChanged(from: $0, to: $1) }
 
             videoSurfaceLayer
 
@@ -198,9 +199,6 @@ struct PlayerView: View {
             macVolumeHUDTask?.cancel()
         }
         .onChange(of: model.subtitleDelay) { _, _ in model.updateSubtitleText(forTicks: model.player.positionTicks) }
-        .onChange(of: model.player.positionTicks) { oldValue, newValue in
-            model.positionChanged(from: oldValue, to: newValue)
-        }
         .onChange(of: model.player.status) { _, newStatus in
             model.statusChanged(to: newStatus)
         }
@@ -260,7 +258,7 @@ struct PlayerView: View {
             showInfo: { showInfoSheet = true },
             stepSpeed: { model.stepPlaybackRate($0) },
             resetSpeed: { model.choosePlaybackRate(1) },
-            skipSegmentLabel: model.currentSkippable?.label,
+            skipSegmentLabel: model.skipButtonLabel,
             skipSegment: { model.skipToSegmentEnd() },
             next: model.nextEpisode == nil ? nil : { model.playNextEpisode() },
             previous: model.previousItem == nil ? nil : { model.playPrevious() }

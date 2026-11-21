@@ -276,12 +276,16 @@ final class PlayerModel {
     func positionChanged(from oldValue: Int64, to newValue: Int64) {
         // Every seek path (scrubber, skip buttons, chapters, SyncPlay, auto-skip) shows
         // up as a jump here, so this is where Auto learns a seek just happened.
-        if abs(newValue - oldValue) > 30_000_000 { lastSeekAt = Date() }
+        let jumped = abs(newValue - oldValue) > 30_000_000
+        if jumped { lastSeekAt = Date() }
         updateSubtitleText(forTicks: newValue)
         checkUpNextThreshold(positionTicks: newValue)
         checkMoreLikeThisThreshold(positionTicks: newValue)
         autoSkipIfNeeded(positionTicks: newValue)
-        updateNowPlayingInfo()
+        refreshSkipButton()
+        // The system counts the elapsed time on from the rate it was given, so it only needs
+        // telling again after a jump (or once the duration is first known).
+        if jumped || !hasPublishedNowPlaying { updateNowPlayingInfo() }
     }
 
     func statusChanged(to newStatus: PlaybackStatus) {
@@ -393,14 +397,18 @@ final class PlayerModel {
         )
     }
 
+    @ObservationIgnored private var hasPublishedNowPlaying = false
+
     func updateNowPlayingInfo() {
         if isLive {
             nowPlayingManager.updateLive(title: liveProgram?.name ?? item.name, channel: item.name,
                                          rate: isEffectivelyPlaying ? 1 : 0, artwork: nowPlayingArtwork)
+            hasPublishedNowPlaying = true
             return
         }
         let durationSeconds = Double(player.durationTicks) / 10_000_000
         guard durationSeconds > 0 else { return }
+        hasPublishedNowPlaying = true
         nowPlayingManager.update(
             title: item.name,
             artist: episodeSubtitle,
@@ -451,11 +459,15 @@ final class PlayerModel {
             : Float(defaults.object(forKey: "defaultPlaybackSpeed") as? Double ?? 1)
         guard rate > 0, rate != 1 else { return }
         await player.setRate(rate)
+        updateNowPlayingInfo()
     }
 
     func choosePlaybackRate(_ rate: Float) {
         UserDefaults.standard.set(rate, forKey: Self.lastRateKey)
-        Task { await player.setRate(rate) }
+        Task {
+            await player.setRate(rate)
+            updateNowPlayingInfo()
+        }
     }
 
     // MARK: Dialogue boost
@@ -566,7 +578,10 @@ final class PlayerModel {
         isSpeedBoosting = true
         HapticManager.impact(.medium)
         let rate = holdSpeed
-        Task { await player.setRate(rate) }
+        Task {
+            await player.setRate(rate)
+            updateNowPlayingInfo()
+        }
     }
 
     /// When a hold last ended: letting go shouldn't also count as a tap that toggles the controls.
@@ -579,7 +594,10 @@ final class PlayerModel {
         speedBoostEndedAt = Date()
         let rate = rateBeforeBoost ?? 1.0
         rateBeforeBoost = nil
-        Task { await player.setRate(rate) }
+        Task {
+            await player.setRate(rate)
+            updateNowPlayingInfo()
+        }
     }
 
     /// One step along the speed menu's options, from whichever is closest to the current speed.
@@ -827,6 +845,7 @@ final class PlayerModel {
         autoSkipped = []
         if !isLive {
             segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
+            refreshSkipButton()
         }
 
         // A playlist or collection playing through goes by its own order; an episode by the
@@ -1720,6 +1739,7 @@ final class PlayerModel {
         upNextDismissed = true
         showUpNext = false
         cancelUpNextCountdown()
+        refreshSkipButton()
     }
 
     // MARK: - Audio/subtitle tracks
@@ -1884,18 +1904,16 @@ final class PlayerModel {
             return
         }
         let seconds = Double(ticks) / 10_000_000 - subtitleDelay
-        if subtitleCues.isEmpty {
-            currentSubtitleText = nil
-        } else {
-            currentSubtitleText = SubtitleLoader.cue(at: seconds, in: subtitleCues)
-        }
+        // Set only when they change: the screen reads both, and this runs on every tick.
+        let text = subtitleCues.isEmpty ? nil : SubtitleLoader.cue(at: seconds, in: subtitleCues)
+        if text != currentSubtitleText { currentSubtitleText = text }
+        var bitmapCue: NativeBitmapCue?
         if let aetherPlayer = player as? AetherEnginePlayer, !aetherPlayer.nativeBitmapCues.isEmpty {
-            currentBitmapCue = aetherPlayer.nativeBitmapCues.first {
+            bitmapCue = aetherPlayer.nativeBitmapCues.first {
                 seconds >= $0.startTime && seconds < $0.endTime
             }
-        } else {
-            currentBitmapCue = nil
         }
+        if bitmapCue?.id != currentBitmapCue?.id { currentBitmapCue = bitmapCue }
     }
 
     private func reload(errorContext: String, resumeTicks overrideTicks: Int64? = nil) {
@@ -2134,7 +2152,16 @@ final class PlayerModel {
         return nil
     }
 
-    var skipButtonLabel: String? { currentSkippable?.label }
+    /// What `currentSkippable` was at the last tick, kept so the screens don't read the
+    /// position (and so rebuild on every tick) just to show the Skip button.
+    private(set) var skipButtonLabel: String?
+    private(set) var skipButtonKind: String?
+
+    private func refreshSkipButton() {
+        let current = currentSkippable
+        if current?.label != skipButtonLabel { skipButtonLabel = current?.label }
+        if current?.kind != skipButtonKind { skipButtonKind = current?.kind }
+    }
 
     func skipToSegmentEnd() {
         guard let current = currentSkippable else { return }

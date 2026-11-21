@@ -117,3 +117,36 @@ struct CountdownFill: View {
         .allowsHitTesting(false)
     }
 }
+
+/// Follows the playback position from a view of its own. Read in a player screen's body, the
+/// position (ten times a second on Aether) would rebuild the whole screen on every tick.
+struct PlaybackPositionObserver: View {
+    let player: any MediaPlayerProtocol
+    let changed: (_ oldValue: Int64, _ newValue: Int64) -> Void
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .allowsHitTesting(false)
+            .accessibilityHidden(true)
+            .onChange(of: player.positionTicks) { oldValue, newValue in changed(oldValue, newValue) }
+    }
+}
+
+/// The elapsed or remaining time beside the scrubber, in a view of its own for the same reason.
+struct PlayerTimeLabel: View {
+    let model: PlayerModel
+    let remaining: Bool
+
+    var body: some View {
+        if remaining {
+            Text(model.remainingLabel)
+                .contentTransition(.numericText())
+                .animation(.default, value: model.remainingTicks)
+        } else {
+            Text(model.timeLabel(ticks: model.elapsedTicks))
+                .contentTransition(.numericText())
+                .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
+        }
+    }
+}

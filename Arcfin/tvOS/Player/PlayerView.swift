@@ -77,6 +77,7 @@ struct PlayerView: View {
     private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            PlaybackPositionObserver(player: model.player) { model.positionChanged(from: $0, to: $1) }
 
             videoSurfaceLayer
 
@@ -193,9 +194,6 @@ struct PlayerView: View {
             Task { await teardown() }
         }
         .onChange(of: model.subtitleDelay) { _, _ in model.updateSubtitleText(forTicks: model.player.positionTicks) }
-        .onChange(of: model.player.positionTicks) { oldValue, newValue in
-            model.positionChanged(from: oldValue, to: newValue)
-        }
         .onChange(of: model.player.status) { _, newStatus in
             model.statusChanged(to: newStatus)
         }

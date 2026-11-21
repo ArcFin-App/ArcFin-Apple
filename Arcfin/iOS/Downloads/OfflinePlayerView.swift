@@ -45,6 +45,7 @@ struct OfflinePlayerView: View {
     private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            PlaybackPositionObserver(player: model.player) { model.positionChanged(to: $1) }
 
             GeometryReader { proxy in
                 // PiPVideoView's native drawable is itself interactive (unlike AVFoundation's
@@ -119,9 +120,6 @@ struct OfflinePlayerView: View {
                 await deactivateAudioSession()
             }
             resetPlayerOrientation()
-        }
-        .onChange(of: model.player.positionTicks) { _, newValue in
-            model.positionChanged(to: newValue)
         }
         .onChange(of: model.player.status) { _, status in
             model.statusChanged(to: status, deleteAfterWatching: deleteAfterWatching, downloadManager: downloadManager)

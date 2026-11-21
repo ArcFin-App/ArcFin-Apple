@@ -61,8 +61,22 @@ enum SubtitleLoader {
         return parseVTT(text)
     }
 
+    /// `cues` sorted by start, as parseVTT returns them. Called on every position tick, so it
+    /// finds the last cue started by then with a binary search and looks back from there;
+    /// overlapping cues are a few lines apart, so the look back is kept short.
     static func cue(at seconds: TimeInterval, in cues: [SubtitleCue]) -> String? {
-        cues.first { $0.start <= seconds && seconds < $0.end }?.text
+        var low = 0, high = cues.count
+        while low < high {
+            let mid = (low + high) / 2
+            if cues[mid].start <= seconds { low = mid + 1 } else { high = mid }
+        }
+        var match: SubtitleCue?
+        var index = low - 1
+        while index >= 0, index >= low - 32 {
+            if seconds < cues[index].end { match = cues[index] }
+            index -= 1
+        }
+        return match?.text
     }
 
     private static func parseVTT(_ content: String) -> [SubtitleCue] {
@@ -86,7 +100,7 @@ enum SubtitleLoader {
             guard !text.isEmpty else { continue }
             cues.append(SubtitleCue(start: start, end: end, text: text))
         }
-        return cues
+        return cues.sorted { $0.start < $1.start }
     }
 
     private static func parseTimestamp(_ raw: String) -> TimeInterval? {
