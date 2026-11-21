@@ -24,6 +24,8 @@ struct ItemQuickActions: View {
                 data.played = !played
                 data.playbackPositionTicks = 0
                 data.playedPercentage = nil
+                // A show's badge counts episodes left; nothing's left once it's all watched.
+                data.unplayedItemCount = played ? nil : 0
             }) { client, cred, header in
                 try await client.markWatched(credential: cred, authHeader: header, itemId: item.id, watched: !played)
             }
