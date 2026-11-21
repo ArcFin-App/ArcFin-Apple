@@ -325,6 +325,10 @@ struct HomeShelfView<Card: View>: View {
         HomeModel.continueAndNext(in: mediaRepo)
     }
 
+    private func requestSeerrItem(_ item: SeerrItem) {
+        model.seerrRequestItem = item
+    }
+
     /// Sequencing/visibility is data-driven (order + on/off per HomeShelfSettingsView) —
     /// each case's own content/empty-state gating is unchanged from before this existed.
     var body: some View {
@@ -473,25 +477,25 @@ struct HomeShelfView<Card: View>: View {
             if seerrRepo.hasCatalog {
                 ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
                     if let items = model.serviceRows[provider.id], !items.isEmpty {
-                        HomeSeerrShelf(title: String(localized: "Popular on \(provider.name)"), items: items, open: openSeerrItem)
+                        HomeSeerrShelf(title: String(localized: "Popular on \(provider.name)"), items: items, open: openSeerrItem, request: requestSeerrItem)
                     }
                 }
             }
         case .seerrWatchlist:
             if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
-                HomeSeerrShelf(title: "Watchlist", items: seerrRepo.watchlist, open: openSeerrItem)
+                HomeSeerrShelf(title: "Watchlist", items: seerrRepo.watchlist, open: openSeerrItem, request: requestSeerrItem)
             }
         case .seerrTrending:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
-                HomeSeerrShelf(title: "Trending", items: seerrRepo.trending, open: openSeerrItem)
+                HomeSeerrShelf(title: "Trending", items: seerrRepo.trending, open: openSeerrItem, request: requestSeerrItem)
             }
         case .seerrPopularMovies:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
-                HomeSeerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies, open: openSeerrItem)
+                HomeSeerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies, open: openSeerrItem, request: requestSeerrItem)
             }
         case .seerrPopularSeries:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
-                HomeSeerrShelf(title: "Popular Series", items: seerrRepo.popularTV, open: openSeerrItem)
+                HomeSeerrShelf(title: "Popular Series", items: seerrRepo.popularTV, open: openSeerrItem, request: requestSeerrItem)
             }
         case .liveFavoriteChannels, .liveOnNow, .liveRecentChannels:
             if HomeShelf.hasLiveTV(in: mediaRepo) {
@@ -531,6 +535,7 @@ private struct HomeSeerrShelf: View {
     let title: String
     let items: [SeerrItem]
     let open: (SeerrItem) -> Void
+    let request: (SeerrItem) -> Void
 
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -546,7 +551,7 @@ private struct HomeSeerrShelf: View {
                     )
                 }
                 .buttonStyle(PressableButtonStyle())
-                .contextMenu { HomeSeerrQuickLookMenu(item: item) }
+                .contextMenu { HomeSeerrQuickLookMenu(item: item, request: request) }
             }
         }
     }
@@ -588,6 +593,7 @@ struct HomeQuickLookMenu: View {
 
 private struct HomeSeerrQuickLookMenu: View {
     let item: SeerrItem
+    let request: (SeerrItem) -> Void
 
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
@@ -598,9 +604,8 @@ private struct HomeSeerrQuickLookMenu: View {
             Label(year, systemImage: "calendar")
         }
         if !mediaRepo.hasInLibrary(item), !seerrRepo.isRequested(item) {
-            Button {
-                Task { try? await seerrRepo.createRequest(mediaType: item.mediaType, mediaId: item.id) }
-            } label: {
+            // The same sheet a tap opens, so seasons and quality can be picked and the result shows.
+            Button { request(item) } label: {
                 Label("Request via Seerr", systemImage: "plus.circle")
             }
         }
