@@ -23,6 +23,12 @@ extension AppRootModel {
     func handleRoutingLink(_ url: URL) {}
 
     func runPendingRoutes() {}
+
+    /// Signed out, or the sign-in expired: a title the Top Shelf asked for before this doesn't
+    /// open for whoever signs in next.
+    func forgetSignedOutAccount() {
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
+    }
 }
 
 extension View {

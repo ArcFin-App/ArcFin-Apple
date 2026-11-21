@@ -102,8 +102,12 @@ struct AppRootLifecycle: ViewModifier {
             .onChange(of: model.authManager.profiles.isEmpty) { _, isEmpty in
                 if isEmpty { model.seerrRepo.reloadTMDB() }
             }
-            .onChange(of: model.authManager.state) { _, newState in
-                if case .authenticated = newState { model.syncOfflineProgress(modelContext: modelContext) }
+            .onChange(of: model.authManager.state) { oldState, newState in
+                if case .authenticated = newState {
+                    model.syncOfflineProgress(modelContext: modelContext)
+                } else if oldState.credential != nil {
+                    model.forgetSignedOutAccount()
+                }
             }
             // The explicit "I'm back online" moment — items played while offline sync then too,
             // not just at next cold launch.

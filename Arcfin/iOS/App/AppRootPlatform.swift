@@ -52,6 +52,14 @@ extension AppRootModel {
         startPendingDownload()
     }
 
+    /// Signed out, or the sign-in expired: nothing outside the app keeps offering the last
+    /// account's titles, and a title tapped before this doesn't open for whoever signs in next.
+    func forgetSignedOutAccount() {
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
+        QuickActions.update(resumeItemID: nil, title: nil)
+        WidgetSnapshotUpdater.clear()
+    }
+
     func refreshOnForeground(_ newPhase: ScenePhase, modelContext: ModelContext) {
         // NWPathMonitor's callback can be suspended along with the rest of the app while
         // backgrounded and doesn't reliably fire again the instant it resumes — coming
