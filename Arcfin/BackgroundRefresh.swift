@@ -136,6 +136,10 @@ nonisolated enum BackgroundRefresh {
         guard !Task.isCancelled else { return }
         if defaults.bool(forKey: StreamBadge.key) { await StreamBadge.refresh() }
         guard !Task.isCancelled else { return }
+        if let credential = IntentSession.credential() {
+            await WidgetSnapshotUpdater.refreshProgress(credential: credential, authHeader: IntentSession.authHeader(for: credential))
+        }
+        guard !Task.isCancelled else { return }
         await checkSeerr(
             requestUpdates: defaults.object(forKey: "notifyRequestUpdates") as? Bool ?? true,
             watchlist: defaults.object(forKey: "notifyWatchlistAvailable") as? Bool ?? true)
