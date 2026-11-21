@@ -410,6 +410,7 @@
 				tvOS/Platform/AdminPlatform.swift = (tvos, );
 				tvOS/Platform/AlwaysDarkPlayer.swift = (tvos, );
 				tvOS/Platform/AppSheet.swift = (tvos, );
+				tvOS/Platform/Biometrics.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
 				tvOS/Platform/ExternalApps.swift = (tvos, );
