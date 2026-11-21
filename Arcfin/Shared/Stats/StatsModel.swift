@@ -17,6 +17,7 @@ final class StatsModel {
     private(set) var counts = StatsLibraryCounts()
     private(set) var stats: WatchStats?
     private(set) var phase = Phase.loading
+    private var profileID: UUID?
 
     struct Input: Equatable {
         let period: StatsPeriod
@@ -35,9 +36,18 @@ final class StatsModel {
         guard case .authenticated(let credential) = authManager.state else { return }
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         let client = JellyfinMediaClient()
+        if profileID != credential.id {
+            profileID = credential.id
+            offset = 0
+            watched = []
+            details = [:]
+            counts = StatsLibraryCounts()
+            stats = nil
+        }
         phase = .loading
         async let countsTask = client.getStatsLibraryCounts(credential: credential, authHeader: header)
         guard let titles = try? await client.getWatchedTitles(credential: credential, authHeader: header) else {
+            guard isCurrent(credential, authManager) else { return }
             phase = .failed
             return
         }
@@ -57,10 +67,16 @@ final class StatsModel {
                                                          ids: creditIds, includePeople: true)
         var merged = (try? await showDetails) ?? [:]
         merged.merge((try? await creditDetails) ?? [:]) { _, withPeople in withPeople }
+        let libraryCounts = await countsTask
+        guard isCurrent(credential, authManager) else { return }
         watched = titles
         details = merged
-        counts = await countsTask
+        counts = libraryCounts
         phase = .loaded
+    }
+
+    private func isCurrent(_ credential: ServerCredential, _ authManager: AuthManager) -> Bool {
+        !Task.isCancelled && authManager.state.credential?.id == credential.id
     }
 
     func compute(period: StatsPeriod, reduceMotion: Bool) async {
