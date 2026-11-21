@@ -8,7 +8,7 @@ import SwiftUI
 struct PlayerFeaturesSettingsView: View {
     var body: some View {
         List {
-            PlayerFeatureToggleSections()
+            PlayerFeatureToggleSections(showsCast: false)
         }
         .arcfinListStyle()
         .screenBackground()

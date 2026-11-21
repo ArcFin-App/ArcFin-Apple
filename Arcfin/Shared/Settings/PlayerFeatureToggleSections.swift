@@ -12,6 +12,8 @@ struct PlayerFeatureToggleSections: View {
     @AppStorage("matchContentFrameRate") private var matchContentFrameRate = false
     /// The Mac leaves the display's refresh rate alone, so the switch would do nothing there.
     var showsFrameRateMatch = true
+    /// Only the iPhone and iPad player has a Cast button.
+    var showsCast = true
 
     var body: some View {
         Section {
@@ -30,12 +32,14 @@ struct PlayerFeatureToggleSections: View {
             .syncLocked("syncPlayEnabled", authManager)
         }
 
-        Section {
-            Toggle(isOn: $castEnabled) {
-                TVRowLabelText(title: "Chromecast", detail: "Shows the Cast button when a Chromecast is on your network.")
+        if showsCast {
+            Section {
+                Toggle(isOn: $castEnabled) {
+                    TVRowLabelText(title: "Chromecast", detail: "Shows the Cast button when a Chromecast is on your network.")
+                }
+                .tvListRow()
+                .syncLocked("castEnabled", authManager)
             }
-            .tvListRow()
-            .syncLocked("castEnabled", authManager)
         }
 
         Section {
