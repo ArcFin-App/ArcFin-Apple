@@ -32,6 +32,8 @@ struct DownloadConfirmSheet: View {
     @Environment(AuthManager.self) private var authManager
     @State private var preview: DownloadManager.DownloadPreview?
     @State private var isLoading = true
+    /// The server didn't answer for the file (offline, an error, no permission).
+    @State private var loadFailed = false
     @State private var quality = DownloadQuality.original
     @State private var audioKeys: Set<String> = []
     @State private var subtitleKeys: Set<String> = []
@@ -100,7 +102,7 @@ struct DownloadConfirmSheet: View {
         return DownloadChoice(bitrateCap: selected.tier, tracks: DownloadTracks(audio: audio, subtitles: subtitles))
     }
 
-    private var blocksDownload: Bool { isLoading || space?.blocks == true }
+    private var blocksDownload: Bool { isLoading || loadFailed || space?.blocks == true }
 
     var body: some View {
         NavigationStack {
@@ -117,6 +119,8 @@ struct DownloadConfirmSheet: View {
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, DT.Spacing.xl)
+                        } else if loadFailed {
+                            loadFailedNotice
                         } else {
                             details
                         }
@@ -166,10 +170,31 @@ struct DownloadConfirmSheet: View {
         .task { await loadPreview() }
     }
 
+    private var loadFailedNotice: some View {
+        VStack(spacing: 10) {
+            Text("Couldn't load this title's details.")
+                .font(.system(.subheadline, weight: .semibold))
+                .foregroundStyle(DT.Color.textPrimary)
+            Text("Check your connection and try again.")
+                .font(.system(.footnote))
+                .foregroundStyle(DT.Color.textSecondary)
+            Button("Try Again") { Task { await loadPreview() } }
+                .buttonStyle(.bordered)
+                .padding(.top, 4)
+        }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, DT.Spacing.xl)
+    }
+
     private func loadPreview() async {
-        let loaded = await load() ?? DownloadManager.DownloadPreview(
-            subtitleLanguages: [], audioLanguages: [], estimatedSizeBytes: nil,
-            estimatedSizeIsApproximate: false, willRemux: false)
+        isLoading = true
+        loadFailed = false
+        guard let loaded = await load() else {
+            loadFailed = true
+            isLoading = false
+            return
+        }
         preview = loaded
         room = downloadManager.roomForDownloads()
         audioKeys = Set(loaded.audioStreams.map(DownloadTracks.key))
