@@ -62,30 +62,41 @@ extension JellyfinMediaClient {
     // MARK: - Stats
 
     /// Every movie and episode marked watched, most recently played first.
+    /// Fetched a page at a time: the shared session ends any one transfer after 30 seconds,
+    /// which a whole long history on a slow server can take.
     public func getWatchedTitles(credential: ServerCredential, authHeader: String, limit: Int = 10_000) async throws -> [WatchedTitle] {
-        var comps = URLComponents(
-            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
-            resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            .init(name: "Filters", value: "IsPlayed"),
-            .init(name: "IncludeItemTypes", value: "Movie,Episode"),
-            .init(name: "Recursive", value: "true"),
-            .init(name: "SortBy", value: "DatePlayed"),
-            .init(name: "SortOrder", value: "Descending"),
-            .init(name: "Fields", value: "Genres,Studios,OfficialRating,SeriesId,SeriesName,SeriesPrimaryImageTag,ProductionYear,CommunityRating,PrimaryImageTags"),
-            .init(name: "EnableUserData", value: "true"),
-            .init(name: "EnableImageTypes", value: "Primary"),
-            .init(name: "ImageTypeLimit", value: "1"),
-            .init(name: "Limit", value: "\(limit)"),
-        ]
-        let data = try await statsData(comps.url!, timeout: 60, authHeader: authHeader)
-        let items = try JSONDecoder().decode(ItemsPage.self, from: data).items
-        let extras = try JSONDecoder().decode(StatsExtrasPage.self, from: data).items
-        return zip(items, extras).map { item, extra in
-            WatchedTitle(item: item.toMediaItem(), runTimeTicks: extra.runTimeTicks ?? 0,
-                         genres: item.genres ?? [], studios: extra.studios?.map(\.name) ?? [],
-                         officialRating: extra.officialRating)
+        let pageSize = 1000
+        var titles: [WatchedTitle] = []
+        while titles.count < limit {
+            var comps = URLComponents(
+                url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+                resolvingAgainstBaseURL: false)!
+            let take = min(pageSize, limit - titles.count)
+            comps.queryItems = [
+                .init(name: "Filters", value: "IsPlayed"),
+                .init(name: "IncludeItemTypes", value: "Movie,Episode"),
+                .init(name: "Recursive", value: "true"),
+                .init(name: "SortBy", value: "DatePlayed"),
+                .init(name: "SortOrder", value: "Descending"),
+                .init(name: "Fields", value: "Genres,Studios,OfficialRating,SeriesId,SeriesName,SeriesPrimaryImageTag,ProductionYear,CommunityRating,PrimaryImageTags"),
+                .init(name: "EnableUserData", value: "true"),
+                .init(name: "EnableImageTypes", value: "Primary"),
+                .init(name: "ImageTypeLimit", value: "1"),
+                .init(name: "EnableTotalRecordCount", value: "false"),
+                .init(name: "StartIndex", value: "\(titles.count)"),
+                .init(name: "Limit", value: "\(take)"),
+            ]
+            let data = try await statsData(comps.url!, timeout: 30, authHeader: authHeader)
+            let items = try JSONDecoder().decode(ItemsPage.self, from: data).items
+            let extras = try JSONDecoder().decode(StatsExtrasPage.self, from: data).items
+            titles += zip(items, extras).map { item, extra in
+                WatchedTitle(item: item.toMediaItem(), runTimeTicks: extra.runTimeTicks ?? 0,
+                             genres: item.genres ?? [], studios: extra.studios?.map(\.name) ?? [],
+                             officialRating: extra.officialRating)
+            }
+            if items.count < take { break }
         }
+        return titles
     }
 
     /// Shows' and movies' own genres, studios, unwatched counts and, when asked, cast and crew.
