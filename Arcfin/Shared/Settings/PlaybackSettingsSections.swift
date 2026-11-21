@@ -187,6 +187,7 @@ struct PlaybackTrackMemorySection: View {
     @Environment(AuthManager.self) private var authManager
     @AppStorage(ShowTrackMemory.enabledKey) private var rememberTracksPerShow = true
     @State private var rememberedShowCount = ShowTrackMemory.rememberedShowCount
+    @State private var confirmingForget = false
 
     var body: some View {
         Section {
@@ -197,10 +198,17 @@ struct PlaybackTrackMemorySection: View {
             .syncLocked(ShowTrackMemory.enabledKey, authManager)
             if rememberTracksPerShow, rememberedShowCount > 0 {
                 Button(role: .destructive) {
-                    ShowTrackMemory.clear()
-                    rememberedShowCount = 0
+                    confirmingForget = true
                 } label: {
-                    Text("Forget \(rememberedShowCount) Remembered \(rememberedShowCount == 1 ? "Show" : "Shows")")
+                    Text("Forget Remembered Shows (\(rememberedShowCount))")
+                }
+                .confirmationDialog("Forget Remembered Shows?", isPresented: $confirmingForget, titleVisibility: .visible) {
+                    Button("Forget", role: .destructive) {
+                        ShowTrackMemory.clear()
+                        rememberedShowCount = 0
+                    }
+                } message: {
+                    Text("Each show starts with your default audio and subtitles again.")
                 }
             }
         }
