@@ -443,7 +443,7 @@ private struct DownloadingRow: View {
         return VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 10) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text((isEpisode ? item?.seriesName : nil) ?? downloadManager.activeItemTitles[itemId] ?? "Downloading…")
+                    Text((isEpisode ? item?.seriesName : nil) ?? downloadManager.activeItemTitles[itemId] ?? String(localized: "Downloading…"))
                         .font(.system(.subheadline, weight: .semibold))
                         .foregroundStyle(isActive ? DT.Color.textPrimary : DT.Color.textSecondary)
                         .lineLimit(1)

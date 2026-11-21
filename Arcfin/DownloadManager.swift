@@ -25,9 +25,9 @@ enum DownloadError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            return "This account doesn't have permission to download media. Ask your Jellyfin admin to enable \"Allow media downloading\" for your user."
+            return String(localized: "This account doesn't have permission to download media. Ask your Jellyfin admin to enable \"Allow media downloading\" for your user.")
         case .noVideoStream:
-            return "Couldn't find a video stream for this item."
+            return String(localized: "Couldn't find a video stream for this item.")
         }
     }
 }
@@ -1195,7 +1195,7 @@ final class DownloadManager: NSObject {
                 return
             }
             if !cancelled, !keptForRetry {
-                errors[item.id] = (error as? DownloadError)?.errorDescription ?? "Download failed: \(error.localizedDescription)"
+                errors[item.id] = (error as? DownloadError)?.errorDescription ?? String(localized: "Download failed: \(error.localizedDescription)")
             }
         }
         if !keptForRetry { removePendingDescriptor(itemId: item.id) }
@@ -1560,7 +1560,7 @@ final class DownloadManager: NSObject {
         // is only ever read for the Downloads list's in-progress row title and Live
         // Activity meta, neither of which meaningfully applies to a recovery that's already
         // finished downloading its video by the time this runs.
-        let placeholder = MediaItem(id: itemId, name: "Resuming…", type: .movie)
+        let placeholder = MediaItem(id: itemId, name: String(localized: "Resuming…"), type: .movie)
         await performDownload(item: placeholder, credential: credential, authHeader: authHeader, bitrateCap: descriptor.bitrateCap,
                               tracks: descriptor.tracks ?? .all, skipVideoDownload: true)
     }
