@@ -219,7 +219,7 @@ private struct PINFlowSheet: View {
                 authManager.savePin(entered, for: profile.id)
                 Task { await onDone(); dismiss() }
             } else {
-                errorMessage = "PINs don't match"
+                errorMessage = String(localized: "PINs don't match")
                 resetToken += 1
             }
 

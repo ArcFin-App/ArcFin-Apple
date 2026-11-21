@@ -87,7 +87,7 @@ struct SwitchServerView: View {
                         switchPINError = nil
                         dismiss()
                     } else {
-                        switchPINError = "Incorrect PIN"
+                        switchPINError = String(localized: "Incorrect PIN")
                         switchPINResetToken += 1
                     }
                 }
