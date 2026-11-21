@@ -367,7 +367,9 @@ final class AuthManager {
         isAdmin = false
         Task { [weak self] in
             guard let self else { return }
-            self.isAdmin = await self.authClient.fetchIsAdministrator(credential: credential)
+            let isAdmin = await self.authClient.fetchIsAdministrator(credential: credential)
+            guard self.isActive(credential) else { return }
+            self.isAdmin = isAdmin
         }
     }
 
