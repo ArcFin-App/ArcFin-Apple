@@ -377,6 +377,7 @@ final class PlayerModel {
     }
 
     func nowPlayingPlay() {
+        if showStillWatchingPrompt { continueAfterStillWatchingPrompt(); return }
         if CastManager.shared.isConnected { CastManager.shared.play(); return }
         Task { await player.play() }
     }
@@ -2059,6 +2060,9 @@ final class PlayerModel {
     // MARK: - Playback actions
 
     func togglePlayPause() {
+        // Playback is paused under the prompt, so Play from a remote, a key or the lock
+        // screen answers it, rather than playing on until its timeout closes the player.
+        if showStillWatchingPrompt { continueAfterStillWatchingPrompt(); return }
         // A manual play/pause is proof someone's actually there — same signal a manual
         // Up Next tap gives, so it resets the "are you still watching" streak too.
         UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
