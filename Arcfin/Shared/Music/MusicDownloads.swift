@@ -17,7 +17,8 @@ import Telemetry
 final class MusicDownloads {
     static let shared = MusicDownloads()
 
-    struct Saved: Codable {
+    /// Not on the main actor, so the index can be encoded off it.
+    nonisolated struct Saved: Codable, Sendable {
         var song: MusicSong
         var file: String
         var userID: String
@@ -25,22 +26,27 @@ final class MusicDownloads {
         var savedAt: Date
     }
 
-    private struct Index: Codable {
+    nonisolated private struct Index: Codable, Sendable {
         var songs: [String: Saved] = [:]
         var albums: [String: MusicAlbum] = [:]
     }
 
     /// What's still to download, kept apart from the index so an older index still reads.
-    private struct Pending: Codable {
+    nonisolated private struct Pending: Codable, Sendable {
         var queue: [MusicSong] = []
         var failed: [MusicSong] = []
     }
 
     private enum Outcome { case saved, cancelled, retry, failed }
 
-    private var index = Index()
+    private var index = Index() { didSet { cache = nil } }
+    /// This profile's songs, and their albums, worked out once for each change to the index:
+    /// every row's downloaded mark and the page read them, and a big queue changes it often.
+    @ObservationIgnored private var cache: (userID: String?, songs: [Saved], albums: [(album: MusicAlbum?, songs: [MusicSong])]?)?
     /// Waiting or downloading, in order.
-    private(set) var queue: [MusicSong] = []
+    private(set) var queue: [MusicSong] = [] { didSet { queuedIDs = Set(queue.map(\.id)) } }
+    /// The queue's songs, so a row asking whether its song is queued doesn't search it.
+    private var queuedIDs: Set<String> = []
     /// Songs that failed every try, until Retry puts them back in the queue.
     private(set) var failed: [MusicSong] = []
     /// The songs downloading now and how far each is, 0 to 1.
@@ -63,6 +69,14 @@ final class MusicDownloads {
     /// Saved in this run of the queue: the storage limit leaves them alone until it's done.
     @ObservationIgnored private var savedThisRun: Set<String> = []
     @ObservationIgnored private var lastActivityUpdate = Date.distantPast
+    /// When each song's progress last moved, so a transfer's many callbacks a second redraw it
+    /// a few times a second at most.
+    @ObservationIgnored private var lastProgressUpdate: [String: Date] = [:]
+    /// The index and queue are written a moment after a change, off the main actor, so a
+    /// big queue doesn't encode and write both after every song.
+    @ObservationIgnored private var pendingSave: Task<Void, Never>?
+    @ObservationIgnored private var unsaved: (index: Bool, queue: Bool) = (false, false)
+    @ObservationIgnored private var saveVersion = 0
     @ObservationIgnored private let log = Telemetry.logger(category: "MusicDownloads")
 
     private static let folder: URL = {
@@ -94,6 +108,7 @@ final class MusicDownloads {
         if let data = try? Data(contentsOf: Self.pendingURL), let pending = try? JSONDecoder().decode(Pending.self, from: data) {
             queue = pending.queue
             failed = pending.failed
+            queuedIDs = Set(queue.map(\.id))
         }
         pathMonitor.pathUpdateHandler = { path in
             let online = path.status == .satisfied
@@ -117,7 +132,13 @@ final class MusicDownloads {
         return auth.profiles.first { $0.id.uuidString == active }?.userID
     }
 
-    private var mine: [Saved] { index.songs.values.filter { $0.userID == userID } }
+    private var mine: [Saved] {
+        let userID = userID
+        if let cache, cache.userID == userID { return cache.songs }
+        let songs = index.songs.values.filter { $0.userID == userID }
+        cache = (userID, songs, nil)
+        return songs
+    }
 
     var isEmpty: Bool { mine.isEmpty }
     var songCount: Int { mine.count }
@@ -128,7 +149,7 @@ final class MusicDownloads {
     }
 
     func isDownloaded(_ songID: String) -> Bool { index.songs[songID]?.userID == userID && index.songs[songID] != nil }
-    func isQueued(_ songID: String) -> Bool { queue.contains { $0.id == songID } }
+    func isQueued(_ songID: String) -> Bool { queuedIDs.contains(songID) }
     func hasFailed(_ songID: String) -> Bool { failed.contains { $0.id == songID } }
 
     /// The saved file, to play instead of streaming.
@@ -158,13 +179,17 @@ final class MusicDownloads {
 
     /// Saved albums, newest first, each with its songs in disc and track order.
     var albums: [(album: MusicAlbum?, songs: [MusicSong])] {
+        let mine = mine
+        if let albums = cache?.albums { return albums }
         let groups = Dictionary(grouping: mine) { $0.song.albumId ?? "" }
         let newestFirst = groups.sorted { lhs, rhs in
             (lhs.value.map(\.savedAt).max() ?? .distantPast) > (rhs.value.map(\.savedAt).max() ?? .distantPast)
         }
-        return newestFirst.map { key, saved in
+        let albums = newestFirst.map { key, saved in
             (album: index.albums[key], songs: saved.map(\.song).sorted(by: Self.trackOrder))
         }
+        cache?.albums = albums
+        return albums
     }
 
     private static func trackOrder(_ lhs: MusicSong, _ rhs: MusicSong) -> Bool {
@@ -183,9 +208,12 @@ final class MusicDownloads {
         if let album { index.albums[album.id] = album }
         let ids = Set(songs.map(\.id))
         failed.removeAll { ids.contains($0.id) }
-        for song in songs where !isDownloaded(song.id) && !isQueued(song.id) {
-            queue.append(song)
+        var adding = queuedIDs, added: [MusicSong] = []
+        for song in songs where !isDownloaded(song.id) && !adding.contains(song.id) {
+            adding.insert(song.id)
+            added.append(song)
         }
+        if !added.isEmpty { queue.append(contentsOf: added) }
         saveIndex()
         saveQueue()
         startIfNeeded()
@@ -312,6 +340,7 @@ final class MusicDownloads {
                 for transfer in started where await transfer.value { saved += 1 }
             }
             if saved > 0 { MusicDownloadActivity.finish(count: saved) } else { MusicDownloadActivity.end() }
+            self?.flushSaves()
             self?.worker = nil
             await self?.enforceStorageLimit()
             if saved > 0, MusicSettings.notifiesDownloads {
@@ -358,6 +387,7 @@ final class MusicDownloads {
         }
         progress[song.id] = nil
         bytes[song.id] = nil
+        lastProgressUpdate[song.id] = nil
         transfers[song.id] = nil
         if outcome == .saved { runSaved += 1 }
         let wasQueued = isQueued(song.id)
@@ -457,6 +487,7 @@ final class MusicDownloads {
     /// Leaving the foreground: every song still waiting goes to the system to download, so
     /// the queue carries on while the app is suspended.
     func handOff() {
+        flushSaves()
         guard !queue.isEmpty, isOnline, !MusicSettings.downloadsWaitForWiFi,
               let credential = AppServices.authManager.state.credential else { return }
         for song in queue where progress[song.id] == nil {
@@ -579,7 +610,10 @@ final class MusicDownloads {
 
     private func reportProgress(written: Int64, total: Int64, for songID: String) {
         guard progress[songID] != nil else { return }
-        if total > 0 { progress[songID] = Double(written) / Double(total) }
+        if total > 0, written >= total || Date.now.timeIntervalSince(lastProgressUpdate[songID] ?? .distantPast) >= 0.25 {
+            lastProgressUpdate[songID] = .now
+            progress[songID] = Double(written) / Double(total)
+        }
         bytes[songID] = (written, max(total, 0), bytes[songID]?.since ?? .now)
         refreshActivity()
     }
@@ -592,14 +626,58 @@ final class MusicDownloads {
     }
 
     private func saveQueue() {
-        guard let data = try? JSONEncoder().encode(Pending(queue: queue, failed: failed)) else { return }
-        try? data.write(to: Self.pendingURL, options: .atomic)
+        unsaved.queue = true
+        scheduleSave()
     }
 
     private func saveIndex() {
-        guard let data = try? JSONEncoder().encode(index) else { return }
-        try? data.write(to: Self.indexURL, options: .atomic)
+        unsaved.index = true
+        scheduleSave()
+    }
+
+    private func scheduleSave() {
+        guard pendingSave == nil else { return }
+        pendingSave = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(1))
+            self?.flushSaves()
+        }
+    }
+
+    /// Writes what changed now: when the queue runs out, and as the app leaves the foreground.
+    private func flushSaves() {
+        pendingSave?.cancel()
+        pendingSave = nil
+        let (index, queue) = unsaved
+        guard index || queue else { return }
+        unsaved = (false, false)
+        saveVersion += 1
+        let version = saveVersion
+        if index {
+            let snapshot = self.index, url = Self.indexURL
+            Task.detached(priority: .utility) {
+                await MusicDownloadsWriter.shared.write(to: url, version: version) { try? JSONEncoder().encode(snapshot) }
+            }
+        }
+        if queue {
+            let snapshot = Pending(queue: self.queue, failed: failed), url = Self.pendingURL
+            Task.detached(priority: .utility) {
+                await MusicDownloadsWriter.shared.write(to: url, version: version) { try? JSONEncoder().encode(snapshot) }
+            }
+        }
     }
 
     private static let deviceID = UserDefaults.standard.string(forKey: "arcfin.deviceId") ?? UUID().uuidString
+}
+
+/// One write at a time, and never an older snapshot over a newer one: the detached tasks that
+/// carry them can arrive out of order.
+private actor MusicDownloadsWriter {
+    static let shared = MusicDownloadsWriter()
+    private var written: [URL: Int] = [:]
+
+    func write(to url: URL, version: Int, _ encode: @Sendable () -> Data?) {
+        guard version > written[url, default: 0], let data = encode() else { return }
+        written[url] = version
+        try? data.write(to: url, options: .atomic)
+    }
 }

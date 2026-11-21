@@ -14,6 +14,9 @@ struct TVMusicNowPlaying: View {
     /// The right-hand column, kept between songs and visits; empty for none.
     @AppStorage("tvMusicNowPlayingPanel") private var panelName = ""
     @State private var lyrics: Lyrics?
+    /// The lyrics request has come back, with or without them.
+    @State private var lyricsLoaded = false
+    @State private var lyricsAttempt = 0
     @State private var showsSleepTimer = false
     @State private var showsLyricsTiming = false
     /// Play/Pause has focus when focus comes down into the tab, not the first thing on it.
@@ -52,9 +55,11 @@ struct TVMusicNowPlaying: View {
                 .padding(.bottom, 60)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                 .background { backdrop(MusicAPI.artworkURL(song, width: 600)) }
-                .task(id: song.id) {
+                .task(id: "\(song.id) \(lyricsAttempt)") {
                     lyrics = nil
+                    lyricsLoaded = false
                     lyrics = await MusicLyricsSource.shared.lyrics(for: song)
+                    lyricsLoaded = true
                     if lyrics == nil, panel == .lyrics, !MusicLyricsSource.shared.isAvailable(song) { panelName = "" }
                 }
             } else {
@@ -119,11 +124,7 @@ struct TVMusicNowPlaying: View {
                 }
                 circle(player.repeatMode == .one ? "repeat.1" : "repeat", label: "Repeat", isOn: player.repeatMode != .off,
                        small: true) {
-                    player.repeatMode = switch player.repeatMode {
-                    case .off: .all
-                    case .all: .one
-                    case .one: .off
-                    }
+                    AppServices.music.cycleRepeatMode()
                 }
                 ratingCircles(song)
                 circle("list.bullet", label: "Playing Next", isOn: panel == .upNext, small: true) { toggle(.upNext) }
@@ -196,7 +197,7 @@ struct TVMusicNowPlaying: View {
                     LazyVStack(alignment: .leading, spacing: 8) {
                         ForEach(Array(player.queue.upNext.prefix(100))) { entry in
                             TVMusicSongRow(song: entry.track, showsArtwork: true, removeTitle: "Remove",
-                                           onRemove: { player.remove(entry.id) }) {
+                                           onRemove: { AppServices.music.remove(entry.id) }) {
                                 AppServices.music.jump(to: entry.id)
                             }
                         }
@@ -214,41 +215,7 @@ struct TVMusicNowPlaying: View {
     private var lyricsView: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Lyrics").font(.headline).foregroundStyle(.white.opacity(0.7))
-            lyricsLines
-        }
-    }
-
-    @ViewBuilder
-    private var lyricsLines: some View {
-        if let lyrics, !lyrics.lines.isEmpty {
-            let songID = player.current?.id ?? ""
-            let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: songID, at: player.position)
-            VStack(alignment: .leading, spacing: 16) {
-                ScrollViewReader { proxy in
-                    ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 22) {
-                            ForEach(Array(lyrics.lines.enumerated()), id: \.offset) { index, line in
-                                Text(verbatim: line.text)
-                                    .font(.title2.weight(.bold))
-                                    .foregroundStyle(.white.opacity(lyrics.isSynced && index != current ? 0.35 : 1))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .id(index)
-                            }
-                        }
-                        .padding(.vertical, 120)
-                    }
-                    .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.15),
-                                                 .init(color: .black, location: 0.85), .init(color: .clear, location: 1)],
-                                         startPoint: .top, endPoint: .bottom))
-                    .onChange(of: current, initial: true) { _, line in
-                        guard let line else { return }
-                        withAnimation(DT.Animation.standard) { proxy.scrollTo(line, anchor: .center) }
-                    }
-                }
-            }
-            .animation(DT.Animation.standard, value: current)
-        } else {
-            ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
+            TVMusicLyricsLines(lyrics: lyrics, isLoaded: lyricsLoaded) { lyricsAttempt += 1 }
         }
     }
 
@@ -265,6 +232,63 @@ struct TVMusicNowPlaying: View {
             .clipped()
             .ignoresSafeArea()
             .accessibilityHidden(true)
+    }
+}
+
+/// The words, the line being sung bright and kept in the middle. Its own view, so following
+/// the song redraws only this, not the whole screen.
+private struct TVMusicLyricsLines: View {
+    let lyrics: Lyrics?
+    let isLoaded: Bool
+    let retry: () -> Void
+    /// Each line takes focus, so the remote scrolls through words longer than the screen;
+    /// while one has it, the column stays where the remote put it.
+    @FocusState private var focusedLine: Int?
+    private var player: MusicQueuePlayer { AppServices.music.player }
+
+    var body: some View {
+        if let lyrics, !lyrics.lines.isEmpty {
+            let songID = player.current?.id ?? ""
+            let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: songID, at: player.position)
+            VStack(alignment: .leading, spacing: 16) {
+                ScrollViewReader { proxy in
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 22) {
+                            ForEach(Array(lyrics.lines.enumerated()), id: \.offset) { index, line in
+                                let dim = focusedLine.map { $0 != index } ?? (lyrics.isSynced && index != current)
+                                Text(verbatim: line.text)
+                                    .font(.title2.weight(.bold))
+                                    .foregroundStyle(.white.opacity(dim ? 0.35 : 1))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .focusable()
+                                    .focused($focusedLine, equals: index)
+                                    .id(index)
+                            }
+                        }
+                        .padding(.vertical, 120)
+                    }
+                    .mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.15),
+                                                 .init(color: .black, location: 0.85), .init(color: .clear, location: 1)],
+                                         startPoint: .top, endPoint: .bottom))
+                    .focusSection()
+                    .onChange(of: current, initial: true) { _, line in
+                        guard let line, focusedLine == nil else { return }
+                        withAnimation(DT.Animation.standard) { proxy.scrollTo(line, anchor: .center) }
+                    }
+                }
+            }
+            .animation(DT.Animation.standard, value: current)
+            .animation(DT.Animation.fast, value: focusedLine)
+        } else if !isLoaded {
+            ProgressView().tint(.white).frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            // The song has lyrics, but they didn't come.
+            VStack(alignment: .leading, spacing: 24) {
+                Text("Lyrics Unavailable").font(.title3).foregroundStyle(.white.opacity(0.6))
+                Button("Try Again", action: retry)
+            }
+            .focusSection()
+        }
     }
 }
 

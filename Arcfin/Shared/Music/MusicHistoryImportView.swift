@@ -35,34 +35,50 @@ final class MusicHistoryImportModel {
         AppServices.authManager.state.credential.flatMap { ListenBrainzCredential.load(profile: $0.id) }
     }
 
-    /// Each song once, with when it was last played.
-    var songs: [(play: ImportedPlay, last: Date)] {
-        Dictionary(grouping: plays, by: \.songKey).values.compactMap { group in
-            group.max { $0.playedAt < $1.playedAt }.map { ($0, $0.playedAt) }
-        }
-        .sorted { $0.last > $1.last }
-    }
+    /// Each song once, with when it was last played; worked out once per read, as it's slow
+    /// over a long history and the view shows its count.
+    private(set) var songs: [(play: ImportedPlay, last: Date)] = []
+    private(set) var isReading = false
 
+    /// The plays are kept in order, so the first and last are the range.
     var dateRange: ClosedRange<Date>? {
-        guard let first = plays.map(\.playedAt).min(), let last = plays.map(\.playedAt).max() else { return nil }
+        guard let first = plays.first?.playedAt, let last = plays.last?.playedAt else { return nil }
         return first...last
     }
 
-    func read(_ urls: [URL]) {
-        var all = Set(plays)
+    func read(_ urls: [URL]) async {
+        isReading = true
+        defer { isReading = false }
+        let existing = plays
+        // Several exports of 10 MB or more are read and parsed off the main thread.
+        let read = await Task.detached(priority: .userInitiated) { Self.load(urls, adding: existing) }.value
+        unreadFiles.append(contentsOf: read.unread)
+        sources.formUnion(read.sources)
+        plays = read.plays
+        songs = read.songs
+        phase = plays.isEmpty ? .choosing : .ready
+        sendsToListenBrainz = listenBrainzToken != nil
+    }
+
+    private nonisolated static func load(_ urls: [URL], adding existing: [ImportedPlay])
+        -> (plays: [ImportedPlay], songs: [(play: ImportedPlay, last: Date)], sources: Set<ListeningHistoryImport.Source>, unread: [String]) {
+        var all = Set(existing), sources: Set<ListeningHistoryImport.Source> = [], unread: [String] = []
         for url in urls {
             let scoped = url.startAccessingSecurityScopedResource()
             defer { if scoped { url.stopAccessingSecurityScopedResource() } }
             guard let data = try? Data(contentsOf: url), let result = try? ListeningHistoryImport.read(data) else {
-                unreadFiles.append(url.lastPathComponent)
+                unread.append(url.lastPathComponent)
                 continue
             }
             sources.insert(result.source)
             all.formUnion(result.plays)
         }
-        plays = all.sorted { $0.playedAt < $1.playedAt }
-        phase = plays.isEmpty ? .choosing : .ready
-        sendsToListenBrainz = listenBrainzToken != nil
+        let plays = all.sorted { $0.playedAt < $1.playedAt }
+        let songs = Dictionary(grouping: plays, by: \.songKey).values.compactMap { group in
+            group.max { $0.playedAt < $1.playedAt }.map { (play: $0, last: $0.playedAt) }
+        }
+        .sorted { $0.last > $1.last }
+        return (plays, songs, sources, unread)
     }
 
     func start() {
@@ -161,7 +177,8 @@ struct MusicHistoryImportView: View {
             }
             Section {
                 Button("Choose Files…", systemImage: "doc.badge.plus") { isChoosing = true }
-                    .disabled(model.phase == .importing)
+                    .disabled(model.phase == .importing || model.isReading)
+                if model.isReading { HStack { Spacer(); ProgressView(); Spacer() } }
                 ForEach(model.unreadFiles, id: \.self) { name in
                     Label("\(name) isn't a history this can read", systemImage: "exclamationmark.triangle")
                         .foregroundStyle(DT.Color.palette("F59E0B"))
@@ -174,7 +191,7 @@ struct MusicHistoryImportView: View {
         .navigationTitle("Import Listening History")
         .fileImporter(isPresented: $isChoosing, allowedContentTypes: [.json, .commaSeparatedText, .plainText],
                       allowsMultipleSelection: true) { result in
-            if case .success(let urls) = result { model.read(urls) }
+            if case .success(let urls) = result { Task { await model.read(urls) } }
         }
     }
 

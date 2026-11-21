@@ -95,7 +95,8 @@ enum MusicDownloadActivity {
             isWaitingForWiFi: snapshot.waitingForWiFi, isMusic: true, isWaitingForNetwork: snapshot.waitingForNetwork)
     }
 
-    /// A small JPEG: it rides along in the activity's state, which has a size limit.
+    /// A small JPEG: it rides along in the activity's state, which ActivityKit caps at 4 KB
+    /// (base64 in JSON, with the rest of the state), so it stays under the video poster's limit.
     private static func coverData(_ url: URL?) async -> Data? {
         let data: Data? = if let url, url.isFileURL {
             try? Data(contentsOf: url)
@@ -104,11 +105,21 @@ enum MusicDownloadActivity {
         } else {
             nil
         }
-        guard let data, let image = UIImage(data: data) else { return nil }
-        let side: CGFloat = 120
-        let small = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { _ in
-            image.draw(in: CGRect(x: 0, y: 0, width: side, height: side))
+        guard let data, let image = UIImage(data: data), image.size.width > 0, image.size.height > 0 else { return nil }
+        let side: CGFloat = 56
+        // Filled and cropped from the middle, so a cover that isn't square isn't stretched.
+        let scale = side / min(image.size.width, image.size.height)
+        let drawn = CGSize(width: image.size.width * scale, height: image.size.height * scale)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: side, height: side), format: format)
+        for quality in [0.6, 0.4, 0.25, 0.1] {
+            let jpeg = renderer.jpegData(withCompressionQuality: quality) { _ in
+                image.draw(in: CGRect(x: (side - drawn.width) / 2, y: (side - drawn.height) / 2,
+                                      width: drawn.width, height: drawn.height))
+            }
+            if jpeg.count <= 1_800 { return jpeg }
         }
-        return small.jpegData(compressionQuality: 0.7)
+        return nil
     }
 }

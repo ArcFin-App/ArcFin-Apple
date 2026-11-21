@@ -94,7 +94,9 @@ struct ContentView: View {
                                                         set: { AppServices.music.isNowPlayingOpen = $0 }))
                         .padding(.horizontal, DT.Spacing.md)
                         .padding(.vertical, DT.Spacing.sm)
-                        .glassEffect(.regular.interactive(), in: .capsule)
+                        // On a capsule behind it rather than on the row itself, whose buttons
+                        // change their symbols: glass over them updated more than once a frame.
+                        .background { Color.clear.glassEffect(.regular.interactive(), in: .capsule) }
                         .padding(.horizontal, DT.Spacing.md)
                 }
             }

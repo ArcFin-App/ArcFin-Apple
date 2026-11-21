@@ -139,7 +139,7 @@ struct MusicSongRow: View {
         }
         .swipeActions(edge: .trailing) {
             Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
-                .tint(.indigo)
+                .tint(DT.Color.textSecondary)
         }
     }
 }
@@ -167,9 +167,12 @@ struct MusicArtistsView: View {
             : Array(repeating: GridItem(.flexible(), spacing: DT.Spacing.md), count: 3)
     }
 
-    /// The artists under the letter they start with, # first as in the other libraries.
-    private var sections: [(letter: String, artists: [MusicArtist])] {
-        let grouped = Dictionary(grouping: list.items) { Self.letter(of: $0.name) }
+    /// The artists under the letter they start with, # first as in the other libraries; worked
+    /// out as pages arrive, not on every render.
+    @State private var sections: [(letter: String, artists: [MusicArtist])] = []
+
+    private static func sections(of artists: [MusicArtist]) -> [(letter: String, artists: [MusicArtist])] {
+        let grouped = Dictionary(grouping: artists) { letter(of: $0.name) }
         return LibraryLetterIndex.letters.compactMap { letter in grouped[letter].map { (letter, $0) } }
     }
 
@@ -228,6 +231,7 @@ struct MusicArtistsView: View {
         }
         .screenBackground()
         .navigationTitle("Artists")
+        .onChange(of: list.items, initial: true) { _, artists in sections = Self.sections(of: artists) }
         .task { await list.loadIfNeeded() }
     }
 
@@ -241,6 +245,7 @@ struct MusicArtistsView: View {
             await list.loadMore()
             if list.items.count == before { break }
         }
+        let sections = Self.sections(of: list.items)
         let present = Set(sections.map(\.letter))
         guard let target = letters[start...].first(where: present.contains) ?? sections.last?.letter else { return }
         withAnimation(DT.Animation.standard) { proxy.scrollTo(target, anchor: .top) }
@@ -301,6 +306,7 @@ struct MusicArtistView: View {
     @State private var topSongs: [MusicSong] = []
     @State private var appearsOn: [MusicAlbum] = []
     @State private var similar: [MusicArtist] = []
+    @State private var confirmDownloadAll = false
 
     init(artist: MusicArtist, libraryID: String?) {
         self.libraryID = libraryID
@@ -408,8 +414,15 @@ struct MusicArtistView: View {
                         let id = artist.id
                         Task { await MusicActions.instantMix(from: id) }
                     }
-                    MusicArtistDownloadButton(artist: artist, albums: albums.items)
+                    MusicArtistDownloadButton(artist: artist, albums: albums.items) { confirmDownloadAll = true }
                 }
+            }
+        }
+        .confirmationDialog(Text("Download all \(max(albums.total, albums.items.count)) albums by \(artist.name)?"),
+                            isPresented: $confirmDownloadAll, titleVisibility: .visible) {
+            Button("Download All Albums") {
+                let artist = artist
+                Task { await MusicDownloads.shared.download(artist: artist) }
             }
         }
         .task {

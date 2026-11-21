@@ -16,7 +16,7 @@ public struct MusicQueue: Sendable, Equatable {
         }
     }
 
-    public enum RepeatMode: String, Sendable, CaseIterable {
+    public enum RepeatMode: String, Codable, Sendable, CaseIterable {
         case off, all, one
     }
 
@@ -139,7 +139,8 @@ public struct MusicQueue: Sendable, Equatable {
     public mutating func clearUpNext() {
         guard let index = currentIndex else { return }
         entries = Array(entries[...index])
-        unshuffled.removeAll { !entries.contains($0) }
+        let kept = Set(entries.map(\.id))
+        unshuffled.removeAll { !kept.contains($0.id) }
     }
 
     public mutating func setShuffled(_ on: Bool) {

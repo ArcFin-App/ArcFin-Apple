@@ -573,14 +573,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             guard let self else { return }
             AppServices.music.setShuffled(!player.queue.isShuffled)
         }
-        let repeatButton = CPNowPlayingRepeatButton { [weak self] _ in
-            guard let self else { return }
-            player.repeatMode = switch player.repeatMode {
-            case .off: .all
-            case .all: .one
-            case .one: .off
-            }
-        }
+        let repeatButton = CPNowPlayingRepeatButton { _ in AppServices.music.cycleRepeatMode() }
         CPNowPlayingTemplate.shared.updateNowPlayingButtons([shuffle, repeatButton, favorite])
     }
 

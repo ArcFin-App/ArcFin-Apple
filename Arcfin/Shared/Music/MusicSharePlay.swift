@@ -168,14 +168,15 @@ final class MusicSharePlay {
         let local = local()
         let state = ListenTogether.State(songIDs: [current.id] + local.upcomingIDs.prefix(ListenTogether.upcomingLimit),
                                          position: local.position, isPlaying: local.isPlaying,
-                                         version: newest?.version ?? 0, sender: me)
+                                         repeatMode: local.repeatMode, version: newest?.version ?? 0, sender: me)
         Task { try? await messenger.send(ListenTogether.Message.state(state)) }
     }
 
     private func local() -> ListenTogether.Local {
         ListenTogether.Local(currentID: music.player.current?.id,
                              upcomingIDs: music.player.queue.upNext.map(\.track.id),
-                             position: music.position, isPlaying: music.isPlaying)
+                             position: music.position, isPlaying: music.isPlaying,
+                             repeatMode: music.player.repeatMode)
     }
 
     // MARK: Receiving
@@ -207,6 +208,8 @@ final class MusicSharePlay {
                 music.player.addToQueue(songs)
             case .seek(let seconds):
                 music.seek(to: seconds)
+            case .setRepeat(let mode):
+                music.player.repeatMode = mode
             case .play:
                 music.resume()
             case .pause:

@@ -124,6 +124,14 @@ public final class MusicQueuePlayer {
     @ObservationIgnored private var networkRetry: Task<Void, Never>?
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
     @ObservationIgnored private var stallObserver: NSObjectProtocol?
+    /// Asked to play and not paused since: the system pauses for a call without saying so to
+    /// `isPlaying` in time to tell, so this is what an interruption's end resumes from.
+    @ObservationIgnored private var wantsToPlay = false
+    #if os(iOS) || os(tvOS)
+    @ObservationIgnored private var interruptionObserver: NSObjectProtocol?
+    @ObservationIgnored private var servicesResetObserver: NSObjectProtocol?
+    @ObservationIgnored private var pausedByInterruption = false
+    #endif
 
     public init(streamURL: @escaping (MusicSong, Double, Source) -> URL?) {
         self.streamURL = streamURL
@@ -144,6 +152,19 @@ public final class MusicQueuePlayer {
             Task { @MainActor [weak self] in self?.connectionBack() }
         }
         pathMonitor.start(queue: DispatchQueue(label: "arcfin.music.path"))
+        #if os(iOS) || os(tvOS)
+        interruptionObserver = NotificationCenter.default.addObserver(forName: AVAudioSession.interruptionNotification,
+                                                                      object: nil, queue: .main) { [weak self] note in
+            guard let info = note.userInfo, let value = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+                  let type = AVAudioSession.InterruptionType(rawValue: value) else { return }
+            let options = info[AVAudioSessionInterruptionOptionKey] as? UInt
+            MainActor.assumeIsolated { self?.interrupted(type, options: options) }
+        }
+        servicesResetObserver = NotificationCenter.default.addObserver(forName: AVAudioSession.mediaServicesWereResetNotification,
+                                                                       object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.mediaServicesReset() }
+        }
+        #endif
     }
 
     private static func makeDeck() -> AVQueuePlayer {
@@ -215,12 +236,14 @@ public final class MusicQueuePlayer {
             if start > 0 { seek(to: start) }
         }
         Self.activateAudioSession()
+        wantsToPlay = true
         player.play()
         if started == nil { markStarted(entry) }
     }
 
     public func pause() {
         finishCrossfade()
+        wantsToPlay = false
         heldForNetwork?.plays = false
         retrying?.plays = false
         player.pause()
@@ -230,6 +253,7 @@ public final class MusicQueuePlayer {
     /// `resume()` starts it again.
     public func suspend() {
         finishCrossfade()
+        wantsToPlay = false
         player.pause()
         endCurrent()
     }
@@ -348,6 +372,7 @@ public final class MusicQueuePlayer {
     /// Stops and empties the queue.
     public func stop() {
         finishCrossfade()
+        wantsToPlay = false
         dropPrepared()
         endCurrent()
         player.pause()
@@ -521,6 +546,7 @@ public final class MusicQueuePlayer {
         endCurrent(at: duration)
         if pausesAtEndOfSong {
             pausesAtEndOfSong = false
+            wantsToPlay = false
             player.pause()
             if queue.advance(finished: true) == nil { queue.jump(to: queue.entries[0].id) }
             reload()
@@ -599,6 +625,7 @@ public final class MusicQueuePlayer {
             guard failures < queue.entries.count else {
                 failures = 0
                 endCurrent()
+                wantsToPlay = false
                 player.pause()
                 return
             }
@@ -727,8 +754,10 @@ public final class MusicQueuePlayer {
         if let held = retrying, isPlaying, position > held.at + 1 { retrying = nil }
         // The server's length wins: AVFoundation only estimates an Ogg file's (a 60-second
         // Opus file read as 304), and a conversion's is only what it has made so far.
+        // A conversion's grows as it goes; each change redraws Now Playing, so only whole steps.
         if queue.current?.track.duration == nil, item.duration.isNumeric, item.duration.seconds > 0 {
-            duration = (start ?? 0) + item.duration.seconds
+            let length = (start ?? 0) + item.duration.seconds
+            if abs(length - duration) > 1 { duration = length }
         }
         if crossfadesCurrent, fade == nil, isPlaying {
             if prepared == nil, position >= duration - crossfade - Self.prepareLead { prepareNext() }
@@ -841,6 +870,42 @@ public final class MusicQueuePlayer {
     }
 
     // MARK: Audio session
+
+    #if os(iOS) || os(tvOS)
+    /// A call, Siri or an alarm: the system pauses the music, and it carries on afterwards
+    /// when the system says it should.
+    private func interrupted(_ type: AVAudioSession.InterruptionType, options: UInt?) {
+        switch type {
+        case .began:
+            pausedByInterruption = wantsToPlay
+            log.notice("Audio interrupted\(self.pausedByInterruption ? " while playing" : "", privacy: .public)")
+        case .ended:
+            defer { pausedByInterruption = false }
+            guard pausedByInterruption, wantsToPlay, let options,
+                  AVAudioSession.InterruptionOptions(rawValue: options).contains(.shouldResume) else { return }
+            log.notice("Interruption over: resuming")
+            resume()
+        @unknown default:
+            break
+        }
+    }
+
+    /// The media server restarted, taking every player with it: a new one carries on from
+    /// the same point.
+    private func mediaServicesReset() {
+        log.notice("Media services were reset")
+        finishCrossfade()
+        dropPrepared()
+        if let timeObserver { player.removeTimeObserver(timeObserver) }
+        player.removeAllItems()
+        player = Self.makeDeck()
+        player.isMuted = isMuted
+        player.volume = output
+        follow(player)
+        guard queue.current != nil, pendingStart == nil else { return }
+        restart(at: position, plays: wantsToPlay)
+    }
+    #endif
 
     // setCategory and setActive block, so they run off the main actor.
     private static func activateAudioSession() {

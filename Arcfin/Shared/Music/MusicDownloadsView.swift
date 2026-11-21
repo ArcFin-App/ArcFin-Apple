@@ -33,6 +33,9 @@ struct MusicDownloadButton: View {
 struct MusicArtistDownloadButton: View {
     let artist: MusicArtist
     let albums: [MusicAlbum]
+    /// Asks first: it can queue the artist's whole catalogue. Shown by the page, as the button
+    /// sits in a menu.
+    let confirmDownloadAll: () -> Void
     private var downloads: MusicDownloads { .shared }
 
     var body: some View {
@@ -45,9 +48,7 @@ struct MusicArtistDownloadButton: View {
         } else if !albums.isEmpty, expected > 0, saved.count >= expected {
             Button("Remove Download", systemImage: "trash", role: .destructive) { downloads.remove(saved) }
         } else {
-            Button("Download All Albums", systemImage: "arrow.down.circle") {
-                Task { await downloads.download(artist: artist) }
-            }
+            Button("Download All Albums", systemImage: "arrow.down.circle", action: confirmDownloadAll)
         }
     }
 }
@@ -73,6 +74,7 @@ struct MusicDownloadedMark: View {
 /// the albums, laid out like Downloads.
 struct MusicDownloadsView: View {
     @State private var confirmRemoveAll = false
+    @State private var confirmCancelAll = false
     @State private var freeBytes: Int64?
     private var downloads: MusicDownloads { .shared }
     private var allSongs: [MusicSong] { downloads.albums.flatMap(\.songs) }
@@ -113,6 +115,11 @@ struct MusicDownloadsView: View {
         }
         .confirmationDialog("Remove all downloaded music?", isPresented: $confirmRemoveAll, titleVisibility: .visible) {
             Button("Remove All Downloads", role: .destructive) { downloads.removeAll() }
+        }
+        .confirmationDialog(Text("Cancel all \(downloads.queue.count + downloads.failed.count) downloads?"),
+                            isPresented: $confirmCancelAll, titleVisibility: .visible) {
+            Button("Cancel All", role: .destructive) { downloads.cancelAll() }
+            Button("Keep Downloading", role: .cancel) {}
         }
     }
 
@@ -174,12 +181,13 @@ struct MusicDownloadsView: View {
                         .foregroundStyle(DT.Color.accent)
                         .padding(.trailing, 12)
                 }
-                Button("Cancel All", role: .destructive) { downloads.cancelAll() }
+                Button("Cancel All", role: .destructive) { confirmCancelAll = true }
                     .font(.subheadline.weight(.semibold))
                     .buttonStyle(.plain)
                     .foregroundStyle(DT.Color.accent)
             }
-            VStack(spacing: 0) {
+            // Lazy: Download All Albums can queue thousands of songs.
+            LazyVStack(spacing: 0) {
                 ForEach(Array((downloads.queue + downloads.failed).enumerated()), id: \.element.id) { index, song in
                     if index > 0 {
                         Divider().overlay(DT.Color.textPrimary.opacity(0.06)).padding(.leading, 68)

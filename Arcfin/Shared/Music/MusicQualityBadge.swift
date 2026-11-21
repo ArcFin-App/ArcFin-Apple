@@ -22,7 +22,10 @@ struct MusicQualityBadge: View {
         // No system highlight: on Apple TV it drew a second ring around the badge's own.
         .buttonStyle(BareButtonStyle())
         .focusEffectDisabled()
-        .opacity(format == nil && stream == nil ? 0 : 1)
+        .opacity(isEmpty ? 0 : 1)
+        // Kept for its space, but nothing to focus or read until there's a format to show.
+        .disabled(isEmpty)
+        .accessibilityHidden(isEmpty)
         .accessibilityHint("Shows the song's format")
         .task(id: song.id) { format = await Self.format(of: song) }
         .sheet(isPresented: $showsDetails) { details }
@@ -34,6 +37,8 @@ struct MusicQualityBadge: View {
         if let format = format ?? nil { known[song.id] = format }
         return format ?? nil
     }
+
+    private var isEmpty: Bool { format == nil && stream == nil }
 
     private var isConverted: Bool {
         if case .converted = stream { return true }
