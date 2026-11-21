@@ -61,6 +61,11 @@ final class PlayerModel {
             // Every new PlaybackInfo for a channel opens another tuner stream; the one it
             // replaces would hold its tuner until the server times it out.
             if let old = oldValue?.liveStreamId, old != playbackInfo?.liveStreamId { closeLiveStream(old) }
+            // Likewise a replaced stream's encode, which runs on until the server's idle timeout.
+            if let old = oldValue, old.playMethod != .directPlay, let session = old.playSessionId,
+               session != playbackInfo?.playSessionId {
+                stopEncoding(playSessionId: session)
+            }
         }
     }
     /// What's on the channel being watched, kept current as one programme follows another.
@@ -864,7 +869,8 @@ final class PlayerModel {
             Task { await fetchAndApplyNowPlayingArtwork() }
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                             positionTicks: resumeFrom, liveStreamId: info.liveStreamId)
+                                             positionTicks: resumeFrom, liveStreamId: info.liveStreamId,
+                                             playSessionId: info.playSessionId, playMethod: info.playMethod)
             startProgressReporting(mediaSourceId: info.mediaSourceId)
             startAutoRecovery()
             watchForMissingPicture()
@@ -1046,7 +1052,8 @@ final class PlayerModel {
                 credential: credential, authHeader: authHeader, itemId: item.id,
                 mediaSourceId: info.mediaSourceId, positionTicks: player.positionTicks,
                 isPaused: player.status == .paused, liveStreamId: info.liveStreamId,
-                volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil
+                volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil,
+                playSessionId: info.playSessionId, playMethod: info.playMethod
             )
         }
     }
@@ -1243,7 +1250,8 @@ final class PlayerModel {
             let stoppedAt = reportedPositionTicks
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
                                                itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                               positionTicks: stoppedAt, liveStreamId: info.liveStreamId)
+                                               positionTicks: stoppedAt, liveStreamId: info.liveStreamId,
+                                               playSessionId: info.playSessionId, playMethod: info.playMethod)
             if let liveStreamId = info.liveStreamId {
                 await client.closeLiveStream(credential: credential, authHeader: authHeader, liveStreamId: liveStreamId)
             }
@@ -1303,7 +1311,8 @@ final class PlayerModel {
                     credential: credential, authHeader: authHeader, itemId: item.id,
                     mediaSourceId: mediaSourceId, positionTicks: reportedPositionTicks,
                     isPaused: reportedIsPaused, liveStreamId: playbackInfo?.liveStreamId,
-                    volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil
+                    volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil,
+                    playSessionId: playbackInfo?.playSessionId, playMethod: playbackInfo?.playMethod ?? .directPlay
                 )
             }
         }
@@ -1556,6 +1565,13 @@ final class PlayerModel {
     }
 
     // MARK: - Live TV
+
+    private func stopEncoding(playSessionId: String) {
+        guard let credential, let authHeader,
+              let deviceId = UserDefaults.standard.string(forKey: "arcfin.deviceId") else { return }
+        let client = client
+        Task { await client.stopActiveEncodings(credential: credential, authHeader: authHeader, deviceId: deviceId, playSessionId: playSessionId) }
+    }
 
     private func closeLiveStream(_ liveStreamId: String) {
         guard let credential, let authHeader else { return }
