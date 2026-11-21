@@ -59,6 +59,7 @@ struct MainTabView: View {
             // The focus ENGINE still works (remote nav, isFocused env); only
             // the system visual highlight is replaced by per-element custom styling.
             .focusEffectDisabled()
+            .onPlayPauseCommand { music.playPausePressed() }
             .fullScreenCover(isPresented: $music.isShowingNowPlaying) { TVMusicNowPlaying() }
             .appSheet(item: $tagEditor.item, title: "Tags", systemImage: "tag") { item in
                 EditTagsSheet(item: item)

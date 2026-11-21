@@ -19,11 +19,12 @@ struct TVMusicNowPlaying: View {
     var body: some View {
         Group {
             if let song = player.current {
-                VStack(alignment: .leading, spacing: 48) {
+                VStack(alignment: .leading, spacing: 36) {
                     HStack(alignment: .center, spacing: 80) {
                         TVMusicArtwork(url: MusicAPI.artworkURL(song, width: 1000))
                             .overlay { MusicArtworkVisualizer(bars: 36, spacing: 3, cornerRadius: DT.Radius.card) }
-                            .frame(width: 520, height: 520)
+                            // Leaves the room below for Playing Next's larger tiles.
+                            .frame(width: 440, height: 440)
                             .shadow(color: .black.opacity(0.5), radius: 30, y: 16)
                             .focusable(false)
                         VStack(alignment: .leading, spacing: 32) {
@@ -37,10 +38,13 @@ struct TVMusicNowPlaying: View {
                                 }
                                 MusicQualityBadge(song: song)
                             }
-                            progress
+                            TVMusicScrubber(player: player)
                             controls(song)
                         }
                     }
+                    // Up from anywhere in the queue, even its first song under the cover, lands
+                    // on the controls.
+                    .focusSection()
                     switch panel {
                     case .upNext: upNext
                     case .lyrics: lyricsView
@@ -61,24 +65,6 @@ struct TVMusicNowPlaying: View {
         }
         .foregroundStyle(.white)
         .onPlayPauseCommand { player.togglePlayPause() }
-    }
-
-    private var progress: some View {
-        let duration = max(player.duration, 1)
-        return VStack(spacing: 8) {
-            ProgressView(value: min(player.position, duration), total: duration)
-                .tint(.white)
-            HStack {
-                Text(verbatim: player.position.musicTime)
-                Spacer()
-                Text(verbatim: "-" + max(duration - player.position, 0).musicTime)
-            }
-            .font(.caption.monospacedDigit())
-            .foregroundStyle(.white.opacity(0.6))
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Position")
-        .accessibilityValue(Text(verbatim: player.position.musicTime))
     }
 
     private func controls(_ song: MusicSong) -> some View {
@@ -150,9 +136,14 @@ struct TVMusicNowPlaying: View {
                     LazyHStack(alignment: .top, spacing: 36) {
                         ForEach(Array(player.queue.upNext.prefix(30))) { entry in
                             Button { player.jump(to: entry.id) } label: {
-                                TVMusicTile(url: MusicAPI.artworkURL(entry.track, width: 320), title: entry.track.name,
+                                TVMusicTile(url: MusicAPI.artworkURL(entry.track, width: 480), title: entry.track.name,
                                             subtitle: entry.track.artistLine)
-                                    .frame(width: 180)
+                            }
+                            // As many as fit across at about 240 pt, sized to fill the row
+                            // exactly: more on a large screen, fewer on a small one.
+                            .containerRelativeFrame(.horizontal) { width, _ in
+                                let count = max(3, ((width + 36) / (240 + 36)).rounded(.down))
+                                return (width - 36 * (count - 1)) / count
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
@@ -207,6 +198,75 @@ struct TVMusicNowPlaying: View {
             .clipped()
             .ignoresSafeArea()
             .accessibilityHidden(true)
+    }
+}
+
+/// Where the song is. Focus it and press left or right to go back or ahead 10 seconds; held
+/// presses keep going. It thickens and brightens while focused.
+private struct TVMusicScrubber: View {
+    let player: MusicQueuePlayer
+    @FocusState private var isFocused: Bool
+    /// Where presses have moved to, shown until the player catches up.
+    @State private var target: Double?
+    @State private var settle: Task<Void, Never>?
+
+    var body: some View {
+        let duration = max(player.duration, 1)
+        let position = min(target ?? player.position, duration)
+        VStack(spacing: 8) {
+            GeometryReader { proxy in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(.white.opacity(0.25))
+                    Capsule().fill(.white)
+                        .frame(width: proxy.size.width * position / duration)
+                }
+            }
+            .frame(height: isFocused ? 14 : 6)
+            HStack {
+                Text(verbatim: position.musicTime)
+                Spacer()
+                Text(verbatim: "-" + max(duration - position, 0).musicTime)
+            }
+            .font(.caption.monospacedDigit())
+            .foregroundStyle(.white.opacity(isFocused ? 1 : 0.6))
+        }
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+        .focusable()
+        .focused($isFocused)
+        .scaleEffect(isFocused ? 1.02 : 1)
+        .animation(DT.Animation.fast, value: isFocused)
+        .onMoveCommand { direction in
+            switch direction {
+            case .left: step(-10, duration: duration)
+            case .right: step(10, duration: duration)
+            default: break
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Position")
+        .accessibilityValue(Text(verbatim: position.musicTime))
+        .accessibilityAdjustableAction { direction in
+            switch direction {
+            case .increment: step(10, duration: duration)
+            case .decrement: step(-10, duration: duration)
+            @unknown default: break
+            }
+        }
+    }
+
+    /// Presses add up and seek once they stop, so five quick presses jump 50 seconds.
+    private func step(_ seconds: Double, duration: Double) {
+        target = min(max((target ?? player.position) + seconds, 0), duration)
+        settle?.cancel()
+        settle = Task {
+            try? await Task.sleep(for: .milliseconds(400))
+            guard !Task.isCancelled, let target else { return }
+            player.seek(to: target)
+            try? await Task.sleep(for: .milliseconds(600))
+            guard !Task.isCancelled else { return }
+            self.target = nil
+        }
     }
 }
 

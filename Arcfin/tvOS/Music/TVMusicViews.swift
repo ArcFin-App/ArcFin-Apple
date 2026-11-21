@@ -34,6 +34,14 @@ final class TVMusicPresenter {
         isShowingNowPlaying = true
     }
 
+    /// Play/Pause on the remote, outside a video: plays or pauses the music and brings Now
+    /// Playing up, so the music is always a press away.
+    func playPausePressed() {
+        guard AppServices.music.isActive else { return }
+        AppServices.music.player.togglePlayPause()
+        isShowingNowPlaying = true
+    }
+
     func shuffle(_ songs: [MusicSong]) {
         guard !songs.isEmpty else { return }
         MusicActions.shuffle(songs)
@@ -356,11 +364,6 @@ struct TVMusicLibraryView: View {
             VStack(alignment: .leading, spacing: 56) {
                 // Onto a second or third line where the screen's too narrow for one.
                 TVWrapLayout(spacing: 24) {
-                    if AppServices.music.isActive {
-                        TVPillButton(title: "Now Playing", systemImage: "waveform") {
-                            TVMusicPresenter.shared.isShowingNowPlaying = true
-                        }
-                    }
                     NavigationLink { TVMusicSearchView() } label: {
                         TVMusicPill(title: "Search", systemImage: "magnifyingglass")
                     }
