@@ -117,7 +117,7 @@ private struct HomeHeroInfo: View {
                 .id(carousel.index)
                 .transition(.opacity)
                 .animation(DT.Animation.motion(.easeInOut(duration: 0.3)), value: carousel.index)
-                .task(id: items.map(\.id)) { await carousel.prefetchLogos(items, mediaRepo: mediaRepo) }
+                .task(id: items.map(\.id)) { carousel.prefetchLogos(items, mediaRepo: mediaRepo) }
 
                 HStack(spacing: 8) {
                     if let rating = item.communityRating, rating > 0 {

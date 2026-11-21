@@ -96,6 +96,29 @@ public enum ImageCache: Sendable {
         }
     }
 
+    /// Downloads images into the disk cache the image views read, two at a time and without
+    /// decoding them, so a screen opened next shows them without waiting on the network.
+    public static func prefetch(urls: [URL]) {
+        let unique = Array(Set(urls))
+        guard !unique.isEmpty else { return }
+        PrefetcherBox.prefetcher(for: shared).startPrefetching(with: unique)
+    }
+
+    /// The prefetcher cancels its downloads when released, so one is kept per pipeline.
+    private enum PrefetcherBox {
+        private static let lock = NSLock()
+        nonisolated(unsafe) private static var cached: (pipeline: ImagePipeline, prefetcher: ImagePrefetcher)?
+
+        static func prefetcher(for pipeline: ImagePipeline) -> ImagePrefetcher {
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached, cached.pipeline === pipeline { return cached.prefetcher }
+            let prefetcher = ImagePrefetcher(pipeline: pipeline, destination: .diskCache)
+            cached = (pipeline, prefetcher)
+            return prefetcher
+        }
+    }
+
     /// Loads all URLs into the Nuke decoded cache concurrently so images render
     /// without a network round-trip or decode stall.
     public static func preheat(urls: [URL]) {

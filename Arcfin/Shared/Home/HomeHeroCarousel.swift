@@ -75,13 +75,10 @@ final class HomeHeroCarousel {
         index = max(0, newCount - 1)
     }
 
-    /// Warms the URL cache with every hero logo, so flipping between slides shows each one
+    /// Warms the image cache with every hero logo, so flipping between slides shows each one
     /// straight away instead of waiting on a fresh request.
-    func prefetchLogos(_ items: [MediaItem], mediaRepo: MediaRepository) async {
-        for item in items {
-            guard let url = mediaRepo.logoURL(for: item) else { continue }
-            _ = try? await URLSession.shared.data(from: url)
-        }
+    func prefetchLogos(_ items: [MediaItem], mediaRepo: MediaRepository) {
+        mediaRepo.prefetch(urls: items.compactMap { mediaRepo.logoURL(for: $0) })
     }
 
     private func stopVideoBackdrop() {

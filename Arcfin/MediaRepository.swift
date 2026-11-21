@@ -7,6 +7,7 @@ import JellyfinAPI
 import SeerrAPI
 import Telemetry
 import Network
+import ImageCache
 import os
 
 /// Races a one-shot NWPathMonitor read against a timeout — mirrors AuthManager's
@@ -501,15 +502,9 @@ final class MediaRepository {
         prefetch(urls: urls)
     }
 
+    /// Into the image pipeline's own disk cache: URLSession's cache, used before, was never
+    /// read by the image views, so every prefetched image downloaded twice.
     func prefetch(urls: [URL]) {
-        let uniqueURLs = Array(Set(urls))
-        guard !uniqueURLs.isEmpty else { return }
-
-        Task.detached(priority: .utility) {
-            for url in uniqueURLs {
-                let req = URLRequest(url: url, cachePolicy: .returnCacheDataElseLoad, timeoutInterval: 12)
-                _ = try? await URLSession.arcfin.data(for: req)
-            }
-        }
+        ImageCache.prefetch(urls: urls)
     }
 }

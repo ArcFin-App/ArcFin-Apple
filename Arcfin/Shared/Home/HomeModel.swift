@@ -70,10 +70,11 @@ final class HomeModel {
         guard seerrRepo.hasCatalog && enabled else { return }
         await seerrRepo.loadDiscover()
         await seerrRepo.loadWatchlist()
-        let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist).flatMap { item in
-            [item.backdropURL, item.posterURL].compactMap { $0 }
-        }
-        mediaRepo.prefetch(urls: seerrQuickLookURLs)
+        // Only the posters the rows show; a full-size backdrop for every title was mostly for
+        // pages nobody opened.
+        let seerrPosterURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist)
+            .compactMap(\.posterURL)
+        mediaRepo.prefetch(urls: seerrPosterURLs)
     }
 
     func saveTopShelf(mediaRepo: MediaRepository, title: (MediaItem) -> String, subtitle: (MediaItem) -> String?) {
