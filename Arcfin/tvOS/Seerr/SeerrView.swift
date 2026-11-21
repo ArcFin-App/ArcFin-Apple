@@ -400,8 +400,8 @@ private struct TVSeerrCard: View {
     }
 
     private var badge: (label: String, colorHex: String)? {
-        if mediaRepo.hasInLibrary(item) { return ("Available", "10b981") }
-        return matchingRequest?.displayStatus
+        if mediaRepo.hasInLibrary(item) { return (String(localized: "Available"), "10b981") }
+        return matchingRequest?.localizedDisplayStatus
     }
 
     var body: some View {
@@ -524,18 +524,16 @@ private struct TVRequestRow: View {
     }
 
     private func statusPill(_ status: RequestStatus) -> some View {
-        let (label, hex): (String, String) = switch status {
-        case .approved:  ("Approved",  "10b981")
-        case .declined:  ("Declined",  "F43F5E")
-        case .failed:  ("Failed",  "F43F5E")
-        case .completed: ("Completed", "10b981")
-        case .pending:   ("Pending",   "f59e0b")
+        let hex = switch status {
+        case .approved, .completed: "10b981"
+        case .declined, .failed: "F43F5E"
+        case .pending: "f59e0b"
         }
-        return pillView(label: label, hex: hex)
+        return pillView(label: status.localizedLabel, hex: hex)
     }
 
     private func mediaStatusPill(_ status: SeerrAvailabilityStatus) -> some View {
-        pillView(label: status.label, hex: status.colorHex)
+        pillView(label: status.localizedLabel, hex: status.colorHex)
     }
 
     private func pillView(label: String, hex: String) -> some View {

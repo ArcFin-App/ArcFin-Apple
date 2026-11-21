@@ -39,9 +39,9 @@ struct SeerrItemDetailContent: View {
                     }
 
                     if let availabilityStatus = item.availabilityStatus {
-                        availabilityRow(label: "Availability", status: (availabilityStatus.label, availabilityStatus.colorHex))
+                        availabilityRow(label: "Availability", status: (availabilityStatus.localizedLabel, availabilityStatus.colorHex))
                     } else if let request = seerrRepo.matchingRequest(for: item) {
-                        availabilityRow(label: "Request", status: request.displayStatus)
+                        availabilityRow(label: "Request", status: request.localizedDisplayStatus)
                     }
 
                     if model.isLoadingDetail {
@@ -315,7 +315,7 @@ struct SeerrItemDetailContent: View {
                                 .overlay(alignment: .topTrailing) {
                                     if let status = related.availabilityStatus {
                                         Circle().fill(DT.Color.palette(status.colorHex)).frame(width: 10, height: 10).padding(6)
-                                            .accessibilityLabel(status.label)
+                                            .accessibilityLabel(status.localizedLabel)
                                     }
                                 }
                                 Text(related.title)

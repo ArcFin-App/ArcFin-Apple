@@ -54,6 +54,39 @@ final class SeerrRequestReview {
     }
 }
 
+extension SeerrAvailabilityStatus {
+    /// The package's label is English.
+    var localizedLabel: String {
+        switch self {
+        case .unknown: String(localized: "Unknown")
+        case .pending: String(localized: "Pending")
+        case .processing: String(localized: "Processing")
+        case .partiallyAvailable: String(localized: "Partial")
+        case .available: String(localized: "Available")
+        }
+    }
+}
+
+extension RequestStatus {
+    var localizedLabel: String {
+        switch self {
+        case .pending: String(localized: "Pending")
+        case .approved: String(localized: "Approved")
+        case .declined: String(localized: "Declined")
+        case .failed: String(localized: "Failed")
+        case .completed: String(localized: "Completed")
+        }
+    }
+}
+
+extension SeerrRequestItem {
+    /// `displayStatus` with a label in the app's language.
+    var localizedDisplayStatus: (label: String, colorHex: String) {
+        if let mediaStatus { return (mediaStatus.localizedLabel, mediaStatus.colorHex) }
+        return (status.localizedLabel, displayStatus.colorHex)
+    }
+}
+
 extension SeerrRepository {
     /// Approve and Decline apply: the user manages requests and this one is waiting.
     func canReview(_ request: SeerrRequestItem) -> Bool {

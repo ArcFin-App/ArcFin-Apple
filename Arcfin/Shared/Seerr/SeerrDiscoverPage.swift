@@ -300,7 +300,7 @@ struct SeerrDiscoverPage: View {
                             if isAvailable {
                                 availabilityPill(label: String(localized: "In Library"), hex: "10b981")
                             } else if let request {
-                                let status = request.displayStatus
+                                let status = request.localizedDisplayStatus
                                 availabilityPill(label: status.label, hex: status.colorHex)
                             }
                         }

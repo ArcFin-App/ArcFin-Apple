@@ -23,8 +23,8 @@ struct SeerrItemDetailView: View {
     private var detail: SeerrMediaDetail? { model.detail }
 
     private var statusLabel: (label: String, colorHex: String)? {
-        if let status = item.availabilityStatus { return (status.label, status.colorHex) }
-        return seerrRepo.matchingRequest(for: item)?.displayStatus
+        if let status = item.availabilityStatus { return (status.localizedLabel, status.colorHex) }
+        return seerrRepo.matchingRequest(for: item)?.localizedDisplayStatus
     }
 
     var body: some View {

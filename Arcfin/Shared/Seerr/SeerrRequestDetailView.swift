@@ -339,17 +339,17 @@ struct SeerrRequestDetailView: View {
 
     private var requestStatusPill: some View {
         let (label, hex): (String, String) = switch current.status {
-        case .approved:  ("Approved", "10b981")
-        case .declined:  ("Declined", "F43F5E")
-        case .failed:  ("Failed", "F43F5E")
-        case .completed: ("Completed", "10b981")
-        case .pending:   ("Pending", "f59e0b")
+        case .approved:  (String(localized: "Approved"), "10b981")
+        case .declined:  (String(localized: "Declined"), "F43F5E")
+        case .failed:  (String(localized: "Failed"), "F43F5E")
+        case .completed: (String(localized: "Completed"), "10b981")
+        case .pending:   (String(localized: "Pending"), "f59e0b")
         }
         return statusPillView(label: label, hex: hex)
     }
 
     private func mediaStatusPill(_ status: SeerrAvailabilityStatus) -> some View {
-        statusPillView(label: status.label, hex: status.colorHex)
+        statusPillView(label: status.localizedLabel, hex: status.colorHex)
     }
 
     private func statusPillView(label: String, hex: String) -> some View {

@@ -28,12 +28,24 @@ struct SeerrRequestsListView: View {
 
     private var statusFilterLabel: String {
         switch statusFilter {
-        case nil: "All"
-        case .pending: "Pending"
-        case .approved: "Approved"
-        case .declined: "Declined"
-        case .failed: "Failed"
-        case .completed: "Completed"
+        case nil: String(localized: "All")
+        case .pending: String(localized: "Pending")
+        case .approved: String(localized: "Approved")
+        case .declined: String(localized: "Declined")
+        case .failed: String(localized: "Failed")
+        case .completed: String(localized: "Completed")
+        }
+    }
+
+    /// Whole phrases: the status word changes form inside the sentence in some languages.
+    private var emptyTitle: String {
+        switch statusFilter {
+        case nil: String(localized: "No Requests")
+        case .pending: String(localized: "No Pending Requests")
+        case .approved: String(localized: "No Approved Requests")
+        case .declined: String(localized: "No Declined Requests")
+        case .failed: String(localized: "No Failed Requests")
+        case .completed: String(localized: "No Completed Requests")
         }
     }
 
@@ -44,7 +56,7 @@ struct SeerrRequestsListView: View {
                     loadingList
                 } else if filteredRequests.isEmpty {
                     ContentUnavailableView(
-                        statusFilter == nil ? "No Requests" : "No \(statusFilterLabel) Requests",
+                        emptyTitle,
                         systemImage: "clock",
                         description: Text(statusFilter == nil
                                           ? "Your media requests will appear here."
@@ -258,17 +270,17 @@ struct SeerrRequestsListView: View {
 
     private func requestStatusPill(_ status: RequestStatus) -> some View {
         let (label, hex): (String, String) = switch status {
-        case .approved:  ("Approved", "10b981")
-        case .declined:  ("Declined", "F43F5E")
-        case .failed:  ("Failed", "F43F5E")
-        case .completed: ("Completed", "10b981")
-        case .pending:   ("Pending", "f59e0b")
+        case .approved:  (String(localized: "Approved"), "10b981")
+        case .declined:  (String(localized: "Declined"), "F43F5E")
+        case .failed:  (String(localized: "Failed"), "F43F5E")
+        case .completed: (String(localized: "Completed"), "10b981")
+        case .pending:   (String(localized: "Pending"), "f59e0b")
         }
         return statusPillView(label: label, hex: hex)
     }
 
     private func mediaStatusPill(_ status: SeerrAvailabilityStatus) -> some View {
-        statusPillView(label: status.label, hex: status.colorHex)
+        statusPillView(label: status.localizedLabel, hex: status.colorHex)
     }
 
     private func statusPillView(label: String, hex: String) -> some View {
