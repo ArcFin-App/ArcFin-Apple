@@ -764,8 +764,6 @@ struct NearbySetupCard: View {
             .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
             Button("Not Now") { guide.notNow() }
                 .foregroundStyle(DT.Color.textSecondary)
-            Button("Not Now") { guide.notNow() }
-                .foregroundStyle(DT.Color.textSecondary)
         case .connecting(let name):
             heading("Connecting to \(name)")
             ProgressView()
