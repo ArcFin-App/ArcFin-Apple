@@ -86,7 +86,7 @@ public enum TopShelfBridge {
     private static var activeProfileHasPIN: Bool {
         guard let id = UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap(UUID.init(uuidString:))
         else { return false }
-        return ((try? KeychainStore().loadPin(for: id)) ?? nil) != nil
+        do { return try KeychainStore().loadPin(for: id) != nil } catch { return true }
     }
 
     /// Nobody signed in, or another profile now: the shelf shouldn't show the last one's titles.
