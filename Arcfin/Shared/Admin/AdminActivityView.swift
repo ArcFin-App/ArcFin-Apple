@@ -68,7 +68,7 @@ private struct AdminActivityRow: View {
     private var icon: (name: String, color: Color) {
         switch entry.severity {
         case "Error": ("xmark.octagon.fill", DT.Color.palette("F43F5E"))
-        case "Warning": ("exclamationmark.triangle.fill", .orange)
+        case "Warning": ("exclamationmark.triangle.fill", DT.Color.palette("f59e0b"))
         default:
             switch entry.type {
             case let type where type.contains("Session") || type.contains("Authentication"): ("person.crop.circle", DT.Color.palette("60A5FA"))

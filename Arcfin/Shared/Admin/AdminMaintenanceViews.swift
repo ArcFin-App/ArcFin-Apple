@@ -184,7 +184,7 @@ private struct AdminLogView: View {
                 Text(line)
                     .font(.system(.caption2, design: .monospaced))
                     .foregroundStyle(line.contains("[ERR]") || line.contains("[FTL]") ? DT.Color.palette("F43F5E")
-                                     : line.contains("[WRN]") ? Color.orange : DT.Color.textPrimary)
+                                     : line.contains("[WRN]") ? DT.Color.palette("f59e0b") : DT.Color.textPrimary)
                     .textSelection(.enabled)
             }
         }
