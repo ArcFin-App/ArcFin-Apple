@@ -113,7 +113,7 @@ struct UsersView: View {
         // PIN entry sheet for switching to a protected profile
         .sheet(item: $switchTarget) { target in
             PINEntrySheet(
-                title: "Switch to \(target.displayName)",
+                title: String(localized: "Switch to \(target.displayName)"),
                 subtitle: target.baseURL.host,
                 storedPIN: switchStoredPIN,
                 resetToken: switchPINResetToken,
@@ -129,7 +129,7 @@ struct UsersView: View {
                         switchPINError = nil
                         Task { await pins.load(authManager: authManager) }
                     } else {
-                        switchPINError = "Incorrect PIN"
+                        switchPINError = String(localized: "Incorrect PIN")
                         switchPINResetToken += 1
                     }
                 }
@@ -177,7 +177,7 @@ struct UsersView: View {
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return false }
         guard let success = try? await context.evaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: "Switch to \(profile.displayName)"
+            localizedReason: String(localized: "Switch to \(profile.displayName)")
         ), success else { return false }
         return true
     }

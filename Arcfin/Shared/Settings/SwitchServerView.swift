@@ -45,7 +45,7 @@ struct SwitchServerView: View {
                     .buttonStyle(.plain)
                 } else {
                     NavigationLink(value: group) {
-                        serverRow(group, subtitle: "\(group.profiles.count) users")
+                        serverRow(group, subtitle: String(localized: "\(group.profiles.count) users"))
                     }
                 }
             }
@@ -71,7 +71,7 @@ struct SwitchServerView: View {
         .task { await pins.load(authManager: authManager) }
         .appSheet(item: $switchTarget) { target in
             PINEntrySheet(
-                title: "Switch to \(target.displayName)",
+                title: String(localized: "Switch to \(target.displayName)"),
                 subtitle: target.baseURL.host,
                 storedPIN: switchStoredPIN,
                 resetToken: switchPINResetToken,
@@ -87,7 +87,7 @@ struct SwitchServerView: View {
                         switchPINError = nil
                         dismiss()
                     } else {
-                        switchPINError = "Incorrect PIN"
+                        switchPINError = String(localized: "Incorrect PIN")
                         switchPINResetToken += 1
                     }
                 }

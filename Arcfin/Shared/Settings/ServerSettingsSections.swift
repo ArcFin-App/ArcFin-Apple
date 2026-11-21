@@ -11,6 +11,8 @@ final class ServerSettingsModel {
     private(set) var isLoadingInfo = true
     private(set) var infoError: String?
     private(set) var isCapturingSSID = false
+    /// The last "Use Current" couldn't read the network's name.
+    private(set) var ssidCaptureFailed = false
 
     private let client = JellyfinMediaClient()
 
@@ -19,29 +21,31 @@ final class ServerSettingsModel {
         do {
             publicInfo = try await client.getPublicInfo(baseURL: base)
         } catch {
-            infoError = "Couldn't reach the server for its public info."
+            infoError = String(localized: "Couldn't reach the server for its public info.")
         }
         isLoadingInfo = false
     }
 
-    /// Hands `store` the Wi-Fi network this device is on, or "" when it can't tell.
+    /// Hands `store` the Wi-Fi network this device is on. When it can't tell, the saved one is
+    /// kept and `ssidCaptureFailed` says so.
     func captureCurrentSSID(_ store: @escaping @MainActor (String) -> Void) {
         isCapturingSSID = true
+        ssidCaptureFailed = false
         Task {
-            if let ssid = await AuthManager.currentWiFiSSID() {
+            if let ssid = await AuthManager.currentWiFiSSID(asksForLocation: true) {
                 store(ssid)
             } else {
-                store("")
+                ssidCaptureFailed = true
             }
             isCapturingSSID = false
         }
     }
 
     static func currentlyUsing(activeBaseURL: URL?, localURL: String, remoteURL: String) -> String {
-        guard let host = activeBaseURL?.host else { return "Unknown" }
-        if let localHost = URL(string: localURL)?.host, localHost == host { return "Local URL" }
-        if let remoteHost = URL(string: remoteURL)?.host, remoteHost == host { return "Remote URL" }
-        return "Custom"
+        guard let host = activeBaseURL?.host else { return String(localized: "Unknown") }
+        if let localHost = URL(string: localURL)?.host, localHost == host { return String(localized: "Local URL") }
+        if let remoteHost = URL(string: remoteURL)?.host, remoteHost == host { return String(localized: "Remote URL") }
+        return String(localized: "Custom")
     }
 }
 
@@ -66,7 +70,7 @@ struct ServerPublicInfoSection: View {
                 LabeledContent("Local Address", value: info.localAddress ?? "—")
                     .lineLimit(1)
                     .tvReadOnlyRow()
-                LabeledContent("Setup Completed", value: (info.startupWizardCompleted ?? false) ? "Yes" : "No")
+                LabeledContent("Setup Completed") { (info.startupWizardCompleted ?? false) ? Text("Yes") : Text("No") }
                     .tvReadOnlyRow()
             } else if let infoError = model.infoError {
                 Text(infoError)
@@ -93,7 +97,7 @@ struct ArcfinSyncSection: View {
                 HStack { Spacer(); ProgressView(); Spacer() }
                     .tvReadOnlyRow()
             } else if let status = authManager.arcfinSyncStatus {
-                LabeledContent("Status", value: "Connected")
+                LabeledContent("Status") { Text("Connected") }
                     .tvReadOnlyRow()
                 LabeledContent("Version", value: status.version)
                     .tvReadOnlyRow()
@@ -106,7 +110,7 @@ struct ArcfinSyncSection: View {
                     .tvReadOnlyRow()
                 }
             } else {
-                LabeledContent("Status", value: "Not Installed")
+                LabeledContent("Status") { Text("Not Installed") }
                     .tvReadOnlyRow()
             }
             Button {

@@ -118,7 +118,7 @@ struct SetupGuideContent: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: icon)
                 .font(.system(.caption2))
-                .foregroundStyle(icon.contains("check") ? DT.Color.palette("10b981") : Color.orange)
+                .foregroundStyle(icon.contains("check") ? DT.Color.palette("10b981") : DT.Color.palette("F59E0B"))
                 .frame(width: 16)
             Text(text)
                 .font(DT.Font.caption2)

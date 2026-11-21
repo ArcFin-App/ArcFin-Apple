@@ -29,7 +29,7 @@ final class LibraryVisibilityModel {
             latestExcluded = Set(ids)
             latestLoaded = true
         } else {
-            errorMessage = "Couldn't load this from your server."
+            errorMessage = String(localized: "Couldn't load this from your server.")
         }
     }
 
@@ -45,7 +45,7 @@ final class LibraryVisibilityModel {
                 errorMessage = nil
             } catch {
                 latestExcluded = previous
-                errorMessage = "Couldn't save this to your server."
+                errorMessage = String(localized: "Couldn't save this to your server.")
             }
         }
     }
@@ -101,9 +101,9 @@ struct LibraryVisibilityView: View {
             } header: {
                 Text("Show in Recently Added")
             } footer: {
-                Text(model.errorMessage ?? "Saved to your Jellyfin account, so it applies in its other apps too. Home updates the next time it refreshes.")
+                Text(model.errorMessage ?? String(localized: "Saved to your Jellyfin account, so it applies in its other apps too. Home updates the next time it refreshes."))
                     .font(.caption)
-                    .foregroundStyle(model.errorMessage == nil ? DT.Color.textSecondary : .red)
+                    .foregroundStyle(model.errorMessage == nil ? DT.Color.textSecondary : DT.Color.palette("F43F5E"))
             }
         }
         .arcfinListStyle()

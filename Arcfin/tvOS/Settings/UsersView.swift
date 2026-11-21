@@ -40,7 +40,7 @@ struct UsersView: View {
                     Button(role: .destructive) {
                         signOutTarget = active
                     } label: {
-                        Text("Sign Out").foregroundStyle(.red)
+                        Text("Sign Out").foregroundStyle(DT.Color.palette("F43F5E"))
                     }
                 }
                 .buttonStyle(TVSettingsRowStyle())
@@ -192,7 +192,7 @@ private struct TVPINFlow: View {
     private func handle(_ entered: String) {
         let needsCurrent = task.kind == .unlock || task.kind == .remove || (task.kind == .change && !verified)
         if needsCurrent {
-            guard entered == storedPIN else { return fail("Incorrect PIN") }
+            guard entered == storedPIN else { return fail(String(localized: "Incorrect PIN")) }
             errorMessage = nil
             switch task.kind {
             case .unlock:
@@ -213,7 +213,7 @@ private struct TVPINFlow: View {
         }
         guard entered == first else {
             firstEntry = nil
-            return fail("PINs don't match")
+            return fail(String(localized: "PINs don't match"))
         }
         authManager.savePin(entered, for: task.profile.id)
         onDone(false)

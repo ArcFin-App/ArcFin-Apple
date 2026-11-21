@@ -12,6 +12,10 @@ struct PlayerFeatureToggleSections: View {
     @AppStorage("matchContentFrameRate") private var matchContentFrameRate = false
     /// The Mac leaves the display's refresh rate alone, so the switch would do nothing there.
     var showsFrameRateMatch = true
+    /// Which players switch the frame rate differs: on Apple TV only Aether does.
+    var frameRateDetail: LocalizedStringKey = "Switches the display to the video's frame rate so motion doesn't judder. Aether and AVFoundation only; some TVs flash black when it switches."
+    /// Only the iPhone and iPad player has a Cast button.
+    var showsCast = true
 
     var body: some View {
         Section {
@@ -30,12 +34,14 @@ struct PlayerFeatureToggleSections: View {
             .syncLocked("syncPlayEnabled", authManager)
         }
 
-        Section {
-            Toggle(isOn: $castEnabled) {
-                TVRowLabelText(title: "Chromecast", detail: "Shows the Cast button when a Chromecast is on your network.")
+        if showsCast {
+            Section {
+                Toggle(isOn: $castEnabled) {
+                    TVRowLabelText(title: "Chromecast", detail: "Shows the Cast button when a Chromecast is on your network.")
+                }
+                .tvListRow()
+                .syncLocked("castEnabled", authManager)
             }
-            .tvListRow()
-            .syncLocked("castEnabled", authManager)
         }
 
         Section {
@@ -49,7 +55,7 @@ struct PlayerFeatureToggleSections: View {
         if showsFrameRateMatch {
             Section {
             Toggle(isOn: $matchContentFrameRate) {
-                TVRowLabelText(title: "Match Content Frame Rate", detail: "Switches the display to the video's frame rate so motion doesn't judder. AVFoundation only; some TVs flash black when it switches.")
+                TVRowLabelText(title: "Match Content Frame Rate", detail: frameRateDetail)
             }
             .tvListRow()
             .syncLocked("matchContentFrameRate", authManager)

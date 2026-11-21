@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import UserNotifications
 
 struct NotificationsSettingsView: View {
     @Environment(AuthManager.self) private var authManager
@@ -16,6 +17,10 @@ struct NotificationsSettingsView: View {
     @AppStorage(QuietHours.enabledKey) private var quietHoursEnabled = false
     @AppStorage(QuietHours.startKey) private var quietStart = QuietHours.defaultStart
     @AppStorage(QuietHours.endKey) private var quietEnd = QuietHours.defaultEnd
+    /// Whether Arcfin may send notifications at all; nil until read.
+    @State private var authorization: UNAuthorizationStatus?
+    @Environment(\.openURL) private var openURL
+    @Environment(\.scenePhase) private var scenePhase
 
     /// A time picker over minutes after midnight.
     private func time(_ minutes: Binding<Int>) -> Binding<Date> {
@@ -28,8 +33,41 @@ struct NotificationsSettingsView: View {
         )
     }
 
+    @ViewBuilder
+    private var permissionSection: some View {
+        switch authorization {
+        case .notDetermined:
+            Section {
+                Button("Allow Notifications") { Task { await askForPermission() } }
+            } footer: {
+                Text("Arcfin can't send any of these until you allow notifications.")
+            }
+        case .denied:
+            Section {
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openNotificationSettingsURLString) { openURL(url) }
+                }
+            } footer: {
+                Text("Notifications are off for Arcfin. Turn them on in Settings to get any of these.")
+            }
+        default:
+            EmptyView()
+        }
+    }
+
+    private func askForPermission() async {
+        await NotificationManager.requestAuthorizationIfNeeded()
+        authorization = await Self.currentAuthorization()
+    }
+
+    private nonisolated static func currentAuthorization() async -> UNAuthorizationStatus {
+        await UNUserNotificationCenter.current().notificationSettings().authorizationStatus
+    }
+
     var body: some View {
         List {
+            permissionSection
+
             Section {
                 Toggle(isOn: $notifyNewEpisodes) {
                     TVRowLabelText(title: "New Episodes", detail: "When a new episode arrives of a show in your Continue Watching or Next Up.")
@@ -83,24 +121,32 @@ struct NotificationsSettingsView: View {
                 .syncLocked(QuietHours.enabledKey, authManager)
                 if quietHoursEnabled {
                     DatePicker("From", selection: time($quietStart), displayedComponents: .hourAndMinute)
+                        .syncLocked(QuietHours.startKey, authManager)
                     DatePicker("To", selection: time($quietEnd), displayedComponents: .hourAndMinute)
+                        .syncLocked(QuietHours.endKey, authManager)
                 }
             }
         }
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("Notifications")
-        .onChange(of: notifyNewEpisodes) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
-        .onChange(of: notifyNewFilms) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
-        .onChange(of: notifyServerEvents) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
+        .task { authorization = await Self.currentAuthorization() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { authorization = await Self.currentAuthorization() } }
+        }
+        .onChange(of: notifyNewEpisodes) { _, isOn in if isOn { Task { await askForPermission() } } }
+        .onChange(of: notifyNewFilms) { _, isOn in if isOn { Task { await askForPermission() } } }
+        .onChange(of: notifyServerEvents) { _, isOn in if isOn { Task { await askForPermission() } } }
         .onChange(of: showsStreamBadge) { _, isOn in
             Task {
-                if isOn { await NotificationManager.requestAuthorizationIfNeeded() }
+                if isOn { await askForPermission() }
                 await StreamBadge.refresh()
             }
         }
-        .onChange(of: notifyRequestUpdates) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
-        .onChange(of: notifyWatchlistAvailable) { _, isOn in if isOn { Task { await NotificationManager.requestAuthorizationIfNeeded() } } }
+        .onChange(of: notifyRequestUpdates) { _, isOn in if isOn { Task { await askForPermission() } } }
+        .onChange(of: notifyWatchlistAvailable) { _, isOn in if isOn { Task { await askForPermission() } } }
+        .onChange(of: notifyDownload) { _, isOn in if isOn { Task { await askForPermission() } } }
+        .onChange(of: notifyMusicDownloads) { _, isOn in if isOn { Task { await askForPermission() } } }
     }
 }
 

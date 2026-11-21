@@ -23,7 +23,7 @@ struct BottomNavSettingsView: View {
         false
     }
 
-    private var navTitle: String { usesBottomBar ? "Bottom Navigation" : "Navigation" }
+    private var navTitle: String { usesBottomBar ? String(localized: "Bottom Navigation") : String(localized: "Navigation") }
 
     var body: some View {
         List {

@@ -52,7 +52,7 @@ struct QuickProfileSwitchButton<Content: View>: View {
                 .task { await pins.load(authManager: authManager) }
                 .appSheet(item: $switchTarget) { target in
                     PINEntrySheet(
-                        title: "Switch to \(target.displayName)",
+                        title: String(localized: "Switch to \(target.displayName)"),
                         subtitle: target.baseURL.host,
                         storedPIN: storedPIN,
                         resetToken: resetToken,

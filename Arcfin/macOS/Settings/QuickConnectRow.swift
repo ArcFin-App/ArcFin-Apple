@@ -14,6 +14,11 @@ struct QuickConnectRow: View {
                 HStack(spacing: 10) {
                     TextField("Quick Connect", text: $quickConnect.code)
                         .autocorrectionDisabled()
+                        .onSubmit {
+                            if !quickConnect.code.isEmpty, !quickConnect.isAuthorizing {
+                                quickConnect.authorize(authManager: authManager)
+                            }
+                        }
                     Button {
                         quickConnect.authorize(authManager: authManager)
                     } label: {

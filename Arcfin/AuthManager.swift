@@ -8,10 +8,14 @@ import JellyfinAPI
 import SyncEngine
 import Telemetry
 import os
+import Security
 #if os(iOS)
 import NetworkExtension
 import CoreLocation
 import Network
+#endif
+#if os(iOS) || os(tvOS)
+import UIKit
 #endif
 
 private final class TimeoutResult<Value: Sendable>: @unchecked Sendable {
@@ -58,11 +62,12 @@ final class AuthManager {
     var expiredCredential: ServerCredential?
     @ObservationIgnored private var lastSignInCheck: Date?
 
-    /// nil until the first check completes, or if the server has no Arcfin Sync plugin /
-    /// isn't reachable — both look identical on purpose, see ArcfinSyncClient.fetchStatus.
+    /// nil until the first check completes, or if the server has no Arcfin Sync plugin or
+    /// isn't reachable, see ArcfinSyncClient.fetchStatus.
     var arcfinSyncStatus: ArcfinSyncStatus?
-    /// Keys the admin has locked server-side. Empty whenever arcfinSyncStatus is nil, which is
-    /// what keeps every Settings screen fully local-editable when the plugin isn't present.
+    /// Keys the admin has locked server-side, as the server last said for the active profile.
+    /// Kept through a sync, a failed one and launches offline; empty when the server has never
+    /// had the plugin.
     var arcfinSyncLockedKeys: Set<String> = []
     /// nil until a sync actually completes. Distinct from arcfinSyncStatus being non-nil,
     /// which only means the plugin was detected — this is what a "Last synced" label reads.
@@ -100,13 +105,24 @@ final class AuthManager {
             return
         }
         #endif
-        let k = keychain
-        seerrPassword = await Task.detached(priority: .userInitiated) {
-            (try? k.loadSeerrPassword()) ?? ""
-        }.value
-        let all = await Self.withTimeout(seconds: 5, fallback: [ServerCredential]()) {
-            await self.backgroundKeychainRead()
+        // A locked device (a CarPlay, Lock Screen, Siri or background launch, for sign-ins
+        // saved before they moved to after-first-unlock) isn't "no profiles": the check waits
+        // for the unlock and reads again, so the launch, and the PIN lock after it, see the
+        // real profiles. Any other failure counts as none, as before.
+        var read = await readStoredServers()
+        var waits = 0
+        while case .locked = read, waits < 3, await Self.protectedDataAvailable() {
+            waits += 1
+            read = await readStoredServers()
         }
+        let all: [ServerCredential]
+        if case .servers(let servers) = read {
+            all = servers
+            upgradeKeychainAccessibilityOnce()
+        } else {
+            all = []
+        }
+        seerrPassword = await keychainRead { (try? $0.loadSeerrPassword()) ?? "" }
         profiles = all
         guard !all.isEmpty else { return }
         let storedID = UserDefaults.standard.string(forKey: "arcfin.activeProfileID")
@@ -140,7 +156,8 @@ final class AuthManager {
             var updated = cred
             updated.userImageTag = tag
             self.upsert(updated)
-            self.state = .authenticated(updated)
+            // Another profile may have been picked while this ran; it stays.
+            if self.state.credential?.id == cred.id { self.state = .authenticated(updated) }
         }
         BottomNavPrefs.switchLayout(toProfile: cred.id.uuidString)
         refreshIsAdmin(for: cred)
@@ -257,7 +274,9 @@ final class AuthManager {
         #endif
     }
 
-    static func currentWiFiSSID() async -> String? {
+    /// `asksForLocation`: when Location hasn't been asked yet, ask and wait for the answer.
+    /// Only Settings does; the launch path doesn't, so it never waits on a prompt.
+    static func currentWiFiSSID(asksForLocation: Bool = false) async -> String? {
         #if os(iOS)
         #if targetEnvironment(simulator)
         // NEHotspotNetwork.fetchCurrent always fails here ("invalid result code 1") — the
@@ -268,7 +287,7 @@ final class AuthManager {
         #else
         let authorizationStatus = CLLocationManager().authorizationStatus
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
-            guard authorizationStatus == .notDetermined,
+            guard asksForLocation, authorizationStatus == .notDetermined,
                   await LocationAuthWaiter().wait() else { return nil }
             return await currentWiFiSSID()
         }
@@ -276,13 +295,9 @@ final class AuthManager {
         // fails ("invalid result code 1") without Location authorization too, despite
         // Apple's docs saying the Access Wi-Fi Information capability alone suffices.
         //
-        // Both awaits below only resolve via a callback the system controls (the user
-        // answering the location permission prompt; NEHotspotNetwork's own completion) —
-        // neither is guaranteed to fire in a bounded time (a prompt that fails to present,
-        // or is dismissed without a decision some other way, leaves the continuation
-        // dangling forever). This whole call sits directly in checkStoredAuth()'s path,
-        // which the splash screen blocks on — an unbounded hang here was a silent "stuck
-        // at splash" bug. Both now race against a timeout instead.
+        // NEHotspotNetwork's completion isn't guaranteed to fire in a bounded time, and this
+        // call sits in checkStoredAuth()'s path, which the splash screen blocks on, so it
+        // races a timeout.
         return await withTimeout(seconds: 3, fallback: nil) {
             await withCheckedContinuation { continuation in
                 NEHotspotNetwork.fetchCurrent { network in
@@ -297,8 +312,8 @@ final class AuthManager {
     }
 
     /// Races `operation` against a timeout, returning `fallback` if the timeout wins. Used
-    /// for the two system callbacks above that have no guaranteed completion time of their
-    /// own — without this, a callback that never fires hangs checkStoredAuth() forever.
+    /// for work with no guaranteed completion time of its own — without this, a callback
+    /// that never fires hangs checkStoredAuth() forever.
     private static func withTimeout<T: Sendable>(seconds: Double, fallback: T, operation: @escaping @Sendable () async -> T) async -> T {
         await withCheckedContinuation { continuation in
             let result = TimeoutResult(continuation: continuation)
@@ -366,16 +381,23 @@ final class AuthManager {
         // A push the previous profile scheduled mustn't land in this one's record.
         settingsPushTask?.cancel()
         arcfinSyncStatus = nil
-        arcfinSyncLockedKeys = []
+        arcfinSyncLockedKeys = SettingsSyncEngine.lockedKeys(profile: credential.id.uuidString)
         arcfinSyncLastSyncedAt = nil
         isSyncingArcfin = true
         Task { [weak self] in
             guard let self else { return }
             // A switch since has started its own sync; this one leaves that alone.
             defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
-            guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed,
-                  self.isActive(credential) else {
+            // The locks last seen stay while the server can't be reached; only a server that
+            // answers without the plugin clears them.
+            let presence = await self.syncClient.fetchStatus(baseURL: credential.baseURL)
+            guard self.isActive(credential) else { return }
+            guard case .installed(let status) = presence else {
                 Self.syncLog.notice("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
+                if presence == .notInstalled {
+                    SettingsSyncEngine.forgetLockedKeys(profile: credential.id.uuidString)
+                    self.arcfinSyncLockedKeys = []
+                }
                 return
             }
             Self.syncLog.notice("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
@@ -384,8 +406,10 @@ final class AuthManager {
             let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
                                                        isCurrent: { await self.isActive(credential) })
             guard self.isActive(credential) else { return }
-            self.arcfinSyncLockedKeys = locked
-            self.arcfinSyncLastSyncedAt = .now
+            if let locked {
+                self.arcfinSyncLockedKeys = locked
+                self.arcfinSyncLastSyncedAt = .now
+            }
             self.watchSettingsChanges()
             // Which encoders the server's hardware really has (plugin 0.3+); nil leaves it to
             // the learn-on-failure path.
@@ -425,7 +449,7 @@ final class AuthManager {
             let header = self.authClient.authHeader(token: credential.accessToken)
             let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
                                                        isCurrent: { await self.isActive(credential) })
-            guard self.isActive(credential) else { return }
+            guard self.isActive(credential), let locked else { return }
             self.arcfinSyncLockedKeys = locked
             self.arcfinSyncLastSyncedAt = .now
         }
@@ -462,8 +486,9 @@ final class AuthManager {
             let client = authClient
             Task.detached { await client.logout(credential: removed) }
         }
-        let k = keychain
-        Task.detached { try? k.delete(serverID: id); try? k.deletePin(for: id); try? k.deleteSeerrPassword(profile: id) }
+        keychainWrite { try $0.delete(serverID: id) }
+        keychainWrite { try $0.deletePin(for: id) }
+        keychainWrite { try $0.deleteSeerrPassword(profile: id) }
         UserDefaults.standard.removeObject(forKey: Self.seerrUsernameKey(for: id))
         for key in Self.perProfileSeerrKeys { UserDefaults.standard.removeObject(forKey: Self.perProfileKey(key, for: id)) }
         try? TMDBCredential.save("", profile: id)
@@ -507,8 +532,7 @@ final class AuthManager {
             defaults.removeObject(forKey: key)
         }
         seerrPassword = ""
-        let k = keychain
-        Task.detached { try? k.deleteSeerrPassword() }
+        keychainWrite { try $0.deleteSeerrPassword() }
         try? TMDBCredential.save("")
         CustomHTTPHeaders.removeAll()
         ShowTrackMemory.clear()
@@ -552,20 +576,15 @@ final class AuthManager {
     // MARK: - PIN management
 
     func pin(for credentialID: UUID) async -> String? {
-        let k = keychain
-        return await Task.detached(priority: .userInitiated) {
-            try? k.loadPin(for: credentialID)
-        }.value
+        await keychainRead { try? $0.loadPin(for: credentialID) }
     }
 
     func savePin(_ pin: String, for credentialID: UUID) {
-        let k = keychain
-        Task.detached { try? k.savePin(pin, for: credentialID) }
+        keychainWrite { try $0.savePin(pin, for: credentialID) }
     }
 
     func removePin(for credentialID: UUID) {
-        let k = keychain
-        Task.detached { try? k.deletePin(for: credentialID) }
+        keychainWrite { try $0.deletePin(for: credentialID) }
     }
 
     // MARK: - Seerr account per profile
@@ -623,7 +642,6 @@ final class AuthManager {
         // First run with this: what's in the slot already belongs to the active profile.
         guard let owner else { return }
 
-        let k = keychain
         let outgoingPassword = seerrPassword
         // A profile that was just removed has nothing to set aside.
         let stashOutgoing = profiles.contains { $0.id == owner }
@@ -645,19 +663,28 @@ final class AuthManager {
         }
         try? TMDBCredential.save(TMDBCredential.load(profile: id) ?? "")
         seerrPassword = ""
-        Task {
-            let incoming = await Task.detached(priority: .userInitiated) { () -> String in
+        let k = keychain
+        // Queued now, not from a Task, so a quick second switch can't overtake it.
+        Self.keychainQueue.async {
+            do {
                 if stashOutgoing {
-                    if outgoingPassword.isEmpty { try? k.deleteSeerrPassword(profile: owner) }
-                    else { try? k.saveSeerrPassword(outgoingPassword, profile: owner) }
+                    if outgoingPassword.isEmpty { try k.deleteSeerrPassword(profile: owner) }
+                    else { try k.saveSeerrPassword(outgoingPassword, profile: owner) }
                 }
-                let password = (try? k.loadSeerrPassword(profile: id)) ?? ""
-                if password.isEmpty { try? k.deleteSeerrPassword() } else { try? k.saveSeerrPassword(password) }
-                return password
-            }.value
-            // Another switch may have happened while the Keychain was read.
-            guard self.state.credential?.id == id else { return }
-            self.seerrPassword = incoming
+            } catch {
+                Self.keychainLog.error("Setting the Seerr password aside failed: \(String(describing: error), privacy: .public)")
+            }
+            let password = (try? k.loadSeerrPassword(profile: id)) ?? ""
+            do {
+                if password.isEmpty { try k.deleteSeerrPassword() } else { try k.saveSeerrPassword(password) }
+            } catch {
+                Self.keychainLog.error("Putting the Seerr password in place failed: \(String(describing: error), privacy: .public)")
+            }
+            Task { @MainActor in
+                // Another switch may have happened while the Keychain was read.
+                guard self.state.credential?.id == id else { return }
+                self.seerrPassword = password
+            }
         }
     }
 
@@ -665,14 +692,12 @@ final class AuthManager {
 
     func saveSeerrPassword(_ password: String) {
         seerrPassword = password
-        let k = keychain
-        Task.detached { try? k.saveSeerrPassword(password) }
+        keychainWrite { try $0.saveSeerrPassword(password) }
     }
 
     func removeSeerrPassword() {
         seerrPassword = ""
-        let k = keychain
-        Task.detached { try? k.deleteSeerrPassword() }
+        keychainWrite { try $0.deleteSeerrPassword() }
     }
 
     // MARK: - Stored servers (async — always off main thread)
@@ -684,8 +709,7 @@ final class AuthManager {
     // MARK: - Private
 
     private func upsert(_ credential: ServerCredential) {
-        let k = keychain
-        Task.detached { try? k.save(credential) }
+        keychainWrite { try $0.save(credential) }
         if let idx = profiles.firstIndex(where: { $0.id == credential.id }) {
             profiles[idx] = credential
         } else {
@@ -698,21 +722,88 @@ final class AuthManager {
     }
 
     private func backgroundKeychainRead() async -> [ServerCredential] {
+        await keychainRead { (try? $0.allServers()) ?? [] }
+    }
+
+    private enum StoredServersRead: Sendable {
+        case servers([ServerCredential])
+        /// The device is locked and the items are only readable when it isn't.
+        case locked
+        case failed
+    }
+
+    private func readStoredServers() async -> StoredServersRead {
+        await Self.withTimeout(seconds: 5, fallback: StoredServersRead.failed) {
+            await self.keychainRead { k -> StoredServersRead in
+                do {
+                    return .servers(try k.allServers())
+                } catch KeychainError.unexpectedStatus(let status) where status == errSecInteractionNotAllowed {
+                    return .locked
+                } catch {
+                    return .failed
+                }
+            }
+        }
+    }
+
+    private nonisolated static let keychainUpgradedKey = "arcfin.keychainAfterFirstUnlock"
+
+    /// Moves sign-ins saved before 0.5.0 to after-first-unlock, once. Only marked done when it
+    /// worked, so a failure is tried again at the next launch.
+    private func upgradeKeychainAccessibilityOnce() {
+        guard !UserDefaults.standard.bool(forKey: Self.keychainUpgradedKey) else { return }
+        keychainWrite { k in
+            try k.upgradeAccessibility()
+            UserDefaults.standard.set(true, forKey: Self.keychainUpgradedKey)
+        }
+    }
+
+    /// Waits until the device is unlocked; true when it is. Nothing to wait for on the Mac.
+    private static func protectedDataAvailable() async -> Bool {
+        #if os(iOS) || os(tvOS)
+        // Made before the check, so an unlock in between isn't missed.
+        let unlocks = NotificationCenter.default.notifications(named: UIApplication.protectedDataDidBecomeAvailableNotification)
+        if UIApplication.shared.isProtectedDataAvailable { return true }
+        for await _ in unlocks { return true }
+        return false
+        #else
+        return false
+        #endif
+    }
+
+    // MARK: - Keychain queue
+
+    /// Every Keychain call goes through this one serial queue, so writes land in the order
+    /// they were made (two quick profile switches, or a sign-in and its avatar update, used
+    /// to race) and a read sees the writes made before it.
+    private nonisolated static let keychainQueue = DispatchQueue(label: "arcfin.keychain", qos: .userInitiated)
+    private nonisolated static let keychainLog = Telemetry.logger(category: "Keychain")
+
+    private func keychainWrite(_ work: @escaping @Sendable (KeychainStore) throws -> Void) {
         let k = keychain
-        return await Task.detached(priority: .userInitiated) {
-            (try? k.allServers()) ?? []
-        }.value
+        Self.keychainQueue.async {
+            do { try work(k) } catch {
+                Self.keychainLog.error("Keychain write failed: \(String(describing: error), privacy: .public)")
+            }
+        }
+    }
+
+    private func keychainRead<T: Sendable>(_ work: @escaping @Sendable (KeychainStore) -> T) async -> T {
+        let k = keychain
+        return await withCheckedContinuation { continuation in
+            Self.keychainQueue.async { continuation.resume(returning: work(k)) }
+        }
     }
 }
 
 #if os(iOS)
 /// Requests When In Use location authorization if not yet determined, and waits for
 /// the user's decision before returning — NEHotspotNetwork.fetchCurrent needs it granted.
+/// No timeout: it's only used from Settings, where the person is reading the prompt.
 @MainActor
 private final class LocationAuthWaiter: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<Bool, Never>?
-    private var timeoutTask: Task<Void, Never>?
 
     func wait() async -> Bool {
         guard manager.authorizationStatus == .notDetermined else {
@@ -722,15 +813,12 @@ private final class LocationAuthWaiter: NSObject, CLLocationManagerDelegate {
             self.continuation = continuation
             manager.delegate = self
             manager.requestWhenInUseAuthorization()
-            timeoutTask = Task { @MainActor [weak self] in
-                try? await Task.sleep(for: .seconds(3))
-                guard !Task.isCancelled else { return }
-                self?.finish(false)
-            }
         }
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        // The first callback comes as soon as the delegate is set, before any answer.
+        guard manager.authorizationStatus != .notDetermined else { return }
         let granted = manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
         finish(granted)
     }
@@ -738,8 +826,6 @@ private final class LocationAuthWaiter: NSObject, CLLocationManagerDelegate {
     private func finish(_ granted: Bool) {
         guard let continuation else { return }
         self.continuation = nil
-        timeoutTask?.cancel()
-        timeoutTask = nil
         continuation.resume(returning: granted)
     }
 }

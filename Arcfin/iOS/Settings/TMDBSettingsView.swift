@@ -9,6 +9,7 @@ struct TMDBSettingsView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var model = TMDBKeyModel()
+    @State private var confirmingRemove = false
 
     var body: some View {
         List {
@@ -55,11 +56,16 @@ struct TMDBSettingsView: View {
             if !model.savedKey.isEmpty {
                 Section {
                     Button(role: .destructive) {
-                        model.key = ""
-                        save()
-                        model.testResult = nil
+                        confirmingRemove = true
                     } label: {
                         Text("Remove Key").frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    .confirmationDialog("Remove the TMDB Key?", isPresented: $confirmingRemove, titleVisibility: .visible) {
+                        Button("Remove Key", role: .destructive) {
+                            model.key = ""
+                            save()
+                            model.testResult = nil
+                        }
                     }
                 }
             }

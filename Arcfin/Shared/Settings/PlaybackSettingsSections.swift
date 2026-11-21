@@ -12,12 +12,12 @@ struct PlaybackSkipIntervalSection: View {
         Section {
             SettingsPicker("Skip Forward", detail: "For the skip buttons, double-tap and the arrow keys.", selection: $skipForwardSeconds,
                            options: skipIntervalOptions) { seconds in
-                Text("\(seconds)s")
+                Text(Duration.seconds(seconds).formatted(.units(allowed: [.seconds], width: .narrow)))
             }
             .syncLocked("skipForwardSeconds", authManager)
             SettingsPicker("Skip Backward", detail: "For the skip buttons, double-tap and the arrow keys.", selection: $skipBackwardSeconds,
                            options: skipIntervalOptions) { seconds in
-                Text("\(seconds)s")
+                Text(Duration.seconds(seconds).formatted(.units(allowed: [.seconds], width: .narrow)))
             }
             .syncLocked("skipBackwardSeconds", authManager)
         }
@@ -67,13 +67,16 @@ struct PlaybackAutomationSection: View {
             .tvListRow()
             .syncLocked("skipCommercials", authManager)
             if autoPlayNext || skipRecap || skipIntro || skipCredits || skipCommercials {
-                SettingsPicker("Countdown", detail: "How long the button fills before an automatic skip or the next episode.", selection: $upNextCountdownSeconds,
+                // Earlier versions offered up to 15 s. Clamped for display only, as the player
+                // clamps when it reads it: writing it here would push a synced, maybe locked,
+                // setting just for opening the page.
+                SettingsPicker("Countdown", detail: "How long the button fills before an automatic skip or the next episode.",
+                               selection: Binding(get: { min(max(upNextCountdownSeconds, 3), 5) },
+                                                  set: { upNextCountdownSeconds = $0 }),
                                options: [3, 4, 5]) { seconds in
-                    Text("\(seconds)s")
+                    Text(Duration.seconds(seconds).formatted(.units(allowed: [.seconds], width: .narrow)))
                 }
                 .syncLocked("upNextCountdownSeconds", authManager)
-                // Earlier versions offered up to 15 s.
-                .onAppear { upNextCountdownSeconds = min(max(upNextCountdownSeconds, 3), 5) }
             }
             Toggle(isOn: $subtitleDefault) {
                 TVRowLabelText(title: "Show Subtitles by Default", detail: "Turns on a subtitle track when a video starts.")
@@ -139,43 +142,29 @@ struct PlaybackLanguageSection: View {
     @AppStorage("preferredAudioLanguage")    private var preferredAudioLanguage    = ""
     @AppStorage("preferredSubtitleLanguage") private var preferredSubtitleLanguage = ""
 
-    private static let audioLanguageOptions: [(code: String, name: String)] = [
-        ("", "None"),
-        ("eng", "English"),
-        ("spa", "Spanish"),
-        ("fre", "French"),
-        ("ger", "German"),
-        ("jpn", "Japanese"),
-        ("kor", "Korean"),
-        ("chi", "Chinese"),
-        ("ita", "Italian"),
-        ("por", "Portuguese"),
-        ("rus", "Russian"),
+    /// The server's ISO 639-2 codes, with the two-letter code the name is looked up by.
+    private static let languages: [(code: String, iso: String)] = [
+        ("eng", "en"), ("spa", "es"), ("fre", "fr"), ("ger", "de"), ("jpn", "ja"),
+        ("kor", "ko"), ("chi", "zh"), ("ita", "it"), ("por", "pt"), ("rus", "ru"),
     ]
-    private static let subtitleLanguageOptions: [(code: String, name: String)] = [
-        ("", "Off"),
-        ("eng", "English"),
-        ("spa", "Spanish"),
-        ("fre", "French"),
-        ("ger", "German"),
-        ("jpn", "Japanese"),
-        ("kor", "Korean"),
-        ("chi", "Chinese"),
-        ("ita", "Italian"),
-        ("por", "Portuguese"),
-        ("rus", "Russian"),
-    ]
+    private static let options = [""] + languages.map(\.code)
+
+    /// The language's name in the app's language.
+    private static func name(_ code: String) -> String {
+        let iso = languages.first { $0.code == code }?.iso ?? code
+        return Locale.current.localizedString(forLanguageCode: iso) ?? code
+    }
 
     var body: some View {
         Section {
             SettingsPicker("Preferred Audio Language", detail: "Starts on this language when a title has it.",
-                           selection: $preferredAudioLanguage, options: Self.audioLanguageOptions.map(\.code)) { code in
-                Text(Self.audioLanguageOptions.first { $0.code == code }?.name ?? code)
+                           selection: $preferredAudioLanguage, options: Self.options) { code in
+                code.isEmpty ? Text("None") : Text(verbatim: Self.name(code))
             }
             .syncLocked("preferredAudioLanguage", authManager)
             SettingsPicker("Preferred Subtitle Language", detail: "Starts on this language when a title has it.",
-                           selection: $preferredSubtitleLanguage, options: Self.subtitleLanguageOptions.map(\.code)) { code in
-                Text(Self.subtitleLanguageOptions.first { $0.code == code }?.name ?? code)
+                           selection: $preferredSubtitleLanguage, options: Self.options) { code in
+                code.isEmpty ? Text("Off") : Text(verbatim: Self.name(code))
             }
             .syncLocked("preferredSubtitleLanguage", authManager)
         }
@@ -187,6 +176,7 @@ struct PlaybackTrackMemorySection: View {
     @Environment(AuthManager.self) private var authManager
     @AppStorage(ShowTrackMemory.enabledKey) private var rememberTracksPerShow = true
     @State private var rememberedShowCount = ShowTrackMemory.rememberedShowCount
+    @State private var confirmingForget = false
 
     var body: some View {
         Section {
@@ -197,10 +187,17 @@ struct PlaybackTrackMemorySection: View {
             .syncLocked(ShowTrackMemory.enabledKey, authManager)
             if rememberTracksPerShow, rememberedShowCount > 0 {
                 Button(role: .destructive) {
-                    ShowTrackMemory.clear()
-                    rememberedShowCount = 0
+                    confirmingForget = true
                 } label: {
-                    Text("Forget \(rememberedShowCount) Remembered \(rememberedShowCount == 1 ? "Show" : "Shows")")
+                    Text("Forget Remembered Shows (\(rememberedShowCount))")
+                }
+                .confirmationDialog("Forget Remembered Shows?", isPresented: $confirmingForget, titleVisibility: .visible) {
+                    Button("Forget", role: .destructive) {
+                        ShowTrackMemory.clear()
+                        rememberedShowCount = 0
+                    }
+                } message: {
+                    Text("Each show starts with your default audio and subtitles again.")
                 }
             }
         }

@@ -15,7 +15,7 @@ struct SubtitleStyleSettingsView: View {
             Section {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8).fill(.black)
-                    SubtitleText(text: "Like this.", size: size, color: color, background: background)
+                    SubtitleText(text: String(localized: "Like this."), size: size, color: color, background: background)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 90)

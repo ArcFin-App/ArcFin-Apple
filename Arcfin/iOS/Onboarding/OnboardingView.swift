@@ -16,7 +16,7 @@ struct OnboardingView: View {
         pages.append(OnboardingPage(
             art: .logo,
             title: "Welcome to Arcfin",
-            message: "Your Jellyfin movies, shows and collections, in an app made for iPhone, iPad, Mac and Apple TV."
+            message: "Your Jellyfin movies, shows, music and collections, in an app made for iPhone, iPad, Mac and Apple TV."
         ))
         pages.append(OnboardingPage(
             art: .symbol("house"),
@@ -25,6 +25,7 @@ struct OnboardingView: View {
             highlights: [
                 ("play.circle", "Continue Watching and Next Up, in step with your other devices"),
                 ("square.grid.2x2", "Every library, with filters, sorting and collections"),
+                ("music.note", "Your music, by album, artist and playlist"),
                 ("magnifyingglass", "Search across your whole server"),
             ]
         ))
@@ -124,6 +125,12 @@ struct OnboardingView: View {
             VStack(spacing: DT.Spacing.lg) {
                 PageDots(index: model.index, count: pages.count)
                 HStack(spacing: DT.Spacing.sm) {
+                    // The swipe back isn't there for VoiceOver, Switch Control or a keyboard.
+                    if model.index > 0 {
+                        Button("Back", action: back)
+                            .controlSize(.large)
+                            .buttonStyle(.glass)
+                    }
                     LoginPrimaryButton(title: primaryTitle, action: next)
                         .keyboardShortcut(.defaultAction)
                 }

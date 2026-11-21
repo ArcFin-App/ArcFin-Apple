@@ -87,6 +87,7 @@ struct SettingsView: View {
             Toggle(isOn: $seerrDiscoverEnabled) {
                 TVRowLabelText(title: "Show Discover on Home", detail: "Adds your Seerr watchlist and its trending and popular rows to Home.")
             }
+            .syncLocked("seerrDiscoverEnabled", authManager)
             NavigationLink(value: TVSettingsPage.seerr) {
                 HStack {
                     Text("Seerr")
@@ -168,7 +169,7 @@ struct SettingsView: View {
         case .music: MusicSettingsView()
         case .appearance: AppearanceView()
         case .profile: ProfileAccessView()
-        case .serverSettings(let profileID): ServerSettingsView(profileID: profileID)
+        case .serverSettings: ServerSettingsView()
         case .addServer: AddServerFlowView()
         case .seerr: SeerrPluginView()
         case .tmdb: TMDBSettingsView()

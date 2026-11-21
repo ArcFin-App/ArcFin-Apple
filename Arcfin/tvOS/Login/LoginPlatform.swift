@@ -3,8 +3,9 @@
 import SwiftUI
 
 extension View {
+    /// The content type, so the iPhone offers its saved password for the server.
     func loginFieldInput(_ kind: LoginFieldKind) -> some View {
-        self
+        textContentType(kind.contentType)
     }
 
     func loginBackButtonPadding() -> some View {
@@ -34,5 +35,15 @@ extension View {
     // with the system's own default appearance there, no style needed.
     func seerrPasswordFieldStyle(onSubmit: @escaping () -> Void) -> some View {
         self
+    }
+}
+
+private extension LoginFieldKind {
+    var contentType: UITextContentType {
+        switch self {
+        case .url: .URL
+        case .username: .username
+        case .password: .password
+        }
     }
 }

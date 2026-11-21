@@ -231,8 +231,11 @@ private struct NearbySetupHosting: ViewModifier {
                 if PlatformMetrics.hostsNearbySetup { host.start(authManager: authManager) }
             }
             .onDisappear { host.stop() }
-            .appSheet(isPresented: Binding(get: { host.phase != .idle },
-                                           set: { if !$0 { host.cancelSession() } })) {
+            .appSheet(isPresented: Binding(get: { host.phase != .idle }, set: { isShown in
+                // cancelSession leaves a failure in place, so the sheet came straight back.
+                guard !isShown else { return }
+                if case .failed = host.phase { host.dismissFailure() } else { host.cancelSession() }
+            })) {
                 NearbySetupHostView(host: host)
             }
             .onChange(of: host.completedSetups) { onAdded() }
@@ -762,8 +765,6 @@ struct NearbySetupCard: View {
             }
             .padding(.horizontal, 16)
             .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            Button("Not Now") { guide.notNow() }
-                .foregroundStyle(DT.Color.textSecondary)
             Button("Not Now") { guide.notNow() }
                 .foregroundStyle(DT.Color.textSecondary)
         case .connecting(let name):

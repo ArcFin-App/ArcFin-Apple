@@ -21,7 +21,7 @@ struct DownloadsSettingsView: View {
     @AppStorage("removeWatchedWhenLowOnSpace") private var removeWatchedWhenLow = false
     @Environment(AuthManager.self) private var authManager
     @Environment(DownloadManager.self) private var downloadManager
-    @State private var imageCacheBytes = ImageCache.diskCacheSize
+    @State private var imageCacheBytes = 0
 
     var body: some View {
         SettingsForm {
@@ -104,7 +104,8 @@ struct DownloadsSettingsView: View {
                 LabeledContent("Image Cache", value: ByteCountFormatter.string(fromByteCount: Int64(imageCacheBytes), countStyle: .file))
                 Button("Clear Image Cache", role: .destructive) {
                     ImageCache.clear()
-                    imageCacheBytes = ImageCache.diskCacheSize
+                    // Nuke removes the files later, so the size it reports right away is the old one.
+                    imageCacheBytes = 0
                 }
                 .disabled(imageCacheBytes == 0)
             } footer: {
@@ -162,12 +163,12 @@ struct DownloadsSettingsView: View {
                 Toggle(isOn: $offlineModeEnabled) {
                     TVRowLabelText(title: "Offline Mode", detail: "Shows only what's downloaded, without connecting to your server.")
                 }
-                .syncLocked("offlineModeEnabled", authManager)
             }
         }
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge("Downloads")
+        .task { imageCacheBytes = await Task.detached(priority: .utility) { ImageCache.diskCacheSize }.value }
     }
 }
 

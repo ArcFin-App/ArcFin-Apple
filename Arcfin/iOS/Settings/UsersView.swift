@@ -80,12 +80,14 @@ struct UsersView: View {
             }
 
             // ── App Lock ─────────────────────────────────────────────────
-            Section {
-                Toggle(isOn: $appLockUseFaceID) {
-                    TVRowLabelText(title: "Use \(biometricLabel)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
+            if let biometricLabel {
+                Section {
+                    Toggle(isOn: $appLockUseFaceID) {
+                        TVRowLabelText(title: "Use \(biometricLabel)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
+                    }
+                } header: {
+                    Text("App Lock")
                 }
-            } header: {
-                Text("App Lock")
             }
         }
         .arcfinListStyle()
@@ -106,7 +108,7 @@ struct UsersView: View {
         // PIN entry sheet for switching to a protected profile
         .sheet(item: $switchTarget) { target in
             PINEntrySheet(
-                title: "Switch to \(target.displayName)",
+                title: String(localized: "Switch to \(target.displayName)"),
                 subtitle: target.baseURL.host,
                 storedPIN: switchStoredPIN,
                 resetToken: switchPINResetToken,
@@ -122,7 +124,7 @@ struct UsersView: View {
                         switchPINError = nil
                         Task { await pins.load(authManager: authManager) }
                     } else {
-                        switchPINError = "Incorrect PIN"
+                        switchPINError = String(localized: "Incorrect PIN")
                         switchPINResetToken += 1
                     }
                 }
@@ -156,9 +158,16 @@ struct UsersView: View {
         }
     }
 
-    // Face ID is the only biometry iOS/iPadOS devices in this fleet ship with.
-    private var biometricLabel: String {
-        return "Face ID"
+    /// Face ID or Touch ID (iPad Air, iPad mini, iPad and iPhone SE), or nil with neither.
+    /// canEvaluatePolicy has to run first for biometryType to be filled in.
+    private var biometricLabel: String? {
+        let context = LAContext()
+        _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
+        switch context.biometryType {
+        case .faceID: return "Face ID"
+        case .touchID: return "Touch ID"
+        default: return nil
+        }
     }
 
     private func attemptBiometrics(for profile: ServerCredential) async -> Bool {
@@ -166,7 +175,7 @@ struct UsersView: View {
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return false }
         guard let success = try? await context.evaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: "Switch to \(profile.displayName)"
+            localizedReason: String(localized: "Switch to \(profile.displayName)")
         ), success else { return false }
         return true
     }

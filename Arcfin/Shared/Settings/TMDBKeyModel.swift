@@ -28,7 +28,7 @@ final class TMDBKeyModel {
         Task {
             do {
                 _ = try await TMDBClient(key: trimmed).trending()
-                testResult = "✓ Connected to TMDB"
+                testResult = "✓ " + String(localized: "Connected to TMDB")
                 save(seerrRepo: seerrRepo)
             } catch {
                 testResult = "✗ \(error.localizedDescription)"

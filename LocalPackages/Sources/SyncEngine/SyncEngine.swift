@@ -328,7 +328,7 @@ public enum SettingsSyncRegistry {
         // Downloads
         .init("wifiOnly", .bool),
         .init("downloadQuality", .string),
-        .init("offlineModeEnabled", .bool),
+        // offlineModeEnabled is left out: it says what this device is doing right now.
         .init("deleteDownloadsAfterWatching", .bool),
         .init("smartDownloadsEnabled", .bool),
         .init("smartDownloadsEpisodeCount", .int),
@@ -485,6 +485,19 @@ public enum SettingsSyncEngine {
         return (toApply, toPush)
     }
 
+    private static func lockedKey(profile: String) -> String { "arcfin.settingsSync.locked.\(profile)" }
+
+    /// The keys the server last said were locked for this profile, kept so they stay locked at
+    /// launch, offline and while a sync runs.
+    public static func lockedKeys(profile: String, defaults: UserDefaults = .standard) -> Set<String> {
+        Set(defaults.stringArray(forKey: lockedKey(profile: profile)) ?? [])
+    }
+
+    /// For a server that says it no longer has the plugin.
+    public static func forgetLockedKeys(profile: String, defaults: UserDefaults = .standard) {
+        defaults.removeObject(forKey: lockedKey(profile: profile))
+    }
+
     /// What this profile and the server last agreed on, in the wire format.
     static func lastSynced(profile: String, defaults: UserDefaults) -> [String: String]? {
         defaults.dictionary(forKey: lastSyncedKey(profile: profile)) as? [String: String]
@@ -500,25 +513,32 @@ public enum SettingsSyncEngine {
     /// then is sent to the server, one changed only on the server is taken from it, and one an
     /// administrator locked always comes from the server. Before, the server's value always won,
     /// so anything changed here was put back at the next sync unless the server had never had it.
-    /// Returns the set of admin-locked keys, so the caller can disable those controls in Settings
-    /// — an empty set (including on any failure) means nothing is locked, which is also the
-    /// correct fallback when the plugin isn't reachable: settings stay fully local-editable.
-    @discardableResult
+    /// Returns the set of admin-locked keys, so the caller can disable those controls in Settings,
+    /// or nil when the server's settings couldn't be read: nothing was merged, and the locks last
+    /// seen (`lockedKeys(profile:)`) still apply.
     /// `isCurrent` says whether the profile is still the one in use: a sync that finishes after
     /// a switch would read and write the next profile's settings, so it stops there.
+    @discardableResult
     public static func sync(credential: ServerCredential, authHeader: String, defaults: UserDefaults = .standard,
-                            isCurrent: @Sendable () async -> Bool = { true }) async -> Set<String> {
+                            isCurrent: @Sendable () async -> Bool = { true }) async -> Set<String>? {
         let pluginClient = ArcfinPluginSyncClient(credential: credential, authHeader: authHeader)
-
-        guard let remote = try? await pluginClient.pull() else { return [] }
-        let locked = Set(((try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader)) ?? [])
-            .filter { $0.isLocked }.map { $0.key })
-        guard await isCurrent() else { return [] }
-        let local = collectLocalPayload(defaults: defaults).settings
         let profile = credential.id.uuidString
+
+        // One read gives both the values and the locks, so a merge never runs with the locks
+        // missing and sends this device's value for a locked key.
+        guard let settings = try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader)
+        else { return nil }
+        var remote: [String: String] = [:]
+        for setting in settings {
+            if let value = setting.value { remote[setting.key] = value }
+        }
+        let locked = Set(settings.filter { $0.isLocked }.map { $0.key })
+        defaults.set(locked.sorted(), forKey: lockedKey(profile: profile))
+        guard await isCurrent() else { return nil }
+        let local = collectLocalPayload(defaults: defaults).settings
         let (base, adoptRemote) = startingPoint(profile: profile, defaults: defaults)
 
-        let (toApply, toPush) = merge(local: local, remote: remote.settings, base: base, locked: locked, adoptRemote: adoptRemote)
+        let (toApply, toPush) = merge(local: local, remote: remote, base: base, locked: locked, adoptRemote: adoptRemote)
         apply(SyncPayload(settings: toApply), defaults: defaults)
         var agreed = collectLocalPayload(defaults: defaults).settings
         if !toPush.isEmpty, (try? await pluginClient.push(SyncPayload(settings: toPush))) == nil {
