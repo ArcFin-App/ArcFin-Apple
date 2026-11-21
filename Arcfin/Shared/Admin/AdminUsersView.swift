@@ -379,9 +379,13 @@ struct AdminDevicesView: View {
     @State private var removing: JellyfinDevice?
     @State private var error: String?
 
+    // Signing out the device Arcfin runs on would revoke the token it's using.
+    private let ownDeviceID = UserDefaults.standard.string(forKey: "arcfin.deviceId")
+
     var body: some View {
         List {
             ForEach(devices) { device in
+                let isThisDevice = device.id == ownDeviceID
                 HStack(spacing: 12) {
                     Image(systemName: icon(device))
                         .font(.system(.title3))
@@ -396,12 +400,22 @@ struct AdminDevicesView: View {
                             .font(.system(.caption))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
+                    if isThisDevice {
+                        Spacer()
+                        Text("This Device")
+                            .font(.system(.caption, weight: .semibold))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
                 }
                 .swipeActions {
-                    Button("Sign Out", role: .destructive) { removing = device }
+                    if !isThisDevice {
+                        Button("Sign Out", role: .destructive) { removing = device }
+                    }
                 }
                 .contextMenu {
-                    Button("Sign Out Device", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { removing = device }
+                    if !isThisDevice {
+                        Button("Sign Out Device", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { removing = device }
+                    }
                 }
             }
         }
