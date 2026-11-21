@@ -14,7 +14,6 @@ struct UsersView: View {
     @State private var switchTarget: ServerCredential? = nil
     @State private var switchPINResetToken = 0
     @State private var switchPINError: String? = nil
-    @State private var switchStoredPIN: String? = nil
     @State private var showAddProfile = false
     @State private var removeTarget: ServerCredential?
     @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
@@ -110,7 +109,6 @@ struct UsersView: View {
             PINEntrySheet(
                 title: String(localized: "Switch to \(target.displayName)"),
                 subtitle: target.baseURL.host,
-                storedPIN: switchStoredPIN,
                 resetToken: switchPINResetToken,
                 errorMessage: switchPINError,
                 onCancel: {
@@ -118,14 +116,18 @@ struct UsersView: View {
                     switchPINError = nil
                 },
                 onComplete: { entered in
-                    if entered == switchStoredPIN {
-                        authManager.switchTo(target)
-                        switchTarget = nil
-                        switchPINError = nil
-                        Task { await pins.load(authManager: authManager) }
-                    } else {
-                        switchPINError = String(localized: "Incorrect PIN")
-                        switchPINResetToken += 1
+                    Task {
+                        let result = await authManager.checkPIN(entered, for: target.id)
+                        guard switchTarget?.id == target.id else { return }
+                        if result == .correct {
+                            authManager.switchTo(target)
+                            switchTarget = nil
+                            switchPINError = nil
+                            await pins.load(authManager: authManager)
+                        } else {
+                            switchPINError = result.message
+                            switchPINResetToken += 1
+                        }
                     }
                 }
             )
@@ -134,25 +136,27 @@ struct UsersView: View {
 
     // MARK: - Actions
 
+    /// Decided from the PIN as read now; `pins` only draws the locks and may not have loaded.
     private func handleTapOtherProfile(_ profile: ServerCredential) {
-        guard pins.hasPIN(profile.id) else {
-            authManager.switchTo(profile)
-            Task { await pins.load(authManager: authManager) }
-            return
-        }
-        switchPINError = nil
-        switchPINResetToken = 0
         Task {
-            switchStoredPIN = await authManager.pin(for: profile.id)
+            let stored = await authManager.storedPIN(for: profile.id)
+            guard stored != .none else {
+                authManager.switchTo(profile)
+                await pins.load(authManager: authManager)
+                return
+            }
             // Explicitly switching to a specific profile from Settings (unlike the boot-time
             // lock screen) is a deliberate "become this person" action already gated behind
             // having the device unlocked — Face ID here just confirms the device owner again,
             // same as the PIN would, so it's offered first with the PIN as fallback instead
             // of skipping straight to the PIN pad.
             if appLockUseFaceID, await attemptBiometrics(for: profile) {
+                PINAttempts.reset(for: profile.id)
                 authManager.switchTo(profile)
                 await pins.load(authManager: authManager)
             } else {
+                switchPINError = AuthManager.PINCheck.message(opening: stored, for: profile.id)
+                switchPINResetToken = 0
                 switchTarget = profile
             }
         }

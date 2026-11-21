@@ -129,7 +129,6 @@ private struct PINFlowSheet: View {
     @State private var pendingPIN: String? = nil
     @State private var resetToken = 0
     @State private var errorMessage: String? = nil
-    @State private var storedPIN: String? = nil
 
     enum Stage { case first, second, confirmNew }
 
@@ -160,7 +159,11 @@ private struct PINFlowSheet: View {
                 onCancel: { dismiss() },
                 onComplete: handleFirst
             )
-            .task { storedPIN = await authManager.pin(for: profile.id) }
+            .task {
+                guard flow != .setNew else { return }
+                let stored = await authManager.storedPIN(for: profile.id)
+                errorMessage = AuthManager.PINCheck.message(opening: stored, for: profile.id)
+            }
 
         case .second:
             PINPadView(
@@ -191,23 +194,24 @@ private struct PINFlowSheet: View {
             errorMessage = nil
             stage = .second
 
-        case .changeVerifyCurrent:
-            if entered == storedPIN {
-                pendingPIN = nil
+        case .changeVerifyCurrent, .disableVerifyCurrent:
+            Task {
+                let result = await authManager.checkPIN(entered, for: profile.id)
+                guard stage == .first else { return }
+                guard result == .correct else {
+                    errorMessage = result.message
+                    resetToken += 1
+                    return
+                }
                 errorMessage = nil
-                stage = .second
-            } else {
-                errorMessage = String(localized: "Incorrect PIN")
-                resetToken += 1
-            }
-
-        case .disableVerifyCurrent:
-            if entered == storedPIN {
-                authManager.removePin(for: profile.id)
-                Task { await onDone(); dismiss() }
-            } else {
-                errorMessage = String(localized: "Incorrect PIN")
-                resetToken += 1
+                if flow == .changeVerifyCurrent {
+                    pendingPIN = nil
+                    stage = .second
+                } else {
+                    authManager.removePin(for: profile.id)
+                    await onDone()
+                    dismiss()
+                }
             }
         }
     }
@@ -216,8 +220,15 @@ private struct PINFlowSheet: View {
         switch flow {
         case .setNew:
             if entered == pendingPIN {
-                authManager.savePin(entered, for: profile.id)
-                Task { await onDone(); dismiss() }
+                Task {
+                    // Offered before the screen had read the PIN: one already set is only
+                    // changed with it.
+                    if await authManager.storedPIN(for: profile.id) == .none {
+                        authManager.savePin(entered, for: profile.id)
+                    }
+                    await onDone()
+                    dismiss()
+                }
             } else {
                 errorMessage = String(localized: "PINs don't match")
                 resetToken += 1
@@ -249,7 +260,6 @@ private struct PINFlowSheet: View {
 struct PINEntrySheet: View {
     let title: String
     var subtitle: String? = nil
-    let storedPIN: String?
     var resetToken: Int
     var errorMessage: String?
     var onCancel: () -> Void
