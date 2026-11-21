@@ -67,6 +67,12 @@ extension SeerrRepository {
             || (request.status == .pending && (request.requestedByID == nil || request.requestedByID == currentUser?.id))
     }
 
+    /// False only once the signed-in Seerr user is known not to be allowed to request this
+    /// kind of title.
+    func mayRequest(_ mediaType: RequestMediaType) -> Bool {
+        currentUser.map { SeerrPermission.canRequest(mediaType, in: $0.permissions) } ?? true
+    }
+
     /// "Requested by" is worth saying: the list holds other people's requests too.
     func requesterName(of request: SeerrRequestItem) -> String? {
         guard canManageRequests, let name = request.requestedByName, !name.isEmpty,

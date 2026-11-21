@@ -249,7 +249,7 @@ struct SeerrItemDetailView: View {
         let parts = model.requestableParts(seerrRepo: seerrRepo)
         return VStack(alignment: .leading, spacing: 16) {
             discoveryRow(collection.name, collection.parts)
-            if seerrRepo.isConfigured, !parts.isEmpty {
+            if seerrRepo.isConfigured, model.mayRequest, !parts.isEmpty {
                 Button { model.isConfirmingCollectionRequest = true } label: {
                     Label(model.isRequestingCollection ? "Requesting…" : "Request Collection", systemImage: "plus.circle.fill")
                         .font(.system(size: 24, weight: .semibold))

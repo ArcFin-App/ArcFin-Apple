@@ -263,7 +263,7 @@ struct SeerrDiscoverPage: View {
     private func featuredCard(_ item: SeerrItem, rank: Int, kind: FeaturedKind) -> some View {
         let isAvailable = mediaRepo.hasInLibrary(item)
         let request = isAvailable ? nil : seerrRepo.matchingRequest(for: item)
-        let canRequest = !isAvailable && !seerrRepo.isRequested(item)
+        let canRequest = !isAvailable && !seerrRepo.isRequested(item) && seerrRepo.mayRequest(item.mediaType)
         let width = featuredWidth
         return ZStack(alignment: .bottomTrailing) {
             Button { openedItem = item } label: {
@@ -395,7 +395,7 @@ struct SeerrDiscoverPage: View {
                 systemImage: seerrRepo.isInWatchlist(item) ? "bookmark.slash" : "bookmark"
             )
         }
-        if !mediaRepo.hasInLibrary(item), !seerrRepo.isRequested(item) {
+        if !mediaRepo.hasInLibrary(item), !seerrRepo.isRequested(item), seerrRepo.mayRequest(item.mediaType) {
             Button {
                 requestingItem = item
             } label: {

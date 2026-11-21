@@ -271,7 +271,7 @@ struct SeerrItemDetailContent: View {
     @ViewBuilder
     private var requestCollectionButton: some View {
         let parts = model.requestableParts(seerrRepo: seerrRepo)
-        if seerrRepo.isConfigured, !parts.isEmpty {
+        if seerrRepo.isConfigured, model.mayRequest, !parts.isEmpty {
             Button { model.isConfirmingCollectionRequest = true } label: {
                 if model.isRequestingCollection { ProgressView() } else { Text("Request Collection") }
             }
