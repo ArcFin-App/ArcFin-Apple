@@ -131,7 +131,7 @@ struct SeerrRequestsListView: View {
             HStack(spacing: 10) {
                 Image(systemName: "hourglass")
                     .foregroundStyle(DT.Color.palette("f59e0b"))
-                Text(pendingCount == 1 ? "1 request is waiting for approval" : "\(pendingCount) requests are waiting for approval")
+                Text("\(pendingCount) requests are waiting for approval")
                     .font(.system(.footnote, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                 Spacer(minLength: 0)
