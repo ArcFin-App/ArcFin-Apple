@@ -61,8 +61,9 @@ final class AuthManager {
     /// nil until the first check completes, or if the server has no Arcfin Sync plugin /
     /// isn't reachable — both look identical on purpose, see ArcfinSyncClient.fetchStatus.
     var arcfinSyncStatus: ArcfinSyncStatus?
-    /// Keys the admin has locked server-side. Empty whenever arcfinSyncStatus is nil, which is
-    /// what keeps every Settings screen fully local-editable when the plugin isn't present.
+    /// Keys the admin has locked server-side, as the server last said for the active profile.
+    /// Kept through a sync, a failed one and launches offline; empty when the server has never
+    /// had the plugin.
     var arcfinSyncLockedKeys: Set<String> = []
     /// nil until a sync actually completes. Distinct from arcfinSyncStatus being non-nil,
     /// which only means the plugin was detected — this is what a "Last synced" label reads.
@@ -366,16 +367,23 @@ final class AuthManager {
         // A push the previous profile scheduled mustn't land in this one's record.
         settingsPushTask?.cancel()
         arcfinSyncStatus = nil
-        arcfinSyncLockedKeys = []
+        arcfinSyncLockedKeys = SettingsSyncEngine.lockedKeys(profile: credential.id.uuidString)
         arcfinSyncLastSyncedAt = nil
         isSyncingArcfin = true
         Task { [weak self] in
             guard let self else { return }
             // A switch since has started its own sync; this one leaves that alone.
             defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
-            guard let status = await self.syncClient.fetchStatus(baseURL: credential.baseURL), status.installed,
-                  self.isActive(credential) else {
+            // An unreachable server looks the same as one without the plugin, so the locks last
+            // seen stay; only a server that answers that it doesn't have it clears them.
+            let fetched = await self.syncClient.fetchStatus(baseURL: credential.baseURL)
+            guard self.isActive(credential) else { return }
+            guard let status = fetched, status.installed else {
                 Self.syncLog.notice("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
+                if fetched != nil {
+                    SettingsSyncEngine.forgetLockedKeys(profile: credential.id.uuidString)
+                    self.arcfinSyncLockedKeys = []
+                }
                 return
             }
             Self.syncLog.notice("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
@@ -384,8 +392,10 @@ final class AuthManager {
             let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
                                                        isCurrent: { await self.isActive(credential) })
             guard self.isActive(credential) else { return }
-            self.arcfinSyncLockedKeys = locked
-            self.arcfinSyncLastSyncedAt = .now
+            if let locked {
+                self.arcfinSyncLockedKeys = locked
+                self.arcfinSyncLastSyncedAt = .now
+            }
             self.watchSettingsChanges()
             // Which encoders the server's hardware really has (plugin 0.3+); nil leaves it to
             // the learn-on-failure path.
@@ -425,7 +435,7 @@ final class AuthManager {
             let header = self.authClient.authHeader(token: credential.accessToken)
             let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
                                                        isCurrent: { await self.isActive(credential) })
-            guard self.isActive(credential) else { return }
+            guard self.isActive(credential), let locked else { return }
             self.arcfinSyncLockedKeys = locked
             self.arcfinSyncLastSyncedAt = .now
         }
