@@ -53,6 +53,7 @@ final class LiveTVModel {
     private(set) var timers: [LiveTVTimer] = []
     private(set) var seriesTimers: [LiveTVSeriesTimer] = []
     private(set) var isLoadingRecordings = true
+    private(set) var recordingsFailed = false
 
     /// Search, on the Live TV screen and in Browse.
     var searchQuery = ""
@@ -324,9 +325,11 @@ final class LiveTVModel {
         async let recordingsResult = try? client.getLiveTVRecordings(credential: credential, authHeader: header)
         async let timersResult = try? client.getLiveTVTimers(credential: credential, authHeader: header)
         async let seriesResult = try? client.getLiveTVSeriesTimers(credential: credential, authHeader: header)
-        if let value = await recordingsResult { recordings = value }
-        if let value = await timersResult { timers = value }
-        if let value = await seriesResult { seriesTimers = value }
+        let (fetchedRecordings, fetchedTimers, fetchedSeries) = await (recordingsResult, timersResult, seriesResult)
+        if let fetchedRecordings { recordings = fetchedRecordings }
+        if let fetchedTimers { timers = fetchedTimers }
+        if let fetchedSeries { seriesTimers = fetchedSeries }
+        recordingsFailed = fetchedRecordings == nil && fetchedTimers == nil && fetchedSeries == nil
         isLoadingRecordings = false
     }
 

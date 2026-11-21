@@ -25,6 +25,14 @@ struct LiveTVRecordingsView: View {
     var body: some View {
         if model.isLoadingRecordings, isEmpty {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+        } else if isEmpty, model.recordingsFailed {
+            ContentUnavailableView {
+                Label("Couldn't Load Recordings", systemImage: "record.circle")
+            } description: {
+                Text("Check your connection and try again.")
+            } actions: {
+                Button("Try Again") { Task { await model.loadRecordings(authManager: authManager) } }
+            }
         } else if isEmpty {
             ContentUnavailableView("No Recordings", systemImage: "record.circle",
                                    description: ProfileRules.shared.canRecordLiveTV
