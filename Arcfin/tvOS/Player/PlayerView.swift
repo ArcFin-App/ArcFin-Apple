@@ -66,7 +66,7 @@ struct PlayerView: View {
         self.startPositionTicks = startPositionTicks
         self.onPlayNext = onPlayNext
         _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext,
-                                                 hidesControlsByFading: true, routesThroughSyncPlay: false))
+                                                 hidesControlsByFading: true))
     }
 
     var body: some View {

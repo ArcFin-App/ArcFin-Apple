@@ -424,10 +424,7 @@ extension PlayerView {
         model.isScrubbing = false
         model.scrubThumbnail = nil
         model.performSeek(to: ticks)
-        if model.player.status != .playing {
-            if sharePlay.isActive { sharePlay.send(.play, itemId: item.id, positionTicks: ticks) }
-            Task { await model.player.play() }
-        }
+        model.playAfterScrub(at: ticks)
         model.scheduleAutoHide()
     }
 

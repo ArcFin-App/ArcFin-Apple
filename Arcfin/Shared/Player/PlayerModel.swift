@@ -22,8 +22,6 @@ final class PlayerModel {
     @ObservationIgnored private let log = Telemetry.logger(category: "Player")
     /// Apple TV hides the controls by fading them out, so they stay focusable (see its PlayerView).
     @ObservationIgnored let hidesControlsByFading: Bool
-    /// Play, pause and seek go to the SyncPlay group while in one, rather than to the player.
-    @ObservationIgnored let routesThroughSyncPlay: Bool
 
     @ObservationIgnored var authManager: AuthManager!
     @ObservationIgnored var mediaRepo: MediaRepository!
@@ -165,12 +163,11 @@ final class PlayerModel {
     var isFillScreen = false
 
     init(item: MediaItem, startPositionTicks: Int64, onPlayNext: @escaping (MediaItem) -> Void,
-         hidesControlsByFading: Bool = false, routesThroughSyncPlay: Bool = true) {
+         hidesControlsByFading: Bool = false) {
         self.item = item
         self.startPositionTicks = startPositionTicks
         self.onPlayNext = onPlayNext
         self.hidesControlsByFading = hidesControlsByFading
-        self.routesThroughSyncPlay = routesThroughSyncPlay
         let defaults = UserDefaults.standard
         let mobileQuality = DownloadManager.isOnMobileDataNow
             ? defaults.string(forKey: "mobileVideoQuality").flatMap(VideoQuality.init(rawValue:)) : nil
@@ -2128,7 +2125,8 @@ final class PlayerModel {
             toggleControlsVisibilityOnAction()
             return
         }
-        if routesThroughSyncPlay, !isLive, syncPlayManager.isInGroup, let credential = authManager.state.credential {
+        // Play, pause and seek go to the SyncPlay group while in one, rather than to the player.
+        if !isLive, syncPlayManager.isInGroup, let credential = authManager.state.credential {
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
             if player.status == .playing {
                 syncPlayManager.requestPause(credential: credential, authHeader: authHeader)
@@ -2145,6 +2143,18 @@ final class PlayerModel {
             if player.status == .playing { await player.pause() } else { await player.play() }
         }
         toggleControlsVisibilityOnAction()
+    }
+
+    /// Apple TV plays from a scrubbed position on commit, as the system player does; in a
+    /// SyncPlay group that's the group's play, not the local player's.
+    func playAfterScrub(at ticks: Int64) {
+        guard player.status != .playing else { return }
+        if !isLive, syncPlayManager.isInGroup, let credential = authManager.state.credential {
+            syncPlayManager.requestPlay(credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken))
+            return
+        }
+        if sharePlay.isActive { sharePlay.send(.play, itemId: item.id, positionTicks: ticks) }
+        Task { await player.play() }
     }
 
     func seek(by seconds: Int) {
@@ -2165,7 +2175,7 @@ final class PlayerModel {
             CastManager.shared.seek(toSeconds: Double(ticks) / 10_000_000)
             return
         }
-        if routesThroughSyncPlay, syncPlayManager.isInGroup, let credential = authManager.state.credential {
+        if syncPlayManager.isInGroup, let credential = authManager.state.credential {
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
             syncPlayManager.requestSeek(credential: credential, authHeader: authHeader, positionTicks: ticks)
             return
