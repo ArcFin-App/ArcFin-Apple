@@ -19,7 +19,8 @@ struct MusicQualityBadge: View {
         Button { showsDetails = true } label: {
             BadgeLabel(summary: summary, icon: icon, tint: tint)
         }
-        .buttonStyle(.plain)
+        // No system highlight: on Apple TV it drew a second ring around the badge's own.
+        .buttonStyle(BareButtonStyle())
         .focusEffectDisabled()
         .opacity(format == nil && stream == nil ? 0 : 1)
         .accessibilityHint("Shows the song's format")
@@ -139,5 +140,11 @@ private struct BadgeLabel: View {
         .background(isFocused ? Color.white : tint.opacity(0.12), in: Capsule())
         .scaleEffect(isFocused ? 1.1 : 1)
         .animation(DT.Animation.fast, value: isFocused)
+    }
+}
+
+private struct BareButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label.opacity(configuration.isPressed ? 0.6 : 1)
     }
 }

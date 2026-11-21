@@ -193,10 +193,11 @@ private struct TVPillButton: View {
 }
 
 /// A song in a list: its number or cover, name, artist and length; the playing one marked.
-private struct TVMusicSongRow: View {
+struct TVMusicSongRow: View {
     let song: MusicSong
     var number: Int?
     var showsArtwork = false
+    var removeTitle: LocalizedStringKey = "Remove from Playlist"
     var onRemove: (() -> Void)?
     let play: () -> Void
 
@@ -210,7 +211,7 @@ private struct TVMusicSongRow: View {
                 MusicFavoriteButton(id: song.id, server: song.isFavorite)
                 MusicAddToPlaylistButton { [song] }
                 if let onRemove {
-                    Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive, action: onRemove)
+                    Button(removeTitle, systemImage: "minus.circle", role: .destructive, action: onRemove)
                 }
                 Button("Create Station", systemImage: "dot.radiowaves.left.and.right") {
                     Task {

@@ -16,6 +16,9 @@ struct TVMusicNowPlaying: View {
     @AppStorage("tvMusicNowPlayingPanel") private var panelName = ""
     @State private var lyrics: Lyrics?
     @State private var showsSleepTimer = false
+    @State private var showsLyricsTiming = false
+    /// Play/Pause has focus when it opens, not the first thing on the screen.
+    @FocusState private var playPauseFocused: Bool
     private var player: MusicQueuePlayer { AppServices.music.player }
 
     private var panel: Panel? { Panel(rawValue: panelName) }
@@ -57,6 +60,8 @@ struct TVMusicNowPlaying: View {
             }
         }
         .foregroundStyle(.white)
+        .defaultFocus($playPauseFocused, true)
+        .onAppear { playPauseFocused = true }
         .onPlayPauseCommand { player.togglePlayPause() }
     }
 
@@ -96,6 +101,7 @@ struct TVMusicNowPlaying: View {
                 circle(player.isPlaying ? "pause.fill" : "play.fill", label: player.isPlaying ? "Pause" : "Play", large: true) {
                     player.togglePlayPause()
                 }
+                .focused($playPauseFocused)
                 circle("forward.fill", label: "Next") { player.next() }
             }
             TVWrapLayout(spacing: 20) {
@@ -115,12 +121,27 @@ struct TVMusicNowPlaying: View {
                 if MusicLyricsSource.shared.isAvailable(song) {
                     circle("quote.bubble", label: "Lyrics", isOn: panel == .lyrics, small: true) { toggle(.lyrics) }
                 }
+                // Beside Lyrics while timed ones show: earlier or later, for when they run off the song.
+                if panel == .lyrics, lyrics?.isSynced == true {
+                    circle("timer", label: "Timing", isOn: MusicLyricsSource.shared.delay(song.id) != 0, small: true) {
+                        showsLyricsTiming = true
+                    }
+                }
                 circle("moon.zzz", label: "Sleep Timer", isOn: AppServices.music.sleepTimer != nil, small: true) {
                     showsSleepTimer = true
                 }
             }
         }
         .focusSection()
+        .confirmationDialog(Text("Timing"), isPresented: $showsLyricsTiming) {
+            Button("Show Lines 2 s Earlier") { MusicLyricsSource.shared.adjust(song.id, by: -2) }
+            Button("Show Lines 0.5 s Earlier") { MusicLyricsSource.shared.adjust(song.id, by: -0.5) }
+            Button("Show Lines 0.5 s Later") { MusicLyricsSource.shared.adjust(song.id, by: 0.5) }
+            Button("Show Lines 2 s Later") { MusicLyricsSource.shared.adjust(song.id, by: 2) }
+            if MusicLyricsSource.shared.delay(song.id) != 0 {
+                Button("Reset Timing") { MusicLyricsSource.shared.adjust(song.id, by: nil) }
+            }
+        }
         .confirmationDialog(Text("Sleep Timer"), isPresented: $showsSleepTimer) {
             MusicSleepTimerOptions()
         } message: {
@@ -132,7 +153,7 @@ struct TVMusicNowPlaying: View {
     private func ratingCircles(_ song: MusicSong) -> some View {
         let isFavorite = MusicFavorites.shared.isFavorite(song.id, server: song.isFavorite)
         let likes = MusicRatings.shared.likes(song.id, server: song.likes)
-        circle(isFavorite ? "star.fill" : "star", label: isFavorite ? "Remove from Favorites" : "Add to Favorites", isOn: isFavorite,
+        circle("star", label: isFavorite ? "Remove from Favorites" : "Add to Favorites", isOn: isFavorite,
                small: true) {
             MusicFavorites.shared.toggle(song.id, server: song.isFavorite)
         }
@@ -155,7 +176,7 @@ struct TVMusicNowPlaying: View {
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
-    /// What plays next, as a grid filling the column: as many across as fit at about 220 pt.
+    /// What plays next, a row each with its cover; choosing one plays from it.
     private var upNext: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Playing Next").font(.headline).foregroundStyle(.white.opacity(0.7))
@@ -163,20 +184,15 @@ struct TVMusicNowPlaying: View {
                 Text("Nothing Up Next").font(.callout).foregroundStyle(.white.opacity(0.5))
             } else {
                 ScrollView(showsIndicators: false) {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 36, alignment: .top)], spacing: 36) {
-                        ForEach(Array(player.queue.upNext.prefix(60))) { entry in
-                            Button { player.jump(to: entry.id) } label: {
-                                TVMusicTile(url: MusicAPI.artworkURL(entry.track, width: 480), title: entry.track.name,
-                                            subtitle: entry.track.artistLine)
-                            }
-                            .buttonStyle(TVCardButtonStyle())
-                            .focusEffectDisabled()
-                            .contextMenu {
-                                Button("Remove", systemImage: "minus.circle", role: .destructive) { player.remove(entry.id) }
+                    LazyVStack(alignment: .leading, spacing: 8) {
+                        ForEach(Array(player.queue.upNext.prefix(100))) { entry in
+                            TVMusicSongRow(song: entry.track, showsArtwork: true, removeTitle: "Remove",
+                                           onRemove: { player.remove(entry.id) }) {
+                                player.jump(to: entry.id)
                             }
                         }
                     }
-                    .padding(20)
+                    .padding(.vertical, 12)
                 }
                 .scrollClipDisabled()
                 .focusSection()
@@ -191,9 +207,6 @@ struct TVMusicNowPlaying: View {
             let songID = player.current?.id ?? ""
             let current = MusicLyricsSource.shared.lineIndex(lyrics, songID: songID, at: player.position)
             VStack(alignment: .leading, spacing: 16) {
-                if lyrics.isSynced {
-                    MusicLyricsTimingMenu(songID: songID).font(.callout)
-                }
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 22) {
@@ -314,12 +327,15 @@ private struct CircleControl: View {
     @Environment(\.isFocused) private var isFocused
 
     var body: some View {
+        // On: the filled symbol on the accent, so a like, a favourite, shuffle or repeat reads
+        // at a glance, focused or not.
         Image(systemName: systemImage)
+            .symbolVariant(isOn ? .fill : .none)
             .font(.system(size: size * 0.36, weight: .semibold))
             .contentTransition(.symbolEffect(.replace))
             .frame(width: size, height: size)
-            .foregroundStyle(isFocused ? .black : .white)
-            .background(isFocused ? .white : (isOn ? .white.opacity(0.35) : .white.opacity(0.15)), in: Circle())
+            .foregroundStyle(isFocused ? (isOn ? DT.Color.accent : .black) : (isOn ? DT.Color.onAccent : .white))
+            .background(isFocused ? Color.white : (isOn ? DT.Color.accent : Color.white.opacity(0.15)), in: Circle())
             .scaleEffect(isFocused ? 1.1 : 1)
             .animation(DT.Animation.fast, value: isFocused)
     }
