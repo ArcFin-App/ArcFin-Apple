@@ -197,6 +197,7 @@
 				iOS/Platform/AdminPlatform.swift = (ios, );
 				iOS/Platform/AlwaysDarkPlayer.swift = (ios, );
 				iOS/Platform/AppSheet.swift = (ios, );
+				iOS/Platform/Biometrics.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
 				iOS/Platform/ExternalApps.swift = (ios, );
@@ -304,6 +305,7 @@
 				macOS/Platform/AdminPlatform.swift = (macos, );
 				macOS/Platform/AlwaysDarkPlayer.swift = (macos, );
 				macOS/Platform/AppSheet.swift = (macos, );
+				macOS/Platform/Biometrics.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
 				macOS/Platform/ExternalApps.swift = (macos, );

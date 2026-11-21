@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
-import LocalAuthentication
 import AuthCore
 
 struct UsersView: View {
@@ -81,15 +80,12 @@ struct UsersView: View {
                     onExpand?()
                     showAddProfile = true
                 }
-                .navigationDestination(isPresented: $showAddProfile) {
-                    AddProfileFlowView()
-                }
             }
 
             // ── App Lock ─────────────────────────────────────────────────
             Section {
                 Toggle(isOn: $appLockUseFaceID) {
-                    TVRowLabelText(title: "Use \(biometricLabel)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
+                    TVRowLabelText(title: "Use \(Biometrics.label)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
                 }
             } header: {
                 Text("App Lock")
@@ -99,6 +95,10 @@ struct UsersView: View {
         .screenBackground()
         .tint(DT.Color.accent)
         .navigationTitle("Profiles")
+        // Not in the List: in a lazy container it's registered again as rows reload (#689).
+        .navigationDestination(isPresented: $showAddProfile) {
+            AddProfileFlowView()
+        }
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") { dismiss() }
@@ -107,7 +107,7 @@ struct UsersView: View {
         .task { await pins.load(authManager: authManager) }
         .onChange(of: authManager.profiles) { _, _ in Task { await pins.load(authManager: authManager) } }
         .confirmingProfileRemoval($removeTarget, signingOut: false, isLastProfile: false,
-                                  confirmOwner: appLockUseFaceID ? { await attemptBiometrics(reason: $0) } : nil) { target in
+                                  confirmOwner: appLockUseFaceID ? { await Biometrics.confirm(reason: $0) } : nil) { target in
             authManager.removeProfile(id: target.id)
         }
         // PIN entry sheet for switching to a protected profile
@@ -156,7 +156,7 @@ struct UsersView: View {
             // having the device unlocked — Face ID here just confirms the device owner again,
             // same as the PIN would, so it's offered first with the PIN as fallback instead
             // of skipping straight to the PIN pad.
-            if appLockUseFaceID, await attemptBiometrics(reason: String(localized: "Switch to \(profile.displayName)")) {
+            if appLockUseFaceID, await Biometrics.confirm(reason: String(localized: "Switch to \(profile.displayName)")) {
                 PINAttempts.reset(for: profile.id)
                 authManager.switchTo(profile)
                 await pins.load(authManager: authManager)
@@ -166,24 +166,5 @@ struct UsersView: View {
                 switchTarget = profile
             }
         }
-    }
-
-    // Face ID is the only biometry iOS/iPadOS devices in this fleet ship with, but Macs
-    // pair the same LAContext API with Touch ID instead — asking canEvaluatePolicy first
-    // populates biometryType so the toggle/footer name the capability actually on this Mac.
-    private var biometricLabel: String {
-        let context = LAContext()
-        _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
-        return context.biometryType == .touchID ? "Touch ID" : "Face ID"
-    }
-
-    private func attemptBiometrics(reason: String) async -> Bool {
-        let context = LAContext()
-        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return false }
-        guard let success = try? await context.evaluatePolicy(
-            .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: reason
-        ), success else { return false }
-        return true
     }
 }

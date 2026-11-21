@@ -17,6 +17,7 @@ final class ProfilePINStates {
         for profile in authManager.profiles {
             states[profile.id] = await authManager.storedPIN(for: profile.id) != .none
         }
-        self.states = states
+        // The same states written again would still redraw the page.
+        if states != self.states { self.states = states }
     }
 }

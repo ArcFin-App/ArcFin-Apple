@@ -109,7 +109,8 @@ struct SetUpNearbyDeviceRow: View {
 private struct QuickConnectScanner: UIViewControllerRepresentable {
     let onFound: (URL) -> Void
 
-    static var isAvailable: Bool { DataScannerViewController.isSupported }
+    /// Read once: Settings reads it on every redraw.
+    static let isAvailable = DataScannerViewController.isSupported
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
         let scanner = DataScannerViewController(recognizedDataTypes: [.barcode(symbologies: [.qr])],
