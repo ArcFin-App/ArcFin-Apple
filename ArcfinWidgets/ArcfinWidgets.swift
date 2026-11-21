@@ -24,11 +24,11 @@ private func formattedBytes(_ bytes: Int64) -> String {
 }
 
 private func formattedSpeed(_ bytesPerSecond: Double) -> String {
-    ByteCountFormatter.string(fromByteCount: Int64(bytesPerSecond), countStyle: .file) + "/s"
+    String(localized: "\(ByteCountFormatter.string(fromByteCount: Int64(bytesPerSecond), countStyle: .file))/s")
 }
 
 private func percent(_ state: DownloadState) -> String {
-    "\(Int((state.fractionComplete * 100).rounded(.down)))%"
+    ((state.fractionComplete * 100).rounded(.down) / 100).formatted(.percent.precision(.fractionLength(0)))
 }
 
 private func statusColor(_ state: DownloadState) -> Color {
