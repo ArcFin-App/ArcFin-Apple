@@ -498,6 +498,7 @@ public final class DeviceSetupBrowser: @unchecked Sendable {
     }
 
     private let browser: NWBrowser
+    private let stopped = OSAllocatedUnfairLock(initialState: false)
     private let continuation: AsyncStream<[NearbyDevice]>.Continuation
     public let results: AsyncStream<[NearbyDevice]>
 
@@ -521,7 +522,9 @@ public final class DeviceSetupBrowser: @unchecked Sendable {
         browser.start(queue: DispatchQueue(label: "arcfin.device-setup.browser"))
     }
 
+    /// Safe to call more than once: a second cancel is logged as a fault.
     public func stop() {
+        guard !stopped.withLock({ let was = $0; $0 = true; return was }) else { return }
         browser.cancel()
         continuation.finish()
     }
