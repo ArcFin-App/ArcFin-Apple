@@ -258,7 +258,9 @@ final class AuthManager {
         #endif
     }
 
-    static func currentWiFiSSID() async -> String? {
+    /// `asksForLocation`: when Location hasn't been asked yet, ask and wait for the answer.
+    /// Only Settings does; the launch path doesn't, so it never waits on a prompt.
+    static func currentWiFiSSID(asksForLocation: Bool = false) async -> String? {
         #if os(iOS)
         #if targetEnvironment(simulator)
         // NEHotspotNetwork.fetchCurrent always fails here ("invalid result code 1") — the
@@ -269,7 +271,7 @@ final class AuthManager {
         #else
         let authorizationStatus = CLLocationManager().authorizationStatus
         guard authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways else {
-            guard authorizationStatus == .notDetermined,
+            guard asksForLocation, authorizationStatus == .notDetermined,
                   await LocationAuthWaiter().wait() else { return nil }
             return await currentWiFiSSID()
         }
@@ -277,13 +279,9 @@ final class AuthManager {
         // fails ("invalid result code 1") without Location authorization too, despite
         // Apple's docs saying the Access Wi-Fi Information capability alone suffices.
         //
-        // Both awaits below only resolve via a callback the system controls (the user
-        // answering the location permission prompt; NEHotspotNetwork's own completion) —
-        // neither is guaranteed to fire in a bounded time (a prompt that fails to present,
-        // or is dismissed without a decision some other way, leaves the continuation
-        // dangling forever). This whole call sits directly in checkStoredAuth()'s path,
-        // which the splash screen blocks on — an unbounded hang here was a silent "stuck
-        // at splash" bug. Both now race against a timeout instead.
+        // NEHotspotNetwork's completion isn't guaranteed to fire in a bounded time, and this
+        // call sits in checkStoredAuth()'s path, which the splash screen blocks on, so it
+        // races a timeout.
         return await withTimeout(seconds: 3, fallback: nil) {
             await withCheckedContinuation { continuation in
                 NEHotspotNetwork.fetchCurrent { network in
@@ -298,8 +296,8 @@ final class AuthManager {
     }
 
     /// Races `operation` against a timeout, returning `fallback` if the timeout wins. Used
-    /// for the two system callbacks above that have no guaranteed completion time of their
-    /// own — without this, a callback that never fires hangs checkStoredAuth() forever.
+    /// for work with no guaranteed completion time of its own — without this, a callback
+    /// that never fires hangs checkStoredAuth() forever.
     private static func withTimeout<T: Sendable>(seconds: Double, fallback: T, operation: @escaping @Sendable () async -> T) async -> T {
         await withCheckedContinuation { continuation in
             let result = TimeoutResult(continuation: continuation)
@@ -718,11 +716,11 @@ final class AuthManager {
 #if os(iOS)
 /// Requests When In Use location authorization if not yet determined, and waits for
 /// the user's decision before returning — NEHotspotNetwork.fetchCurrent needs it granted.
+/// No timeout: it's only used from Settings, where the person is reading the prompt.
 @MainActor
 private final class LocationAuthWaiter: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<Bool, Never>?
-    private var timeoutTask: Task<Void, Never>?
 
     func wait() async -> Bool {
         guard manager.authorizationStatus == .notDetermined else {
@@ -732,15 +730,12 @@ private final class LocationAuthWaiter: NSObject, CLLocationManagerDelegate {
             self.continuation = continuation
             manager.delegate = self
             manager.requestWhenInUseAuthorization()
-            timeoutTask = Task { @MainActor [weak self] in
-                try? await Task.sleep(for: .seconds(3))
-                guard !Task.isCancelled else { return }
-                self?.finish(false)
-            }
         }
     }
 
     func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        // The first callback comes as soon as the delegate is set, before any answer.
+        guard manager.authorizationStatus != .notDetermined else { return }
         let granted = manager.authorizationStatus == .authorizedWhenInUse || manager.authorizationStatus == .authorizedAlways
         finish(granted)
     }
@@ -748,8 +743,6 @@ private final class LocationAuthWaiter: NSObject, CLLocationManagerDelegate {
     private func finish(_ granted: Bool) {
         guard let continuation else { return }
         self.continuation = nil
-        timeoutTask?.cancel()
-        timeoutTask = nil
         continuation.resume(returning: granted)
     }
 }

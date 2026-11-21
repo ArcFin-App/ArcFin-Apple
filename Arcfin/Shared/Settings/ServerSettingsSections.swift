@@ -32,7 +32,7 @@ final class ServerSettingsModel {
         isCapturingSSID = true
         ssidCaptureFailed = false
         Task {
-            if let ssid = await AuthManager.currentWiFiSSID() {
+            if let ssid = await AuthManager.currentWiFiSSID(asksForLocation: true) {
                 store(ssid)
             } else {
                 ssidCaptureFailed = true
