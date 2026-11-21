@@ -565,7 +565,7 @@ enum LibraryItemText {
     static func showGroupSubtitle(_ episodes: [MediaItem]) -> String {
         let seasons = Set(episodes.compactMap(\.parentIndexNumber)).sorted()
         let seasonText = seasons.count > 1 ? "S\(seasons[0])–S\(seasons[seasons.count - 1])"
-            : seasons.first.map { "Season \($0)" }
-        return (["\(episodes.count) episodes"] + [seasonText].compactMap { $0 }).joined(separator: " · ")
+            : seasons.first.map { String(localized: "Season \($0)") }
+        return ([String(localized: "\(episodes.count) episodes")] + [seasonText].compactMap { $0 }).joined(separator: " · ")
     }
 }

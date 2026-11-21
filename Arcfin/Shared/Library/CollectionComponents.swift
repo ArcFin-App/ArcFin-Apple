@@ -93,7 +93,9 @@ struct CollectionContent: View {
 
     private var metaLine: String {
         var parts: [String] = []
-        if !items.isEmpty { parts.append("\(items.count) title\(items.count == 1 ? "" : "s")") }
+        if !items.isEmpty {
+            parts.append(items.count == 1 ? String(localized: "1 title") : String(localized: "\(items.count) titles"))
+        }
         if let yearSpan = model.yearSpan { parts.append(yearSpan) }
         if let rating = collection.communityRating { parts.append("★ \(String(format: "%.1f", rating))") }
         return parts.joined(separator: " · ")
