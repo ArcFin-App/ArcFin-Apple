@@ -350,10 +350,12 @@ final class MediaRepository {
         let cwValue = try? await cw, nUpValue = try? await nUp, wAgainValue = try? await wAgain, favsValue = try? await favs
         // A profile switch while this was out: these are the old profile's, not the shelves'.
         guard credential.userID == lastLoadedUserID, !isLoading else { return }
-        if let cwValue { continueWatching = cwValue }
-        if let nUpValue { nextUp = nUpValue }
-        if let wAgainValue { watchAgain = wAgainValue }
-        if let favsValue { favorites = favsValue }
+        // Only what changed: this runs every few seconds while anything plays, and each
+        // assignment re-renders Home behind the player.
+        if let cwValue, cwValue != continueWatching { continueWatching = cwValue }
+        if let nUpValue, nUpValue != nextUp { nextUp = nUpValue }
+        if let wAgainValue, wAgainValue != watchAgain { watchAgain = wAgainValue }
+        if let favsValue, favsValue != favorites { favorites = favsValue }
     }
 
     /// Puts a title's changed watched or favourite state on every shelf card showing it.
