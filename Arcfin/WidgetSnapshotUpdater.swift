@@ -27,6 +27,12 @@ enum WidgetSnapshotUpdater {
         artworkURL: (MediaItem) -> URL?,
         posterURL: (MediaItem) -> URL?
     ) async {
+        // Home hasn't loaded yet (cold launch, offline): keep the last titles rather than empty
+        // the widgets. Sign-out and a profile switch clear the snapshot through clear().
+        if items.isEmpty, recentlyAdded.isEmpty, let previous = WidgetSnapshotStore.load(),
+           !previous.items.isEmpty || !(previous.recentlyAdded ?? []).isEmpty {
+            return
+        }
         var keep = Set<String>()
         var entries: [WidgetSnapshot.Item] = []
         for item in items.prefix(maxItems) {
