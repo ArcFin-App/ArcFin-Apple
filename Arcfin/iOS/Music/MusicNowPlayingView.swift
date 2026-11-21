@@ -452,11 +452,14 @@ private struct MusicArtworkBackdrop: View {
     let url: URL?
     @State private var palette: [Color] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    /// Still while paused or out of sight: a full-screen mesh at 30 frames a second isn't free.
+    private var isStill: Bool { reduceMotion || !AppServices.music.isPlaying || scenePhase != .active }
 
     var body: some View {
         Group {
             if palette.count == 9 {
-                TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
+                TimelineView(.animation(minimumInterval: 1 / 30, paused: isStill)) { context in
                     MeshGradient(width: 3, height: 3, points: Self.points(at: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate),
                                  colors: palette, smoothsColors: true)
                 }
