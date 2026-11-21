@@ -31,6 +31,8 @@ final class MediaDetailModel {
     /// whichever returned category (if any) names this movie as its baseline.
     private(set) var jellyfinRecommended: MovieRecommendationCategory?
     private(set) var seriesItem: MediaItem?
+    /// The show's "Continuing" or "Ended", from its own details.
+    private var seriesStatus: String?
     /// Collections and playlists this title (or an episode's show) is in.
     private(set) var containingCollections: [MediaItem] = []
     private(set) var containingPlaylists: [MediaItem] = []
@@ -127,6 +129,7 @@ final class MediaDetailModel {
         isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
         likes = fetchedDetail?.item.userData?.likes ?? item.userData?.likes
         isWatched = fetchedDetail?.item.userData?.played ?? item.userData?.played ?? false
+        if item.type == .series { seriesStatus = fetchedDetail?.status }
         // Play, the overview and the cast only need the item itself; every other section fills
         // in as its own requests land.
         isLoading = false
@@ -154,7 +157,9 @@ final class MediaDetailModel {
         await withDiscardingTaskGroup { group in
             group.addTask { @MainActor in
                 guard self.item.type == .episode, let seriesId = self.item.seriesId else { return }
-                self.seriesItem = (try? await self.client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId))?.item
+                let series = try? await self.client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId)
+                self.seriesItem = series?.item
+                self.seriesStatus = series?.status
             }
             group.addTask { @MainActor in
                 if case .withPage = trailerLoading {
@@ -536,7 +541,8 @@ final class MediaDetailModel {
     }
 
     /// "NEW" for an unwatched episode that premiered in the last two weeks; "FINALE" for the
-    /// last episode of the season being shown. With `marksUnavailable`, an episode listed
+    /// last episode of a season that's over: an earlier season, or the latest one of a show
+    /// that has ended (a season still airing only lists the episodes out so far). With `marksUnavailable`, an episode listed
     /// before it's out or missing from the server says so instead.
     func episodeBadge(_ ep: MediaItem, marksUnavailable: Bool) -> String? {
         if marksUnavailable, ep.isVirtual { return MediaDetailView.unavailableText(ep).uppercased() }
@@ -544,8 +550,13 @@ final class MediaDetailModel {
            premiere <= Date(), Date().timeIntervalSince(premiere) < 14 * 86_400 {
             return "NEW"
         }
-        if episodes.count > 1, ep.id == episodes.last?.id { return "FINALE" }
+        if episodes.count > 1, ep.id == episodes.last?.id, shownSeasonHasEnded { return "FINALE" }
         return nil
+    }
+
+    private var shownSeasonHasEnded: Bool {
+        guard let loadedSeasonId, let latest = seasons.last else { return false }
+        return loadedSeasonId != latest.id || seriesStatus == "Ended"
     }
 
     // MARK: - Downloads
