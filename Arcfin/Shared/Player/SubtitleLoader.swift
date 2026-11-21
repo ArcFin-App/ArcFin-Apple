@@ -70,13 +70,14 @@ enum SubtitleLoader {
             let mid = (low + high) / 2
             if cues[mid].start <= seconds { low = mid + 1 } else { high = mid }
         }
-        var match: SubtitleCue?
+        // Every cue showing, not just the first: a second speaker, or a sign over dialogue.
+        var active: [String] = []
         var index = low - 1
         while index >= 0, index >= low - 32 {
-            if seconds < cues[index].end { match = cues[index] }
+            if seconds < cues[index].end { active.insert(cues[index].text, at: 0) }
             index -= 1
         }
-        return match?.text
+        return active.isEmpty ? nil : active.joined(separator: "\n")
     }
 
     private static func parseVTT(_ content: String) -> [SubtitleCue] {
