@@ -9,6 +9,7 @@ struct LibraryView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var model = LibraryModel()
+    @State private var isSearchPresented = false
     @FocusState private var isSearchFocused: Bool
 
     private var gridColumns: [GridItem] {
@@ -22,7 +23,9 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if model.searchQuery.isEmpty {
+                // Kept on screen while the field is active, so Recent Searches can show before
+                // anything is typed.
+                if model.searchQuery.isEmpty && !isSearchPresented {
                     browseContent
                 } else {
                     SearchView(query: $model.searchQuery)
@@ -30,7 +33,7 @@ struct LibraryView: View {
             }
             .screenBackground()
             .navigationTitle("Browse")
-            .searchable(text: $model.searchQuery, prompt: "Movies, shows, music, live TV, people…")
+            .searchable(text: $model.searchQuery, isPresented: $isSearchPresented, prompt: "Movies, shows, music, live TV, people…")
             .searchFocused($isSearchFocused)
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 libraryDestination(library)

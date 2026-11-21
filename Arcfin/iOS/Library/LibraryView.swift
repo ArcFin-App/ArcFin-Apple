@@ -9,6 +9,7 @@ struct LibraryView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var model = LibraryModel()
+    @State private var isSearchPresented = false
 
     private var isWide: Bool { horizontalSizeClass == .regular }
 
@@ -27,7 +28,9 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if model.searchQuery.isEmpty {
+                // Kept on screen while the field is active, so Recent Searches can show before
+                // anything is typed.
+                if model.searchQuery.isEmpty && !isSearchPresented {
                     browseContent
                 } else {
                     SearchView(query: $model.searchQuery)
@@ -40,7 +43,7 @@ struct LibraryView: View {
                 MusicDestination(route: route)
             }
             .navigationTitle("Browse")
-            .searchable(text: $model.searchQuery, prompt: "Movies, shows, music, live TV, people…")
+            .searchable(text: $model.searchQuery, isPresented: $isSearchPresented, prompt: "Movies, shows, music, live TV, people…")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: JellyfinLibrary.self) { library in
