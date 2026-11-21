@@ -234,6 +234,7 @@ final class DownloadManager: NSObject {
         #if canImport(ActivityKit) && os(iOS)
         reconcileStaleActivitiesOnLaunch()
         #endif
+        retryUnfinishedDownloads()
         runSmartDownloadsOnLaunch()
         removeExpiredDownloads()
         purgeWatchedDownloads()
@@ -977,6 +978,7 @@ final class DownloadManager: NSObject {
         refreshLiveActivity()
         #endif
 
+        var keptForRetry = false
         do {
             async let detailTask = client.getItemDetailData(credential: credential, authHeader: authHeader, itemId: item.id)
             async let playbackTask = client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id)
@@ -1097,9 +1099,29 @@ final class DownloadManager: NSObject {
         } catch {
             let cancelled = cancelledItemIds.remove(item.id) != nil
                 || (error as? URLError)?.code == .cancelled || error is CancellationError
-            DownloadStore.deleteDirectory(for: item.id)
+            // The video is already here (recovered, or handed off and finished before its
+            // turn) and only its details failed: the file and descriptor stay for a retry.
+            if !cancelled {
+                if skipVideoDownload {
+                    keptForRetry = true
+                } else if handedOffItemIds.contains(item.id), case .success? = handedOffResults[item.id] {
+                    keptForRetry = true
+                }
+            }
+            // Failed before its handed-off transfer was waited on: that transfer stops too.
+            if handedOffItemIds.contains(item.id) {
+                if !keptForRetry { downloadTasks[item.id]?.cancel() }
+                downloadTasks[item.id] = nil
+                handedOffItemIds.remove(item.id)
+                handedOffResults[item.id] = nil
+            }
+            if keptForRetry {
+                Self.smartLog.notice("Download details failed, video kept for a retry: \(item.id, privacy: .public)")
+            } else {
+                DownloadStore.deleteDirectory(for: item.id)
+            }
             // Out of room isn't a failure: the title goes back to the front and waits for space.
-            if !cancelled, let need = (error as? NoRoomForDownload)?.bytes ?? (Self.isOutOfSpace(error) ? expectedBytes[item.id] ?? Int64(Self.lowSpaceThreshold) : nil) {
+            if !cancelled, !keptForRetry, let need = (error as? NoRoomForDownload)?.bytes ?? (Self.isOutOfSpace(error) ? expectedBytes[item.id] ?? Int64(Self.lowSpaceThreshold) : nil) {
                 Self.smartLog.notice("Downloads waiting for space: \(item.name, privacy: .public) needs \(need, privacy: .public) bytes")
                 removePendingDescriptor(itemId: item.id)
                 expectedBytes[item.id] = nil
@@ -1118,11 +1140,11 @@ final class DownloadManager: NSObject {
                 #endif
                 return
             }
-            if !cancelled {
+            if !cancelled, !keptForRetry {
                 errors[item.id] = (error as? DownloadError)?.errorDescription ?? "Download failed: \(error.localizedDescription)"
             }
         }
-        removePendingDescriptor(itemId: item.id)
+        if !keptForRetry { removePendingDescriptor(itemId: item.id) }
         expectedBytes[item.id] = nil
         estimatedStreamBytes[item.id] = nil
 
@@ -1455,6 +1477,31 @@ final class DownloadManager: NSObject {
                               tracks: descriptor.tracks ?? .all, skipVideoDownload: true)
     }
 
+    /// Titles whose video arrived but whose details couldn't be fetched then (no connection,
+    /// the server restarting), finished from the file. Run at launch and when the app comes
+    /// back or reconnects, not from the queue, so being offline doesn't spin.
+    func retryUnfinishedDownloads() {
+        guard modelContext != nil else { return }
+        let queued = Set(pendingQueue.map(\.item.id))
+        for descriptor in loadPendingDescriptors() {
+            let itemId = descriptor.itemId
+            guard !activeItemIds.contains(itemId), !queued.contains(itemId), !handedOffItemIds.contains(itemId),
+                  let path = Self.finishedVideoPath(for: itemId)
+            else { continue }
+            Task { await recoverOrphanedDownload(destinationPath: path) }
+        }
+    }
+
+    /// The video file a title's folder holds once its transfer is done. Nil while any range
+    /// part is still there: a join cut short leaves a partial file under the final name.
+    private nonisolated static func finishedVideoPath(for itemId: String) -> String? {
+        let dir = DownloadStore.directory(for: itemId)
+        guard let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path),
+              !names.contains(where: { $0.hasPrefix("video.part-") })
+        else { return nil }
+        return names.first { $0.hasPrefix("video.") }.map { dir.appendingPathComponent($0).path }
+    }
+
     // MARK: - Background continuation
 
     /// Not a true background URLSession (that needs app-delegate wiring to reconnect a
@@ -1677,6 +1724,7 @@ final class DownloadManager: NSObject {
     /// the player closing, or a show being switched on.
     func refreshSmartDownloads() {
         if queueHold == .storage { recheckQueueHold() }
+        retryUnfinishedDownloads()
         guard let authManager, let credential = authManager.state.credential else {
             #if canImport(ActivityKit) && os(iOS)
             settleLiveActivity()
