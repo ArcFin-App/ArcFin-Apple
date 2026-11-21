@@ -365,8 +365,22 @@ final class MediaDetailModel {
         return Date().addingTimeInterval(remainingSeconds)
     }
 
-    func requestPlayback(startTicks: Int64, isExplicitStartOver: Bool = false, downloadManager: DownloadManager) {
+    func requestPlayback(startTicks: Int64, isExplicitStartOver: Bool = false, downloadManager: DownloadManager,
+                         authManager: AuthManager) {
         let target = playTarget
+        guard target.type != .series else {
+            // Play shows before the next episode has loaded; the series itself can't play.
+            Task {
+                guard let resolved = await HomeModel.seriesPlayback(target, authManager: authManager) else { return }
+                startPlayback(of: resolved.item, startTicks: isExplicitStartOver ? 0 : resolved.startTicks,
+                              isExplicitStartOver: isExplicitStartOver, downloadManager: downloadManager)
+            }
+            return
+        }
+        startPlayback(of: target, startTicks: startTicks, isExplicitStartOver: isExplicitStartOver, downloadManager: downloadManager)
+    }
+
+    private func startPlayback(of target: MediaItem, startTicks: Int64, isExplicitStartOver: Bool, downloadManager: DownloadManager) {
         if downloadManager.isDownloaded(target.id) {
             pendingPlaybackChoice = PlaybackChoice(item: target, startTicks: startTicks, isExplicitStartOver: isExplicitStartOver)
         } else {

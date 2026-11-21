@@ -7,6 +7,7 @@ import JellyfinAPI
 /// out yet or missing from the server, why it can't be played.
 struct DetailPlayButton: View {
     @Environment(DownloadManager.self) private var downloadManager
+    @Environment(AuthManager.self) private var authManager
     let model: MediaDetailModel
 
     private var resumeUserData: UserData? {
@@ -64,7 +65,7 @@ struct DetailPlayButton: View {
         HStack(spacing: 10) {
             Button {
                 model.requestPlayback(startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0,
-                                      downloadManager: downloadManager)
+                                      downloadManager: downloadManager, authManager: authManager)
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "play.fill").contentFont(.subheadline)
@@ -111,7 +112,8 @@ struct DetailPlayButton: View {
 
             if isResumable {
                 Button {
-                    model.requestPlayback(startTicks: 0, isExplicitStartOver: true, downloadManager: downloadManager)
+                    model.requestPlayback(startTicks: 0, isExplicitStartOver: true, downloadManager: downloadManager,
+                                          authManager: authManager)
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .contentFont(.body, weight: .semibold)
