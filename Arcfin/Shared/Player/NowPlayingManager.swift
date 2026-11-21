@@ -13,12 +13,27 @@ import SwiftUI
 final class NowPlayingManager {
     private let commandCenter = MPRemoteCommandCenter.shared()
     private var isConfigured = false
+    /// The command center is shared with other player windows and the music player, so only
+    /// this manager's own targets are removed, and Now Playing is only cleared if it's still ours.
+    private var targets: [(command: MPRemoteCommand, token: Any)] = []
+    private var writtenTitle: String?
+
+    private func addTarget(_ command: MPRemoteCommand, _ handler: @escaping (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus) {
+        targets.append((command, command.addTarget(handler: handler)))
+    }
+
+    private func publish(_ info: [String: Any]) {
+        writtenTitle = info[MPMediaItemPropertyTitle] as? String
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
 
     func configureCommands(
         isPlaying: @escaping () -> Bool,
         onPlay: @escaping () -> Void,
         onPause: @escaping () -> Void,
         onSkip: @escaping (Int) -> Void,
+        skipForwardSeconds: Int,
+        skipBackwardSeconds: Int,
         onSeek: @escaping (TimeInterval) -> Void,
         onNextTrack: (() -> Void)?
     ) {
@@ -26,42 +41,42 @@ final class NowPlayingManager {
         isConfigured = true
 
         commandCenter.playCommand.isEnabled = true
-        commandCenter.playCommand.addTarget { _ in onPlay(); return .success }
+        addTarget(commandCenter.playCommand) { _ in onPlay(); return .success }
 
         commandCenter.pauseCommand.isEnabled = true
-        commandCenter.pauseCommand.addTarget { _ in onPause(); return .success }
+        addTarget(commandCenter.pauseCommand) { _ in onPause(); return .success }
 
         commandCenter.togglePlayPauseCommand.isEnabled = true
-        commandCenter.togglePlayPauseCommand.addTarget { _ in
+        addTarget(commandCenter.togglePlayPauseCommand) { _ in
             if isPlaying() { onPause() } else { onPlay() }
             return .success
         }
 
-        commandCenter.skipForwardCommand.preferredIntervals = [10]
+        commandCenter.skipForwardCommand.preferredIntervals = [NSNumber(value: skipForwardSeconds)]
         commandCenter.skipForwardCommand.isEnabled = true
-        commandCenter.skipForwardCommand.addTarget { event in
+        addTarget(commandCenter.skipForwardCommand) { event in
             guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
             onSkip(Int(event.interval))
             return .success
         }
 
-        commandCenter.skipBackwardCommand.preferredIntervals = [10]
+        commandCenter.skipBackwardCommand.preferredIntervals = [NSNumber(value: skipBackwardSeconds)]
         commandCenter.skipBackwardCommand.isEnabled = true
-        commandCenter.skipBackwardCommand.addTarget { event in
+        addTarget(commandCenter.skipBackwardCommand) { event in
             guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
             onSkip(-Int(event.interval))
             return .success
         }
 
         commandCenter.changePlaybackPositionCommand.isEnabled = true
-        commandCenter.changePlaybackPositionCommand.addTarget { event in
+        addTarget(commandCenter.changePlaybackPositionCommand) { event in
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             onSeek(event.positionTime)
             return .success
         }
 
         commandCenter.nextTrackCommand.isEnabled = onNextTrack != nil
-        commandCenter.nextTrackCommand.addTarget { _ in
+        addTarget(commandCenter.nextTrackCommand) { _ in
             guard let onNextTrack else { return .commandFailed }
             onNextTrack()
             return .success
@@ -86,7 +101,7 @@ final class NowPlayingManager {
         if let artwork {
             info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artwork.size) { _ in artwork }
         }
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        publish(info)
     }
 
     /// A live channel: no duration or position, so the lock screen shows it as live.
@@ -101,16 +116,17 @@ final class NowPlayingManager {
         if let artwork {
             info[MPMediaItemPropertyArtwork] = MPMediaItemArtwork(boundsSize: artwork.size) { _ in artwork }
         }
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        publish(info)
     }
 
     func clear() {
-        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
-        [commandCenter.playCommand, commandCenter.pauseCommand, commandCenter.togglePlayPauseCommand,
-         commandCenter.skipForwardCommand, commandCenter.skipBackwardCommand,
-         commandCenter.changePlaybackPositionCommand, commandCenter.nextTrackCommand].forEach {
-            $0.removeTarget(nil)
+        let center = MPNowPlayingInfoCenter.default()
+        if let writtenTitle, center.nowPlayingInfo?[MPMediaItemPropertyTitle] as? String == writtenTitle {
+            center.nowPlayingInfo = nil
         }
+        writtenTitle = nil
+        for target in targets { target.command.removeTarget(target.token) }
+        targets = []
         isConfigured = false
     }
 }

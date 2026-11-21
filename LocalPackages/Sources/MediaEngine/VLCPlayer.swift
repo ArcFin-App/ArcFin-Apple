@@ -69,6 +69,16 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
             media.addOption(":network-caching=3000")
             media.addOption(":stream-filter=prefetch")
             media.addOption(":prefetch-buffer-size=262144")
+            // libVLC starts playing as it opens, before the seek below: from the resume point,
+            // rather than a moment of the start out loud.
+            if startPositionTicks > 0 {
+                media.addOption(":start-time=\(String(format: "%.3f", Double(startPositionTicks) / 10_000_000))")
+            }
+            // Subscribed before play, so a state change while it opens can't be missed.
+            readyEvents = vlcPlayer.events(policy: .unbounded) { event in
+                if case .stateChanged = event { return true }
+                return false
+            }
             try vlcPlayer.play(media)
         } catch {
             log.error("VLC play(url:) failed: \(error.localizedDescription)")
@@ -94,13 +104,29 @@ public final class VLCEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
         }
     }
 
+    @ObservationIgnored private var readyEvents: AsyncStream<PlayerEvent>?
+
+    /// Gives up after a minute, so a source that never opens fails rather than spinning forever.
     private func waitUntilReady() async throws {
+        let events = readyEvents ?? vlcPlayer.events
+        readyEvents = nil
         if vlcPlayer.state == .playing || vlcPlayer.state == .paused { return }
         if vlcPlayer.state == .error { throw VLCError.playbackFailed(reason: "VLC reported a playback error") }
-        for await event in vlcPlayer.events {
-            guard case .stateChanged(let newState) = event else { continue }
-            if newState == .playing || newState == .paused { return }
-            if newState == .error { throw VLCError.playbackFailed(reason: "VLC reported a playback error") }
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask {
+                for await event in events {
+                    guard case .stateChanged(let newState) = event else { continue }
+                    if newState == .playing || newState == .paused { return }
+                    if newState == .error { throw VLCError.playbackFailed(reason: "VLC reported a playback error") }
+                }
+                throw CancellationError()
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(60))
+                throw VLCError.playbackFailed(reason: "VLC didn't open the stream in time")
+            }
+            defer { group.cancelAll() }
+            try await group.next()
         }
     }
 

@@ -59,6 +59,15 @@ public enum JellyfinPlayMethod: String, Sendable {
     case directPlay = "Direct Play"
     case directStream = "Direct Stream"
     case transcode = "Transcoding"
+
+    /// The value playback reports send as PlayMethod.
+    var reportValue: String {
+        switch self {
+        case .directPlay: "DirectPlay"
+        case .directStream: "DirectStream"
+        case .transcode: "Transcode"
+        }
+    }
 }
 
 public struct MediaVersion: Sendable, Identifiable, Equatable, Hashable {
@@ -87,6 +96,9 @@ public struct JellyfinPlaybackInfo: Sendable {
     public let versions: [MediaVersion]
     /// A live TV channel's tuner stream, opened by the PlaybackInfo call; close it when done.
     public var liveStreamId: String? = nil
+    /// Ties playback reports to the server's encode for this stream, so a Stopped report
+    /// ends it rather than leaving it to time out.
+    public var playSessionId: String? = nil
 
     public var isTranscoding: Bool { playMethod == .transcode }
     /// The server was asked to convert to AV1 first. Whether it could is only known from
@@ -317,7 +329,8 @@ extension JellyfinMediaClient {
             videoStream: videoStream,
             bitrate: source.bitrate ?? videoStream?.bitRate,
             versions: decoded.mediaSources.map { MediaVersion(id: $0.id, name: $0.name ?? "Version") },
-            liveStreamId: source.liveStreamId
+            liveStreamId: source.liveStreamId,
+            playSessionId: decoded.playSessionId
         )
     }
 
@@ -365,29 +378,47 @@ extension JellyfinMediaClient {
 
     // MARK: - Playback progress reporting
 
-    public func reportPlaybackStart(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil) async {
+    public func reportPlaybackStart(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil,
+                                    playSessionId: String? = nil, playMethod: JellyfinPlayMethod = .directPlay) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing",
                                 itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false,
-                                liveStreamId: liveStreamId)
+                                liveStreamId: liveStreamId, playSessionId: playSessionId, playMethod: playMethod)
     }
 
     /// The volume and mute state are what a remote shows for this session; left out, the
     /// server forgets the last ones.
     public func reportPlaybackProgress(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String? = nil,
-                                       volumeLevel: Int? = nil, isMuted: Bool? = nil) async {
+                                       volumeLevel: Int? = nil, isMuted: Bool? = nil,
+                                       playSessionId: String? = nil, playMethod: JellyfinPlayMethod = .directPlay) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing/Progress",
                                 itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: isPaused,
-                                liveStreamId: liveStreamId, volumeLevel: volumeLevel, isMuted: isMuted)
+                                liveStreamId: liveStreamId, volumeLevel: volumeLevel, isMuted: isMuted,
+                                playSessionId: playSessionId, playMethod: playMethod)
     }
 
-    public func reportPlaybackStopped(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil) async {
+    public func reportPlaybackStopped(credential: ServerCredential, authHeader: String, itemId: String, mediaSourceId: String, positionTicks: Int64, liveStreamId: String? = nil,
+                                      playSessionId: String? = nil, playMethod: JellyfinPlayMethod = .directPlay) async {
         await postPlaybackEvent(credential: credential, authHeader: authHeader, path: "Sessions/Playing/Stopped",
                                 itemId: itemId, mediaSourceId: mediaSourceId, positionTicks: positionTicks, isPaused: false,
-                                liveStreamId: liveStreamId)
+                                liveStreamId: liveStreamId, playSessionId: playSessionId, playMethod: playMethod)
+    }
+
+    /// Ends the server's encode for a stream that's been replaced (a track or quality change),
+    /// which would otherwise run on until the server's idle timeout.
+    public func stopActiveEncodings(credential: ServerCredential, authHeader: String, deviceId: String, playSessionId: String) async {
+        var comps = URLComponents(url: credential.baseURL.appendingPathComponent("Videos/ActiveEncodings"),
+                                  resolvingAgainstBaseURL: false)!
+        comps.queryItems = [.init(name: "deviceId", value: deviceId), .init(name: "playSessionId", value: playSessionId)]
+        var req = URLRequest(url: comps.url!)
+        req.httpMethod = "DELETE"
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 8
+        _ = try? await URLSession.arcfin.data(for: req)
     }
 
     private func postPlaybackEvent(credential: ServerCredential, authHeader: String, path: String, itemId: String, mediaSourceId: String, positionTicks: Int64, isPaused: Bool, liveStreamId: String?,
-                                   volumeLevel: Int? = nil, isMuted: Bool? = nil) async {
+                                   volumeLevel: Int? = nil, isMuted: Bool? = nil,
+                                   playSessionId: String? = nil, playMethod: JellyfinPlayMethod = .directPlay) async {
         var req = URLRequest(url: credential.baseURL.appendingPathComponent(path))
         req.httpMethod = "POST"
         req.setValue(authHeader, forHTTPHeaderField: "Authorization")
@@ -398,9 +429,10 @@ extension JellyfinMediaClient {
             "MediaSourceId": mediaSourceId,
             "PositionTicks": positionTicks,
             "IsPaused": isPaused,
-            "PlayMethod": "DirectPlay",
+            "PlayMethod": playMethod.reportValue,
         ]
         if let liveStreamId { body["LiveStreamId"] = liveStreamId }
+        if let playSessionId { body["PlaySessionId"] = playSessionId }
         if let volumeLevel { body["VolumeLevel"] = volumeLevel }
         if let isMuted { body["IsMuted"] = isMuted }
         req.httpBody = try? JSONSerialization.data(withJSONObject: body)
@@ -927,12 +959,16 @@ private struct PlaybackInfoResponse: Decodable {
     let mediaSources: [MediaSourceResponse]
     /// "NotAllowed", "NoCompatibleStream" or "RateLimitExceeded" when the server refuses.
     let errorCode: String?
-    enum CodingKeys: String, CodingKey { case mediaSources = "MediaSources", errorCode = "ErrorCode" }
+    let playSessionId: String?
+    enum CodingKeys: String, CodingKey {
+        case mediaSources = "MediaSources", errorCode = "ErrorCode", playSessionId = "PlaySessionId"
+    }
 
     init(from decoder: Decoder) throws {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         mediaSources = try c.decodeIfPresent([MediaSourceResponse].self, forKey: .mediaSources) ?? []
         errorCode = try c.decodeIfPresent(String.self, forKey: .errorCode)
+        playSessionId = try c.decodeIfPresent(String.self, forKey: .playSessionId)
     }
 }
 

@@ -57,6 +57,7 @@ extension PlayerView {
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("Close player")
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -222,11 +223,9 @@ extension PlayerView {
                 if model.isLive {
                     LivePositionBadge(behindSeconds: model.secondsBehindLive) { model.jumpToLive() }
                 } else {
-                    Text(model.timeLabel(ticks: model.elapsedTicks))
+                    PlayerTimeLabel(model: model, remaining: false)
                         .font(.system(.caption, design: .monospaced, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
                 }
 
                 Spacer()
@@ -248,6 +247,7 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                     }
                     Button { model.togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
@@ -256,6 +256,7 @@ extension PlayerView {
                             .frame(width: 56, height: 56)
                             .contentShape(Rectangle())
                     }
+                    .accessibilityLabel(playPauseIconIsPlaying ? "Pause" : "Play")
                     if !model.isLive || model.canRewindLive {
                         Button { model.seek(by: skipForwardSeconds) } label: {
                             Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
@@ -263,6 +264,7 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
                     }
                     if let nextEpisode = model.nextEpisode {
                         Button { model.playNextEpisode() } label: {
@@ -281,11 +283,9 @@ extension PlayerView {
                     // Balances the badge so the transport stays centred.
                     LiveBadge().hidden()
                 } else {
-                    Text(model.remainingLabel)
+                    PlayerTimeLabel(model: model, remaining: true)
                         .font(.system(.caption, design: .monospaced, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(.default, value: model.remainingTicks)
                 }
             }
         }
@@ -571,7 +571,7 @@ extension PlayerView {
                             get: { model.selectedAudioIndex ?? model.playbackInfo?.defaultAudioStreamIndex ?? audio[0].index },
                             set: { model.changeTrack(audioIndex: $0) }
                         )) {
-                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Audio", systemImage: "speaker.wave.2")
@@ -584,7 +584,7 @@ extension PlayerView {
                             set: { model.changeTrack(subtitleIndex: .some($0 < 0 ? nil : $0)) }
                         )) {
                             Text("Off").tag(-1)
-                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Subtitles", systemImage: "captions.bubble")
@@ -749,7 +749,7 @@ extension PlayerView {
                             get: { model.selectedAudioIndex ?? model.playbackInfo?.defaultAudioStreamIndex ?? audio[0].index },
                             set: { model.selectCastAudio(index: $0) }
                         )) {
-                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Audio", systemImage: "speaker.wave.2")
@@ -762,7 +762,7 @@ extension PlayerView {
                             set: { model.selectCastSubtitle(index: $0 < 0 ? nil : $0) }
                         )) {
                             Text("Off").tag(-1)
-                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Subtitles", systemImage: "captions.bubble")
@@ -1040,7 +1040,7 @@ struct PlayerMoreMenu: View, Equatable {
                     .disabled(model.subtitleDelay == 0)
             } label: {
                 Label(
-                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)",
+                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(model.subtitleDelay.formatted(.number.precision(.fractionLength(1)).sign(strategy: .always()))) s)",
                     systemImage: "clock.arrow.2.circlepath")
             }
         }

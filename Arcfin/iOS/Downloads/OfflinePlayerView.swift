@@ -23,6 +23,7 @@ struct OfflinePlayerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(DownloadManager.self) private var downloadManager
     @Environment(AuthManager.self) private var authManager
+    @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @AppStorage("playbackEngine") private var playbackEnginePreference = PlaybackEngineKind.auto
     @AppStorage("deleteDownloadsAfterWatching") private var deleteAfterWatching = false
 
@@ -45,6 +46,7 @@ struct OfflinePlayerView: View {
     private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            PlaybackPositionObserver(player: model.player) { model.positionChanged(to: $1) }
 
             GeometryReader { proxy in
                 // PiPVideoView's native drawable is itself interactive (unlike AVFoundation's
@@ -68,6 +70,10 @@ struct OfflinePlayerView: View {
                 .frame(width: proxy.size.width, height: proxy.size.height)
                 .contentShape(Rectangle())
                 .onTapGesture { model.toggleControls() }
+                .accessibilityElement()
+                .accessibilityLabel("Show playback controls")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { model.revealControls() }
             }
             .ignoresSafeArea()
 
@@ -127,15 +133,14 @@ struct OfflinePlayerView: View {
             }
             resetPlayerOrientation()
         }
-        .onChange(of: model.player.positionTicks) { _, newValue in
-            model.positionChanged(to: newValue)
-        }
         .onChange(of: model.player.status) { _, status in
             model.statusChanged(to: status, deleteAfterWatching: deleteAfterWatching, downloadManager: downloadManager)
         }
         .onChange(of: model.isFillScreen) { _, _ in
             model.applyFillScreen()
         }
+        .onChange(of: voiceOverEnabled, initial: true) { _, enabled in model.keepsControlsVisible = enabled }
+        .accessibilityAction(.magicTap) { model.togglePlayPause() }
         .sheet(isPresented: $model.showTrackMenu) {
             OfflineSubtitleSheet(model: model)
         }

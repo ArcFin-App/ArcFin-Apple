@@ -89,7 +89,7 @@ extension PlayerView {
                             .foregroundStyle(.white)
                             .padding(.horizontal, 16).padding(.vertical, 10)
                             .background {
-                                if let countdown = model.autoSkipCountdown, countdown.kind == model.currentSkippable?.kind {
+                                if let countdown = model.autoSkipCountdown, countdown.kind == model.skipButtonKind {
                                     CountdownFill(countdown: countdown, color: .white.opacity(0.28))
                                 }
                             }

@@ -22,8 +22,6 @@ final class PlayerModel {
     @ObservationIgnored private let log = Telemetry.logger(category: "Player")
     /// Apple TV hides the controls by fading them out, so they stay focusable (see its PlayerView).
     @ObservationIgnored let hidesControlsByFading: Bool
-    /// Play, pause and seek go to the SyncPlay group while in one, rather than to the player.
-    @ObservationIgnored let routesThroughSyncPlay: Bool
 
     @ObservationIgnored var authManager: AuthManager!
     @ObservationIgnored var mediaRepo: MediaRepository!
@@ -48,16 +46,24 @@ final class PlayerModel {
         didSet {
             guard oldValue !== player else { return }
             let replaced = oldValue
+            (replaced as? AetherEnginePlayer)?.keepsAudioSessionOnStop = true
             Task { await replaced.stop() }
         }
     }
     /// Set once the screen closes: a load that finishes after that stops instead of playing.
     @ObservationIgnored private var isClosed = false
+    /// Another title has taken this player's place; it owns the audio session now.
+    @ObservationIgnored private(set) var handedOver = false
     var playbackInfo: JellyfinPlaybackInfo? {
         didSet {
             // Every new PlaybackInfo for a channel opens another tuner stream; the one it
             // replaces would hold its tuner until the server times it out.
             if let old = oldValue?.liveStreamId, old != playbackInfo?.liveStreamId { closeLiveStream(old) }
+            // Likewise a replaced stream's encode, which runs on until the server's idle timeout.
+            if let old = oldValue, old.playMethod != .directPlay, let session = old.playSessionId,
+               session != playbackInfo?.playSessionId {
+                stopEncoding(playSessionId: session)
+            }
         }
     }
     /// What's on the channel being watched, kept current as one programme follows another.
@@ -73,6 +79,14 @@ final class PlayerModel {
     // nothing reachable for the remote to bring back, even while fully invisible.
     var tvControlsHidden = false
     @ObservationIgnored var hideControlsTask: Task<Void, Never>?
+    /// VoiceOver is on: hidden controls drop out of the accessibility tree, so they stay up.
+    @ObservationIgnored var keepsControlsVisible = false {
+        didSet {
+            guard keepsControlsVisible, !hidesControlsByFading else { return }
+            hideControlsTask?.cancel()
+            isControlsVisible = true
+        }
+    }
     var isScrubbing = false
     var scrubTicks: Double = 0
     @ObservationIgnored var castLoadTask: Task<Void, Never>?
@@ -113,7 +127,6 @@ final class PlayerModel {
     /// server. Rapid skip taps must accumulate on this, not on the stale confirmed
     /// position, or they collapse into far less than the sum requested.
     var pendingSeekTargetTicks: Int64?
-    @ObservationIgnored var stallObserver: NSObjectProtocol?
     /// Auto's current cap, nil = uncapped. Only meaningful while `quality == .auto` — a
     /// manual pick never touches this.
     var autoCap: StreamQualityCap?
@@ -158,12 +171,11 @@ final class PlayerModel {
     var isFillScreen = false
 
     init(item: MediaItem, startPositionTicks: Int64, onPlayNext: @escaping (MediaItem) -> Void,
-         hidesControlsByFading: Bool = false, routesThroughSyncPlay: Bool = true) {
+         hidesControlsByFading: Bool = false) {
         self.item = item
         self.startPositionTicks = startPositionTicks
         self.onPlayNext = onPlayNext
         self.hidesControlsByFading = hidesControlsByFading
-        self.routesThroughSyncPlay = routesThroughSyncPlay
         let defaults = UserDefaults.standard
         let mobileQuality = DownloadManager.isOnMobileDataNow
             ? defaults.string(forKey: "mobileVideoQuality").flatMap(VideoQuality.init(rawValue:)) : nil
@@ -276,12 +288,16 @@ final class PlayerModel {
     func positionChanged(from oldValue: Int64, to newValue: Int64) {
         // Every seek path (scrubber, skip buttons, chapters, SyncPlay, auto-skip) shows
         // up as a jump here, so this is where Auto learns a seek just happened.
-        if abs(newValue - oldValue) > 30_000_000 { lastSeekAt = Date() }
+        let jumped = abs(newValue - oldValue) > 30_000_000
+        if jumped { lastSeekAt = Date() }
         updateSubtitleText(forTicks: newValue)
         checkUpNextThreshold(positionTicks: newValue)
         checkMoreLikeThisThreshold(positionTicks: newValue)
         autoSkipIfNeeded(positionTicks: newValue)
-        updateNowPlayingInfo()
+        refreshSkipButton()
+        // The system counts the elapsed time on from the rate it was given, so it only needs
+        // telling again after a jump (or once the duration is first known).
+        if jumped || !hasPublishedNowPlaying { updateNowPlayingInfo() }
     }
 
     func statusChanged(to newStatus: PlaybackStatus) {
@@ -329,6 +345,7 @@ final class PlayerModel {
     /// from here (macOS has no "hidden MPVolumeView" trick the way iOS does; tvOS's physical
     /// volume buttons don't reach the app at all unless wired up this way).
     func setEngineVolume(_ volume: Float) {
+        engineVolume = volume
         if let avPlayer = player as? AVFoundationPlayer {
             avPlayer.player.volume = volume
         } else if let vlcEngine = player as? VLCEnginePlayer {
@@ -336,6 +353,14 @@ final class PlayerModel {
         } else if let aetherEngine = player as? AetherEnginePlayer {
             aetherEngine.volume = volume
         }
+    }
+
+    /// The volume last set on the engine, for whichever engine takes the stream over next
+    /// (Aether's fallback, the missing-picture switch), which would otherwise start at full.
+    @ObservationIgnored private var engineVolume: Float = 1
+
+    private func applyEngineVolume() {
+        if engineVolume != 1 { setEngineVolume(engineVolume) }
     }
 
     func applyFillScreen() {
@@ -373,6 +398,7 @@ final class PlayerModel {
     }
 
     func nowPlayingPlay() {
+        if showStillWatchingPrompt { continueAfterStillWatchingPrompt(); return }
         if CastManager.shared.isConnected { CastManager.shared.play(); return }
         Task { await player.play() }
     }
@@ -388,19 +414,26 @@ final class PlayerModel {
             onPlay: nowPlayingPlay,
             onPause: nowPlayingPause,
             onSkip: { [self] seconds in seek(by: seconds) },
+            // Settings › Playback's skip amounts, as on the player's own buttons.
+            skipForwardSeconds: UserDefaults.standard.object(forKey: "skipForwardSeconds") as? Int ?? 10,
+            skipBackwardSeconds: UserDefaults.standard.object(forKey: "skipBackwardSeconds") as? Int ?? 10,
             onSeek: { [self] seconds in performSeek(to: Int64(seconds * 10_000_000)) },
             onNextTrack: item.type == .episode || isLive ? { [self] in playNextEpisode() } : nil
         )
     }
 
+    @ObservationIgnored private var hasPublishedNowPlaying = false
+
     func updateNowPlayingInfo() {
         if isLive {
             nowPlayingManager.updateLive(title: liveProgram?.name ?? item.name, channel: item.name,
                                          rate: isEffectivelyPlaying ? 1 : 0, artwork: nowPlayingArtwork)
+            hasPublishedNowPlaying = true
             return
         }
         let durationSeconds = Double(player.durationTicks) / 10_000_000
         guard durationSeconds > 0 else { return }
+        hasPublishedNowPlaying = true
         nowPlayingManager.update(
             title: item.name,
             artist: episodeSubtitle,
@@ -451,11 +484,15 @@ final class PlayerModel {
             : Float(defaults.object(forKey: "defaultPlaybackSpeed") as? Double ?? 1)
         guard rate > 0, rate != 1 else { return }
         await player.setRate(rate)
+        updateNowPlayingInfo()
     }
 
     func choosePlaybackRate(_ rate: Float) {
         UserDefaults.standard.set(rate, forKey: Self.lastRateKey)
-        Task { await player.setRate(rate) }
+        Task {
+            await player.setRate(rate)
+            updateNowPlayingInfo()
+        }
     }
 
     // MARK: Dialogue boost
@@ -481,6 +518,7 @@ final class PlayerModel {
         (player as? LineArtUpscaling)?.upscalesLineArt = upscalesLineArt
         (player as? SubtitleReaching)?.setSubtitleReach(laterSeconds: Self.subtitleReach(Self.subtitleReachLaterKey),
                                                         earlierSeconds: Self.subtitleReach(Self.subtitleReachEarlierKey))
+        applyEngineVolume()
     }
 
     // MARK: Raise quiet audio
@@ -566,7 +604,10 @@ final class PlayerModel {
         isSpeedBoosting = true
         HapticManager.impact(.medium)
         let rate = holdSpeed
-        Task { await player.setRate(rate) }
+        Task {
+            await player.setRate(rate)
+            updateNowPlayingInfo()
+        }
     }
 
     /// When a hold last ended: letting go shouldn't also count as a tap that toggles the controls.
@@ -579,7 +620,10 @@ final class PlayerModel {
         speedBoostEndedAt = Date()
         let rate = rateBeforeBoost ?? 1.0
         rateBeforeBoost = nil
-        Task { await player.setRate(rate) }
+        Task {
+            await player.setRate(rate)
+            updateNowPlayingInfo()
+        }
     }
 
     /// One step along the speed menu's options, from whichever is closest to the current speed.
@@ -600,15 +644,24 @@ final class PlayerModel {
     }
 
     func rateLabel(_ rate: Float) -> String {
-        rate == 1.0 ? "Normal" : "\(rate.truncatingRemainder(dividingBy: 1) == 0 ? String(format: "%.0f", rate) : String(format: "%.2f", rate))×"
+        rate == 1.0 ? String(localized: "Normal") : "\(rate.formatted(.number.precision(.fractionLength(0...2))))×"
+    }
+
+    /// "8 Mb/s" or "800 Kb/s", with the number written the viewer's way.
+    static func bitrateLabel(_ bitsPerSecond: Int, fractionDigits: Int = 0) -> String {
+        let mbps = Double(bitsPerSecond) / 1_000_000
+        if mbps >= 1 {
+            return String(localized: "\(mbps.formatted(.number.precision(.fractionLength(fractionDigits)))) Mb/s")
+        }
+        return String(localized: "\((Double(bitsPerSecond) / 1000).formatted(.number.precision(.fractionLength(0)))) Kb/s")
     }
 
     // MARK: - Setup / teardown
 
     var loadingStatusText: String {
         if let loadingStage { return loadingStage }
-        if playbackInfo?.playMethod == .transcode { return "Waiting for the server…" }
-        return "Buffering…"
+        if playbackInfo?.playMethod == .transcode { return String(localized: "Waiting for the server…") }
+        return String(localized: "Buffering…")
     }
 
     private var decodesNatively: Bool { player is AetherEnginePlayer || player is VLCEnginePlayer }
@@ -627,7 +680,23 @@ final class PlayerModel {
         }
     }
 
-    func setup() async {
+    /// Runs setup() as a task the model holds, so closing the player stops it wherever it has
+    /// got to, however it was started (opening, the resume question, Try Again, the AV1 retry).
+    func startSetup() async {
+        setupTask?.cancel()
+        reloadTask?.cancel()
+        reloadGeneration += 1
+        let task = Task { await setup() }
+        setupTask = task
+        await withTaskCancellationHandler { await task.value } onCancel: { task.cancel() }
+    }
+
+    /// Closed, or started over, since this setup began.
+    private func setupAbandoned(_ generation: Int) -> Bool {
+        isClosed || Task.isCancelled || generation != setupGeneration
+    }
+
+    private func setup() async {
         guard !isClosed else { return }
         // Before the connection check below, which downloads running alongside would skew.
         if !holdsPlayerActivity {
@@ -639,22 +708,23 @@ final class PlayerModel {
         setupGeneration += 1
         let generation = setupGeneration
         guard let credential, let authHeader else {
-            errorMessage = "Not signed in."
+            errorMessage = String(localized: "Not signed in.")
             return
         }
         guard !item.isVirtual else {
             if let premiere = item.premiereDate, premiere > Date() {
-                errorMessage = "This episode airs \(premiere.formatted(.dateTime.day().month(.wide))). It'll play once it's on your server."
+                errorMessage = String(localized: "This episode airs \(premiere.formatted(.dateTime.day().month(.wide))). It'll play once it's on your server.")
             } else {
-                errorMessage = "This episode isn't on your server."
+                errorMessage = String(localized: "This episode isn't on your server.")
             }
             return
         }
         if quality == .auto {
-            loadingStage = "Checking your connection…"
+            loadingStage = String(localized: "Checking your connection…")
             await primeAutoLadder(credential: credential, authHeader: authHeader)
+            guard !setupAbandoned(generation) else { return }
         }
-        loadingStage = "Contacting the server…"
+        loadingStage = String(localized: "Contacting the server…")
         do {
             // The engine is picked before asking the server how to stream, because the answer
             // depends on it: Aether and VLC take the file as is, AVFoundation needs it repackaged.
@@ -740,6 +810,11 @@ final class PlayerModel {
             ) {
                 info = reInfo
             }
+            // Assigned after close, nothing would report it stopped or close its tuner stream.
+            guard !setupAbandoned(generation) else {
+                if let liveStreamId = info.liveStreamId { closeLiveStream(liveStreamId) }
+                return
+            }
             playbackInfo = info
             if isLive { followLiveProgram() }
             // PlaybackInfo's own TrickplayInfo field isn't reliably populated by Jellyfin —
@@ -755,7 +830,8 @@ final class PlayerModel {
             await detectAnimation(genres: detail?.genres ?? item.genres, credential: credential, authHeader: authHeader)
             await loadSubtitleCues(from: info, credential: credential)
             lastLoadStartedAt = Date()
-            loadingStage = info.playMethod == .transcode ? "The server is converting this video…" : "Opening the video…"
+            loadingStage = info.playMethod == .transcode
+                ? String(localized: "The server is converting this video…") : String(localized: "Opening the video…")
             // Auto's pre-flight pick can't catch everything — a runtime load failure on
             // Aether (the exact class of bug we spent real time on this session, where a
             // source's own structure breaks one engine but not another) falls back once to
@@ -766,9 +842,13 @@ final class PlayerModel {
             applyEngineOptions()
             // Armed before the load: a conversion that never starts can hold the load itself.
             watchAV1Conversion(startedFrom: resumeFrom)
+            guard !setupAbandoned(generation) else { return }
             do {
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             } catch where player is AetherEnginePlayer {
+                // A load cut short by closing (or by starting over) isn't Aether failing, and
+                // falling back would open a second stream nobody stops.
+                guard !setupAbandoned(generation) else { throw CancellationError() }
                 player = legacyEnginePlayer(container: info.container, videoStream: info.videoStream)
                 if !decodesNatively {
                     info = try await client.getPlaybackInfo(
@@ -776,9 +856,16 @@ final class PlayerModel {
                         quality: qualityCap(for: quality),
                         audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex
                     )
+                    guard !setupAbandoned(generation) else {
+                        if let liveStreamId = info.liveStreamId, liveStreamId != playbackInfo?.liveStreamId {
+                            closeLiveStream(liveStreamId)
+                        }
+                        throw CancellationError()
+                    }
                     playbackInfo = info
                     await loadSubtitleCues(from: info, credential: credential)
                 }
+                guard !setupAbandoned(generation) else { throw CancellationError() }
                 try await player.load(url: info.playURL, startPositionTicks: resumeFrom)
             }
             guard !isClosed else {
@@ -786,7 +873,7 @@ final class PlayerModel {
                 return
             }
             // The AV1 watchdog started over while this load hung; that attempt owns the player now.
-            guard generation == setupGeneration else { return }
+            guard !setupAbandoned(generation) else { return }
             await player.play()
             playStartedAt = Date()
             applyEngineOptions()
@@ -810,7 +897,8 @@ final class PlayerModel {
             Task { await fetchAndApplyNowPlayingArtwork() }
             await client.reportPlaybackStart(credential: credential, authHeader: authHeader,
                                              itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                             positionTicks: resumeFrom, liveStreamId: info.liveStreamId)
+                                             positionTicks: resumeFrom, liveStreamId: info.liveStreamId,
+                                             playSessionId: info.playSessionId, playMethod: info.playMethod)
             startProgressReporting(mediaSourceId: info.mediaSourceId)
             startAutoRecovery()
             watchForMissingPicture()
@@ -827,6 +915,7 @@ final class PlayerModel {
         autoSkipped = []
         if !isLive {
             segments = await client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: item.id)
+            refreshSkipButton()
         }
 
         // A playlist or collection playing through goes by its own order; an episode by the
@@ -902,10 +991,7 @@ final class PlayerModel {
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         isSyncPlayBusy = true
         Task {
-            await syncPlayManager.joinGroup(
-                group, credential: credential, authHeader: authHeader,
-                itemId: item.id, startPositionTicks: player.positionTicks
-            )
+            await syncPlayManager.joinGroup(group, credential: credential, authHeader: authHeader)
             isSyncPlayBusy = false
         }
     }
@@ -991,7 +1077,8 @@ final class PlayerModel {
                 credential: credential, authHeader: authHeader, itemId: item.id,
                 mediaSourceId: info.mediaSourceId, positionTicks: player.positionTicks,
                 isPaused: player.status == .paused, liveStreamId: info.liveStreamId,
-                volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil
+                volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil,
+                playSessionId: info.playSessionId, playMethod: info.playMethod
             )
         }
     }
@@ -1163,6 +1250,9 @@ final class PlayerModel {
         stillWatchingTimeoutTask?.cancel()
         liveProgramTask?.cancel()
         av1Watchdog?.cancel()
+        cancelUpNextCountdown()
+        setupTask?.cancel()
+        reloadTask?.cancel()
         if holdsPlayerActivity {
             holdsPlayerActivity = false
             PlayerActivity.shared.closed()
@@ -1181,12 +1271,12 @@ final class PlayerModel {
     /// The last part of closing: reports where playback stopped and stops the engine.
     func stopPlayback() async {
         nowPlayingManager.clear()
-        if let stallObserver { NotificationCenter.default.removeObserver(stallObserver) }
         if let credential, let authHeader, let info = playbackInfo {
-            let stoppedAt = player.positionTicks
+            let stoppedAt = reportedPositionTicks
             await client.reportPlaybackStopped(credential: credential, authHeader: authHeader,
                                                itemId: item.id, mediaSourceId: info.mediaSourceId,
-                                               positionTicks: stoppedAt, liveStreamId: info.liveStreamId)
+                                               positionTicks: stoppedAt, liveStreamId: info.liveStreamId,
+                                               playSessionId: info.playSessionId, playMethod: info.playMethod)
             if let liveStreamId = info.liveStreamId {
                 await client.closeLiveStream(credential: credential, authHeader: authHeader, liveStreamId: liveStreamId)
             }
@@ -1197,6 +1287,8 @@ final class PlayerModel {
             }
             NotificationCenter.default.post(name: .arcfinPlaybackReported, object: nil)
         }
+        // Another window's player is still using the shared audio session.
+        if PlayerActivity.shared.isPlayerOpen { (player as? AetherEnginePlayer)?.keepsAudioSessionOnStop = true }
         await player.stop()
     }
 
@@ -1221,6 +1313,19 @@ final class PlayerModel {
         closePlayer()
     }
 
+    /// While casting, the local engine sits paused where casting began; the receiver's
+    /// position and state are the ones to report.
+    private var reportedPositionTicks: Int64 {
+        if CastManager.shared.isConnected, let seconds = CastManager.shared.lastKnownPositionSeconds {
+            return Int64(seconds * 10_000_000)
+        }
+        return player.positionTicks
+    }
+
+    private var reportedIsPaused: Bool {
+        CastManager.shared.isConnected ? CastManager.shared.isPaused : player.status == .paused
+    }
+
     private func startProgressReporting(mediaSourceId: String) {
         progressReportTask?.cancel()
         progressReportTask = Task {
@@ -1229,9 +1334,10 @@ final class PlayerModel {
                 guard !Task.isCancelled, let credential, let authHeader else { continue }
                 await client.reportPlaybackProgress(
                     credential: credential, authHeader: authHeader, itemId: item.id,
-                    mediaSourceId: mediaSourceId, positionTicks: player.positionTicks,
-                    isPaused: player.status == .paused, liveStreamId: playbackInfo?.liveStreamId,
-                    volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil
+                    mediaSourceId: mediaSourceId, positionTicks: reportedPositionTicks,
+                    isPaused: reportedIsPaused, liveStreamId: playbackInfo?.liveStreamId,
+                    volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil,
+                    playSessionId: playbackInfo?.playSessionId, playMethod: playbackInfo?.playMethod ?? .directPlay
                 )
             }
         }
@@ -1279,7 +1385,7 @@ final class PlayerModel {
     /// Only acts while on Auto — a deliberate manual pick (including "Max") is never
     /// silently overridden by this.
     ///
-    /// AVPlayerItemPlaybackStalled fires for plenty of non-network reasons too (seeking,
+    /// A stall happens for plenty of non-network reasons too (seeking,
     /// a reload's own startup buffering, backgrounding) — a single stall is not a reliable
     /// "network can't keep up" signal on its own, and reacting to one caused a reload loop
     /// twice (each reload's startup buffering looked like another stall). Now requires
@@ -1303,9 +1409,9 @@ final class PlayerModel {
                 autoCap = cap
                 reload(errorContext: "raise quality")
                 if let bitrate = cap?.maxBitrate {
-                    networkToast = String(format: "Raised to %.0f Mb/s — your connection has recovered", Double(bitrate) / 1_000_000)
+                    networkToast = String(localized: "Raised to \(Self.bitrateLabel(bitrate)) — your connection has recovered")
                 } else {
-                    networkToast = "Back to full quality — your connection has recovered"
+                    networkToast = String(localized: "Back to full quality — your connection has recovered")
                 }
                 try? await Task.sleep(for: .seconds(3))
                 networkToast = nil
@@ -1359,7 +1465,14 @@ final class PlayerModel {
         }
     }
 
-    func handlePlaybackStall() {
+    /// The engine running dry once playback is under way, whichever engine it is: Auto's
+    /// signal that the connection may not be keeping up.
+    func bufferingChanged(_ isBuffering: Bool) {
+        guard isBuffering, playStartedAt != nil, !CastManager.shared.isConnected else { return }
+        handlePlaybackStall()
+    }
+
+    private func handlePlaybackStall() {
         guard quality == .auto else { return }
         let now = Date()
         guard AutoQuality.countsStall(at: now, lastLoad: lastLoadStartedAt, lastSeek: lastSeekAt,
@@ -1384,12 +1497,11 @@ final class PlayerModel {
                 // Still stalling at the bottom step: not a bandwidth problem a lower bitrate
                 // can fix (a codec/output failure, a dead source), so say so rather than
                 // leaving the video frozen on a spinner.
-                errorMessage = "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC."
+                errorMessage = String(localized: "Playback keeps stalling and lowering quality hasn't helped — this source may not play correctly with the current playback engine. Try Settings > Playback > Playback Engine to switch to VLC.")
             case .lower(let cap):
                 autoCap = cap
                 reload(errorContext: "adjust quality")
-                let mbps = Double(cap.maxBitrate ?? 0) / 1_000_000
-                networkToast = "Lowered to \(mbps >= 1 ? String(format: "%.0f Mb/s", mbps) : String(format: "%.0f Kb/s", mbps * 1000)) — your connection can't keep up"
+                networkToast = String(localized: "Lowered to \(Self.bitrateLabel(cap.maxBitrate ?? 0)) — your connection can't keep up")
                 try? await Task.sleep(for: .seconds(3))
                 networkToast = nil
             }
@@ -1399,7 +1511,7 @@ final class PlayerModel {
     /// The error screen's Try Again: starts over from asking the server for a stream.
     func retry() {
         errorMessage = nil
-        Task { await setup() }
+        Task { await startSetup() }
     }
 
     /// The track Show Subtitles When Muted turned on, to turn off again when the sound returns.
@@ -1441,6 +1553,9 @@ final class PlayerModel {
     @ObservationIgnored private var playStartedAt: Date?
     @ObservationIgnored private var av1Watchdog: Task<Void, Never>?
     @ObservationIgnored private var setupGeneration = 0
+    @ObservationIgnored private var setupTask: Task<Void, Never>?
+    @ObservationIgnored private var reloadTask: Task<Void, Never>?
+    @ObservationIgnored private var reloadGeneration = 0
     @ObservationIgnored private var holdsPlayerActivity = false
 
     /// A server whose AV1 encoder doesn't exist never sends a first segment, and the engine
@@ -1469,11 +1584,18 @@ final class PlayerModel {
         AV1Encoding.markFailed(on: credential.baseURL)
         log.notice("AV1 conversion failed on \(credential.baseURL.host ?? "", privacy: .public); using HEVC from now on")
         errorMessage = nil
-        Task { await setup() }
+        Task { await startSetup() }
         return true
     }
 
     // MARK: - Live TV
+
+    private func stopEncoding(playSessionId: String) {
+        guard let credential, let authHeader,
+              let deviceId = UserDefaults.standard.string(forKey: "arcfin.deviceId") else { return }
+        let client = client
+        Task { await client.stopActiveEncodings(credential: credential, authHeader: authHeader, deviceId: deviceId, playSessionId: playSessionId) }
+    }
 
     private func closeLiveStream(_ liveStreamId: String) {
         guard let credential, let authHeader else { return }
@@ -1617,7 +1739,11 @@ final class PlayerModel {
     /// watching" streak (a manual tap is proof someone's there, and resets it).
     /// Opens another item in this player's place.
     private func playNextItem(_ next: MediaItem) {
+        // A countdown or a SharePlay lookup finishing after close would open the player again.
+        guard !isClosed else { return }
         (player as? AetherEnginePlayer)?.keepsDisplayModeOnStop = true
+        (player as? AetherEnginePlayer)?.keepsAudioSessionOnStop = true
+        handedOver = true
         onPlayNext(next)
     }
 
@@ -1668,7 +1794,7 @@ final class PlayerModel {
     private func pauseForSleepTimer() {
         if CastManager.shared.isConnected { CastManager.shared.pause() }
         Task { await player.pause() }
-        networkToast = "Sleep timer — playback paused"
+        networkToast = String(localized: "Sleep timer — playback paused")
         Task {
             try? await Task.sleep(for: .seconds(3))
             networkToast = nil
@@ -1720,6 +1846,7 @@ final class PlayerModel {
         upNextDismissed = true
         showUpNext = false
         cancelUpNextCountdown()
+        refreshSkipButton()
     }
 
     // MARK: - Audio/subtitle tracks
@@ -1807,7 +1934,7 @@ final class PlayerModel {
     func adoptDownloadedSubtitle() {
         guard let credential, let authHeader else { return }
         let known = Set(playbackInfo?.subtitleStreams.map(\.index) ?? [])
-        networkToast = "Adding subtitles…"
+        networkToast = String(localized: "Adding subtitles…")
         Task {
             for _ in 0..<5 {
                 if let info = try? await client.getPlaybackInfo(
@@ -1822,7 +1949,7 @@ final class PlayerModel {
                 }
                 try? await Task.sleep(for: .seconds(2))
             }
-            networkToast = "Subtitles were saved on the server. Reopen the title to use them."
+            networkToast = String(localized: "Subtitles were saved on the server. Reopen the title to use them.")
             try? await Task.sleep(for: .seconds(4))
             networkToast = nil
         }
@@ -1863,7 +1990,10 @@ final class PlayerModel {
             currentSubtitleText = nil
             return
         }
-        subtitleCues = await SubtitleLoader.loadCues(deliveryUrl: deliveryUrl, credential: credential)
+        let cues = await SubtitleLoader.loadCues(deliveryUrl: deliveryUrl, credential: credential)
+        // A newer pick may have loaded while this one was fetching.
+        guard selectedSubtitleIndex == index else { return }
+        subtitleCues = cues
         log.notice("Subtitles: track \(index, privacy: .public) has \(self.subtitleCues.count, privacy: .public) cues (server link: \(stream.deliveryUrl != nil, privacy: .public))")
     }
 
@@ -1884,24 +2014,32 @@ final class PlayerModel {
             return
         }
         let seconds = Double(ticks) / 10_000_000 - subtitleDelay
-        if subtitleCues.isEmpty {
-            currentSubtitleText = nil
-        } else {
-            currentSubtitleText = SubtitleLoader.cue(at: seconds, in: subtitleCues)
-        }
+        // Set only when they change: the screen reads both, and this runs on every tick.
+        let text = subtitleCues.isEmpty ? nil : SubtitleLoader.cue(at: seconds, in: subtitleCues)
+        if text != currentSubtitleText { currentSubtitleText = text }
+        var bitmapCue: NativeBitmapCue?
         if let aetherPlayer = player as? AetherEnginePlayer, !aetherPlayer.nativeBitmapCues.isEmpty {
-            currentBitmapCue = aetherPlayer.nativeBitmapCues.first {
+            bitmapCue = aetherPlayer.nativeBitmapCues.first {
                 seconds >= $0.startTime && seconds < $0.endTime
             }
-        } else {
-            currentBitmapCue = nil
         }
+        if bitmapCue?.id != currentBitmapCue?.id { currentBitmapCue = bitmapCue }
     }
 
+    /// Each reload replaces the one before it: the last track or quality picked is the one
+    /// that plays, however the requests finish. One asked for while setup() is still loading
+    /// waits for it, so the two never load on the same engine at once.
     private func reload(errorContext: String, resumeTicks overrideTicks: Int64? = nil) {
         guard let credential, let authHeader else { return }
-        let resumeTicks = isLive ? 0 : overrideTicks ?? player.positionTicks
-        Task {
+        reloadTask?.cancel()
+        reloadGeneration += 1
+        let generation = reloadGeneration
+        let pendingSetup = setupTask
+        reloadTask = Task {
+            await pendingSetup?.value
+            guard reloadIsCurrent(generation) else { return }
+            // Read once any setup is done: before that, the position is still 0.
+            let resumeTicks = isLive ? 0 : overrideTicks ?? player.positionTicks
             do {
                 let info = try await client.getPlaybackInfo(
                     credential: credential, authHeader: authHeader, itemId: item.id, mediaSourceId: selectedMediaSourceId,
@@ -1909,8 +2047,13 @@ final class PlayerModel {
                     audioStreamIndex: selectedAudioIndex, subtitleStreamIndex: selectedSubtitleIndex,
                     nativeDecoder: decodesNatively
                 )
+                guard reloadIsCurrent(generation) else {
+                    if let liveStreamId = info.liveStreamId { closeLiveStream(liveStreamId) }
+                    return
+                }
                 playbackInfo = info
                 await loadSubtitleCues(from: info, credential: credential)
+                guard reloadIsCurrent(generation) else { return }
                 lastLoadStartedAt = Date()
                 watchAV1Conversion(startedFrom: resumeTicks)
                 try await player.load(url: info.playURL, startPositionTicks: resumeTicks)
@@ -1918,7 +2061,9 @@ final class PlayerModel {
                     await player.stop()
                     return
                 }
+                guard reloadIsCurrent(generation) else { return }
                 await player.play()
+                applyEngineVolume()
                 watchForMissingPicture()
                 if selectedAudioIndex != nil { await selectAudioInEngine() }
                 await applyRememberedRate()
@@ -1926,10 +2071,17 @@ final class PlayerModel {
                 updateNowPlayingInfo()
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
             } catch {
+                // A load cut short by a newer reload or by closing isn't a failure to show.
+                guard reloadIsCurrent(generation), !(error is CancellationError),
+                      (error as? URLError)?.code != .cancelled else { return }
                 log.error("Couldn't \(errorContext, privacy: .public): \(error, privacy: .public)")
                 errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
             }
         }
+    }
+
+    private func reloadIsCurrent(_ generation: Int) -> Bool {
+        !Task.isCancelled && !isClosed && generation == reloadGeneration
     }
 
     // MARK: - Controls visibility
@@ -1952,6 +2104,7 @@ final class PlayerModel {
                 withAnimation(DT.Animation.fast) { tvControlsHidden = true }
             }
         } else {
+            guard !keepsControlsVisible else { return }
             hideControlsTask = Task {
                 try? await Task.sleep(for: .seconds(3.5))
                 guard !Task.isCancelled, player.status == .playing else { return }
@@ -1974,6 +2127,9 @@ final class PlayerModel {
     // MARK: - Playback actions
 
     func togglePlayPause() {
+        // Playback is paused under the prompt, so Play from a remote, a key or the lock
+        // screen answers it, rather than playing on until its timeout closes the player.
+        if showStillWatchingPrompt { continueAfterStillWatchingPrompt(); return }
         // A manual play/pause is proof someone's actually there — same signal a manual
         // Up Next tap gives, so it resets the "are you still watching" streak too.
         UserDefaults.standard.set(0, forKey: Self.autoplayStreakKey)
@@ -1984,7 +2140,8 @@ final class PlayerModel {
             toggleControlsVisibilityOnAction()
             return
         }
-        if routesThroughSyncPlay, !isLive, syncPlayManager.isInGroup, let credential = authManager.state.credential {
+        // Play, pause and seek go to the SyncPlay group while in one, rather than to the player.
+        if !isLive, syncPlayManager.isInGroup, let credential = authManager.state.credential {
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
             if player.status == .playing {
                 syncPlayManager.requestPause(credential: credential, authHeader: authHeader)
@@ -2001,6 +2158,18 @@ final class PlayerModel {
             if player.status == .playing { await player.pause() } else { await player.play() }
         }
         toggleControlsVisibilityOnAction()
+    }
+
+    /// Apple TV plays from a scrubbed position on commit, as the system player does; in a
+    /// SyncPlay group that's the group's play, not the local player's.
+    func playAfterScrub(at ticks: Int64) {
+        guard player.status != .playing else { return }
+        if !isLive, syncPlayManager.isInGroup, let credential = authManager.state.credential {
+            syncPlayManager.requestPlay(credential: credential, authHeader: authManager.authClient.authHeader(token: credential.accessToken))
+            return
+        }
+        if sharePlay.isActive { sharePlay.send(.play, itemId: item.id, positionTicks: ticks) }
+        Task { await player.play() }
     }
 
     func seek(by seconds: Int) {
@@ -2021,7 +2190,7 @@ final class PlayerModel {
             CastManager.shared.seek(toSeconds: Double(ticks) / 10_000_000)
             return
         }
-        if routesThroughSyncPlay, syncPlayManager.isInGroup, let credential = authManager.state.credential {
+        if syncPlayManager.isInGroup, let credential = authManager.state.credential {
             let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
             syncPlayManager.requestSeek(credential: credential, authHeader: authHeader, positionTicks: ticks)
             return
@@ -2045,7 +2214,8 @@ final class PlayerModel {
         let ticks = Int64(scrubTicks)
         Task {
             let image = await loader.thumbnail(forPositionTicks: ticks)
-            guard isScrubbing else { return }
+            // An older fetch finishing late mustn't replace a newer frame.
+            guard isScrubbing, lastThumbnailBucket == bucket else { return }
             scrubThumbnail = image
         }
     }
@@ -2134,7 +2304,16 @@ final class PlayerModel {
         return nil
     }
 
-    var skipButtonLabel: String? { currentSkippable?.label }
+    /// What `currentSkippable` was at the last tick, kept so the screens don't read the
+    /// position (and so rebuild on every tick) just to show the Skip button.
+    private(set) var skipButtonLabel: String?
+    private(set) var skipButtonKind: String?
+
+    private func refreshSkipButton() {
+        let current = currentSkippable
+        if current?.label != skipButtonLabel { skipButtonLabel = current?.label }
+        if current?.kind != skipButtonKind { skipButtonKind = current?.kind }
+    }
 
     func skipToSegmentEnd() {
         guard let current = currentSkippable else { return }

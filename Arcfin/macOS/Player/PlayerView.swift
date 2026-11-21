@@ -88,6 +88,7 @@ struct PlayerView: View {
     private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            PlaybackPositionObserver(player: model.player) { model.positionChanged(from: $0, to: $1) }
 
             videoSurfaceLayer
 
@@ -177,7 +178,7 @@ struct PlayerView: View {
         .onAppear { connectModel() }
         .task {
             if model.handOffToDefaultPlayer() { closePlayer(); return }
-            if !model.isAskingToResume { await model.setup() }
+            if !model.isAskingToResume { await model.startSetup() }
         }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
@@ -191,18 +192,18 @@ struct PlayerView: View {
             Button("Cancel", role: .cancel) { closePlayer() }
         }
         .onChange(of: model.isAskingToResume) { _, asking in
-            if !asking, model.resumeAnswered { Task { await model.setup() } }
+            if !asking, model.resumeAnswered { Task { await model.startSetup() } }
         }
         .onDisappear {
             Task { await teardown() }
             macVolumeHUDTask?.cancel()
         }
         .onChange(of: model.subtitleDelay) { _, _ in model.updateSubtitleText(forTicks: model.player.positionTicks) }
-        .onChange(of: model.player.positionTicks) { oldValue, newValue in
-            model.positionChanged(from: oldValue, to: newValue)
-        }
         .onChange(of: model.player.status) { _, newStatus in
             model.statusChanged(to: newStatus)
+        }
+        .onChange(of: model.player.isBuffering) { _, isBuffering in
+            model.bufferingChanged(isBuffering)
         }
         .onChange(of: scenePhase) { _, phase in
             model.scenePhaseChanged(to: phase)
@@ -260,7 +261,7 @@ struct PlayerView: View {
             showInfo: { showInfoSheet = true },
             stepSpeed: { model.stepPlaybackRate($0) },
             resetSpeed: { model.choosePlaybackRate(1) },
-            skipSegmentLabel: model.currentSkippable?.label,
+            skipSegmentLabel: model.skipButtonLabel,
             skipSegment: { model.skipToSegmentEnd() },
             next: model.nextEpisode == nil ? nil : { model.playNextEpisode() },
             previous: model.previousItem == nil ? nil : { model.playPrevious() }
@@ -441,6 +442,9 @@ struct PlayerView: View {
 
     private func teardown() async {
         model.stopTasks()
+        // Closed with the right arrow still held: the key-up monitor would outlive the player.
+        if let arrowReleaseMonitor { NSEvent.removeMonitor(arrowReleaseMonitor) }
+        arrowReleaseMonitor = nil
         // The window's toolbar is real window chrome, not part of this view — left hidden,
         // it would stay hidden on whatever screen is underneath once the player closes.
         setMacWindowToolbarVisible(macWindow, true)

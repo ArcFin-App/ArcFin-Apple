@@ -3,6 +3,8 @@
 import SwiftUI
 import JellyfinAPI
 import AuthCore
+import Telemetry
+import os
 
 /// Fetches and crops Jellyfin trickplay sprite-sheet tiles into individual scrub-preview
 /// thumbnails, caching whole tiles (each holds many frames) rather than individual crops.
@@ -13,7 +15,12 @@ final class TrickplayLoader {
     private let client: JellyfinMediaClient
     private let itemId: String
     private let info: JellyfinTrickplayInfo
+    private static let log = Telemetry.logger(category: "Trickplay")
+    /// A few decoded sheets, most recent last: each is large, and a scrub only moves between
+    /// neighbouring ones, so keeping every sheet of a film added up (on Apple TV especially).
     private var tileCache: [Int: PlatformImage] = [:]
+    private var tileOrder: [Int] = []
+    private static let cachedTiles = 4
     private var inFlight: [Int: Task<PlatformImage?, Never>] = [:]
 
     init(credential: ServerCredential, authHeader: String, client: JellyfinMediaClient, itemId: String, info: JellyfinTrickplayInfo) {
@@ -41,7 +48,11 @@ final class TrickplayLoader {
     }
 
     private func loadTile(_ tileIndex: Int) async -> PlatformImage? {
-        if let cached = tileCache[tileIndex] { return cached }
+        if let cached = tileCache[tileIndex] {
+            tileOrder.removeAll { $0 == tileIndex }
+            tileOrder.append(tileIndex)
+            return cached
+        }
         if let existing = inFlight[tileIndex] { return await existing.value }
         let url = client.trickplayTileURL(credential: credential, itemId: itemId, width: info.width, tileIndex: tileIndex)
         let authHeader = authHeader
@@ -54,19 +65,24 @@ final class TrickplayLoader {
                 let (data, response) = try await URLSession.arcfin.data(for: req)
                 let status = (response as? HTTPURLResponse)?.statusCode ?? -1
                 guard status == 200, let image = PlatformImage(data: data) else {
-                    print("[Trickplay] tile \(tileIndex) fetch failed — status \(status), bytes \(data.count)")
+                    Self.log.error("Tile \(tileIndex, privacy: .public) fetch failed: status \(status, privacy: .public), \(data.count, privacy: .public) bytes")
                     return nil
                 }
                 return image
             } catch {
-                print("[Trickplay] tile \(tileIndex) request error — \(error)")
+                Self.log.error("Tile \(tileIndex, privacy: .public) request failed: \(error.localizedDescription, privacy: .public)")
                 return nil
             }
         }
         inFlight[tileIndex] = task
         let image = await task.value
         inFlight[tileIndex] = nil
-        if let image { tileCache[tileIndex] = image }
+        if let image {
+            tileCache[tileIndex] = image
+            tileOrder.removeAll { $0 == tileIndex }
+            tileOrder.append(tileIndex)
+            while tileOrder.count > Self.cachedTiles { tileCache[tileOrder.removeFirst()] = nil }
+        }
         return image
     }
 }

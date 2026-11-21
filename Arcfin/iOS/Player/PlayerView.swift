@@ -28,6 +28,7 @@ struct PlayerView: View {
     @Environment(\.dismissWindow) var dismissWindow
     @Environment(\.openWindow) var openWindow
     @Environment(\.supportsMultipleWindows) var supportsMultipleWindows
+    @Environment(\.accessibilityVoiceOverEnabled) var voiceOverEnabled
 
     func closePlayer() {
         if isPlayerWindow {
@@ -99,6 +100,7 @@ struct PlayerView: View {
     private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            PlaybackPositionObserver(player: model.player) { model.positionChanged(from: $0, to: $1) }
 
             if CastManager.shared.isConnected {
                 // The receiver is playing the video, not this screen — leaving the last
@@ -218,16 +220,18 @@ struct PlayerView: View {
             }
         }
         .onChange(of: model.subtitleDelay) { _, _ in model.updateSubtitleText(forTicks: model.player.positionTicks) }
-        .onChange(of: model.player.positionTicks) { oldValue, newValue in
-            model.positionChanged(from: oldValue, to: newValue)
-        }
         .onChange(of: model.player.status) { _, newStatus in
             model.statusChanged(to: newStatus)
+        }
+        .onChange(of: model.player.isBuffering) { _, isBuffering in
+            model.bufferingChanged(isBuffering)
         }
         .onChange(of: scenePhase) { _, phase in
             model.scenePhaseChanged(to: phase)
         }
         .onChange(of: model.isFillScreen) { _, _ in model.applyFillScreen() }
+        .onChange(of: voiceOverEnabled, initial: true) { _, enabled in model.keepsControlsVisible = enabled }
+        .accessibilityAction(.magicTap) { model.togglePlayPause() }
         // These must live on a view that's always mounted, not inside the conditionally
         // -shown controlsOverlay — auto-hide removing that view from the tree while a
         // sheet/dialog was presented from it was tearing the presentation down too.
@@ -317,6 +321,11 @@ struct PlayerView: View {
                 .gesture(tapGesture(width: proxy.size.width))
                 .simultaneousGesture(dragGesture(size: proxy.size))
                 .simultaneousGesture(holdForSpeedGesture)
+                // The gestures above have no VoiceOver equivalent of their own.
+                .accessibilityElement()
+                .accessibilityLabel("Show playback controls")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityAction { model.toggleControlsVisibilityOnAction() }
                 .onChange(of: proxy.size) { _, newSize in
                     isLandscape = newSize.width > newSize.height
                 }
@@ -395,13 +404,6 @@ struct PlayerView: View {
 
     private func setup() async {
         volumeController = SystemVolumeController()
-        // Playback stalling (buffer underrun) is the standard signal for "network can't
-        // keep up" — auto-step quality down when the user hasn't manually picked one.
-        model.stallObserver = NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemPlaybackStalled, object: nil, queue: .main
-        ) { [model = model] _ in
-            Task { @MainActor in model.handlePlaybackStall() }
-        }
         // AVAudioSession's setCategory/setActive are synchronous, blocking calls — Xcode's
         // Hang Risk diagnostic flags calling them on the main thread. The async activate()
         // API needs iOS 27 (min target here is 26), so instead this just runs the same
@@ -426,7 +428,7 @@ struct PlayerView: View {
                 if dragAxis == .volume { dragAxis = nil }
             }
         }
-        await model.setup()
+        await model.startSetup()
         // Opened with the sound already off: the observer above only hears changes.
         if AVAudioSession.sharedInstance().outputVolume < 0.01 { model.soundMutedChanged(true) }
     }
@@ -494,7 +496,9 @@ struct PlayerView: View {
         volumeEchoSuppressTask?.cancel()
         displayCriteriaMatcher.detach()
         await model.stopPlayback()
-        await deactivateAudioSession()
+        // The stop reports can take seconds, by when the next title (or another window's
+        // player) may be playing in the same session; deactivating it would stop its sound.
+        if !model.handedOver, !PlayerActivity.shared.isPlayerOpen { await deactivateAudioSession() }
         model.detachViewSteps()
     }
 

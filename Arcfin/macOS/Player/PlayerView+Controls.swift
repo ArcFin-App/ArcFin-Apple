@@ -55,6 +55,7 @@ extension PlayerView {
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("Close player")
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -240,7 +241,7 @@ extension PlayerView {
                     .disabled(model.subtitleDelay == 0)
             } label: {
                 Label(
-                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)",
+                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(model.subtitleDelay.formatted(.number.precision(.fractionLength(1)).sign(strategy: .always()))) s)",
                     systemImage: "clock.arrow.2.circlepath")
             }
         }
@@ -279,11 +280,9 @@ extension PlayerView {
                 if model.isLive {
                     LivePositionBadge(behindSeconds: model.secondsBehindLive) { model.jumpToLive() }
                 } else {
-                    Text(model.timeLabel(ticks: model.elapsedTicks))
+                    PlayerTimeLabel(model: model, remaining: false)
                         .font(.system(.caption, design: .monospaced, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
                 }
 
                 Spacer()
@@ -306,6 +305,7 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                     }
                     Button { model.togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
@@ -314,6 +314,7 @@ extension PlayerView {
                             .frame(width: 56, height: 56)
                             .contentShape(Rectangle())
                     }
+                    .accessibilityLabel(playPauseIconIsPlaying ? "Pause" : "Play")
                     if !model.isLive || model.canRewindLive {
                         Button { model.seek(by: skipForwardSeconds) } label: {
                             Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
@@ -321,6 +322,7 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
                     }
                     if let nextEpisode = model.nextEpisode {
                         Button { model.playNextEpisode() } label: {
@@ -340,11 +342,9 @@ extension PlayerView {
                     // Balances the badge so the transport stays centred.
                     LiveBadge().hidden()
                 } else {
-                    Text(model.remainingLabel)
+                    PlayerTimeLabel(model: model, remaining: true)
                         .font(.system(.caption, design: .monospaced, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(.default, value: model.remainingTicks)
                 }
             }
         }
@@ -466,7 +466,7 @@ extension PlayerView {
             .transition(.opacity)
     }
 
-    func macMenuPanel<Content: View>(title: String, onDone: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
+    func macMenuPanel<Content: View>(title: LocalizedStringKey, onDone: @escaping () -> Void, @ViewBuilder content: () -> Content) -> some View {
         VStack(spacing: 0) {
             HStack {
                 Text(title)
@@ -528,7 +528,7 @@ extension PlayerView {
                         } label: {
                             HStack(spacing: 12) {
                                 ChapterThumbnailView(loader: model.trickplayLoader, positionTicks: chapter.startPositionTicks)
-                                Text(chapter.name ?? "Chapter \(index + 1)")
+                                Text(chapter.name ?? String(localized: "Chapter \(index + 1)"))
                                     .font(.system(.footnote, design: .default, weight: isCurrent ? .semibold : .regular))
                                     .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
                                 Spacer()

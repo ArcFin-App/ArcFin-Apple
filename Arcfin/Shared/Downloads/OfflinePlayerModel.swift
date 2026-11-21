@@ -23,6 +23,14 @@ final class OfflinePlayerModel {
     private(set) var player: any MediaPlayerProtocol = (try? AetherEnginePlayer()) ?? VLCEnginePlayer()
     private(set) var isControlsVisible = true
     @ObservationIgnored private var hideControlsTask: Task<Void, Never>?
+    /// VoiceOver is on: hidden controls drop out of the accessibility tree, so they stay up.
+    @ObservationIgnored var keepsControlsVisible = false {
+        didSet {
+            guard keepsControlsVisible else { return }
+            hideControlsTask?.cancel()
+            isControlsVisible = true
+        }
+    }
     private(set) var isScrubbing = false
     private(set) var scrubTicks: Double = 0
     private var subtitleCues: [SubtitleCue] = []
@@ -272,8 +280,9 @@ final class OfflinePlayerModel {
     }
 
     private func updateSubtitleText(forTicks ticks: Int64) {
-        guard !subtitleCues.isEmpty else { currentSubtitleText = nil; return }
-        currentSubtitleText = SubtitleLoader.cue(at: Double(ticks) / 10_000_000, in: subtitleCues)
+        let text = subtitleCues.isEmpty ? nil : SubtitleLoader.cue(at: Double(ticks) / 10_000_000, in: subtitleCues)
+        // Only on a change: the screen reads it, and this runs on every tick.
+        if text != currentSubtitleText { currentSubtitleText = text }
     }
 
     // MARK: - Skipping segments
@@ -432,6 +441,7 @@ final class OfflinePlayerModel {
 
     func scheduleAutoHide() {
         hideControlsTask?.cancel()
+        guard !keepsControlsVisible else { return }
         hideControlsTask = Task {
             try? await Task.sleep(for: .seconds(3.5))
             guard !Task.isCancelled, player.status == .playing else { return }

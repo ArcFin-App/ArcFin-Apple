@@ -207,9 +207,12 @@ struct OfflineSubtitleSheet: View {
                                 HStack {
                                     Text(verbatim: Self.audioName(track))
                                     Spacer()
-                                    if model.player.selectedAudioTrackIndex == track.id { Image(systemName: "checkmark") }
+                                    if model.player.selectedAudioTrackIndex == track.id {
+                                        Image(systemName: "checkmark").accessibilityHidden(true)
+                                    }
                                 }
                             }
+                            .accessibilityAddTraits(model.player.selectedAudioTrackIndex == track.id ? .isSelected : [])
                         }
                     }
                 }
@@ -240,9 +243,10 @@ struct OfflineSubtitleSheet: View {
                     HStack {
                         Text("Off")
                         Spacer()
-                        if model.selectedSubtitleIndex == nil { Image(systemName: "checkmark") }
+                        if model.selectedSubtitleIndex == nil { Image(systemName: "checkmark").accessibilityHidden(true) }
                     }
                 }
+                .accessibilityAddTraits(model.selectedSubtitleIndex == nil ? .isSelected : [])
                 ForEach(model.downloadedItem.subtitleLanguages.indices, id: \.self) { index in
                     Button {
                         model.loadSubtitles(index: index)
@@ -251,9 +255,10 @@ struct OfflineSubtitleSheet: View {
                         HStack {
                             Text(model.downloadedItem.subtitleLanguages[index])
                             Spacer()
-                            if model.selectedSubtitleIndex == index { Image(systemName: "checkmark") }
+                            if model.selectedSubtitleIndex == index { Image(systemName: "checkmark").accessibilityHidden(true) }
                         }
                     }
+                    .accessibilityAddTraits(model.selectedSubtitleIndex == index ? .isSelected : [])
                 }
     }
 }
