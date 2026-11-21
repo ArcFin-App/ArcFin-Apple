@@ -17,6 +17,7 @@ struct SeerrRequestConfirmSheet: View {
     @State private var isSubmitting = false
     @State private var submitError: String?
     @State private var alreadyRequested = false
+    @State private var seasonsFailed = false
 
     private var isSeries: Bool { item.mediaType == .tv }
     private var rows: [SeerrSeasonRow] { detail?.seasonRows ?? [] }
@@ -57,6 +58,8 @@ struct SeerrRequestConfirmSheet: View {
     private var requestLabel: String {
         if alreadyRequested { return "Already Requested" }
         guard isSeries else { return isSubmitting ? "Sending…" : "Confirm Request" }
+        // No detail means the seasons aren't known yet, not that they're all requested.
+        if detail == nil { return "Select Seasons" }
         if unrequested.isEmpty { return "Already Requested" }
         if !partialRequestsEnabled { return isSubmitting ? "Sending…" : "Request Series" }
         if selectedSeasons.isEmpty { return "Select Seasons" }
@@ -71,19 +74,26 @@ struct SeerrRequestConfirmSheet: View {
             // A movie has no per-season rows to say so; the loaded requests and the item's own
             // status do. A series is covered by its season rows below.
             if !isSeries, seerrRepo.isRequested(item) { alreadyRequested = true }
-            async let fetchedDetail = seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
-            async let fetchedSettings = seerrRepo.ensurePublicSettings()
-            let (resolvedDetail, resolvedSettings) = await (fetchedDetail, fetchedSettings)
-            detail = resolvedDetail
-            partialRequestsEnabled = resolvedSettings?.partialRequestsEnabled ?? true
-            // The sheet opens with nothing switched on, same as Seerr's own modal — not every
-            // unrequested season preselected, so a quota-limited user doesn't accidentally
-            // submit more than they meant to.
-            if isSeries {
-                quota = await seerrRepo.seasonQuota()
-            }
-            isLoadingDetail = false
+            await loadDetail()
         }
+    }
+
+    private func loadDetail() async {
+        isLoadingDetail = true
+        seasonsFailed = false
+        async let fetchedDetail = seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
+        async let fetchedSettings = seerrRepo.ensurePublicSettings()
+        let (resolvedDetail, resolvedSettings) = await (fetchedDetail, fetchedSettings)
+        detail = resolvedDetail
+        partialRequestsEnabled = resolvedSettings?.partialRequestsEnabled ?? true
+        // The sheet opens with nothing switched on, same as Seerr's own modal — not every
+        // unrequested season preselected, so a quota-limited user doesn't accidentally
+        // submit more than they meant to.
+        if isSeries {
+            quota = await seerrRepo.seasonQuota()
+            seasonsFailed = resolvedDetail == nil
+        }
+        isLoadingDetail = false
     }
 
     /// iPhone, iPad and Mac: one column, in a NavigationStack so Cancel can live in the
@@ -337,10 +347,18 @@ struct SeerrRequestConfirmSheet: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
             }
 
-            if rows.isEmpty {
-                // Detail fetch failed or returned no seasons — don't strand the button
-                // disabled with no picker visible to explain why (same fallback as before
-                // this view had per-season status at all).
+            if seasonsFailed {
+                HStack {
+                    Text("Couldn't load the seasons.")
+                        .font(.system(.caption2, design: .default, weight: .medium))
+                        .foregroundStyle(DT.Color.palette("F43F5E"))
+                    Spacer()
+                    Button("Try Again") { Task { await loadDetail() } }
+                        .font(.system(.caption, design: .default, weight: .medium))
+                        .foregroundStyle(DT.Color.accent)
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+            } else if rows.isEmpty {
                 EmptyView()
             } else {
                 VStack(spacing: 0) {
