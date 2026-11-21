@@ -214,7 +214,7 @@ struct SeerrItemDetailView: View {
         }
     }
 
-    private func infoRow(_ label: String, _ value: String) -> some View {
+    private func infoRow(_ label: LocalizedStringKey, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 23, weight: .bold))
@@ -235,9 +235,9 @@ struct SeerrItemDetailView: View {
             if let seasons = detail?.seasons, !seasons.isEmpty { seasonsRow(seasons) }
             if let cast = detail?.cast, !cast.isEmpty { castRow(cast) }
             if let collection = model.collection { collectionRow(collection) }
-            if !model.moreLikeThis.isEmpty { discoveryRow("More Like This", model.moreLikeThis) }
-            if let companyRow = model.companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
-            if let keywordRow = model.keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
+            if !model.moreLikeThis.isEmpty { discoveryRow(String(localized: "More Like This"), model.moreLikeThis) }
+            if let companyRow = model.companyRow { discoveryRow(String(localized: "More from \(companyRow.name)"), companyRow.items) }
+            if let keywordRow = model.keywordRow { discoveryRow(String(localized: "More About \(keywordRow.name.capitalized)"), keywordRow.items) }
             TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .details)
                 .padding(.horizontal, 80)
                 .focusSection()
@@ -280,7 +280,7 @@ struct SeerrItemDetailView: View {
 
     private func seasonsRow(_ seasons: [SeerrSeasonInfo]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Seasons")
+            sectionTitle(String(localized: "Seasons"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(seasons) { season in
@@ -312,7 +312,7 @@ struct SeerrItemDetailView: View {
 
     private func castRow(_ cast: [SeerrCastMember]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Cast")
+            sectionTitle(String(localized: "Cast"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 24) {
                     ForEach(cast.prefix(20)) { member in

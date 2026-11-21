@@ -84,9 +84,9 @@ struct SeerrItemDetailContent: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.lg)
 
-                if !model.moreLikeThis.isEmpty { discoveryRow("More Like This", model.moreLikeThis) }
-                if let companyRow = model.companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
-                if let keywordRow = model.keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
+                if !model.moreLikeThis.isEmpty { discoveryRow(String(localized: "More Like This"), model.moreLikeThis) }
+                if let companyRow = model.companyRow { discoveryRow(String(localized: "More from \(companyRow.name)"), companyRow.items) }
+                if let keywordRow = model.keywordRow { discoveryRow(String(localized: "More About \(keywordRow.name.capitalized)"), keywordRow.items) }
 
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
@@ -413,7 +413,7 @@ struct SeerrItemDetailContent: View {
         .padding(.bottom, DT.Spacing.md)
     }
 
-    private func availabilityRow(label: String, status: (label: String, colorHex: String)) -> some View {
+    private func availabilityRow(label: LocalizedStringKey, status: (label: String, colorHex: String)) -> some View {
         HStack {
             Text(label)
                 .font(.system(.footnote, design: .default, weight: .semibold))

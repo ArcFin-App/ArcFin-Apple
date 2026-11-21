@@ -148,7 +148,7 @@ struct SeerrView: View {
             NavigationLink {
                 TVSeerrSearchView()
             } label: {
-                pillLabel("Search", systemImage: "magnifyingglass")
+                pillLabel(String(localized: "Search"), systemImage: "magnifyingglass")
             }
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
@@ -157,7 +157,7 @@ struct SeerrView: View {
             NavigationLink {
                 WatchlistView()
             } label: {
-                pillLabel("Watchlist", systemImage: "bookmark.fill")
+                pillLabel(String(localized: "Watchlist"), systemImage: "bookmark.fill")
             }
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
