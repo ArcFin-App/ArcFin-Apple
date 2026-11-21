@@ -2,6 +2,7 @@
 
 import AuthCore
 import Foundation
+import Security
 
 // Shared between the main app target and ArcfinTopShelf extension target.
 // Add this file to BOTH targets in Xcode's file inspector.
@@ -86,7 +87,14 @@ public enum TopShelfBridge {
     private static var activeProfileHasPIN: Bool {
         guard let id = UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap(UUID.init(uuidString:))
         else { return false }
-        do { return try KeychainStore().loadPin(for: id) != nil } catch { return true }
+        // While the device is locked the PIN can't be read yet, and that counts as one.
+        do {
+            return try KeychainStore().loadPin(for: id) != nil
+        } catch KeychainError.unexpectedStatus(let status) where status == errSecInteractionNotAllowed {
+            return true
+        } catch {
+            return false
+        }
     }
 
     /// Nobody signed in, or another profile now: the shelf shouldn't show the last one's titles.
