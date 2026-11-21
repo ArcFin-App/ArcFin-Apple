@@ -2167,7 +2167,11 @@ extension DownloadManager: URLSessionDownloadDelegate {
         // after, so this happens synchronously here rather than after a MainActor hop.
         let taskId = downloadTask.taskIdentifier
         var moveError: Error?
-        if let path = downloadTask.taskDescription {
+        // An error page (no permission, gone, a failed conversion) arrives as a finished
+        // download too; it's left for the system to delete instead of saved as the video.
+        if let status = (downloadTask.response as? HTTPURLResponse)?.statusCode, status != 200, status != 206 {
+            moveError = status == 401 || status == 403 ? DownloadError.permissionDenied : URLError(.badServerResponse)
+        } else if let path = downloadTask.taskDescription {
             let destination = URL(fileURLWithPath: path)
             do {
                 if FileManager.default.fileExists(atPath: destination.path) {
@@ -2189,6 +2193,11 @@ extension DownloadManager: URLSessionDownloadDelegate {
             // Handed off ahead of its turn and done before it came: the queue picks it up.
             if let itemId = self.taskItemIds[taskId], self.handedOffItemIds.contains(itemId) {
                 self.handedOffResults[itemId] = capturedMoveError.map { .failure($0) } ?? .success(())
+                return
+            }
+            // Orphaned and refused by the server: there's no file to finish it from.
+            if capturedMoveError != nil, let capturedPath {
+                self.removePendingDescriptor(itemId: URL(fileURLWithPath: capturedPath).deletingLastPathComponent().lastPathComponent)
                 return
             }
             // No continuation means this app instance didn't originate the transfer — most
