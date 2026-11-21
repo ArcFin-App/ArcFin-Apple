@@ -200,6 +200,12 @@ final class AppRootModel {
         }
         guard case .authenticated(let cred) = authManager.state else {
             activeProfileHasPIN = false
+            // The last profile signed out from the lock screen: the sign-in screen comes next,
+            // and links meant for that profile go with it.
+            if authManager.profiles.isEmpty, isAppLocked {
+                isAppLocked = false
+                heldLinks = []
+            }
             return
         }
         activeProfileHasPIN = await authManager.storedPIN(for: cred.id) != .none
