@@ -168,7 +168,7 @@ struct SettingsView: View {
         case .music: MusicSettingsView()
         case .appearance: AppearanceView()
         case .profile: ProfileAccessView()
-        case .serverSettings(let profileID): ServerSettingsView(profileID: profileID)
+        case .serverSettings: ServerSettingsView()
         case .addServer: AddServerFlowView()
         case .seerr: SeerrPluginView()
         case .tmdb: TMDBSettingsView()
