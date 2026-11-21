@@ -2189,7 +2189,8 @@ final class PlayerModel {
         let ticks = Int64(scrubTicks)
         Task {
             let image = await loader.thumbnail(forPositionTicks: ticks)
-            guard isScrubbing else { return }
+            // An older fetch finishing late mustn't replace a newer frame.
+            guard isScrubbing, lastThumbnailBucket == bucket else { return }
             scrubThumbnail = image
         }
     }
