@@ -47,6 +47,10 @@ struct AppRootLifecycle: ViewModifier {
                 model.sharePlayManager.currentServerId = { [mediaRepo = model.mediaRepo] in mediaRepo.serverID }
                 await model.sharePlayManager.observeSessions()
             }
+            .task {
+                MusicSharePlay.shared.currentServerId = { [mediaRepo = model.mediaRepo] in mediaRepo.serverID }
+                await MusicSharePlay.shared.observeSessions()
+            }
             // With a player open, it shows these itself.
             .alert("SharePlay", isPresented: Binding(
                 get: { model.sharePlayManager.notice != nil && !model.sharePlayManager.hasOpenPlayer },

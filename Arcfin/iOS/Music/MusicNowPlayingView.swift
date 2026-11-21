@@ -277,6 +277,7 @@ struct MusicNowPlayingView: View {
                     Label("Share Song", systemImage: "square.and.arrow.up")
                 }
             }
+            Section { MusicSharePlayButton() }
         } label: {
             Image(systemName: "ellipsis")
                 .font(.body.weight(.semibold))
@@ -599,7 +600,7 @@ private struct MusicQueuePanel: View {
         VStack(alignment: .leading, spacing: DT.Spacing.sm) {
             HStack(spacing: DT.Spacing.sm) {
                 toggle("Shuffle", systemImage: "shuffle", isOn: player.queue.isShuffled) {
-                    player.setShuffled(!player.queue.isShuffled)
+                    AppServices.music.setShuffled(!player.queue.isShuffled)
                 }
                 toggle("Repeat", systemImage: player.repeatMode == .one ? "repeat.1" : "repeat",
                        isOn: player.repeatMode != .off) {
