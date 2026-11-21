@@ -82,9 +82,9 @@
  {
   "id": "aetherengine",
   "name": "AetherEngine",
-  "version": "7.70.0",
+  "version": "7.71.2",
   "license": "LGPL-3.0 with App Store exception",
-  "url": "https://github.com/superuser404notfound/AetherEngine/tree/7.70.0",
+  "url": "https://github.com/superuser404notfound/AetherEngine/tree/7.71.2",
   "note": "Statically linked. Arcfin's source, including how it uses AetherEngine, is public under the AGPL-3.0.",
   "texts": [
    {
@@ -96,9 +96,9 @@
  {
   "id": "ffmpegbuild",
   "name": "FFmpeg (FFmpegBuild)",
-  "version": "3.15.0",
+  "version": "3.16.1",
   "license": "LGPL-2.1-or-later and others",
-  "url": "https://github.com/superuser404notfound/FFmpegBuild/tree/3.15.0",
+  "url": "https://github.com/superuser404notfound/FFmpegBuild/tree/3.16.1",
   "note": "FFmpeg (libavcodec, libavformat, libavutil, libswresample, libswscale, libavfilter) under LGPL-2.1-or-later, dav1d under BSD-2-Clause, zimg under WTFPL, libzvbi under LGPL-2.1 (its ure.c under MIT). Dynamically linked; built without GPL components.",
   "texts": [
    {
