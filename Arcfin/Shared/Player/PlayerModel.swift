@@ -409,6 +409,9 @@ final class PlayerModel {
             onPlay: nowPlayingPlay,
             onPause: nowPlayingPause,
             onSkip: { [self] seconds in seek(by: seconds) },
+            // Settings › Playback's skip amounts, as on the player's own buttons.
+            skipForwardSeconds: UserDefaults.standard.object(forKey: "skipForwardSeconds") as? Int ?? 10,
+            skipBackwardSeconds: UserDefaults.standard.object(forKey: "skipBackwardSeconds") as? Int ?? 10,
             onSeek: { [self] seconds in performSeek(to: Int64(seconds * 10_000_000)) },
             onNextTrack: item.type == .episode || isLive ? { [self] in playNextEpisode() } : nil
         )

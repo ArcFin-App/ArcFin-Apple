@@ -32,6 +32,8 @@ final class NowPlayingManager {
         onPlay: @escaping () -> Void,
         onPause: @escaping () -> Void,
         onSkip: @escaping (Int) -> Void,
+        skipForwardSeconds: Int,
+        skipBackwardSeconds: Int,
         onSeek: @escaping (TimeInterval) -> Void,
         onNextTrack: (() -> Void)?
     ) {
@@ -50,7 +52,7 @@ final class NowPlayingManager {
             return .success
         }
 
-        commandCenter.skipForwardCommand.preferredIntervals = [10]
+        commandCenter.skipForwardCommand.preferredIntervals = [NSNumber(value: skipForwardSeconds)]
         commandCenter.skipForwardCommand.isEnabled = true
         addTarget(commandCenter.skipForwardCommand) { event in
             guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
@@ -58,7 +60,7 @@ final class NowPlayingManager {
             return .success
         }
 
-        commandCenter.skipBackwardCommand.preferredIntervals = [10]
+        commandCenter.skipBackwardCommand.preferredIntervals = [NSNumber(value: skipBackwardSeconds)]
         commandCenter.skipBackwardCommand.isEnabled = true
         addTarget(commandCenter.skipBackwardCommand) { event in
             guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
