@@ -506,6 +506,9 @@ final class RemotePlaybackActivity {
     }
 
     private func perform(_ action: RemotePlaybackAction, sessionID: String) async {
+        // A Lock Screen button can launch the app in the background, before the stored
+        // sign-in has been read.
+        await AppServices.authManager.checkStoredAuthOnce()
         let remote = AppServices.remoteSessions
         remote.attach(AppServices.authManager)
         remote.selectedID = sessionID
