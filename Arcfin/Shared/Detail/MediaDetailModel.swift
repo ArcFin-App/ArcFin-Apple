@@ -15,6 +15,7 @@ final class MediaDetailModel {
     private(set) var detail: MediaItemDetail?
     private(set) var awards: [WikidataAward] = []
     private(set) var isLoading = true
+    private var hasLoaded = false
     private(set) var isFavorite = false
     private(set) var likes: Bool?
     private(set) var isWatched = false
@@ -103,23 +104,75 @@ final class MediaDetailModel {
 
     func load(authManager: AuthManager, seerrRepo: SeerrRepository, downloadManager: DownloadManager?,
               trailers trailerLoading: TrailerLoading, seriesOpensOnSeasonInProgress: Bool) async {
+        // Coming back to the page (from a cast member, a title below) re-runs the view's task;
+        // the page is already there, so only what can have changed meanwhile is re-read.
+        if hasLoaded {
+            await refreshAfterPlayback(waitForReport: false, authManager: authManager)
+            return
+        }
+        guard case let (cred, header)? = session(authManager) else {
+            isLoading = false
+            return
+        }
         isLoading = true
-        defer { isLoading = false }
-        guard case let (cred, header)? = session(authManager) else { return }
-
-        async let detailTask = client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
         if case .withPage = trailerLoading {} else { trailers = [] }
 
         // Without a connection, a downloaded title still has its full page from when it was saved.
-        let fetchedDetail = (try? await detailTask) ?? downloadManager?.savedDetail(itemId: item.id)
+        let fetchedDetail = (try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id))
+            ?? downloadManager?.savedDetail(itemId: item.id)
         detail = fetchedDetail
         isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
         likes = fetchedDetail?.item.userData?.likes ?? item.userData?.likes
         isWatched = fetchedDetail?.item.userData?.played ?? item.userData?.played ?? false
-        if item.type == .episode, let seriesId = item.seriesId {
-            seriesItem = (try? await client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId))?.item
+        // Play, the overview and the cast only need the item itself; every other section fills
+        // in as its own requests land.
+        isLoading = false
+
+        remoteTrailer = nil
+        if case .alongside(let youTubeFallback) = trailerLoading {
+            Task {
+                let fetchedTrailers = (try? await client.getTrailers(
+                    credential: cred,
+                    authHeader: header,
+                    itemId: item.id,
+                    limit: 6
+                )) ?? []
+                trailers = fetchedTrailers
+                // Only fall back to a remote (YouTube) trailer once we know there's
+                // genuinely no local one — a local file always streams better than an
+                // embedded web player.
+                if fetchedTrailers.isEmpty, youTubeFallback {
+                    remoteTrailer = fetchedDetail?.remoteTrailers.first { $0.youTubeVideoID != nil }
+                }
+            }
         }
 
+        // Seasons and episodes don't wait on Seerr, which is another server that can be slow.
+        await withDiscardingTaskGroup { group in
+            group.addTask { @MainActor in
+                guard self.item.type == .episode, let seriesId = self.item.seriesId else { return }
+                self.seriesItem = (try? await self.client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId))?.item
+            }
+            group.addTask { @MainActor in
+                if case .withPage = trailerLoading {
+                    // Awaited ahead of the rows below it — a trailer row popping in after them
+                    // shoved Cast/Recommended down into an already-settled, already-focused
+                    // layout, reading as an unexplained gap.
+                    self.trailers = (try? await self.client.getTrailers(
+                        credential: cred, authHeader: header, itemId: self.item.id, limit: 6)) ?? []
+                }
+                await self.loadRelated(detail: fetchedDetail, credential: cred, header: header, seerrRepo: seerrRepo)
+            }
+            group.addTask { @MainActor in
+                await self.loadSeasons(credential: cred, header: header, preferringProgress: seriesOpensOnSeasonInProgress)
+            }
+        }
+        if !Task.isCancelled { hasLoaded = true }
+    }
+
+    /// Seerr's recommendations, or the server's own similar titles and recommendations.
+    private func loadRelated(detail fetchedDetail: MediaItemDetail?, credential cred: ServerCredential,
+                             header: String, seerrRepo: SeerrRepository) async {
         if let fetchedDetail, let mediaType = Self.seerrMediaType(for: fetchedDetail.item),
            let tmdbId = fetchedDetail.item.tmdbId {
             seerrRelatedItems = await seerrRepo.relatedMedia(mediaType: mediaType, mediaId: tmdbId)
@@ -148,40 +201,13 @@ final class MediaDetailModel {
             }
         }
         jellyfinRecommended = recommended
+    }
 
-        remoteTrailer = nil
-        switch trailerLoading {
-        case .skipped:
-            break
-        case .alongside(let youTubeFallback):
-            Task {
-                let fetchedTrailers = (try? await client.getTrailers(
-                    credential: cred,
-                    authHeader: header,
-                    itemId: item.id,
-                    limit: 6
-                )) ?? []
-                trailers = fetchedTrailers
-                // Only fall back to a remote (YouTube) trailer once we know there's
-                // genuinely no local one — a local file always streams better than an
-                // embedded web player.
-                if fetchedTrailers.isEmpty, youTubeFallback {
-                    remoteTrailer = fetchedDetail?.remoteTrailers.first { $0.youTubeVideoID != nil }
-                }
-            }
-        case .withPage:
-            // Awaited like every other section's fetch above — a detached Task here let the
-            // page finish loading and render (isLoading already false) before trailers arrived,
-            // so trailersSection popped in late and shoved Cast/Recommended down into an
-            // already-settled, already-focused layout, reading as an unexplained gap.
-            trailers = (try? await client.getTrailers(
-                credential: cred, authHeader: header, itemId: item.id, limit: 6)) ?? []
-        }
-
+    private func loadSeasons(credential cred: ServerCredential, header: String, preferringProgress: Bool) async {
         guard let seriesId = seasonSeriesId else { return }
         seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: seriesId)) ?? []
         guard let first = seasons.first else { return }
-        var target = season(for: item, in: seasons, preferringProgress: seriesOpensOnSeasonInProgress) ?? first
+        var target = season(for: item, in: seasons, preferringProgress: preferringProgress) ?? first
         if item.type == .series,
            let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId) {
             // Ask the server which episode is next — use its season and scroll to it.
