@@ -85,11 +85,15 @@ final class LiveUpdates {
     }
 
     // Progress saves arrive every few seconds while something plays anywhere, so changes are
-    // gathered and Home refreshes at most once per window.
+    // gathered and Home refreshes at most once per window. While a player is open here its own
+    // saves would refresh Home every window behind it, so it waits and refreshes once on close.
     private func scheduleWatchStateRefresh(credential: ServerCredential, authClient: JellyfinAuthClient) {
         guard watchStateTask == nil else { return }
         watchStateTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(10))
+            while PlayerActivity.shared.isPlayerOpen, !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(2))
+            }
             guard !Task.isCancelled, let self else { return }
             await self.mediaRepo.refreshWatchState(credential: credential, authClient: authClient)
             self.watchStateTask = nil
