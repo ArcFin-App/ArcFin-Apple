@@ -408,6 +408,7 @@ struct MusicArtistView: View {
                         let id = artist.id
                         Task { await MusicActions.instantMix(from: id) }
                     }
+                    MusicArtistDownloadButton(artist: artist, albums: albums.items)
                 }
             }
         }

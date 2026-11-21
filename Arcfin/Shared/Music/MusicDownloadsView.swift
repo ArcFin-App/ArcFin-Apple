@@ -28,6 +28,30 @@ struct MusicDownloadButton: View {
     }
 }
 
+/// Download, Downloading or Remove Download for everything an artist made, judged by the
+/// albums on their page.
+struct MusicArtistDownloadButton: View {
+    let artist: MusicArtist
+    let albums: [MusicAlbum]
+    private var downloads: MusicDownloads { .shared }
+
+    var body: some View {
+        let ids = Set(albums.map(\.id))
+        let saved = downloads.savedSongs(inAlbums: ids)
+        let expected = albums.reduce(0) { $0 + ($1.trackCount ?? 0) }
+        if downloads.queue.contains(where: { $0.albumId.map(ids.contains) ?? false }) {
+            Button("Downloading", systemImage: "arrow.down.circle.dotted") {}
+                .disabled(true)
+        } else if !albums.isEmpty, expected > 0, saved.count >= expected {
+            Button("Remove Download", systemImage: "trash", role: .destructive) { downloads.remove(saved) }
+        } else {
+            Button("Download All Albums", systemImage: "arrow.down.circle") {
+                Task { await downloads.download(artist: artist) }
+            }
+        }
+    }
+}
+
 /// A small mark on a saved song.
 struct MusicDownloadedMark: View {
     let songID: String
@@ -248,6 +272,9 @@ private struct MusicDownloadingRow: View {
                         .foregroundStyle(DT.Color.textSecondary)
                 }
             }
+            // Only the progress bar spans the row by itself; waiting, the text alone left the
+            // row squeezed to its width.
+            .frame(maxWidth: .infinity, alignment: .leading)
             if let progress {
                 Text(progress, format: .percent.precision(.fractionLength(0)).rounded(rule: .down))
                     .font(.caption.weight(.semibold))

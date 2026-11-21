@@ -227,6 +227,26 @@ final class MusicDownloads {
         Task { download(await MusicActions.albumSongs(album), album: album) }
     }
 
+    /// Every album the artist made, each kept with its name and cover as an album's own
+    /// Download does.
+    func download(artist: MusicArtist) async {
+        var start = 0
+        while true {
+            guard let page = try? await MusicAPI.call({
+                try await $0.getMusicAlbums(credential: $1, authHeader: $2, libraryId: nil, sort: .year,
+                                            ascending: false, filter: MusicFilter(artistId: artist.id), startIndex: start)
+            }) else { return }
+            for album in page.albums { download(await MusicActions.albumSongs(album), album: album) }
+            start += page.albums.count
+            if page.albums.isEmpty || start >= page.total { return }
+        }
+    }
+
+    /// The saved songs from these albums.
+    func savedSongs(inAlbums ids: Set<String>) -> [MusicSong] {
+        mine.map(\.song).filter { $0.albumId.map(ids.contains) ?? false }
+    }
+
     func remove(_ songs: [MusicSong]) {
         let ids = Set(songs.map(\.id))
         stop(ids)
