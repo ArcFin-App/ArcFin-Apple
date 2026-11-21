@@ -237,6 +237,7 @@ final class DownloadManager: NSObject {
         #if canImport(ActivityKit) && os(iOS)
         reconcileStaleActivitiesOnLaunch()
         #endif
+        removeDownloadsWithMissingFiles()
         retryUnfinishedDownloads()
         Task {
             await restoreSavedQueue()
@@ -269,6 +270,22 @@ final class DownloadManager: NSObject {
     }
 
     private static let lowSpaceThreshold = 2_000_000_000
+
+    /// Download records come back with a restored backup but their files don't (the folders
+    /// are excluded from it), so each would be listed as downloaded and play a black screen.
+    private func removeDownloadsWithMissingFiles() {
+        #if canImport(UIKit) && !os(tvOS)
+        // Before the first unlock, protected files can't be relied on to be seen.
+        guard UIApplication.shared.isProtectedDataAvailable else { return }
+        #endif
+        guard let modelContext, let items = try? modelContext.fetch(FetchDescriptor<DownloadedItem>()) else { return }
+        let missing = items.filter {
+            !FileManager.default.fileExists(atPath: DownloadStore.directory(for: $0.itemId).appendingPathComponent($0.videoFileName).path)
+        }
+        guard !missing.isEmpty else { return }
+        Self.smartLog.notice("Removing \(missing.count, privacy: .public) download(s) whose video file is gone")
+        deleteDownloads(missing)
+    }
 
     // MARK: - Room for downloads
 
