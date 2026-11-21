@@ -83,6 +83,13 @@ struct MainTabView: View {
                 music.isShowingNowPlaying = false
                 if AppServices.music.isActive { selection = "nowPlaying" } else { wantsNowPlaying = true }
             }
+            // A title to play from Siri, the Top Shelf or another device: Home plays it.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { _ in
+                selection = "home"
+            }
+            .onAppear {
+                if UserDefaults.standard.string(forKey: "arcfin.pendingPlayID") != nil { selection = "home" }
+            }
             .appSheet(item: $tagEditor.item, title: "Tags", systemImage: "tag") { item in
                 EditTagsSheet(item: item)
             }

@@ -96,6 +96,9 @@ struct MainTabView: View {
                     UserDefaults.standard.removeObject(forKey: "arcfin.pendingDiscover")
                     selectedTab = visibleTabs.contains(.requests) ? .requests : .browse
                 }
+                // A route that came in before the tabs were up: Library and Home take it from here.
+                if UserDefaults.standard.bool(forKey: "arcfin.pendingShowDownloads") { selectedTab = .browse }
+                if UserDefaults.standard.string(forKey: "arcfin.pendingPlayID") != nil { selectedTab = .home }
             }
             // Siri / Shortcuts search: results are shown by the Browse tab.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinSearch)) { _ in
@@ -106,6 +109,10 @@ struct MainTabView: View {
                 selectedTab = .home
             }
             .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
+                selectedTab = .home
+            }
+            // A title to play from a notification, widget, Siri or another device: Home plays it.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { _ in
                 selectedTab = .home
             }
         }
