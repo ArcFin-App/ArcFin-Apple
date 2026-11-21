@@ -233,7 +233,7 @@ nonisolated enum BackgroundRefresh {
                                      authorizeQuickConnect: authorizer,
                                      onSavedPasswordRejected: { try? KeychainStore().deleteSeerrPassword() })
 
-        if requestUpdates, let requests = try? await client.getRequests() {
+        if requestUpdates, let requests = try? await client.getRequests(limit: 100) {
             await announceRequestChanges(requests)
         }
         guard !Task.isCancelled else { return }
