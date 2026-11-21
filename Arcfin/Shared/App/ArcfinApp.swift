@@ -40,7 +40,11 @@ enum AppServices {
     static let scenes = ScenePresence()
     /// Past the app lock (or there's none) this launch. A player window brought back on
     /// relaunch closes rather than play ahead of the lock.
-    static var hasPassedLock = false
+    static var hasPassedLock = false {
+        didSet {
+            if hasPassedLock, !oldValue { NotificationCenter.default.post(name: .arcfinPassedLock, object: nil) }
+        }
+    }
 }
 
 /// Whether any of the app's windows is in front. A window's own scene phase can't say that:
