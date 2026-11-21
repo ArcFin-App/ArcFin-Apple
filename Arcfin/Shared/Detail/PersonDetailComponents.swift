@@ -12,6 +12,9 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
     let model: PersonDetailModel
     let columns: [GridItem]
     let creditScale: CGFloat
+    /// The artwork for a library title's card, where the platform's card isn't a portrait
+    /// poster; the primary image otherwise.
+    var cardImageURL: ((MediaItem) -> URL?)? = nil
     /// Each platform's button around a library title's poster.
     @ViewBuilder let itemLink: (MediaItem, PosterCard) -> ItemLink
     /// Each platform's button around a credit Seerr can request.
@@ -51,7 +54,7 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
                                 itemLink(item, PosterCard(
                                     title: item.name,
                                     subtitle: item.productionYear.map { String($0) },
-                                    imageURL: mediaRepo.imageURL(for: item)
+                                    imageURL: cardImageURL.map { $0(item) } ?? mediaRepo.imageURL(for: item)
                                 ))
                             }
                         }
