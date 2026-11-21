@@ -661,14 +661,14 @@ final class MediaDetailModel {
     }
 
     /// The library's copy when the server has it, the title's Seerr page when it's already
-    /// requested, and only otherwise the request sheet.
+    /// requested or this Seerr account can't request it, and only otherwise the request sheet.
     func destination(forRelated item: SeerrItem, authManager: AuthManager, seerrRepo: SeerrRepository) async -> RelatedDestination {
         if case let (cred, header)? = session(authManager),
            let local = try? await client.findItem(
                credential: cred, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
                title: item.title, year: item.year.flatMap { Int($0.prefix(4)) }) {
             return .library(local)
-        } else if seerrRepo.isRequested(item) {
+        } else if seerrRepo.isRequested(item) || !seerrRepo.mayRequest(item.mediaType) {
             return .seerrPage(item)
         } else {
             return .request(item)

@@ -605,7 +605,7 @@ private struct HomeSeerrQuickLookMenu: View {
         if let year = item.year {
             Label(year, systemImage: "calendar")
         }
-        if !mediaRepo.hasInLibrary(item), !seerrRepo.isRequested(item) {
+        if !mediaRepo.hasInLibrary(item), !seerrRepo.isRequested(item), seerrRepo.mayRequest(item.mediaType) {
             // The same sheet a tap opens, so seasons and quality can be picked and the result shows.
             Button { request(item) } label: {
                 Label("Request via Seerr", systemImage: "plus.circle")

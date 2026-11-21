@@ -235,13 +235,13 @@ final class HomeModel {
     }
 
     /// The library's own copy when the server has the title, even where Seerr hasn't caught up
-    /// yet; the title's page when it's already requested, or there's no Seerr to request from;
-    /// otherwise the request sheet.
+    /// yet; the title's page when it's already requested, there's no Seerr to request from, or
+    /// this Seerr account can't request it; otherwise the request sheet.
     func openSeerrShelfItem(_ item: SeerrItem, authManager: AuthManager, seerrRepo: SeerrRepository) {
         Task {
             if let local = await libraryCopy(of: item, authManager: authManager) {
                 detailItem = local
-            } else if seerrRepo.isConfigured, !seerrRepo.isRequested(item) {
+            } else if seerrRepo.isConfigured, !seerrRepo.isRequested(item), seerrRepo.mayRequest(item.mediaType) {
                 seerrRequestItem = item
             } else {
                 seerrDetailItem = item

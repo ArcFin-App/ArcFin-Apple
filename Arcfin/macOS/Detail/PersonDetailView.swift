@@ -14,6 +14,7 @@ struct PersonDetailView: View {
     @State private var selectedItem: MediaItem?
     @Namespace private var zoomNamespace
     @State private var requestingCredit: SeerrItem?
+    @State private var openedCredit: SeerrItem?
 
     // Fixed 3-up stretches cards absurdly wide on a resizable Mac window — adaptive
     // reflows the grid as the window resizes instead.
@@ -30,7 +31,7 @@ struct PersonDetailView: View {
                 .buttonStyle(PressableButtonStyle())
                 .zoomTransitionSource(id: item.id, in: zoomNamespace)
         } creditLink: { credit, card in
-            Button { requestingCredit = credit.asSeerrItem } label: { card }
+            Button { openCredit(credit.asSeerrItem) } label: { card }
                 .buttonStyle(PressableButtonStyle())
         }
         .screenBackground()
@@ -45,7 +46,13 @@ struct PersonDetailView: View {
             MediaDetailView(item: item, zoomNamespace: zoomNamespace)
                 .zoomNavigationTransition(id: item.id, in: zoomNamespace)
         }
+        .navigationDestination(item: $openedCredit) { SeerrItemDetailView(item: $0) }
         .task { await model.load(authManager: authManager, seerrRepo: seerrRepo) }
+    }
+
+    /// The request sheet, or the title's Seerr page when this Seerr account can't request it.
+    private func openCredit(_ item: SeerrItem) {
+        if seerrRepo.mayRequest(item.mediaType) { requestingCredit = item } else { openedCredit = item }
     }
 }
 
