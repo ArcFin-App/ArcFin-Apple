@@ -238,6 +238,7 @@ final class DownloadManager: NSObject {
         reconcileStaleActivitiesOnLaunch()
         #endif
         retryUnfinishedDownloads()
+        Task { await restoreSavedQueue() }
         runSmartDownloadsOnLaunch()
         removeExpiredDownloads()
         purgeWatchedDownloads()
@@ -862,6 +863,7 @@ final class DownloadManager: NSObject {
         cancelledItemIds.remove(item.id)
         if viaSmart { Self.smartItemIds.insert(item.id) }
         pendingQueue.append((item, credential, authHeader, bitrateCap, tracks, viaSmart))
+        saveQueueEntry(SavedQueueEntry(item: item, credentialId: credential.id.uuidString, bitrateCap: bitrateCap, tracks: tracks, viaSmart: viaSmart))
         #if canImport(ActivityKit) && os(iOS)
         if isFreshQueue && liveActivityPendingFinish == nil {
             queueCompletedCount = 0
@@ -903,6 +905,7 @@ final class DownloadManager: NSObject {
             }
             let next = pendingQueue.removeFirst()
             if !isDownloaded(next.item.id) { return next }
+            removeSavedQueueEntry(itemId: next.item.id)
         }
         return nil
     }
@@ -1165,6 +1168,7 @@ final class DownloadManager: NSObject {
             }
         }
         if !keptForRetry { removePendingDescriptor(itemId: item.id) }
+        removeSavedQueueEntry(itemId: item.id)
         runTokens[item.id] = nil
         expectedBytes[item.id] = nil
         estimatedStreamBytes[item.id] = nil
@@ -1426,6 +1430,7 @@ final class DownloadManager: NSObject {
         DownloadStore.deleteDirectory(for: itemId)
         endBackgroundTaskIfIdle()
         removePendingDescriptor(itemId: itemId)
+        removeSavedQueueEntry(itemId: itemId)
         #if canImport(ActivityKit) && os(iOS)
         if wasQueued {
             queueTotalCount = max(queueTotalCount - 1, queueCompletedCount)
@@ -1530,6 +1535,112 @@ final class DownloadManager: NSObject {
               !names.contains(where: { $0.hasPrefix("video.part-") })
         else { return nil }
         return names.first { $0.hasPrefix("video.") }.map { dir.appendingPathComponent($0).path }
+    }
+
+    // MARK: - Saved queue (the app ended with titles waiting or downloading)
+
+    /// A title waiting or downloading, kept until it ends so a relaunch can queue it again.
+    /// The profile is looked up by id once the saved sign-ins are read; no token is kept here.
+    private struct SavedQueueEntry: Codable {
+        let itemId: String
+        let name: String
+        let typeRaw: String
+        var seriesId: String?
+        var seriesName: String?
+        var seasonNumber: Int?
+        var episodeNumber: Int?
+        let credentialId: String
+        let bitrateCap: Int?
+        let tracks: DownloadTracks
+        let viaSmart: Bool
+
+        init(item: MediaItem, credentialId: String, bitrateCap: Int?, tracks: DownloadTracks, viaSmart: Bool) {
+            itemId = item.id; name = item.name; typeRaw = item.type.rawValue
+            seriesId = item.seriesId; seriesName = item.seriesName
+            seasonNumber = item.parentIndexNumber; episodeNumber = item.indexNumber
+            self.credentialId = credentialId; self.bitrateCap = bitrateCap; self.tracks = tracks; self.viaSmart = viaSmart
+        }
+
+        var item: MediaItem {
+            MediaItem(id: itemId, name: name, type: MediaType(rawValue: typeRaw) ?? .movie, seriesName: seriesName,
+                      indexNumber: episodeNumber, parentIndexNumber: seasonNumber, seriesId: seriesId)
+        }
+    }
+
+    private static let savedQueueKey = "arcfin.downloadQueue"
+
+    private func loadSavedQueue() -> [SavedQueueEntry] {
+        guard let data = UserDefaults.standard.data(forKey: Self.savedQueueKey),
+              let decoded = try? JSONDecoder().decode([SavedQueueEntry].self, from: data)
+        else { return [] }
+        return decoded
+    }
+
+    private func storeSavedQueue(_ entries: [SavedQueueEntry]) {
+        if let data = try? JSONEncoder().encode(entries) { UserDefaults.standard.set(data, forKey: Self.savedQueueKey) }
+    }
+
+    private func saveQueueEntry(_ entry: SavedQueueEntry) {
+        var all = loadSavedQueue()
+        guard !all.contains(where: { $0.itemId == entry.itemId }) else { return }
+        all.append(entry)
+        storeSavedQueue(all)
+    }
+
+    private func removeSavedQueueEntry(itemId: String) {
+        let all = loadSavedQueue()
+        guard all.contains(where: { $0.itemId == itemId }) else { return }
+        storeSavedQueue(all.filter { $0.itemId != itemId })
+    }
+
+    /// Queues again what was waiting or downloading when the app was last ended. A transfer
+    /// the background session kept running is taken back as that title's own, so it shows in
+    /// Downloads and can be cancelled; one that was cut off starts over from the queue.
+    private func restoreSavedQueue() async {
+        let saved = loadSavedQueue()
+        guard !saved.isEmpty, let authManager else { return }
+        await authManager.checkStoredAuthOnce()
+        let profiles = authManager.profiles
+        // Not read yet (a locked device, a slow Keychain): left for the next launch.
+        guard !profiles.isEmpty else { return }
+        var live: [String: [URLSessionTask]] = [:]
+        for task in await session.allTasks where task.state == .running || task.state == .suspended {
+            guard let path = task.taskDescription else { continue }
+            live[URL(fileURLWithPath: path).deletingLastPathComponent().lastPathComponent, default: []].append(task)
+        }
+        let descriptors = Set(loadPendingDescriptors().map(\.itemId))
+        var restored = false
+        for entry in saved {
+            let itemId = entry.itemId
+            guard !activeItemIds.contains(itemId), !pendingQueue.contains(where: { $0.item.id == itemId }) else { continue }
+            guard !isDownloaded(itemId),
+                  let credential = profiles.first(where: { $0.id.uuidString == entry.credentialId })
+            else {
+                removeSavedQueueEntry(itemId: itemId)
+                continue
+            }
+            // The video is here already: retryUnfinishedDownloads finishes it from the file.
+            if descriptors.contains(itemId), Self.finishedVideoPath(for: itemId) != nil {
+                removeSavedQueueEntry(itemId: itemId)
+                continue
+            }
+            let tasks = live[itemId] ?? []
+            if tasks.count == 1, let task = tasks.first as? URLSessionDownloadTask,
+               task.taskDescription?.contains("/video.part-") != true {
+                taskItemIds[task.taskIdentifier] = itemId
+                downloadTasks[itemId] = task
+                handedOffItemIds.insert(itemId)
+            } else {
+                // Range parts can't be waited on as one transfer: they start over with the title.
+                tasks.forEach { $0.cancel() }
+            }
+            let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+            if addToQueue(item: entry.item, credential: credential, authHeader: authHeader, bitrateCap: entry.bitrateCap,
+                          tracks: entry.tracks, viaSmart: entry.viaSmart) {
+                restored = true
+            }
+        }
+        if restored { await processQueue() }
     }
 
     // MARK: - Background continuation
