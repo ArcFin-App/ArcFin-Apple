@@ -93,10 +93,11 @@ public actor SeerrHTTPClient {
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
     private var loginTask: Task<Void, Error>?
-    /// Watchlist titles' details by "tv:123", kept a while: the watchlist asks Seerr for each
-    /// title one by one, and it's reloaded by Home, Discover and the Watchlist screen alike.
-    private var watchlistDetails: [String: (item: SeerrItem, fetched: Date)] = [:]
-    private static let watchlistDetailLifetime: TimeInterval = 600
+    /// Watchlist and request titles' details by "tv:123", kept a while: both lists ask Seerr
+    /// for each title one by one, and they're reloaded by Home, Discover, Requests and after
+    /// every request, approval or decline.
+    private var titleDetails: [String: (item: SeerrItem, fetched: Date)] = [:]
+    private static let titleDetailLifetime: TimeInterval = 600
     private let session: URLSession
     // UserDefaults key used to persist a per-URL auth-failure cooldown across cold launches.
     private let authFailedKey: String
@@ -385,13 +386,13 @@ public actor SeerrHTTPClient {
             page += 1
         }
 
-        if refresh { watchlistDetails = [:] }
+        if refresh { titleDetails = [:] }
         let now = Date()
         var items = [SeerrItem?](repeating: nil, count: raw.count)
         var missing: [(index: Int, key: String, entry: SeerrWatchlistItemResponse)] = []
         for (index, r) in raw.enumerated() {
             let key = "\(r.mediaType ?? "movie"):\(r.tmdbId ?? -1)"
-            if let cached = watchlistDetails[key], now.timeIntervalSince(cached.fetched) < Self.watchlistDetailLifetime {
+            if let cached = titleDetails[key], now.timeIntervalSince(cached.fetched) < Self.titleDetailLifetime {
                 items[index] = cached.item
             } else {
                 missing.append((index, key, r))
@@ -409,25 +410,34 @@ public actor SeerrHTTPClient {
         }
         for (index, key, item) in fetched {
             items[index] = item
-            if let item { watchlistDetails[key] = (item, now) }
+            if let item { titleDetails[key] = (item, now) }
         }
         return items.compactMap { $0 }
     }
 
     // MARK: - Requests
 
-    public func getRequests(filter: String = "all", skip: Int = 0, take: Int = 40) async throws -> [SeerrRequestItem] {
+    /// Every request, newest first, up to `limit`: someone who manages requests needs the
+    /// older pending ones too, not only the newest page.
+    public func getRequests(filter: String = "all", limit: Int = 1000) async throws -> [SeerrRequestItem] {
         try await ensureAuthenticated()
-        var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/request"),
-                                  resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            URLQueryItem(name: "filter", value: filter),
-            URLQueryItem(name: "skip", value: "\(skip)"),
-            URLQueryItem(name: "take", value: "\(take)"),
-        ]
-        let data = try await fetch(comps.url!)
         struct Page: Decodable { let results: [SeerrRequestResponse] }
-        let raw = try JSONDecoder().decode(Page.self, from: data).results
+        let take = 100
+        var collected: [SeerrRequestResponse] = []
+        while collected.count < limit {
+            var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/request"),
+                                      resolvingAgainstBaseURL: false)!
+            comps.queryItems = [
+                URLQueryItem(name: "filter", value: filter),
+                URLQueryItem(name: "skip", value: "\(collected.count)"),
+                URLQueryItem(name: "take", value: "\(take)"),
+            ]
+            let results = try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!)).results
+            collected += results
+            if results.count < take { break }
+        }
+        let raw = collected
+        let now = Date()
 
         // The request list only carries tmdbId/mediaType — title and artwork
         // live on TMDB, so fetch each item's detail to fill them in. A failure here used to
@@ -443,9 +453,14 @@ public actor SeerrHTTPClient {
         await withTaskGroup(of: (Int, SeerrRequestItem).self) { group in
             func fetchItem(_ index: Int) async -> (Int, SeerrRequestItem) {
                 let r = raw[index]
+                let key = "\(r.media.mediaType ?? "movie"):\(r.media.tmdbId ?? -1)"
+                if let cached = titleDetails[key], now.timeIntervalSince(cached.fetched) < Self.titleDetailLifetime {
+                    return (index, r.toItem(detail: cached.item))
+                }
                 var detail: SeerrItem?
                 do {
                     detail = try await mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
+                    if let detail { titleDetails[key] = (detail, now) }
                 } catch {
                     let nsError = error as NSError
                     Telemetry.logger(category: "SeerrHTTPClient").error(
