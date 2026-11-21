@@ -51,12 +51,12 @@ extension View {
     }
 }
 
-/// A settings page: a grouped form, as System Settings draws one.
+/// A settings page: a list across the pane, as Settings › Music draws one, so every page
+/// matches it.
 struct SettingsForm<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        Form { content }
-            .formStyle(.grouped)
+        List { content }
     }
 }
