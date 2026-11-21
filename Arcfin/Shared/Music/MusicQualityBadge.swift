@@ -17,19 +17,10 @@ struct MusicQualityBadge: View {
 
     var body: some View {
         Button { showsDetails = true } label: {
-            Label {
-                Text(verbatim: summary)
-            } icon: {
-                Image(systemName: icon)
-            }
-            .font(.caption2.weight(.semibold))
-            .labelStyle(.titleAndIcon)
-            .padding(.horizontal, 8)
-            .padding(.vertical, 3)
-            .foregroundStyle(tint.opacity(0.75))
-            .background(tint.opacity(0.12), in: Capsule())
+            BadgeLabel(summary: summary, icon: icon, tint: tint)
         }
         .buttonStyle(.plain)
+        .focusEffectDisabled()
         .opacity(format == nil && stream == nil ? 0 : 1)
         .accessibilityHint("Shows the song's format")
         .task(id: song.id) { format = await Self.format(of: song) }
@@ -111,6 +102,9 @@ struct MusicQualityBadge: View {
             }
         }
         .presentationDetents([.medium])
+        // Not Now Playing's white: on Apple TV a focused row turns white and its text has to
+        // turn dark with it.
+        .foregroundStyle(.primary)
     }
 
     private var playing: String {
@@ -121,5 +115,29 @@ struct MusicQualityBadge: View {
         case .converted(nil): String(localized: "Converted by the server to MP3 as it streams.")
         case nil: String(localized: "Not playing yet.")
         }
+    }
+}
+
+/// The badge's capsule, filled when it has the remote's focus so it reads on Apple TV.
+private struct BadgeLabel: View {
+    let summary: String
+    let icon: String
+    let tint: Color
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
+        Label {
+            Text(verbatim: summary)
+        } icon: {
+            Image(systemName: icon)
+        }
+        .font(.caption2.weight(.semibold))
+        .labelStyle(.titleAndIcon)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .foregroundStyle(isFocused ? Color.black : tint.opacity(0.75))
+        .background(isFocused ? Color.white : tint.opacity(0.12), in: Capsule())
+        .scaleEffect(isFocused ? 1.1 : 1)
+        .animation(DT.Animation.fast, value: isFocused)
     }
 }
