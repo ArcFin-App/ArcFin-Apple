@@ -7,6 +7,7 @@ import CoreImage
 import CoreSpotlight
 import Foundation
 import JellyfinAPI
+import Security
 import Vision
 // Not in the simulator SDK.
 #if canImport(VisualIntelligence)
@@ -25,12 +26,12 @@ nonisolated enum IntentSession {
         guard let all = try? store.allServers(), !all.isEmpty else { return nil }
         let storedID = UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap { UUID(uuidString: $0) }
         guard let credential = all.first(where: { $0.id == storedID }) ?? all.first else { return nil }
-        // A PIN that couldn't be read counts as one.
+        // While the device is locked the PIN can't be read yet, and that counts as one.
         do {
             guard try store.loadPin(for: credential.id) == nil else { return nil }
-        } catch {
+        } catch KeychainError.unexpectedStatus(let status) where status == errSecInteractionNotAllowed {
             return nil
-        }
+        } catch {}
         return credential
     }
 
