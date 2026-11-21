@@ -8,6 +8,7 @@ import AuthCore
 struct StatsView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage("statsPeriod") private var period = StatsPeriod.month
     @State private var model = StatsModel()
@@ -30,6 +31,15 @@ struct StatsView: View {
         .task(id: authManager.state.credential?.id) { await model.load(authManager: authManager) }
         .task(id: model.input(period: period)) { await model.compute(period: period, reduceMotion: reduceMotion) }
         .onChange(of: period) { model.offset = 0 }
+        // No pull to refresh on Apple TV: pick up what's been watched since when the tab comes
+        // back into view or the app comes back to the front.
+        .onAppear { refresh() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { refresh() } }
+    }
+
+    private func refresh() {
+        guard model.phase != .loading else { return }
+        Task { await model.load(authManager: authManager) }
     }
 
     @ViewBuilder
