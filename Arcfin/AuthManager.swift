@@ -569,8 +569,8 @@ final class AuthManager {
     nonisolated enum StoredPIN: Sendable, Equatable {
         case none
         case set(String)
-        /// The Keychain didn't answer (the device locked, say). Counts as a PIN that can't be
-        /// checked yet, never as no PIN.
+        /// The device is locked, so the Keychain can't answer yet. Counts as a PIN that can't
+        /// be checked yet, never as no PIN.
         case unreadable
     }
 
@@ -597,8 +597,23 @@ final class AuthManager {
 
     func storedPIN(for credentialID: UUID) async -> StoredPIN {
         await keychainRead { k in
-            do { return try k.loadPin(for: credentialID).map(StoredPIN.set) ?? .none } catch { return .unreadable }
+            do {
+                return try k.loadPin(for: credentialID).map(StoredPIN.set) ?? .none
+            } catch KeychainError.unexpectedStatus(let status) where status == errSecInteractionNotAllowed {
+                return .unreadable
+            } catch {
+                Self.logPINReadFailureOnce(error)
+                return .none
+            }
         }
+    }
+
+    private nonisolated static let pinReadFailureLogged = OSAllocatedUnfairLock(initialState: false)
+
+    /// Once per launch: an app built without signing gets this on every read.
+    private nonisolated static func logPINReadFailureOnce(_ error: Error) {
+        guard pinReadFailureLogged.withLock({ logged in defer { logged = true }; return !logged }) else { return }
+        keychainLog.error("Reading a PIN failed, so it counts as none: \(String(describing: error), privacy: .public)")
     }
 
     /// Checks a typed PIN against the stored one, counting wrong tries (see `PINAttempts`).
