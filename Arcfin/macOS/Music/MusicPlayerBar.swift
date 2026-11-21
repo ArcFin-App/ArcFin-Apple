@@ -82,11 +82,7 @@ struct MusicPlayerBar: View {
                 .accessibilityLabel("Next")
             toggle(systemImage: player.repeatMode == .one ? "repeat.1" : "repeat", isOn: player.repeatMode != .off,
                    label: "Repeat") {
-                player.repeatMode = switch player.repeatMode {
-                case .off: .all
-                case .all: .one
-                case .one: .off
-                }
+                AppServices.music.cycleRepeatMode()
             }
         }
         .buttonStyle(.plain)
@@ -275,12 +271,12 @@ struct MusicMacNowPlaying: View {
                 .onTapGesture(count: 2) { AppServices.music.jump(to: entry.id) }
                 .contextMenu {
                     Button("Play", systemImage: "play") { AppServices.music.jump(to: entry.id) }
-                    Button("Remove", systemImage: "minus.circle", role: .destructive) { player.remove(entry.id) }
+                    Button("Remove", systemImage: "minus.circle", role: .destructive) { AppServices.music.remove(entry.id) }
                 }
             }
             .onMove { from, to in
                 guard let source = from.first else { return }
-                player.moveUpNext(from: source, to: to > source ? to - 1 : to)
+                AppServices.music.moveUpNext(from: source, to: to > source ? to - 1 : to)
             }
         }
         .overlay {

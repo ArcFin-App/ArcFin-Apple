@@ -16,7 +16,7 @@ public struct MusicQueue: Sendable, Equatable {
         }
     }
 
-    public enum RepeatMode: String, Sendable, CaseIterable {
+    public enum RepeatMode: String, Codable, Sendable, CaseIterable {
         case off, all, one
     }
 

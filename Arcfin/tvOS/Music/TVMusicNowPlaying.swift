@@ -119,11 +119,7 @@ struct TVMusicNowPlaying: View {
                 }
                 circle(player.repeatMode == .one ? "repeat.1" : "repeat", label: "Repeat", isOn: player.repeatMode != .off,
                        small: true) {
-                    player.repeatMode = switch player.repeatMode {
-                    case .off: .all
-                    case .all: .one
-                    case .one: .off
-                    }
+                    AppServices.music.cycleRepeatMode()
                 }
                 ratingCircles(song)
                 circle("list.bullet", label: "Playing Next", isOn: panel == .upNext, small: true) { toggle(.upNext) }
@@ -196,7 +192,7 @@ struct TVMusicNowPlaying: View {
                     LazyVStack(alignment: .leading, spacing: 8) {
                         ForEach(Array(player.queue.upNext.prefix(100))) { entry in
                             TVMusicSongRow(song: entry.track, showsArtwork: true, removeTitle: "Remove",
-                                           onRemove: { player.remove(entry.id) }) {
+                                           onRemove: { AppServices.music.remove(entry.id) }) {
                                 AppServices.music.jump(to: entry.id)
                             }
                         }

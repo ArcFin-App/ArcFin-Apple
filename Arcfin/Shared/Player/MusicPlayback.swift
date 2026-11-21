@@ -190,6 +190,36 @@ final class MusicPlayback {
         onUserAction?(nil)
     }
 
+    func remove(_ id: MusicQueue.Entry.ID) {
+        player.remove(id)
+        onUserAction?(nil)
+    }
+
+    func moveUpNext(from source: Int, to destination: Int) {
+        player.moveUpNext(from: source, to: destination)
+        onUserAction?(nil)
+    }
+
+    func clearUpNext() {
+        player.clearUpNext()
+        onUserAction?(nil)
+    }
+
+    func setRepeatMode(_ mode: MusicQueue.RepeatMode) {
+        player.repeatMode = mode
+        onUserAction?(nil)
+    }
+
+    /// Off, then all, then one, as the Repeat buttons go round.
+    func cycleRepeatMode() {
+        let next: MusicQueue.RepeatMode = switch player.repeatMode {
+        case .off: .all
+        case .all: .one
+        case .one: .off
+        }
+        setRepeatMode(next)
+    }
+
     func seek(to seconds: Double) {
         defer { onUserAction?(nil) }
         guard isCasting else { return player.seek(to: seconds) }

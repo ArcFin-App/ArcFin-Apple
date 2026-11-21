@@ -604,11 +604,7 @@ private struct MusicQueuePanel: View {
                 }
                 toggle("Repeat", systemImage: player.repeatMode == .one ? "repeat.1" : "repeat",
                        isOn: player.repeatMode != .off) {
-                    player.repeatMode = switch player.repeatMode {
-                    case .off: .all
-                    case .all: .one
-                    case .one: .off
-                    }
+                    AppServices.music.cycleRepeatMode()
                 }
                 toggle("Autoplay", systemImage: "infinity", isOn: autoplay) { autoplay.toggle() }
             }
@@ -616,7 +612,7 @@ private struct MusicQueuePanel: View {
                 Text("Playing Next").font(.headline)
                 Spacer()
                 if !player.queue.upNext.isEmpty {
-                    Button("Clear") { player.clearUpNext() }
+                    Button("Clear") { music.clearUpNext() }
                         .font(.subheadline.weight(.semibold))
                 }
             }
@@ -667,11 +663,11 @@ private struct MusicQueuePanel: View {
                 }
                 .onMove { from, to in
                     guard let source = from.first else { return }
-                    player.moveUpNext(from: source, to: to > source ? to - 1 : to)
+                    music.moveUpNext(from: source, to: to > source ? to - 1 : to)
                 }
                 .onDelete { offsets in
                     let entries = Array(player.queue.upNext)
-                    offsets.map { entries[$0].id }.forEach(player.remove)
+                    offsets.map { entries[$0].id }.forEach(music.remove)
                 }
             }
             .listStyle(.plain)
