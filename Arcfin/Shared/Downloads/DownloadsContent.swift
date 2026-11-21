@@ -26,7 +26,7 @@ struct DownloadsContent<Manage: View>: View {
 
     var body: some View {
         Group {
-            if items.isEmpty && downloadManager.activeItemTitles.isEmpty {
+            if items.isEmpty && downloadManager.orderedInProgressIds.isEmpty {
                 ContentUnavailableView(
                     "No Downloads",
                     systemImage: "arrow.down.circle",
@@ -37,7 +37,7 @@ struct DownloadsContent<Manage: View>: View {
                     VStack(alignment: .leading, spacing: 28) {
                         storageCard
                         if let hold = downloadManager.queueHold { heldCard(hold) }
-                        if !downloadManager.activeItemTitles.isEmpty { downloadingSection }
+                        if !downloadManager.orderedInProgressIds.isEmpty { downloadingSection }
                         if !model.isSelecting {
                             if mergeContinueAndUpNext {
                                 if !(inProgress + upNext).isEmpty { continueSection("Continue Watching", inProgress + upNext) }
@@ -284,7 +284,7 @@ struct DownloadsContent<Manage: View>: View {
                         if model.isSelecting { model.toggleSelection(id) } else { open(item) }
                     } label: {
                         PosterTile(
-                            artwork: DownloadsModel.fileURL(item.posterFileName, in: item.itemId),
+                            artwork: DownloadsModel.fileURL(item.posterFileName, of: item),
                             title: item.name,
                             caption: [item.productionYear.map(String.init), ByteCountFormatter.string(fromByteCount: item.fileSizeBytes, countStyle: .file)]
                                 .compactMap { $0 }.joined(separator: " · "),
@@ -627,7 +627,7 @@ private struct ContinueCard: View {
     let item: DownloadedItem
 
     private var artwork: URL? {
-        let dir = DownloadStore.directory(for: item.itemId)
+        let dir = DownloadStore.directory(for: item)
         if let backdrop = item.backdropFileName { return dir.appendingPathComponent(backdrop) }
         if let seriesId = item.seriesId {
             let seriesBackdrop = DownloadStore.directory(for: seriesId).appendingPathComponent("backdrop.jpg")

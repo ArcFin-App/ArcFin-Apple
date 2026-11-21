@@ -224,7 +224,8 @@ final class DownloadManager: NSObject {
         guard self.modelContext == nil else { return }
         self.modelContext = modelContext
         self.authManager = authManager
-        downloadedIds = Set(((try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []).map(\.itemId))
+        downloadedProfiles = Dictionary(grouping: (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? [], by: \.itemId)
+            .mapValues { $0.map(\.profile) }
         // `session` was only ever touched lazily, on the first actual download action —
         // meaning after a relaunch (e.g. the app was killed while a background download
         // was in flight), nothing registered this session's delegate until the user
@@ -264,7 +265,7 @@ final class DownloadManager: NSObject {
         let days = UserDefaults.standard.integer(forKey: "removeDownloadsAfterDays")
         if days > 0 {
             let cutoff = Date().addingTimeInterval(-Double(days) * 86_400)
-            for item in items where item.downloadedAt < cutoff { markForDeletionAfterWatching(itemId: item.itemId) }
+            for item in items where item.downloadedAt < cutoff { markForDeletionAfterWatching(item) }
         }
         guard UserDefaults.standard.bool(forKey: "removeWatchedWhenLowOnSpace"),
               let free = try? DownloadStore.rootDirectory().deletingLastPathComponent()
@@ -272,7 +273,7 @@ final class DownloadManager: NSObject {
         else { return }
         var shortfall = Int64(Self.lowSpaceThreshold) - Int64(free)
         for item in items.filter(\.played).sorted(by: { $0.downloadedAt < $1.downloadedAt }) where shortfall > 0 {
-            markForDeletionAfterWatching(itemId: item.itemId)
+            markForDeletionAfterWatching(item)
             shortfall -= item.fileSizeBytes
         }
     }
@@ -288,7 +289,7 @@ final class DownloadManager: NSObject {
         #endif
         guard let modelContext, let items = try? modelContext.fetch(FetchDescriptor<DownloadedItem>()) else { return }
         let missing = items.filter {
-            !FileManager.default.fileExists(atPath: DownloadStore.directory(for: $0.itemId).appendingPathComponent($0.videoFileName).path)
+            !FileManager.default.fileExists(atPath: DownloadStore.directory(for: $0).appendingPathComponent($0.videoFileName).path)
         }
         guard !missing.isEmpty else { return }
         Self.smartLog.notice("Removing \(missing.count, privacy: .public) download(s) whose video file is gone")
@@ -353,23 +354,32 @@ final class DownloadManager: NSObject {
     /// Queues a finished download for removal instead of deleting it on the spot: the player
     /// is usually still on screen above a detail view bound to that SwiftData row, and
     /// reading a deleted model from there is unsafe. See purgeWatchedDownloads.
-    func markForDeletionAfterWatching(itemId: String) {
-        var ids = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
-        guard !ids.contains(itemId) else { return }
-        ids.append(itemId)
-        UserDefaults.standard.set(ids, forKey: Self.pendingWatchedDeleteKey)
+    func markForDeletionAfterWatching(_ item: DownloadedItem) {
+        var keys = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
+        guard !keys.contains(item.profileKey) else { return }
+        keys.append(item.profileKey)
+        UserDefaults.standard.set(keys, forKey: Self.pendingWatchedDeleteKey)
     }
 
     /// Run at launch and whenever the Downloads list appears — points where no detail view
     /// can be holding one of the queued rows.
     func purgeWatchedDownloads() {
-        let ids = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
-        guard !ids.isEmpty, let modelContext else { return }
-        // A download whose watching here hasn't reached the server yet stays until it has:
-        // deleting it would lose that for good.
-        let unsynced = Set(((try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.needsSync }))) ?? []).map(\.itemId))
-        UserDefaults.standard.set(ids.filter(unsynced.contains), forKey: Self.pendingWatchedDeleteKey)
-        for id in ids where !unsynced.contains(id) { deleteDownload(itemId: id) }
+        let keys = UserDefaults.standard.stringArray(forKey: Self.pendingWatchedDeleteKey) ?? []
+        guard !keys.isEmpty, let modelContext, let items = try? modelContext.fetch(FetchDescriptor<DownloadedItem>()) else { return }
+        var waiting: [String] = []
+        var removing: [DownloadedItem] = []
+        for key in keys {
+            let marked = items.filter { $0.matches(profileKey: key) }
+            // A download whose watching here hasn't reached the server yet stays until it has:
+            // deleting it would lose that for good.
+            if marked.contains(where: \.needsSync) {
+                waiting.append(key)
+            } else {
+                removing += marked.filter { item in !removing.contains { $0 === item } }
+            }
+        }
+        UserDefaults.standard.set(waiting, forKey: Self.pendingWatchedDeleteKey)
+        deleteDownloads(removing)
     }
 
     /// Brings each download's watched state and position in line with the server, after first
@@ -385,7 +395,7 @@ final class DownloadManager: NSObject {
         let deletesWatched = UserDefaults.standard.bool(forKey: "deleteDownloadsAfterWatching")
         for items in Dictionary(grouping: settled, by: { "\($0.serverId)|\($0.userId)" }).values {
             guard let first = items.first,
-                  let credential = profiles.first(where: { $0.id.uuidString == first.serverId && $0.userID == first.userId }),
+                  let credential = OfflineProgressSync.credential(for: first.profile, in: profiles),
                   let server = try? await client.getUserData(credential: credential, authHeader: authClient.authHeader(token: credential.accessToken),
                                                              itemIds: items.map(\.itemId))
             else { continue }
@@ -405,7 +415,7 @@ final class DownloadManager: NSObject {
                 item.played = remote.played
                 item.playbackPositionTicks = remote.played ? 0 : remote.playbackPositionTicks
                 // Delete After Watching counts finishing it anywhere, not only here.
-                if newlyWatched && deletesWatched { markForDeletionAfterWatching(itemId: item.itemId) }
+                if newlyWatched && deletesWatched { markForDeletionAfterWatching(item) }
             }
             await saveMissingSkipSegments(items, credential: credential, authHeader: authClient.authHeader(token: credential.accessToken))
         }
@@ -651,8 +661,10 @@ final class DownloadManager: NSObject {
         for entry in pendingQueue where entry.bitrateCap == nil {
             if hold(viaSmart: entry.viaSmart) != nil { break }
             let itemId = entry.item.id
-            guard !handedOffItemIds.contains(itemId), !isDownloaded(itemId),
-                  let dir = try? DownloadStore.ensureDirectory(for: itemId) else { continue }
+            let profile = DownloadProfile(entry.credential)
+            guard !handedOffItemIds.contains(itemId), !isDownloaded(itemId, by: profile) else { continue }
+            let folder = newFolderName(for: itemId, profile: profile)
+            guard let dir = try? DownloadStore.ensureDirectory(forFolder: folder) else { continue }
             var req = URLRequest(url: JellyfinMediaClient.originalFileDownloadURL(
                 baseURL: entry.credential.baseURL, itemID: itemId, token: entry.credential.accessToken))
             for (name, value) in CustomHTTPHeaders.current { req.setValue(value, forHTTPHeaderField: name) }
@@ -664,7 +676,7 @@ final class DownloadManager: NSObject {
             downloadTasks[itemId] = task
             handedOffItemIds.insert(itemId)
             // Lets a relaunch after the app was ended finish the title from the file alone.
-            savePendingDescriptor(itemId: itemId, credentialId: entry.credential.id.uuidString, bitrateCap: nil, tracks: entry.tracks)
+            savePendingDescriptor(itemId: itemId, credentialId: entry.credential.id.uuidString, folder: folder, bitrateCap: nil, tracks: entry.tracks)
             task.resume()
         }
         #endif
@@ -691,11 +703,62 @@ final class DownloadManager: NSObject {
         }
     }
 
-    /// Every title with a download record, kept here so a Download button can ask on each
-    /// render without a SwiftData fetch. Filled in configure; changed only by insert and delete.
-    private var downloadedIds: Set<String> = []
+    /// Every title with a download record and whose each one is, kept here so a Download
+    /// button can ask on each render without a SwiftData fetch. Filled in configure; changed
+    /// only by insert and delete.
+    private var downloadedProfiles: [String: [DownloadProfile]] = [:]
 
-    func isDownloaded(_ itemId: String) -> Bool { downloadedIds.contains(itemId) }
+    /// Downloaded by the profile in use.
+    func isDownloaded(_ itemId: String) -> Bool { isDownloaded(itemId, by: currentProfile) }
+
+    private func isDownloaded(_ itemId: String, by profile: DownloadProfile?) -> Bool {
+        guard let profile else { return false }
+        return downloadedProfiles[itemId]?.contains(where: profile.owns) ?? false
+    }
+
+    /// The profile in use or, offline before its sign-in is confirmed, the one used last.
+    /// Each profile sees, plays and counts only its own downloads.
+    var currentProfile: DownloadProfile? {
+        guard let authManager else { return nil }
+        if let credential = authManager.state.credential { return DownloadProfile(credential) }
+        let active = UserDefaults.standard.string(forKey: "arcfin.activeProfileID")
+        return authManager.profiles.first { $0.id.uuidString == active }.map(DownloadProfile.init)
+    }
+
+    func ownDownloads(_ items: [DownloadedItem]) -> [DownloadedItem] {
+        let profile = currentProfile
+        return items.filter { $0.belongs(to: profile) }
+    }
+
+    /// The profile in use's download of this title.
+    func ownDownload(itemId: String) -> DownloadedItem? {
+        let profile = currentProfile
+        let rows = (try? modelContext?.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId }))) ?? []
+        return rows.first { $0.belongs(to: profile) }
+    }
+
+    /// Whose each title waiting or downloading is: only one profile's copy of a title is under
+    /// way at a time.
+    private(set) var inFlightProfiles: [String: DownloadProfile] = [:]
+
+    /// Waiting or downloading for the profile in use.
+    func isInProgress(_ itemId: String) -> Bool {
+        guard activeItemTitles[itemId] != nil, let owner = inFlightProfiles[itemId] else { return false }
+        return currentProfile?.owns(owner) ?? false
+    }
+
+    /// A new download's folder: the title's own, unless another profile's copy is in it.
+    private func newFolderName(for itemId: String, profile: DownloadProfile) -> String {
+        let rows = (try? modelContext?.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId }))) ?? []
+        let taken = rows.contains { $0.storedFolderName == itemId && !$0.belongs(to: profile) }
+        return DownloadStore.folderName(for: itemId, profileId: profile.id, itemFolderTaken: taken)
+    }
+
+    /// Where a transfer handed to the background session is putting the title's video.
+    private func handedOffFolder(_ itemId: String) -> String? {
+        guard handedOffItemIds.contains(itemId), let path = downloadTasks[itemId]?.taskDescription else { return nil }
+        return DownloadStore.folderName(of: URL(fileURLWithPath: path).deletingLastPathComponent())
+    }
 
     // MARK: - Preview (shown before the user confirms a download)
 
@@ -808,11 +871,11 @@ final class DownloadManager: NSObject {
     /// a true mid-transfer pause isn't possible with the background session's task model.
     private(set) var isQueuePaused = false
 
-    /// Active transfer first, then the waiting items in queue order.
+    /// Active transfer first, then the waiting items in queue order, for the profile in use.
     var orderedInProgressIds: [String] {
         let queued = Set(queuedItemIds)
         let active = activeItemTitles.keys.filter { !queued.contains($0) }.sorted()
-        return active + queuedItemIds
+        return (active + queuedItemIds).filter(isInProgress)
     }
 
     /// Items whose transfer is suspended mid-download: the bytes already received are kept and
@@ -871,7 +934,7 @@ final class DownloadManager: NSObject {
     }
 
     func cancelAllDownloads() {
-        for id in Array(activeItemTitles.keys) { cancelDownload(itemId: id) }
+        for id in Array(activeItemTitles.keys) where isInProgress(id) { cancelDownload(itemId: id) }
         isQueuePaused = false
     }
 
@@ -890,10 +953,11 @@ final class DownloadManager: NSObject {
     @discardableResult
     private func addToQueue(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?,
                             tracks: DownloadTracks = .all, viaSmart: Bool) -> Bool {
-        guard modelContext != nil, !isDownloaded(item.id), !activeItemIds.contains(item.id),
+        guard modelContext != nil, !isDownloaded(item.id, by: DownloadProfile(credential)), !activeItemIds.contains(item.id),
               !pendingQueue.contains(where: { $0.item.id == item.id })
         else { return false }
         let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
+        inFlightProfiles[item.id] = DownloadProfile(credential)
         activeItemTitles[item.id] = item.name
         activeItems[item.id] = item
         cancelledItemIds.remove(item.id)
@@ -940,7 +1004,7 @@ final class DownloadManager: NSObject {
                 return nil
             }
             let next = pendingQueue.removeFirst()
-            if !isDownloaded(next.item.id) { return next }
+            if !isDownloaded(next.item.id, by: DownloadProfile(next.credential)) { return next }
             removeSavedQueueEntry(itemId: next.item.id)
         }
         return nil
@@ -1010,14 +1074,17 @@ final class DownloadManager: NSObject {
     /// delegate callback moved it there independent of whether this app process was alive),
     /// so only the metadata/subtitles/trickplay/poster/SwiftData tail needs to run.
     private func performDownload(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?,
-                                 tracks: DownloadTracks, skipVideoDownload: Bool = false) async {
+                                 tracks: DownloadTracks, skipVideoDownload: Bool = false, recoveredFolder: String? = nil) async {
         guard let modelContext else { return }
         let run = UUID()
+        let profile = DownloadProfile(credential)
+        let folder = recoveredFolder ?? handedOffFolder(item.id) ?? newFolderName(for: item.id, profile: profile)
         runTokens[item.id] = run
+        inFlightProfiles[item.id] = profile
         activeItemIds.insert(item.id)
         progress[item.id] = skipVideoDownload ? 1 : 0
         beginBackgroundTaskIfNeeded()
-        savePendingDescriptor(itemId: item.id, credentialId: credential.id.uuidString, bitrateCap: bitrateCap, tracks: tracks)
+        savePendingDescriptor(itemId: item.id, credentialId: credential.id.uuidString, folder: folder, bitrateCap: bitrateCap, tracks: tracks)
         #if canImport(ActivityKit) && os(iOS)
         liveActivityItemMeta[item.id] = (nil, item.parentIndexNumber, item.indexNumber)
         refreshLiveActivity()
@@ -1059,7 +1126,7 @@ final class DownloadManager: NSObject {
             try checkStillWanted(item.id, run: run)
             #endif
 
-            let dir = try DownloadStore.ensureDirectory(for: item.id)
+            let dir = try DownloadStore.ensureDirectory(forFolder: folder)
             try? detailData.write(to: dir.appendingPathComponent(Self.savedDetailFileName))
 
             let savesPreviews = UserDefaults.standard.object(forKey: "downloadTrickplay") as? Bool ?? true
@@ -1139,9 +1206,19 @@ final class DownloadManager: NSObject {
             downloaded.castNames = cast.map(\.name)
             downloaded.castRoles = cast.map { $0.role ?? "" }
             downloaded.castPhotoFileNames = fetched.castPhotoFileNames
+            downloaded.folderName = folder
+            // One copy per profile: one left from a run cut short makes way for this one.
+            let itemId = item.id
+            let earlier = ((try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId }))) ?? [])
+                .filter { $0.profile == profile }
+            for stale in earlier {
+                if stale.storedFolderName != folder { DownloadStore.deleteDirectory(forFolder: stale.storedFolderName) }
+                modelContext.delete(stale)
+            }
             modelContext.insert(downloaded)
             try? modelContext.save()
-            downloadedIds.insert(item.id)
+            downloadedProfiles[item.id, default: []].removeAll { $0 == profile }
+            downloadedProfiles[item.id, default: []].append(profile)
             savedTitle = detail.item.name
 
             if let seriesId = detail.item.seriesId {
@@ -1154,7 +1231,7 @@ final class DownloadManager: NSObject {
                 cancelledItemIds.remove(item.id)
                 if runTokens[item.id] == nil, !activeItemIds.contains(item.id), !handedOffItemIds.contains(item.id),
                    !pendingQueue.contains(where: { $0.item.id == item.id }) {
-                    DownloadStore.deleteDirectory(for: item.id)
+                    DownloadStore.deleteDirectory(forFolder: folder)
                 }
                 return
             }
@@ -1179,7 +1256,7 @@ final class DownloadManager: NSObject {
             if keptForRetry {
                 Self.smartLog.notice("Download details failed, video kept for a retry: \(item.id, privacy: .public)")
             } else {
-                DownloadStore.deleteDirectory(for: item.id)
+                DownloadStore.deleteDirectory(forFolder: folder)
             }
             // Out of room isn't a failure: the title goes back to the front and waits for space.
             if !cancelled, !keptForRetry, let need = (error as? NoRoomForDownload)?.bytes ?? (Self.isOutOfSpace(error) ? expectedBytes[item.id] ?? Int64(Self.lowSpaceThreshold) : nil) {
@@ -1202,7 +1279,8 @@ final class DownloadManager: NSObject {
                 #endif
                 return
             }
-            if !cancelled, !keptForRetry {
+            // Another profile's failed download isn't shown to this one.
+            if !cancelled, !keptForRetry, currentProfile?.owns(profile) == true {
                 errors[item.id] = (error as? DownloadError)?.errorDescription ?? String(localized: "Download failed: \(error.localizedDescription)")
             }
         }
@@ -1219,6 +1297,7 @@ final class DownloadManager: NSObject {
         activeItemIds.remove(item.id)
         activeItemTitles[item.id] = nil
         activeItems[item.id] = nil
+        inFlightProfiles[item.id] = nil
         progress[item.id] = nil
         stats[item.id] = nil
         speedSamples[item.id] = nil
@@ -1441,9 +1520,11 @@ final class DownloadManager: NSObject {
     private static let savedDetailFileName = "detail.json"
 
     /// The title's full page as the server sent it when it was downloaded.
+    /// The profile in use's copy for a title, the series' own folder for a show.
     func savedDetail(itemId: String) -> MediaItemDetail? {
-        let url = DownloadStore.directory(for: itemId).appendingPathComponent(Self.savedDetailFileName)
-        guard let data = try? Data(contentsOf: url) else { return nil }
+        let rows = (try? modelContext?.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId }))) ?? []
+        let dir = rows.isEmpty ? DownloadStore.directory(for: itemId) : ownDownloads(rows).first.map(DownloadStore.directory(for:))
+        guard let url = dir?.appendingPathComponent(Self.savedDetailFileName), let data = try? Data(contentsOf: url) else { return nil }
         return try? JellyfinMediaClient.decodeItemDetail(data)
     }
 
@@ -1452,14 +1533,16 @@ final class DownloadManager: NSObject {
     func saveMissingDetails() async {
         guard let modelContext, let authManager, let credential = authManager.state.credential else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
-        let items = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
-        let ids = Set(items.map(\.itemId) + items.compactMap(\.seriesId))
-        for id in ids {
-            let url = DownloadStore.directory(for: id).appendingPathComponent(Self.savedDetailFileName)
+        let items = ownDownloads((try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? [])
+        // Each folder and the title it's for: a download's own, and its show's.
+        let folders = Dictionary(items.map { ($0.storedFolderName, $0.itemId) } + items.compactMap { $0.seriesId.map { ($0, $0) } },
+                                 uniquingKeysWith: { first, _ in first })
+        for (folder, id) in folders {
+            let url = DownloadStore.directory(forFolder: folder).appendingPathComponent(Self.savedDetailFileName)
             guard !FileManager.default.fileExists(atPath: url.path),
                   let data = try? await client.getItemDetailData(credential: credential, authHeader: authHeader, itemId: id),
                   (try? JellyfinMediaClient.decodeItemDetail(data)) != nil,
-                  (try? DownloadStore.ensureDirectory(for: id)) != nil
+                  (try? DownloadStore.ensureDirectory(forFolder: folder)) != nil
             else { continue }
             try? data.write(to: url)
         }
@@ -1480,6 +1563,7 @@ final class DownloadManager: NSObject {
         activeItemIds.remove(itemId)
         activeItemTitles[itemId] = nil
         activeItems[itemId] = nil
+        inFlightProfiles[itemId] = nil
         progress[itemId] = nil
         stats[itemId] = nil
         speedSamples[itemId] = nil
@@ -1487,7 +1571,10 @@ final class DownloadManager: NSObject {
         // count as space still to be written for the rest of the session.
         expectedBytes[itemId] = nil
         estimatedStreamBytes[itemId] = nil
-        DownloadStore.deleteDirectory(for: itemId)
+        // Only the folder this run was filling: another profile's copy can be in the title's own.
+        if let started = loadPendingDescriptors().first(where: { $0.itemId == itemId }) {
+            DownloadStore.deleteDirectory(forFolder: started.folderName)
+        }
         endBackgroundTaskIfIdle()
         removePendingDescriptor(itemId: itemId)
         removeSavedQueueEntry(itemId: itemId)
@@ -1514,13 +1601,17 @@ final class DownloadManager: NSObject {
         let credentialId: String
         let bitrateCap: Int?
         var tracks: DownloadTracks?
+        /// nil from before downloads could be in a folder other than the item's own.
+        var folder: String?
+
+        var folderName: String { folder ?? itemId }
     }
 
     private static let pendingDownloadsKey = "arcfin.pendingDownloads"
 
-    private func savePendingDescriptor(itemId: String, credentialId: String, bitrateCap: Int?, tracks: DownloadTracks) {
+    private func savePendingDescriptor(itemId: String, credentialId: String, folder: String, bitrateCap: Int?, tracks: DownloadTracks) {
         var all = loadPendingDescriptors().filter { $0.itemId != itemId }
-        all.append(PendingDownloadDescriptor(itemId: itemId, credentialId: credentialId, bitrateCap: bitrateCap, tracks: tracks))
+        all.append(PendingDownloadDescriptor(itemId: itemId, credentialId: credentialId, bitrateCap: bitrateCap, tracks: tracks, folder: folder))
         if let data = try? JSONEncoder().encode(all) {
             UserDefaults.standard.set(data, forKey: Self.pendingDownloadsKey)
         }
@@ -1549,15 +1640,16 @@ final class DownloadManager: NSObject {
     /// which died with the old process. Without this, the file would just sit orphaned on
     /// disk forever with no record of it and no way to play it from the Downloads screen.
     private func recoverOrphanedDownload(destinationPath: String) async {
-        let itemId = URL(fileURLWithPath: destinationPath).deletingLastPathComponent().lastPathComponent
+        let dir = URL(fileURLWithPath: destinationPath).deletingLastPathComponent()
+        let itemId = dir.lastPathComponent
         // A background relaunch can deliver this before the saved sign-ins are read: wait for
         // them, and keep the descriptor while they aren't there to look the profile up in.
         guard let authManager else { return }
         await authManager.checkStoredAuthOnce()
         guard !authManager.profiles.isEmpty, !activeItemIds.contains(itemId) else { return }
-        guard !isDownloaded(itemId),
-              let descriptor = loadPendingDescriptors().first(where: { $0.itemId == itemId }),
-              let credential = authManager.profiles.first(where: { $0.id.uuidString == descriptor.credentialId })
+        guard let descriptor = loadPendingDescriptors().first(where: { $0.itemId == itemId }),
+              let credential = authManager.profiles.first(where: { $0.id.uuidString == descriptor.credentialId }),
+              !isDownloaded(itemId, by: DownloadProfile(credential))
         else {
             removePendingDescriptor(itemId: itemId)
             return
@@ -1572,7 +1664,8 @@ final class DownloadManager: NSObject {
         // Queued again after a relaunch, but the file's already here: finished from it instead.
         pendingQueue.removeAll { $0.item.id == itemId }
         await performDownload(item: placeholder, credential: credential, authHeader: authHeader, bitrateCap: descriptor.bitrateCap,
-                              tracks: descriptor.tracks ?? .all, skipVideoDownload: true)
+                              tracks: descriptor.tracks ?? .all, skipVideoDownload: true,
+                              recoveredFolder: DownloadStore.folderName(of: dir))
     }
 
     /// Titles whose video arrived but whose details couldn't be fetched then (no connection,
@@ -1584,7 +1677,7 @@ final class DownloadManager: NSObject {
         for descriptor in loadPendingDescriptors() {
             let itemId = descriptor.itemId
             guard !activeItemIds.contains(itemId), !queued.contains(itemId), !handedOffItemIds.contains(itemId),
-                  let path = Self.finishedVideoPath(for: itemId)
+                  let path = Self.finishedVideoPath(inFolder: descriptor.folderName)
             else { continue }
             Task { await recoverOrphanedDownload(destinationPath: path) }
         }
@@ -1592,8 +1685,8 @@ final class DownloadManager: NSObject {
 
     /// The video file a title's folder holds once its transfer is done. Nil while any range
     /// part is still there: a join cut short leaves a partial file under the final name.
-    private nonisolated static func finishedVideoPath(for itemId: String) -> String? {
-        let dir = DownloadStore.directory(for: itemId)
+    private nonisolated static func finishedVideoPath(inFolder folder: String) -> String? {
+        let dir = DownloadStore.directory(forFolder: folder)
         guard let names = try? FileManager.default.contentsOfDirectory(atPath: dir.path),
               !names.contains(where: { $0.hasPrefix("video.part-") })
         else { return nil }
@@ -1671,19 +1764,19 @@ final class DownloadManager: NSObject {
             guard let path = task.taskDescription else { continue }
             live[URL(fileURLWithPath: path).deletingLastPathComponent().lastPathComponent, default: []].append(task)
         }
-        let descriptors = Set(loadPendingDescriptors().map(\.itemId))
+        let descriptors = Dictionary(loadPendingDescriptors().map { ($0.itemId, $0.folderName) }, uniquingKeysWith: { first, _ in first })
         var restored = false
         for entry in saved {
             let itemId = entry.itemId
             guard !activeItemIds.contains(itemId), !pendingQueue.contains(where: { $0.item.id == itemId }) else { continue }
-            guard !isDownloaded(itemId),
-                  let credential = profiles.first(where: { $0.id.uuidString == entry.credentialId })
+            guard let credential = profiles.first(where: { $0.id.uuidString == entry.credentialId }),
+                  !isDownloaded(itemId, by: DownloadProfile(credential))
             else {
                 removeSavedQueueEntry(itemId: itemId)
                 continue
             }
             // The video is here already: retryUnfinishedDownloads finishes it from the file.
-            if descriptors.contains(itemId), Self.finishedVideoPath(for: itemId) != nil {
+            if let folder = descriptors[itemId], Self.finishedVideoPath(inFolder: folder) != nil {
                 removeSavedQueueEntry(itemId: itemId)
                 continue
             }
@@ -1724,22 +1817,31 @@ final class DownloadManager: NSObject {
         guard let items = try? modelContext.fetch(FetchDescriptor<DownloadedItem>()),
               let series = try? modelContext.fetch(FetchDescriptor<DownloadedSeries>())
         else { return }
-        var keep = Set(items.map(\.itemId) + items.compactMap(\.seriesId) + series.map(\.seriesId))
-        keep.formUnion(loadPendingDescriptors().map(\.itemId))
-        keep.formUnion(loadSavedQueue().map(\.itemId))
-        keep.formUnion(activeItemIds)
-        keep.formUnion(pendingQueue.map(\.item.id))
-        keep.formUnion(handedOffItemIds)
-        keep.formUnion(liveTasks.compactMap { $0.taskDescription.map { URL(fileURLWithPath: $0).deletingLastPathComponent().lastPathComponent } })
-        let root = DownloadStore.rootDirectory()
-        guard let folders = try? FileManager.default.contentsOfDirectory(at: root, includingPropertiesForKeys: [.isDirectoryKey]) else { return }
-        var removed = 0
-        for folder in folders where !keep.contains(folder.lastPathComponent) {
-            guard (try? folder.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true else { continue }
-            try? FileManager.default.removeItem(at: folder)
-            removed += 1
+        var keep = Set(items.map(\.storedFolderName) + items.compactMap(\.seriesId) + series.map(\.seriesId))
+        keep.formUnion(loadPendingDescriptors().map(\.folderName))
+        keep.formUnion(liveTasks.compactMap { $0.taskDescription.map { DownloadStore.folderName(of: URL(fileURLWithPath: $0).deletingLastPathComponent()) } })
+        // Not started yet, or started by a build that kept no folder: wherever they are.
+        var underway = Set(loadSavedQueue().map(\.itemId))
+        underway.formUnion(activeItemIds)
+        underway.formUnion(pendingQueue.map(\.item.id))
+        underway.formUnion(handedOffItemIds)
+        // The title folders: one per title at the top, and a second profile's copies in a
+        // folder per profile under Profiles.
+        func subfolders(of url: URL) -> [URL] {
+            ((try? FileManager.default.contentsOfDirectory(at: url, includingPropertiesForKeys: [.isDirectoryKey])) ?? [])
+                .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]).isDirectory) == true }
         }
-        if removed > 0 { Self.smartLog.notice("Removed \(removed, privacy: .public) leftover download folder(s)") }
+        let root = DownloadStore.rootDirectory()
+        let profilesRoot = root.appendingPathComponent(DownloadStore.profilesFolderName, isDirectory: true)
+        let profileFolders = subfolders(of: profilesRoot)
+        let present = subfolders(of: root).map(\.lastPathComponent).filter { $0 != DownloadStore.profilesFolderName }
+            + profileFolders.flatMap { profile in
+                subfolders(of: profile).map { "\(DownloadStore.profilesFolderName)/\(profile.lastPathComponent)/\($0.lastPathComponent)" }
+            }
+        let leftover = DownloadStore.leftoverFolders(present: present, keeping: keep, underway: underway)
+        for folder in leftover { DownloadStore.deleteDirectory(forFolder: folder) }
+        for profile in profileFolders where subfolders(of: profile).isEmpty { try? FileManager.default.removeItem(at: profile) }
+        if !leftover.isEmpty { Self.smartLog.notice("Removed \(leftover.count, privacy: .public) leftover download folder(s)") }
     }
 
     // MARK: - Background continuation
@@ -1785,8 +1887,11 @@ final class DownloadManager: NSObject {
         Self.smartItemIds.remove(item.itemId)
         // Watching here that hasn't reached the server yet would go with the row.
         OfflineProgressSync.keepUnsyncedProgress(of: item)
-        DownloadStore.deleteDirectory(for: item.itemId)
-        downloadedIds.remove(item.itemId)
+        DownloadStore.deleteDirectory(forFolder: item.storedFolderName)
+        if let index = downloadedProfiles[item.itemId]?.firstIndex(of: item.profile) {
+            downloadedProfiles[item.itemId]?.remove(at: index)
+        }
+        if downloadedProfiles[item.itemId]?.isEmpty == true { downloadedProfiles[item.itemId] = nil }
         modelContext.delete(item)
         try? modelContext.save()
         if let seriesId {
@@ -1795,10 +1900,9 @@ final class DownloadManager: NSObject {
         if queueHold == .storage { recheckQueueHold() }
     }
 
+    /// The profile in use's download of the title.
     func deleteDownload(itemId: String) {
-        guard let modelContext else { return }
-        let descriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })
-        guard let item = try? modelContext.fetch(descriptor).first else { return }
+        guard let item = ownDownload(itemId: itemId) else { return }
         deleteDownload(item)
     }
 
@@ -1897,9 +2001,7 @@ final class DownloadManager: NSObject {
         if let item = activeItems[itemId] {
             return item.seriesId.map { ($0, item.seriesName ?? item.name) } ?? (item.id, item.name)
         }
-        guard let modelContext,
-              let item = try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })).first
-        else { return nil }
+        guard let item = ownDownload(itemId: itemId) else { return nil }
         return item.seriesId.map { ($0, item.seriesName ?? item.name) } ?? (item.itemId, item.name)
     }
 
@@ -1926,7 +2028,7 @@ final class DownloadManager: NSObject {
     func ignoreAndDelete(_ request: IgnoreRequest) {
         setIgnored(id: request.id, name: request.name, ignored: true)
         for id in request.itemIds {
-            if activeItemIds.contains(id) || pendingQueue.contains(where: { $0.item.id == id }) {
+            if isInProgress(id) {
                 cancelDownload(itemId: id)
             } else {
                 deleteDownload(itemId: id)
@@ -1936,10 +2038,10 @@ final class DownloadManager: NSObject {
 
     /// A movie's download, or a show's episodes, here or still downloading.
     private func downloadIds(forTitle id: String) -> [String] {
-        let saved = modelContext.flatMap {
+        let saved = ownDownloads(modelContext.flatMap {
             try? $0.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == id || $0.seriesId == id }))
-        } ?? []
-        let underway = activeItems.values.filter { $0.id == id || $0.seriesId == id }.map(\.id)
+        } ?? [])
+        let underway = activeItems.values.filter { ($0.id == id || $0.seriesId == id) && isInProgress($0.id) }.map(\.id)
         return Array(Set(saved.map(\.itemId) + underway))
     }
 
@@ -1951,7 +2053,7 @@ final class DownloadManager: NSObject {
             setIgnored(id: target.id, name: target.name, ignored: true)
         }
         for id in itemIds {
-            if activeItemIds.contains(id) || pendingQueue.contains(where: { $0.item.id == id }) {
+            if isInProgress(id) {
                 cancelDownload(itemId: id)
             } else {
                 deleteDownload(itemId: id)
@@ -2044,7 +2146,9 @@ final class DownloadManager: NSObject {
         let budgetGB = UserDefaults.standard.object(forKey: Self.smartDownloadsStorageBudgetGBKey) as? Int ?? 10
         let budgetBytes = Int64(budgetGB) * 1_000_000_000
 
-        let allDownloaded = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
+        // This profile's downloads only: each profile's shows and budget are its own.
+        let profile = DownloadProfile(credential)
+        let allDownloaded = ((try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []).filter { $0.belongs(to: profile) }
         var targets: [String: Int] = [:]
         var movies: [MediaItem] = []
         if globalOn {
@@ -2065,7 +2169,7 @@ final class DownloadManager: NSObject {
         // Finished since it was downloaded, not just marked watched: a movie in Continue
         // Watching can be a rewatch of one watched before, and is still wanted.
         for item in allDownloaded where item.finishedSinceDownload && Self.smartMovieIds.contains(item.itemId) {
-            markForDeletionAfterWatching(itemId: item.itemId)
+            markForDeletionAfterWatching(item)
             Self.smartMovieIds.remove(item.itemId)
         }
         guard !targets.isEmpty || !movies.isEmpty else { return }
@@ -2074,13 +2178,13 @@ final class DownloadManager: NSObject {
         // while a downloads screen may be showing those rows (see markForDeletionAfterWatching).
         for item in allDownloaded where item.finishedSinceDownload {
             guard let seriesId = item.seriesId, targets[seriesId] != nil else { continue }
-            markForDeletionAfterWatching(itemId: item.itemId)
+            markForDeletionAfterWatching(item)
         }
 
         // Only the shows it looks after: movies and other downloads someone started themselves
         // would otherwise use up the budget and quietly stop every show.
         func totalDownloadedBytes() -> Int64 {
-            let current = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []
+            let current = ((try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []).filter { $0.belongs(to: profile) }
             let smartMovies = Self.smartMovieIds
             return current.filter { $0.seriesId.map { targets[$0] != nil } ?? smartMovies.contains($0.itemId) }
                 .reduce(0) { $0 + $1.fileSizeBytes }
@@ -2109,7 +2213,7 @@ final class DownloadManager: NSObject {
                 for item in allDownloaded where item.seriesId == seriesId {
                     let s = item.seasonNumber ?? 0, e = item.episodeNumber ?? 0
                     if s < season || (s == season && e < episode) {
-                        markForDeletionAfterWatching(itemId: item.itemId)
+                        markForDeletionAfterWatching(item)
                     }
                 }
             }
@@ -2130,7 +2234,7 @@ final class DownloadManager: NSObject {
         // Downloads at Once titles at a time, each batch finishing before the budget is checked
         // again, so it can go over by at most one batch less one title.
         var batch = 0
-        for item in smart where !isDownloaded(item.id) && !activeItemIds.contains(item.id) {
+        for item in smart where !isDownloaded(item.id, by: profile) && !activeItemIds.contains(item.id) {
             // Ignored while an earlier batch ran.
             if ignoredTitles[item.id] != nil || item.seriesId.map({ ignoredTitles[$0] != nil }) == true { continue }
             if batch == 0, totalDownloadedBytes() >= budgetBytes {

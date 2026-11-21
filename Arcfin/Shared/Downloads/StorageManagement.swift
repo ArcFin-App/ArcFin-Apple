@@ -311,7 +311,7 @@ struct StorageManagementContent: View {
     // MARK: - Movies
 
     private func movieRow(_ movie: DownloadedItem) -> some View {
-        StorageRow(artwork: DownloadsModel.fileURL(movie.posterFileName, in: movie.itemId),
+        StorageRow(artwork: DownloadsModel.fileURL(movie.posterFileName, of: movie),
                    title: movie.name,
                    detail: [movie.productionYear.map(String.init), movie.played ? String(localized: "Watched") : nil]
                     .compactMap { $0 }.joined(separator: " · "),

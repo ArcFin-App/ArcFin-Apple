@@ -64,7 +64,7 @@ final class OfflinePlayerModel {
         self.downloadedItem = downloadedItem
     }
 
-    private var dir: URL { DownloadStore.directory(for: downloadedItem.itemId) }
+    private var dir: URL { DownloadStore.directory(for: downloadedItem) }
 
     /// Hands over the environment saving and syncing the position need.
     func attach(modelContext: ModelContext, authManager: AuthManager) {
@@ -152,9 +152,7 @@ final class OfflinePlayerModel {
         let local = downloadedItem.playbackPositionTicks
         // Unsynced local progress is the newest there is.
         guard !downloadedItem.needsSync, let authManager,
-              let credential = authManager.profiles.first(where: {
-                  $0.id.uuidString == downloadedItem.serverId && $0.userID == downloadedItem.userId
-              })
+              let credential = OfflineProgressSync.credential(for: downloadedItem.profile, in: authManager.profiles)
         else { return local }
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         let itemId = downloadedItem.itemId
@@ -252,7 +250,7 @@ final class OfflinePlayerModel {
             // watched to the end in this playback goes: one watched before it was downloaded
             // is already marked watched.
             if deleteAfterWatching && finishedHere {
-                downloadManager.markForDeletionAfterWatching(itemId: downloadedItem.itemId)
+                downloadManager.markForDeletionAfterWatching(downloadedItem)
             }
             closePlayer()
         }

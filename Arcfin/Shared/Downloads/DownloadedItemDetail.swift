@@ -41,7 +41,7 @@ final class DownloadedItemDetailModel {
 
     static func fileURL(_ name: String?, of item: DownloadedItem) -> URL? {
         guard let name, !name.isEmpty else { return nil }
-        return DownloadStore.directory(for: item.itemId).appendingPathComponent(name)
+        return DownloadStore.directory(for: item).appendingPathComponent(name)
     }
 
     /// An episode rarely has its own backdrop: the show's, saved with its first download, is
