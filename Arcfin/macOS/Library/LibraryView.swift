@@ -104,6 +104,8 @@ struct LibraryView: View {
                 // ── Your Libraries ──────────────────────────────────────
                 if !supportedLibraries.isEmpty {
                     librariesSection
+                } else {
+                    BrowseLibrariesStatus()
                 }
 
                 // ── Your Requests ───────────────────────────────────────

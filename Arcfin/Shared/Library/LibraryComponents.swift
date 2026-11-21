@@ -2,8 +2,36 @@
 
 import SwiftUI
 import JellyfinAPI
+import AuthCore
 
 // MARK: - Library card
+
+/// Browse with no library tiles: still loading them, or the server couldn't be reached.
+struct BrowseLibrariesStatus: View {
+    @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(AuthManager.self) private var authManager
+
+    var body: some View {
+        if mediaRepo.connectionFailed {
+            ContentUnavailableView {
+                Label("Couldn't Load Your Libraries", systemImage: "exclamationmark.triangle")
+            } description: {
+                Text("Couldn't reach your server. Check your connection, then try again.")
+            } actions: {
+                Button("Try Again", action: retry)
+            }
+        } else if !mediaRepo.loaded {
+            ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, DT.Spacing.xl)
+        }
+    }
+
+    private func retry() {
+        guard case .authenticated(let cred) = authManager.state else { return }
+        Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: true) }
+    }
+}
 
 struct LibraryCard: View {
     @Environment(MediaRepository.self) private var mediaRepo
