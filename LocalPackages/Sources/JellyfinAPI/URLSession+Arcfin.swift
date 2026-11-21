@@ -16,7 +16,14 @@ extension URLSession {
     ///
     /// Carries the user's custom headers (see CustomHTTPHeaders), rebuilt when they change.
     public static var arcfin: URLSession {
-        ArcfinSessionBox.session(for: CustomHTTPHeaders.current)
+        ArcfinSessionBox.standard.session(for: CustomHTTPHeaders.current)
+    }
+
+    /// The same as `arcfin`, for the few calls the server only answers once a long job is
+    /// done (a backup) or that return a lot (a server log): `arcfin` caps a whole transfer at
+    /// 30 s.
+    public static var arcfinLongRunning: URLSession {
+        ArcfinSessionBox.longRunning.session(for: CustomHTTPHeaders.current)
     }
 
     /// An image's bytes, or nil. Jellyfin's resize cache can answer one size of an image
@@ -35,17 +42,25 @@ extension URLSession {
     }
 }
 
-private enum ArcfinSessionBox {
-    private static let lock = NSLock()
-    nonisolated(unsafe) private static var cached: (headers: [String: String], session: URLSession)?
+private final class ArcfinSessionBox: @unchecked Sendable {
+    static let standard = ArcfinSessionBox(resourceTimeout: 30)
+    static let longRunning = ArcfinSessionBox(resourceTimeout: 600)
 
-    static func session(for headers: [String: String]) -> URLSession {
+    private let resourceTimeout: TimeInterval
+    private let lock = NSLock()
+    private var cached: (headers: [String: String], session: URLSession)?
+
+    private init(resourceTimeout: TimeInterval) {
+        self.resourceTimeout = resourceTimeout
+    }
+
+    func session(for headers: [String: String]) -> URLSession {
         lock.lock()
         defer { lock.unlock() }
         if let cached, cached.headers == headers { return cached.session }
         let config = URLSessionConfiguration.default
         config.waitsForConnectivity = true
-        config.timeoutIntervalForResource = 30
+        config.timeoutIntervalForResource = resourceTimeout
         config.httpAdditionalHeaders = headers.isEmpty ? nil : headers
         let session = URLSession(configuration: config)
         cached?.session.finishTasksAndInvalidate()

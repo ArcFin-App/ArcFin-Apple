@@ -413,7 +413,7 @@ public struct JellyfinAdminClient: Sendable {
 
     public func logFile(named name: String, credential: ServerCredential, authHeader: String) async throws -> String {
         let data = try await send("GET", "System/Logs/Log", query: [.init(name: "name", value: name)],
-                                  credential: credential, authHeader: authHeader)
+                                  credential: credential, authHeader: authHeader, longRunning: true)
         return String(decoding: data, as: UTF8.self)
     }
 
@@ -433,7 +433,8 @@ public struct JellyfinAdminClient: Sendable {
         let body = try JSONSerialization.data(withJSONObject: [
             "Metadata": metadata, "Trickplay": trickplay, "Subtitles": subtitles, "Database": true,
         ])
-        try await send("POST", "Backup/Create", body: body, credential: credential, authHeader: authHeader)
+        // The server answers only once the backup is written, which with metadata can take minutes.
+        try await send("POST", "Backup/Create", body: body, credential: credential, authHeader: authHeader, longRunning: true)
     }
 
     // MARK: Metadata
@@ -529,7 +530,7 @@ public struct JellyfinAdminClient: Sendable {
 
     @discardableResult
     func send(_ method: String, _ path: String, query: [URLQueryItem] = [], body: Data? = nil,
-              credential: ServerCredential, authHeader: String) async throws -> Data {
+              credential: ServerCredential, authHeader: String, longRunning: Bool = false) async throws -> Data {
         var comps = URLComponents(url: credential.baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
         if !query.isEmpty { comps.queryItems = query }
         var req = URLRequest(url: comps.url!)
@@ -539,8 +540,8 @@ public struct JellyfinAdminClient: Sendable {
             req.httpBody = body
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         }
-        req.timeoutInterval = 30
-        let (data, response) = try await URLSession.arcfin.data(for: req)
+        req.timeoutInterval = longRunning ? 600 : 30
+        let (data, response) = try await (longRunning ? URLSession.arcfinLongRunning : URLSession.arcfin).data(for: req)
         try Self.check(response)
         return data
     }
