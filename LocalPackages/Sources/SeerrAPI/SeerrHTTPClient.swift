@@ -421,7 +421,11 @@ public actor SeerrHTTPClient {
     /// older pending ones too, not only the newest page.
     public func getRequests(filter: String = "all", limit: Int = 1000) async throws -> [SeerrRequestItem] {
         try await ensureAuthenticated()
-        struct Page: Decodable { let results: [SeerrRequestResponse] }
+        struct Page: Decodable {
+            struct Info: Decodable { let results: Int? }
+            let pageInfo: Info?
+            let results: [SeerrRequestResponse]
+        }
         let take = 100
         var collected: [SeerrRequestResponse] = []
         while collected.count < limit {
@@ -432,9 +436,11 @@ public actor SeerrHTTPClient {
                 URLQueryItem(name: "skip", value: "\(collected.count)"),
                 URLQueryItem(name: "take", value: "\(take)"),
             ]
-            let results = try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!)).results
-            collected += results
-            if results.count < take { break }
+            let page = try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!))
+            collected += page.results
+            // Seerr may serve fewer than asked for, so stop on its total, not a short page.
+            let done = page.pageInfo?.results.map { collected.count >= $0 } ?? (page.results.count < take)
+            if page.results.isEmpty || done { break }
         }
         let raw = collected
         let now = Date()
