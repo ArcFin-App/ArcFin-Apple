@@ -35,7 +35,12 @@ final class LibraryDetailModel {
     var createdPlaylist: MediaPlaylist?
     private(set) var playlistTint: Color?
 
-    private(set) var items: [MediaItem] = []
+    private(set) var items: [MediaItem] = [] {
+        didSet { gridEntries = makeGridEntries() }
+    }
+    /// The grid's cells, rebuilt when the titles or the sort change rather than on every
+    /// render of a grid that can hold the whole library.
+    private(set) var gridEntries: [GridEntry] = []
     private(set) var isLoading = true
     private(set) var isLoadingMore = false
     /// The last next-page request failed; the grid offers to try it again, since the cell
@@ -73,7 +78,9 @@ final class LibraryDetailModel {
     var selectedYears: Set<Int> = []
     var watchedFilter: LibraryWatchedFilter
     var favoritesOnly = false
-    var sortOption: LibrarySortOption = .nameAsc
+    var sortOption: LibrarySortOption = .nameAsc {
+        didSet { gridEntries = makeGridEntries() }
+    }
     var randomPick: MediaItem?
     private(set) var isPickingRandom = false
     /// Set while load() restores the saved sort, so the resulting onChange doesn't fire a
@@ -144,7 +151,7 @@ final class LibraryDetailModel {
     /// A playlist holds a show as all of its episodes. In playlist order, three or more in a
     /// row from one show become a single card, so a whole series doesn't fill the page;
     /// one or two stay as they are, since those were most likely added one by one.
-    var gridEntries: [GridEntry] {
+    private func makeGridEntries() -> [GridEntry] {
         guard playlist != nil, sortOption == .playlistOrder else { return items.map { GridEntry(items: [$0]) } }
         var entries: [GridEntry] = []
         var run: [MediaItem] = []

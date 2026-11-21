@@ -22,11 +22,17 @@ struct HomeView: View {
     @AppStorage(HomeShelfPrefs.shuffleKey) private var shuffleHomeShelves = false
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("offlineModeEnabled") private var offlineModeEnabled = false
-    @Query private var downloadedItems: [DownloadedItem]
+    @Environment(\.modelContext) private var modelContext
 
     @State private var model = HomeModel()
     @State private var hero = HomeHeroCarousel()
     @State private var heroStretch: CGFloat = 0
+
+    /// Counted when asked, not a @Query: a query of every download re-rendered all of Home on
+    /// each save to any of them (position writes, each finished download).
+    private var hasDownloads: Bool {
+        ((try? modelContext.fetchCount(FetchDescriptor<DownloadedItem>())) ?? 0) > 0
+    }
     @State private var showSettings = false
     @Environment(\.openWindow) private var openWindow
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
@@ -83,7 +89,7 @@ struct HomeView: View {
 
                         VStack(spacing: 0) {
                             if (mediaRepo.connectionFailed && !mediaRepo.isLoading) || model.isSlowFirstLoad {
-                                HomeConnectionBanner(hasDownloads: !downloadedItems.isEmpty)
+                                HomeConnectionBanner(hasDownloads: hasDownloads)
                             }
                             ForEach(orderedVisibleShelves) { shelf in
                                 if HomeModel.showsShelfSkeleton(shuffled: shuffleHomeShelves, mediaRepo: mediaRepo),
@@ -198,7 +204,7 @@ struct HomeView: View {
                 guard case .authenticated(let cred) = authManager.state else { return }
                 Task { await mediaRepo.load(credential: cred, authClient: authManager.authClient) }
             }
-            if !downloadedItems.isEmpty {
+            if hasDownloads {
                 Button("Watch Downloads Instead") { offlineModeEnabled = true }
             }
             Button("Dismiss", role: .cancel) {}
