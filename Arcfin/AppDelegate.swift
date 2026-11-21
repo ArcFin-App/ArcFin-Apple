@@ -72,13 +72,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 @MainActor
 final class QuickActionSceneDelegate: NSObject, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        // Both routes are buffered for views that aren't mounted yet on a cold launch.
         guard let item = connectionOptions.shortcutItem else { return }
-        // The views listening for the Downloads route aren't mounted yet on a cold launch
-        // (the play route survives via its UserDefaults buffer), so give them a moment.
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1.5))
-            QuickActions.handle(item)
-        }
+        QuickActions.handle(item)
     }
 
     func windowScene(
@@ -92,7 +88,7 @@ final class QuickActionSceneDelegate: NSObject, UIWindowSceneDelegate {
 
 /// Home Screen long-press actions: a static Downloads entry plus a dynamic "Resume <title>"
 /// for the most recent Continue Watching item. Both reuse the arcfin:// routes' plumbing
-/// (the pending-play buffer and the Downloads notification) rather than a second path.
+/// (the pending-play and pending-Downloads buffers) rather than a second path.
 enum QuickActions {
     private static let resumeType = "com.psmattas.arcfin.resume"
     private static let downloadsType = "com.psmattas.arcfin.downloads"
@@ -125,7 +121,7 @@ enum QuickActions {
             NotificationCenter.default.post(name: .arcfinPlayItem, object: nil, userInfo: ["itemID": itemID])
             return true
         case downloadsType:
-            NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
+            ArcfinRouting.showDownloads()
             return true
         default:
             return false
