@@ -58,9 +58,11 @@ struct MacSettingsWindow: View {
                     NavigationStack {
                         detail(for: pane ?? .general)
                     }
-                    .environment(\.listFillsWidth, true)
                     .id(pane)
                 }
+                // On the split view, not the stack: pages pushed onto the stack don't see what's
+                // set on it, so they stayed a narrow column.
+                .environment(\.listFillsWidth, true)
             } else {
                 ContentUnavailableView("Settings Are Locked", systemImage: "lock",
                                        description: Text("Sign in or unlock Arcfin in its main window first."))
