@@ -250,11 +250,11 @@ nonisolated enum BackgroundRefresh {
             let oldStatus = Int(old.split(separator: "-").first ?? "") ?? 0
             let oldMedia = Int(old.split(separator: "-").last ?? "") ?? 0
             if item.mediaStatus == .available, oldMedia != SeerrAvailabilityStatus.available.rawValue {
-                await NotificationManager.notifyRequestAvailable(title: item.mediaTitle)
+                await NotificationManager.notifyRequestAvailable(title: item.mediaTitle, requestID: item.id)
             } else if item.status == .approved, oldStatus != RequestStatus.approved.rawValue {
-                await NotificationManager.notifyRequestApproved(title: item.mediaTitle)
+                await NotificationManager.notifyRequestApproved(title: item.mediaTitle, requestID: item.id)
             } else if item.status == .declined, oldStatus != RequestStatus.declined.rawValue {
-                await NotificationManager.notifyRequestDeclined(title: item.mediaTitle)
+                await NotificationManager.notifyRequestDeclined(title: item.mediaTitle, requestID: item.id)
             }
         }
     }

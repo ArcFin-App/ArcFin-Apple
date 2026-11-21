@@ -94,8 +94,9 @@ enum NotificationManager {
         #endif
     }
 
-    static func notifyRequestDeclined(title: String) async {
-        await send(title: "Request Declined", body: title, identifier: "seerr-declined.\(UUID().uuidString)", route: .discover)
+    static func notifyRequestDeclined(title: String, requestID: Int? = nil) async {
+        guard let identifier = requestIdentifier("seerr-declined", requestID: requestID) else { return }
+        await send(title: "Request Declined", body: title, identifier: identifier, route: .discover)
     }
 
     static func notifyWatchlistAvailable(title: String) async {
@@ -112,12 +113,30 @@ enum NotificationManager {
                    identifier: "music-download.\(UUID().uuidString)")
     }
 
-    static func notifyRequestApproved(title: String) async {
-        await send(title: "Request Approved", body: title, identifier: "seerr-approved.\(UUID().uuidString)", route: .discover)
+    static func notifyRequestApproved(title: String, requestID: Int? = nil) async {
+        guard let identifier = requestIdentifier("seerr-approved", requestID: requestID) else { return }
+        await send(title: "Request Approved", body: title, identifier: identifier, route: .discover)
     }
 
-    static func notifyRequestAvailable(title: String) async {
-        await send(title: "Now Available", body: title, identifier: "seerr-available.\(UUID().uuidString)", route: .discover)
+    static func notifyRequestAvailable(title: String, requestID: Int? = nil) async {
+        guard let identifier = requestIdentifier("seerr-available", requestID: requestID) else { return }
+        await send(title: "Now Available", body: title, identifier: identifier, route: .discover)
+    }
+
+    private static let sentRequestNoticesKey = "arcfin.notify.sentRequestNotices"
+
+    /// Nil when Request Updates is off, or this change of this request was already announced:
+    /// the in-app Seerr refresh and the background check can both find the same one.
+    private static func requestIdentifier(_ kind: String, requestID: Int?) -> String? {
+        let defaults = UserDefaults.standard
+        guard defaults.object(forKey: "notifyRequestUpdates") as? Bool ?? true else { return nil }
+        guard let requestID else { return "\(kind).\(UUID().uuidString)" }
+        let identifier = "\(kind).\(requestID)"
+        var sent = defaults.stringArray(forKey: sentRequestNoticesKey) ?? []
+        guard !sent.contains(identifier) else { return nil }
+        sent.append(identifier)
+        defaults.set(Array(sent.suffix(300)), forKey: sentRequestNoticesKey)
+        return identifier
     }
 
     // MARK: - Live TV reminders
