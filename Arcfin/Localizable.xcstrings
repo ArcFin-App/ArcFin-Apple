@@ -156904,6 +156904,70 @@
         }
       }
     },
+    "You'll need this profile's password to sign in again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Du brauchst das Passwort dieses Profils, um dich wieder anzumelden."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Necesitarás la contraseña de este perfil para volver a iniciar sesión."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vous aurez besoin du mot de passe de ce profil pour vous reconnecter."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ti servirà la password di questo profilo per accedere di nuovo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再度サインインするには、このプロファイルのパスワードが必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다시 로그인하려면 이 프로필의 암호가 필요합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je hebt het wachtwoord van dit profiel nodig om opnieuw in te loggen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Você vai precisar da senha deste perfil para entrar de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Чтобы войти снова, понадобится пароль этого профиля."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你需要此个人资料的密码才能重新登录。"
+          }
+        }
+      }
+    },
     "You'll need to sign in again to use it. Downloads stay on this device." : {
       "localizations" : {
         "de" : {

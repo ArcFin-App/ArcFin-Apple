@@ -10,6 +10,8 @@ final class AppLockModel {
     private(set) var pinStates: [UUID: Bool] = [:]
     private(set) var pinTarget: ServerCredential?
     private(set) var errorMessage: String?
+    /// The picked profile's PIN couldn't be read, so it can be signed out instead.
+    private(set) var isPINUnreadable = false
     private(set) var resetToken = 0
     private var isDeciding = false
 
@@ -31,6 +33,7 @@ final class AppLockModel {
                 return
             }
             errorMessage = AuthManager.PINCheck.message(opening: stored, for: profile.id)
+            isPINUnreadable = stored == .unreadable
             resetToken = 0
             pinTarget = profile
         }
@@ -40,6 +43,12 @@ final class AppLockModel {
         Task {
             let result = await authManager.checkPIN(entered, for: target.id)
             guard pinTarget?.id == target.id else { return }
+            // Signed out meanwhile (from another window, say): a removed PIN isn't a match.
+            guard authManager.profiles.contains(where: { $0.id == target.id }) else {
+                cancelPIN()
+                return
+            }
+            isPINUnreadable = result == .unreadable
             guard result == .correct else {
                 errorMessage = result.message
                 resetToken += 1
@@ -53,6 +62,16 @@ final class AppLockModel {
     func cancelPIN() {
         pinTarget = nil
         errorMessage = nil
+        isPINUnreadable = false
+    }
+
+    /// Without the PIN, which can't be read, and without unlocking: the picker or the sign-in
+    /// screen comes next.
+    func signOut(_ target: ServerCredential, authManager: AuthManager) {
+        guard isPINUnreadable, pinTarget?.id == target.id else { return }
+        cancelPIN()
+        authManager.removeProfile(id: target.id)
+        Task { await loadPINStates(authManager: authManager) }
     }
 
     func unlock(as profile: ServerCredential, authManager: AuthManager, onUnlock: () -> Void) {
