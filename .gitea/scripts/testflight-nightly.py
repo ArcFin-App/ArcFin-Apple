@@ -123,23 +123,34 @@ def find_build(app_id: str, platform: str) -> dict | None:
     return None
 
 
+def set_what_to_test(build_id: str, locale: str, platform: str, notes: str) -> bool:
+    """TestFlight's What to Test, which the API calls whatsNew."""
+    _, reply = call("GET", f"/builds/{build_id}/betaBuildLocalizations")
+    localizations = reply.get("data") or []
+    for localization in localizations:
+        status, reply = call("PATCH", f"/betaBuildLocalizations/{localization['id']}", {"data": {
+            "type": "betaBuildLocalizations", "id": localization["id"], "attributes": {"whatsNew": notes}}})
+        if status >= 300:
+            print(f"::error::{platform}: couldn't set What to Test: {first_error(reply)}")
+            return False
+    if not localizations:
+        status, reply = call("POST", "/betaBuildLocalizations", {"data": {
+            "type": "betaBuildLocalizations", "attributes": {"locale": locale, "whatsNew": notes},
+            "relationships": {"build": {"data": {"type": "builds", "id": build_id}}}}})
+        if status >= 300:
+            print(f"::error::{platform}: couldn't set What to Test: {first_error(reply)}")
+            return False
+    return True
+
+
 def distribute(app_id: str, locale: str, group_id: str, platform: str, notes: str) -> bool:
     build = find_build(app_id, platform)
     if not build:
         return False
     build_id = build["id"]
 
-    _, reply = call("GET", f"/builds/{build_id}/betaBuildLocalizations")
-    localizations = reply.get("data") or []
-    for localization in localizations:
-        call("PATCH", f"/betaBuildLocalizations/{localization['id']}", {"data": {
-            "type": "betaBuildLocalizations", "id": localization["id"], "attributes": {"whatToTest": notes}}})
-    if not localizations:
-        status, reply = call("POST", "/betaBuildLocalizations", {"data": {
-            "type": "betaBuildLocalizations", "attributes": {"locale": locale, "whatToTest": notes},
-            "relationships": {"build": {"data": {"type": "builds", "id": build_id}}}}})
-        if status >= 300:
-            print(f"::warning::{platform}: couldn't set What to Test: {first_error(reply)}")
+    if not set_what_to_test(build_id, locale, platform, notes):
+        return False
 
     status, reply = call("POST", f"/betaGroups/{group_id}/relationships/builds",
                          {"data": [{"type": "builds", "id": build_id}]})
