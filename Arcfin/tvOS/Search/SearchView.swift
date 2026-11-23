@@ -66,6 +66,7 @@ struct SearchView: View {
                         if let top = model.jellyfinResults.first {
                             NavigationLink(value: top) {
                                 SearchTopResultCard(item: top, height: topResultHeight)
+                                    .tvLabelFocusRing(cornerRadius: DT.Radius.lg)
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
