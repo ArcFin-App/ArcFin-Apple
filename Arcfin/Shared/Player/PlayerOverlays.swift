@@ -492,6 +492,7 @@ struct PlayerErrorView: View {
                     Button("Try Again", action: retry)
                         .buttonStyle(.glassProminent)
                         .tint(DT.Color.accent)
+                        .foregroundStyle(DT.Color.onAccent)
                 }
                 if let nextChannel {
                     Button("Next Channel", action: nextChannel)
