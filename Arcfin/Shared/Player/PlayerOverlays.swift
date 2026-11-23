@@ -132,14 +132,15 @@ struct SkipSegmentLabel: View {
     }
 }
 
-/// The skip button on its own in the corner, while the controls are hidden. With them up it
-/// sits in the controls instead (`SkipSegmentControl`).
+/// The skip button on its own in the corner while the controls are hidden, for a few seconds
+/// unless it's counting down to skip. With the controls up it sits in them instead
+/// (`SkipSegmentControl`).
 struct SkipSegmentButton: View {
     let model: PlayerModel
     let controlsShown: Bool
 
     var body: some View {
-        if let label = model.skipButtonLabel, !controlsShown {
+        if let label = model.skipButtonLabel, model.showsFloatingSkip, !controlsShown {
             VStack {
                 Spacer()
                 HStack {
