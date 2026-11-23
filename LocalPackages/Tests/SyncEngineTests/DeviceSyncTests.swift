@@ -89,6 +89,51 @@ struct DeviceSyncTests {
         #expect(SettingsSyncEngine.stillPending(old, found: nil, profile: "b") == nil)
     }
 
+    @Test("A question still waiting is kept through a relaunch, and answering it forgets it")
+    func pendingIsKept() {
+        let profile = UUID().uuidString
+        let change = RemoteSettingsChange(profile: profile, deviceName: "TV", updatedAt: Date(timeIntervalSince1970: 100),
+                                          values: ["skipIntro": "true"], cleared: ["autoPlayNext"])
+        SettingsSyncEngine.savePending(change, profile: profile, defaults: defaults)
+        #expect(SettingsSyncEngine.savedPending(profile: profile, defaults: defaults) == change)
+        #expect(SettingsSyncEngine.savedPending(profile: UUID().uuidString, defaults: defaults) == nil)
+        SettingsSyncEngine.answer(change, useThem: false, defaults: defaults)
+        #expect(SettingsSyncEngine.savedPending(profile: profile, defaults: defaults) == nil)
+    }
+
+    @Test("What Keep This Device's turned down isn't offered again until the other device changes it")
+    func declinedIsntOfferedAgain() {
+        let profile = UUID().uuidString
+        let change = RemoteSettingsChange(profile: profile, deviceName: "TV", updatedAt: .now,
+                                          values: ["skipIntro": "true"], cleared: ["autoPlayNext"])
+        SettingsSyncEngine.answer(change, useThem: false, defaults: defaults)
+        let declined = SettingsSyncEngine.declined(profile: profile, defaults: defaults)
+
+        let again = SettingsSyncEngine.offer(["skipIntro": "true", "skipCredits": "true"], cleared: ["autoPlayNext"],
+                                             declined: declined)
+        #expect(again.values == ["skipCredits": "true"])
+        #expect(again.cleared.isEmpty)
+
+        // Changed on the other device since: offered, and the old answer is forgotten.
+        let changed = SettingsSyncEngine.offer(["skipIntro": "false"], cleared: [], declined: declined)
+        #expect(changed.values == ["skipIntro": "false"])
+        #expect(changed.declined == DeclinedSettings())
+    }
+
+    // MARK: Size limits
+
+    @Test("A value longer than the server keeps isn't sent, and isn't cleared either")
+    func tooLongStaysHere() {
+        let long = String(repeating: "x", count: SettingsSyncEngine.maxValueLength + 1)
+        #expect(SettingsSyncEngine.withinServerLimits(["a": long, "b": "short"]) == ["b": "short"])
+        let result = SettingsSyncEngine.merge(local: ["homeShelfOrder": long], remote: [:], base: ["homeShelfOrder": long],
+                                              locked: [], canClearOnServer: true)
+        #expect(result == SettingsSyncEngine.MergeResult())
+        let replace = SettingsSyncEngine.replacePayload(local: ["homeShelfOrder": long], remote: ["homeShelfOrder": "a,b"],
+                                                        platform: "iOS", locked: [])
+        #expect(replace["homeShelfOrder"] == "a,b")
+    }
+
     // MARK: Using another device's settings
 
     @Test("Another device's settings replace this one's, but only what that device shows")

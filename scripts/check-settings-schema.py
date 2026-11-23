@@ -55,6 +55,8 @@ EXCLUDED = {
     "arcfin.settingsSync.lastSynced": "sync state",
     "arcfin.settingsSync.lastProfile": "sync state",
     "arcfin.settingsSync.handledRemote": "sync state",
+    "arcfin.settingsSync.pendingRemote": "sync state: the Ask First question still waiting",
+    "arcfin.settingsSync.declinedRemote": "sync state: what Ask First was told to keep",
     "arcfin.profileSettings.owner": "sync state",
     "arcfin.offlineProgressOfDeletedDownloads": "progress waiting to sync",
     # Queues, caches and hand-offs between parts of the app

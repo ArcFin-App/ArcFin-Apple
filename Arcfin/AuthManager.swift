@@ -424,6 +424,7 @@ final class AuthManager {
                 Self.syncLog.notice("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
                 if presence == .notInstalled {
                     SettingsSyncEngine.forgetLockedKeys(profile: credential.id.uuidString)
+                    SettingsSyncEngine.forgetPending(profile: credential.id.uuidString)
                     self.arcfinSyncLockedKeys = []
                     self.arcfinSyncDevicesProfile = nil
                     self.pendingRemoteSettings = nil
@@ -515,16 +516,15 @@ final class AuthManager {
         if let device = result.device { arcfinSyncCurrentDevice = device }
         // Also after a failed send, so a server that keeps refusing isn't asked after every change.
         registeredSnapshot = SettingsSyncEngine.snapshot()
-        pendingRemoteSettings = SettingsSyncMode.current() == .ask
-            ? SettingsSyncEngine.stillPending(pendingRemoteSettings, found: result.pending, profile: credential.id.uuidString)
-            : nil
+        pendingRemoteSettings = SettingsSyncMode.current() == .ask ? result.pending : nil
         return result.locked
     }
 
     private func deviceRegistration(settings: [String: String], name: String? = nil) -> ArcfinSyncDeviceRegistration {
         ArcfinSyncDeviceRegistration(name: name, renameCurrent: name != nil, platform: ArcfinDeviceInfo.platform,
                                      model: ArcfinDeviceInfo.model, appVersion: ArcfinDeviceInfo.appVersion,
-                                     syncMode: SettingsSyncMode.current().rawValue, settings: settings)
+                                     syncMode: SettingsSyncMode.current().rawValue,
+                                     settings: SettingsSyncEngine.withinServerLimits(settings))
     }
 
     /// Updates this device's record without syncing settings.
@@ -557,6 +557,7 @@ final class AuthManager {
         guard let session = arcfinSyncDevicesSession else { return }
         if SettingsSyncMode.current() == .off {
             pendingRemoteSettings = nil
+            SettingsSyncEngine.forgetPending(profile: session.credential.id.uuidString)
             Task { await registerDevice(credential: session.credential, header: session.header) }
         } else {
             refreshArcfinSync(for: session.credential)
@@ -644,6 +645,7 @@ final class AuthManager {
         try? TMDBCredential.save("", profile: id)
         MusicScrobbler.forget(profile: id)
         ProfileSettings.forget(profile: id.uuidString)
+        SettingsSyncEngine.forgetAskFirst(profile: id.uuidString)
         profiles.removeAll { $0.id == id }
         if profiles.isEmpty { clearDeviceSignIns() }
         // Spotlight, the widgets, playlists and the parental rules only ever hold the profile in

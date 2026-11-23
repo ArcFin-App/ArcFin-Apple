@@ -82,8 +82,76 @@ public struct DeviceSyncResult: Sendable {
     public let device: ArcfinSyncDevice?
 }
 
+/// Ask First's "Keep This Device's": what was turned down, so it isn't offered again while the
+/// other device still has it.
+struct DeclinedSettings: Codable, Equatable {
+    var values: [String: String] = [:]
+    var cleared: Set<String> = []
+}
+
 extension SettingsSyncEngine {
     private static func handledKey(profile: String) -> String { "arcfin.settingsSync.handledRemote.\(profile)" }
+    private static func pendingKey(profile: String) -> String { "arcfin.settingsSync.pendingRemote.\(profile)" }
+    private static func declinedKey(profile: String) -> String { "arcfin.settingsSync.declinedRemote.\(profile)" }
+
+    /// The plugin's limit on one value, in UTF-16 units as .NET counts a string.
+    static let maxValueLength = 4096
+
+    static func fitsOnServer(_ value: String) -> Bool { value.utf16.count <= maxValueLength }
+
+    /// Leaves out what the server can't keep, rather than sending it to be skipped.
+    public static func withinServerLimits(_ values: [String: String]) -> [String: String] {
+        values.filter { fitsOnServer($0.value) }
+    }
+
+    // MARK: Ask First, kept through a relaunch
+
+    /// The question still waiting for `profile`. It's kept, since after this device's own next
+    /// change the server says this device changed settings last and there'd be nothing to ask.
+    public static func savedPending(profile: String, defaults: UserDefaults = .standard) -> RemoteSettingsChange? {
+        defaults.data(forKey: pendingKey(profile: profile)).flatMap { try? JSONDecoder().decode(RemoteSettingsChange.self, from: $0) }
+    }
+
+    static func savePending(_ change: RemoteSettingsChange?, profile: String, defaults: UserDefaults) {
+        if let change, let data = try? JSONEncoder().encode(change) {
+            defaults.set(data, forKey: pendingKey(profile: profile))
+        } else {
+            defaults.removeObject(forKey: pendingKey(profile: profile))
+        }
+    }
+
+    public static func forgetPending(profile: String, defaults: UserDefaults = .standard) {
+        savePending(nil, profile: profile, defaults: defaults)
+    }
+
+    /// A removed profile's Ask First records.
+    public static func forgetAskFirst(profile: String, defaults: UserDefaults = .standard) {
+        forgetPending(profile: profile, defaults: defaults)
+        defaults.removeObject(forKey: declinedKey(profile: profile))
+    }
+
+    static func declined(profile: String, defaults: UserDefaults) -> DeclinedSettings {
+        defaults.data(forKey: declinedKey(profile: profile))
+            .flatMap { try? JSONDecoder().decode(DeclinedSettings.self, from: $0) } ?? DeclinedSettings()
+    }
+
+    static func saveDeclined(_ declined: DeclinedSettings, profile: String, defaults: UserDefaults) {
+        if declined == DeclinedSettings() {
+            defaults.removeObject(forKey: declinedKey(profile: profile))
+        } else if let data = try? JSONEncoder().encode(declined) {
+            defaults.set(data, forKey: declinedKey(profile: profile))
+        }
+    }
+
+    /// What's still worth offering: a value turned down is left out while the other device has
+    /// that same value, and forgotten once it changes.
+    static func offer(_ held: [String: String], cleared: Set<String>, declined: DeclinedSettings)
+        -> (values: [String: String], cleared: Set<String>, declined: DeclinedSettings) {
+        var still = DeclinedSettings()
+        still.values = declined.values.filter { held[$0.key] == $0.value }
+        still.cleared = declined.cleared.intersection(cleared)
+        return (held.filter { still.values[$0.key] != $0.value }, cleared.subtracting(still.cleared), still)
+    }
 
     // MARK: Pure decisions
 
@@ -148,9 +216,11 @@ extension SettingsSyncEngine {
         let platform = ArcfinDeviceInfo.schemaPlatform(platform)
         var values: [String: String] = [:]
         for setting in schema.settings where setting.scope == .synced && !locked.contains(setting.key) {
-            if let value = local[setting.key] {
-                values[setting.key] = value
-            } else if !setting.platforms.contains(platform) || neverCleared.contains(setting.key), let value = remote[setting.key] {
+            let localValue = local[setting.key]
+            if let localValue, fitsOnServer(localValue) {
+                values[setting.key] = localValue
+            } else if localValue != nil || !setting.platforms.contains(platform) || neverCleared.contains(setting.key),
+                      let value = remote[setting.key] {
                 values[setting.key] = value
             }
         }
@@ -204,8 +274,9 @@ extension SettingsSyncEngine {
             // Seen here already, so switching to Ask First doesn't ask about it.
             markHandled(state.updatedAt, profile: profile, defaults: defaults)
         case .ask:
-            pending = await askFirst(state: state, client: client, credential: credential, authHeader: authHeader,
-                                     deviceID: deviceID, locked: syncedLocked, defaults: defaults, isCurrent: isCurrent)
+            let found = await askFirst(state: state, client: client, credential: credential, authHeader: authHeader,
+                                       deviceID: deviceID, locked: syncedLocked, defaults: defaults, isCurrent: isCurrent)
+            pending = stillPending(savedPending(profile: profile, defaults: defaults), found: found, profile: profile)
         case .off:
             let local = collectLocalPayload(defaults: defaults).settings
             let remote = state.values
@@ -213,6 +284,7 @@ extension SettingsSyncEngine {
             apply(SyncPayload(settings: taken), defaults: defaults)
         }
         guard await isCurrent() else { return nil }
+        savePending(pending, profile: profile, defaults: defaults)
 
         let devicePolicy = devicePolicy(state.settings, local: snapshot(scope: .device, defaults: defaults))
         write(devicePolicy.apply, schema: .bundled, defaults: defaults)
@@ -235,7 +307,8 @@ extension SettingsSyncEngine {
 
         // Another profile's values are on this device: this one's are taken, as in sync().
         let taken = adoptRemote ? merged.apply : merged.apply.filter { locked.contains($0.key) }
-        let held = adoptRemote ? [:] : merged.apply.filter { !locked.contains($0.key) }
+        let offered = offer(adoptRemote ? [:] : merged.apply.filter { !locked.contains($0.key) }, cleared: merged.clear,
+                            declined: declined(profile: profile, defaults: defaults))
         apply(SyncPayload(settings: taken), defaults: defaults)
 
         var agreed = base ?? [:]
@@ -250,13 +323,15 @@ extension SettingsSyncEngine {
         guard await isCurrent() else { return nil }
         defaults.set(agreed, forKey: lastSyncedKey(profile: profile))
         defaults.set(profile, forKey: lastProfileKey)
+        saveDeclined(offered.declined, profile: profile, defaults: defaults)
 
         let lastHandled = defaults.object(forKey: handledKey(profile: profile)) as? Date
-        guard shouldAsk(state: state, deviceID: deviceID, lastHandled: lastHandled, changes: held, cleared: merged.clear),
+        guard shouldAsk(state: state, deviceID: deviceID, lastHandled: lastHandled, changes: offered.values,
+                        cleared: offered.cleared),
               let updatedAt = state.updatedAt
         else { return nil }
         return RemoteSettingsChange(profile: profile, deviceName: state.updatedByDeviceName ?? "",
-                                    updatedAt: updatedAt, values: held, cleared: merged.clear)
+                                    updatedAt: updatedAt, values: offered.values, cleared: offered.cleared)
     }
 
     /// A question still waiting keeps waiting through later syncs (one that changed settings here
@@ -277,6 +352,16 @@ extension SettingsSyncEngine {
     /// sent back as this device's change.
     public static func answer(_ change: RemoteSettingsChange, useThem: Bool, defaults: UserDefaults = .standard) {
         markHandled(change.updatedAt, profile: change.profile, defaults: defaults)
+        forgetPending(profile: change.profile, defaults: defaults)
+        var declined = declined(profile: change.profile, defaults: defaults)
+        if useThem {
+            for key in change.values.keys { declined.values[key] = nil }
+            declined.cleared.subtract(change.cleared)
+        } else {
+            declined.values.merge(change.values) { _, new in new }
+            declined.cleared.formUnion(change.cleared)
+        }
+        saveDeclined(declined, profile: change.profile, defaults: defaults)
         guard useThem else { return }
         let locked = lockedKeys(profile: change.profile, defaults: defaults)
         let values = change.values.filter { !locked.contains($0.key) }
@@ -295,6 +380,7 @@ extension SettingsSyncEngine {
         let local = collectLocalPayload(defaults: defaults).settings
         let (set, clear) = replacement(source: device.settings, sourcePlatform: device.platform, local: local, locked: locked)
         write(set, clearing: clear, schema: .bundled, defaults: defaults)
+        forgetPending(profile: profile, defaults: defaults)
     }
 
     /// "Send This Device's Settings to My Other Devices".
@@ -311,5 +397,6 @@ extension SettingsSyncEngine {
         for (key, value) in collectLocalPayload(defaults: defaults).settings where !locked.contains(key) { agreed[key] = value }
         defaults.set(agreed, forKey: lastSyncedKey(profile: profile))
         markHandled(saved.updatedAt, profile: profile, defaults: defaults)
+        forgetPending(profile: profile, defaults: defaults)
     }
 }

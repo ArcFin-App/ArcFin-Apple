@@ -524,6 +524,8 @@ public enum SettingsSyncEngine {
                 if let remoteValue, remoteValue != localValue { result.apply[key] = remoteValue }
                 continue
             }
+            // Longer than the server keeps: it stays as it is here.
+            if let localValue, !fitsOnServer(localValue) { continue }
             let clearable = canClearOnServer && baseValue != nil && !neverCleared.contains(key)
             if let localValue {
                 if remoteValue == nil {
