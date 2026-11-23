@@ -39,6 +39,17 @@ struct SeerrDiscoverPage: View {
             .navigationTitle("Discover")
             .arcfinNavTitleLarge("Discover")
             .searchable(text: $searchText, prompt: "Movies, series, people…")
+            .toolbar {
+                if seerrRepo.isConfigured {
+                    ToolbarItem(placement: .primaryAction) {
+                        NavigationLink {
+                            SeerrRequestsListView(filter: nil, title: "Requests")
+                        } label: {
+                            Label("Requests", systemImage: "text.badge.checkmark")
+                        }
+                    }
+                }
+            }
             .navigationDestination(for: SeerrItem.self) { item in
                 SeerrItemDetailView(item: item)
             }

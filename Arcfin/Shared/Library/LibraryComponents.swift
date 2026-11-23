@@ -55,10 +55,14 @@ struct LibraryCard: View {
 }
 
 /// "Your Requests" as one more tile alongside the library ones.
-struct RequestsCard: View {
+/// A Browse tile with no artwork of its own, such as Downloads.
+struct BrowseIconTile: View {
+    let systemImage: String
+    let title: LocalizedStringResource
+
     var body: some View {
-        BrowseTile(systemImage: "text.badge.checkmark", title: String(localized: "Requests")) {
-            BrowseTileFallback(systemImage: "text.badge.checkmark")
+        BrowseTile(systemImage: systemImage, title: String(localized: title)) {
+            BrowseTileFallback(systemImage: systemImage)
         }
     }
 }
@@ -236,45 +240,5 @@ struct LibrarySectionHeader: View {
             .foregroundStyle(DT.Color.textPrimary)
             .tracking(-0.2)
             .accessibilityAddTraits(.isHeader)
-    }
-}
-
-/// A full-width row on Browse that leads somewhere: Downloads, or a file on this device.
-struct LibraryLinkRow: View {
-    let systemImage: String
-    let title: LocalizedStringKey
-    let subtitle: LocalizedStringKey
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: systemImage)
-                .contentFont(.title3)
-                .foregroundStyle(DT.Color.accent)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(title)
-                    .contentFont(.subheadline, design: .default, weight: .semibold)
-                    .foregroundStyle(DT.Color.textPrimary)
-                Text(subtitle)
-                    .contentFont(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .contentFont(.footnote)
-                .foregroundStyle(DT.Color.textSecondary)
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(
-            RoundedRectangle(cornerRadius: DT.Radius.card)
-                .fill(DT.Color.backgroundSecondary)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DT.Radius.card)
-                        .stroke(DT.Color.textPrimary.opacity(0.06), lineWidth: 1)
-                )
-        )
     }
 }

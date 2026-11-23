@@ -7292,6 +7292,70 @@
         }
       }
     },
+    "If you run the server, choose defaults and lock settings for everyone or for one person, in Admin › Arcfin for Everyone. Needs Arcfin Sync 0.4." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wenn du den Server betreibst, legst du unter Admin › Arcfin für alle Standardwerte fest und sperrst Einstellungen, für alle oder für eine Person. Erfordert Arcfin Sync 0.4."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si administras el servidor, elige valores predeterminados y bloquea ajustes para todos o para una persona en Administración › Arcfin para todos. Requiere Arcfin Sync 0.4."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si vous gérez le serveur, choisissez des valeurs par défaut et verrouillez des réglages pour tout le monde ou pour une personne, dans Admin › Arcfin pour tous. Nécessite Arcfin Sync 0.4."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se gestisci il server, scegli i valori predefiniti e blocca le impostazioni per tutti o per una persona in Admin › Arcfin per tutti. Richiede Arcfin Sync 0.4."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバを管理しているなら、管理 › みんなのArcfinで、全員または特定の人のデフォルトを選び、設定をロックできます。Arcfin Sync 0.4が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버를 운영한다면 관리 › 모두를 위한 Arcfin에서 모든 사람이나 한 사람의 기본값을 정하고 설정을 잠글 수 있습니다. Arcfin Sync 0.4가 필요합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Beheer je de server, kies dan standaardwaarden en vergrendel instellingen voor iedereen of voor één persoon in Beheer › Arcfin voor iedereen. Vereist Arcfin Sync 0.4."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se você administra o servidor, escolha padrões e bloqueie ajustes para todos ou para uma pessoa em Admin › Arcfin para todos. Requer o Arcfin Sync 0.4."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Если вы управляете сервером, выберите значения по умолчанию и заблокируйте настройки для всех или для одного человека в разделе «Админ › Arcfin для всех». Нужен Arcfin Sync 0.4."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "如果你管理服务器，可在“管理 › 所有人的 Arcfin”中为所有人或某个人选择默认值并锁定设置。需要 Arcfin Sync 0.4。"
+          }
+        }
+      }
+    },
     "If you run the server, choose defaults and lock settings for everyone or for one person, in Settings › Server › Arcfin for Everyone. Needs Arcfin Sync 0.4." : {
       "localizations" : {
         "de" : {
@@ -90850,6 +90914,70 @@
         }
       }
     },
+    "Movies & Shows" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Filme & Serien"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Películas y series"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Films et séries"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Film e serie"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "映画と番組"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "영화 및 TV 프로그램"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Films en series"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Filmes e séries"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Фильмы и сериалы"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "电影和剧集"
+          }
+        }
+      }
+    },
     "Movies and episodes saved for offline playback" : {
       "localizations" : {
         "de" : {
@@ -105513,6 +105641,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "播放随机电影"
+          }
+        }
+      }
+    },
+    "Play a video file from this device" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Eine Videodatei von diesem Gerät abspielen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproducir un archivo de vídeo de este dispositivo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lire un fichier vidéo de cet appareil"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riproduci un file video da questo dispositivo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "このデバイスのビデオファイルを再生"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "이 기기의 비디오 파일 재생"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Een videobestand van dit apparaat afspelen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduzir um arquivo de vídeo deste dispositivo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Воспроизвести видеофайл с этого устройства"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "播放此设备上的视频文件"
           }
         }
       }

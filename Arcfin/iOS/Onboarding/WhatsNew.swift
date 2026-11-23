@@ -15,7 +15,7 @@ enum WhatsNew {
                          detail: "Choose how each device syncs its settings: automatically, Ask First to check with you before using changes from another device, or Off."),
             WhatsNewItem(icon: "person.2.badge.gearshape",
                          title: "Settings for Everyone",
-                         detail: "If you run the server, choose defaults and lock settings for everyone or for one person, in Settings › Server › Arcfin for Everyone. Needs Arcfin Sync 0.4."),
+                         detail: "If you run the server, choose defaults and lock settings for everyone or for one person, in Admin › Arcfin for Everyone. Needs Arcfin Sync 0.4."),
             WhatsNewItem(icon: "play.rectangle",
                          title: "Downloads in the Full Player",
                          detail: "Downloads and files you open play in the same player as streaming, with Aether, chapters, scrub previews and Up Next."),
