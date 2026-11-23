@@ -55,6 +55,38 @@ final class DownloadManager: NSObject {
     /// failure on an unrelated DownloadButton if more than one item is downloading at once.
     var errors: [String: String] = [:]
 
+    /// A download that failed, kept in Downloading with its reason until it's retried or
+    /// removed (#569). A queued season or Smart Downloads title failing used to just vanish.
+    struct FailedDownload: Identifiable {
+        let item: MediaItem
+        let title: String
+        let reason: String
+        let profile: DownloadProfile
+        let bitrateCap: Int?
+        let tracks: DownloadTracks
+        var id: String { item.id }
+    }
+
+    private(set) var failedDownloads: [FailedDownload] = []
+
+    /// The profile in use's failed downloads.
+    var ownFailedDownloads: [FailedDownload] {
+        let profile = currentProfile
+        return failedDownloads.filter { profile?.owns($0.profile) == true }
+    }
+
+    func retryFailedDownload(itemId: String, credential: ServerCredential, authHeader: String) async {
+        guard let failed = failedDownloads.first(where: { $0.id == itemId }) else { return }
+        removeFailedDownload(itemId: itemId)
+        await startDownload(item: failed.item, credential: credential, authHeader: authHeader,
+                            bitrateCap: failed.bitrateCap, tracks: failed.tracks)
+    }
+
+    func removeFailedDownload(itemId: String) {
+        failedDownloads.removeAll { $0.id == itemId }
+        errors[itemId] = nil
+    }
+
     @ObservationIgnored private var modelContext: ModelContext?
     /// Weak, and only ever used for orphan recovery (see recoverOrphanedDownload) — every
     /// normal download call site already passes its own credential/authHeader explicitly.
@@ -957,6 +989,7 @@ final class DownloadManager: NSObject {
               !pendingQueue.contains(where: { $0.item.id == item.id })
         else { return false }
         let isFreshQueue = activeItemIds.isEmpty && pendingQueue.isEmpty
+        failedDownloads.removeAll { $0.id == item.id }
         inFlightProfiles[item.id] = DownloadProfile(credential)
         activeItemTitles[item.id] = item.name
         activeItems[item.id] = item
@@ -1280,8 +1313,12 @@ final class DownloadManager: NSObject {
                 return
             }
             // Another profile's failed download isn't shown to this one.
-            if !cancelled, !keptForRetry, currentProfile?.owns(profile) == true {
-                errors[item.id] = (error as? DownloadError)?.errorDescription ?? String(localized: "Download failed: \(error.localizedDescription)")
+            if !cancelled, !keptForRetry {
+                let reason = (error as? DownloadError)?.errorDescription ?? String(localized: "Download failed: \(error.localizedDescription)")
+                if currentProfile?.owns(profile) == true { errors[item.id] = reason }
+                failedDownloads.removeAll { $0.id == item.id }
+                failedDownloads.append(FailedDownload(item: item, title: activeItemTitles[item.id] ?? item.name, reason: reason,
+                                                      profile: profile, bitrateCap: bitrateCap, tracks: tracks))
             }
         }
         if !keptForRetry { removePendingDescriptor(itemId: item.id) }

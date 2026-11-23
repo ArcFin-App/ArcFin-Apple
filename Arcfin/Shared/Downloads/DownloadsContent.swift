@@ -3,6 +3,7 @@
 import SwiftUI
 import Persistence
 import JellyfinAPI
+import AuthCore
 
 /// The Downloads list: storage, the queue, Continue Watching, shows and movies. `play` starts a
 /// download the way the platform does, and `manage` sits at the end of the storage card.
@@ -26,7 +27,7 @@ struct DownloadsContent<Manage: View>: View {
 
     var body: some View {
         Group {
-            if items.isEmpty && downloadManager.orderedInProgressIds.isEmpty {
+            if items.isEmpty && downloadManager.orderedInProgressIds.isEmpty && downloadManager.ownFailedDownloads.isEmpty {
                 ContentUnavailableView(
                     "No Downloads",
                     systemImage: "arrow.down.circle",
@@ -37,7 +38,9 @@ struct DownloadsContent<Manage: View>: View {
                     VStack(alignment: .leading, spacing: 28) {
                         storageCard
                         if let hold = downloadManager.queueHold { heldCard(hold) }
-                        if !downloadManager.orderedInProgressIds.isEmpty { downloadingSection }
+                        if !downloadManager.orderedInProgressIds.isEmpty || !downloadManager.ownFailedDownloads.isEmpty {
+                            downloadingSection
+                        }
                         if !model.isSelecting {
                             if mergeContinueAndUpNext {
                                 if !(inProgress + upNext).isEmpty { continueSection("Continue Watching", inProgress + upNext) }
@@ -152,7 +155,7 @@ struct DownloadsContent<Manage: View>: View {
     private var downloadingSection: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                sectionHeader("Downloading", count: downloadManager.orderedInProgressIds.count)
+                sectionHeader("Downloading", count: downloadManager.orderedInProgressIds.count + downloadManager.ownFailedDownloads.count)
                 Spacer()
                 Menu {
                     if downloadManager.isQueuePaused {
@@ -193,6 +196,12 @@ struct DownloadsContent<Manage: View>: View {
                                 Label("Cancel Download", systemImage: "xmark.circle")
                             }
                         }
+                }
+                ForEach(Array(downloadManager.ownFailedDownloads.enumerated()), id: \.element.id) { index, failed in
+                    if index > 0 || !downloadManager.orderedInProgressIds.isEmpty {
+                        Divider().overlay(DT.Color.textPrimary.opacity(0.06)).padding(.leading, 16)
+                    }
+                    FailedDownloadRow(failed: failed)
                 }
             }
             .background(cardBackground)
@@ -422,6 +431,70 @@ struct DownloadsSelectionToolbar: ToolbarContent {
                 }
             }
         }
+    }
+}
+
+// MARK: - Failed download row
+
+/// A title that failed to download: why, with Retry and Remove (#569).
+private struct FailedDownloadRow: View {
+    let failed: DownloadManager.FailedDownload
+
+    @Environment(DownloadManager.self) private var downloadManager
+    @Environment(AuthManager.self) private var authManager
+
+    var body: some View {
+        let isEpisode = failed.item.type == .episode
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text((isEpisode ? failed.item.seriesName : nil) ?? failed.title)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .lineLimit(1)
+                if isEpisode, let subtitle = HomeText.subtitle(failed.item) {
+                    Text(subtitle)
+                        .font(.system(.caption))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .lineLimit(1)
+                }
+                Text("Failed: \(failed.reason)")
+                    .font(.system(.caption))
+                    .foregroundStyle(DT.Color.palette("F43F5E"))
+                    .lineLimit(2)
+            }
+            Spacer()
+            Button(action: retry) {
+                Image(systemName: "arrow.clockwise.circle.fill")
+                    .font(.system(.title3))
+                    .foregroundStyle(DT.Color.accent)
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityLabel("Retry download")
+            .buttonStyle(.plain)
+            Button { downloadManager.removeFailedDownload(itemId: failed.id) } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(.title3))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .frame(minWidth: 44, minHeight: 44)
+            }
+            .accessibilityLabel("Remove from list")
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .contextMenu {
+            Button(action: retry) { Label("Retry Download", systemImage: "arrow.clockwise") }
+            Button(role: .destructive) { downloadManager.removeFailedDownload(itemId: failed.id) } label: {
+                Label("Remove from List", systemImage: "xmark.circle")
+            }
+        }
+    }
+
+    private func retry() {
+        guard case .authenticated(let credential) = authManager.state else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        let id = failed.id
+        Task { await downloadManager.retryFailedDownload(itemId: id, credential: credential, authHeader: authHeader) }
     }
 }
 
