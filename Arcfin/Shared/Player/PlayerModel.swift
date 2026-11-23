@@ -762,7 +762,7 @@ final class PlayerModel {
         // Before the connection check below, which downloads running alongside would skew.
         if !holdsPlayerActivity {
             holdsPlayerActivity = true
-            PlayerActivity.shared.opened()
+            PlayerActivity.shared.opened(pausesDownloads: !source.isLocal)
         }
         playStartedAt = nil
         positionIsTrusted = false
@@ -1258,7 +1258,7 @@ final class PlayerModel {
         reloadTask?.cancel()
         if holdsPlayerActivity {
             holdsPlayerActivity = false
-            PlayerActivity.shared.closed()
+            PlayerActivity.shared.closed(pausesDownloads: !source.isLocal)
         }
     }
 
@@ -2488,15 +2488,22 @@ final class PlayerActivity {
     static let shared = PlayerActivity()
     private(set) var openPlayers = 0
     var isPlayerOpen: Bool { openPlayers > 0 }
+    /// Players streaming from the server, which downloads pause for. A download or a picked
+    /// file plays from this device, so it leaves them running.
+    private var streamingPlayers = 0
 
-    func opened() {
+    func opened(pausesDownloads: Bool) {
         openPlayers += 1
-        if openPlayers == 1 { AppServices.downloadManager.playerOpened() }
+        guard pausesDownloads else { return }
+        streamingPlayers += 1
+        if streamingPlayers == 1 { AppServices.downloadManager.playerOpened() }
     }
 
-    func closed() {
+    func closed(pausesDownloads: Bool) {
         guard openPlayers > 0 else { return }
         openPlayers -= 1
-        if openPlayers == 0 { AppServices.downloadManager.playerClosed() }
+        guard pausesDownloads, streamingPlayers > 0 else { return }
+        streamingPlayers -= 1
+        if streamingPlayers == 0 { AppServices.downloadManager.playerClosed() }
     }
 }
