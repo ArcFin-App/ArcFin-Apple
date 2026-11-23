@@ -607,7 +607,9 @@ struct MusicPlaylistView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
-            ForEach(Array(songs.enumerated()), id: \.offset) { index, song in
+            // By the playlist entry, not the position: after a removal the rows below kept the
+            // removed row's place and state.
+            ForEach(Array(songs.enumerated()), id: \.element.playlistRowID) { index, song in
                 MusicSongRow(song: song, onRemove: { Task { await MusicPlaylistEditor.shared.remove(song, from: playlist) } }) {
                     MusicActions.play(songs, from: index)
                 }
@@ -672,4 +674,9 @@ private struct MusicGenreTile: View {
                 cover = albums?.albums.first.flatMap { MusicAPI.artworkURL($0, width: 300) }
             }
     }
+}
+
+private extension MusicSong {
+    /// The same song can be in a playlist twice; each entry has its own id.
+    var playlistRowID: String { playlistEntryId ?? id }
 }
