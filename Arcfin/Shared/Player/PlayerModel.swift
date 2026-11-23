@@ -373,6 +373,8 @@ final class PlayerModel {
     /// volume buttons don't reach the app at all unless wired up this way).
     func setEngineVolume(_ volume: Float) {
         engineVolume = volume
+        // Muted isn't a level: the next title starts at the one before it.
+        if volume > 0 { Self.carriedVolume = volume }
         if let avPlayer = player as? AVFoundationPlayer {
             avPlayer.player.volume = volume
         } else if let vlcEngine = player as? VLCEnginePlayer {
@@ -384,7 +386,10 @@ final class PlayerModel {
 
     /// The volume last set on the engine, for whichever engine takes the stream over next
     /// (Aether's fallback, the missing-picture switch), which would otherwise start at full.
-    @ObservationIgnored private var engineVolume: Float = 1
+    @ObservationIgnored private var engineVolume: Float = PlayerModel.carriedVolume
+
+    /// The level the last title was left at, so the next one (the next episode too) starts there.
+    private(set) static var carriedVolume: Float = 1
 
     private func applyEngineVolume() {
         if engineVolume != 1 { setEngineVolume(engineVolume) }
@@ -1004,7 +1009,7 @@ final class PlayerModel {
 
     // MARK: - Remote control
 
-    @ObservationIgnored private var remoteVolume: Float = 1
+    @ObservationIgnored private var remoteVolume: Float = PlayerModel.carriedVolume
     @ObservationIgnored private var volumeBeforeMute: Float?
 
     /// A command from the web app or the dashboard (see RemoteControl). Stop is the view's,

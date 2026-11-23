@@ -85,6 +85,7 @@ struct PlayerView: View {
         self.onPlayNext = onPlayNext
         _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext,
                                                  source: source))
+        _macVolume = State(initialValue: Double(PlayerModel.carriedVolume))
     }
 
     /// A download, played from its file with the details saved beside it. Up Next and
