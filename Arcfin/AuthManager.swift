@@ -52,10 +52,16 @@ final class AuthManager {
             if let id = state.credential?.id, id != oldValue.credential?.id {
                 ProfileSettings.activate(profile: id.uuidString, profiles: profiles.map(\.id.uuidString))
                 activateSeerrAccount(for: id)
-                if oldValue.credential != nil { forgetPreviousProfile() }
+                // Also after an expired sign-in, when someone else signs in from signed out.
+                if oldValue.credential != nil || lastActiveProfileID.map({ $0 != id }) == true { forgetPreviousProfile() }
+                lastActiveProfileID = id
             }
         }
     }
+    /// The profile last in use, kept through a signed-out spell (an expired sign-in) so a
+    /// different one signing in still clears what the last one left outside the app.
+    @ObservationIgnored private var lastActiveProfileID: UUID? =
+        UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap(UUID.init(uuidString:))
     var isChecking: Bool = true
     var profiles: [ServerCredential] = []
     /// Not persisted — re-checked once per sign-in/cold launch (see checkStoredAuth/save).
@@ -199,6 +205,8 @@ final class AuthManager {
         guard let url = URL(string: "https://demo.jellyfin.org/stable"),
               let credential = try? await authClient.authenticate(baseURL: url, username: "demo", password: "")
         else { return }
+        // Not a switch from this Mac's own profile: what it left outside the app stays.
+        lastActiveProfileID = nil
         profiles = [credential]
         state = .authenticated(credential)
     }
@@ -709,6 +717,7 @@ final class AuthManager {
         } else {
             forgetPreviousProfile()
             UserDefaults.standard.removeObject(forKey: "arcfin.activeProfileID")
+            lastActiveProfileID = nil
             state = .unauthenticated
         }
     }
