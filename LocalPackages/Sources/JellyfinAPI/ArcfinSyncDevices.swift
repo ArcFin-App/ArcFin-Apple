@@ -254,7 +254,8 @@ public struct ArcfinSyncAdminUser: Sendable, Decodable, Equatable, Identifiable 
 // MARK: - Plugin v2 endpoints
 
 private struct SyncBody: Encodable {
-    let values: [String: String]
+    /// A null clears that setting.
+    let values: [String: String?]
     let replace: Bool
     enum CodingKeys: String, CodingKey { case values = "Values", replace = "Replace" }
 }
@@ -275,11 +276,14 @@ extension ArcfinSyncClient {
     }
 
     /// `replace`: this device's settings become everyone's, so a synced setting not in `values`
-    /// goes back to its default.
+    /// goes back to its default. `clearing`: settings this device no longer has, cleared on the
+    /// server too.
     public func updateSync(credential: ServerCredential, authHeader: String, values: [String: String],
-                           replace: Bool) async throws -> ArcfinSyncState {
-        try decode(await send("PUT", "Sync", body: SyncBody(values: values, replace: replace),
-                              credential: credential, authHeader: authHeader))
+                           clearing: Set<String> = [], replace: Bool) async throws -> ArcfinSyncState {
+        var body: [String: String?] = values.mapValues { $0 }
+        for key in clearing where values[key] == nil { body[key] = .some(nil) }
+        return try decode(await send("PUT", "Sync", body: SyncBody(values: body, replace: replace),
+                                     credential: credential, authHeader: authHeader))
     }
 
     public func registerDevice(credential: ServerCredential, authHeader: String,

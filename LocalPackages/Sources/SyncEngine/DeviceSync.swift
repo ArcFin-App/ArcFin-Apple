@@ -55,17 +55,20 @@ public enum ArcfinDeviceInfo {
 // MARK: - Settings changed on another device
 
 /// What Ask First holds until the person answers.
-public struct RemoteSettingsChange: Sendable, Equatable {
+public struct RemoteSettingsChange: Sendable, Equatable, Codable {
     public let profile: String
     public let deviceName: String
     public let updatedAt: Date
     public let values: [String: String]
+    /// Settings the other device cleared.
+    public let cleared: Set<String>
 
-    public init(profile: String, deviceName: String, updatedAt: Date, values: [String: String]) {
+    public init(profile: String, deviceName: String, updatedAt: Date, values: [String: String], cleared: Set<String> = []) {
         self.profile = profile
         self.deviceName = deviceName
         self.updatedAt = updatedAt
         self.values = values
+        self.cleared = cleared
     }
 }
 
@@ -107,8 +110,8 @@ extension SettingsSyncEngine {
 
     /// Ask First asks once per change made on another device.
     public static func shouldAsk(state: ArcfinSyncState, deviceID: String, lastHandled: Date?,
-                                 changes: [String: String]) -> Bool {
-        guard !changes.isEmpty, let updatedAt = state.updatedAt,
+                                 changes: [String: String], cleared: Set<String> = []) -> Bool {
+        guard !changes.isEmpty || !cleared.isEmpty, let updatedAt = state.updatedAt,
               let by = state.updatedByDeviceId, !by.isEmpty, by != deviceID
         else { return false }
         return lastHandled.map { updatedAt > $0 } ?? true
@@ -187,7 +190,8 @@ extension SettingsSyncEngine {
         var pending: RemoteSettingsChange?
 
         if mode == .automatic {
-            guard await sync(credential: credential, authHeader: authHeader, defaults: defaults, isCurrent: isCurrent) != nil
+            guard await sync(credential: credential, authHeader: authHeader, defaults: defaults, clearsOnServer: true,
+                             isCurrent: isCurrent) != nil
             else { return nil }
         }
         guard let state = try? await client.fetchSync(credential: credential, authHeader: authHeader),
@@ -226,29 +230,33 @@ extension SettingsSyncEngine {
         let profile = credential.id.uuidString
         let local = collectLocalPayload(defaults: defaults).settings
         let (base, adoptRemote) = startingPoint(profile: profile, defaults: defaults)
-        let (toApply, toPush) = merge(local: local, remote: state.values, base: base, locked: locked, adoptRemote: adoptRemote)
+        let merged = merge(local: local, remote: state.values, base: base, locked: locked, adoptRemote: adoptRemote,
+                           canClearOnServer: true)
 
         // Another profile's values are on this device: this one's are taken, as in sync().
-        let taken = adoptRemote ? toApply : toApply.filter { locked.contains($0.key) }
-        let held = adoptRemote ? [:] : toApply.filter { !locked.contains($0.key) }
+        let taken = adoptRemote ? merged.apply : merged.apply.filter { locked.contains($0.key) }
+        let held = adoptRemote ? [:] : merged.apply.filter { !locked.contains($0.key) }
         apply(SyncPayload(settings: taken), defaults: defaults)
 
         var agreed = base ?? [:]
         for (key, value) in taken { agreed[key] = value }
-        if !toPush.isEmpty,
-           (try? await client.updateSync(credential: credential, authHeader: authHeader, values: toPush, replace: false)) != nil {
-            for (key, value) in toPush { agreed[key] = value }
+        if !merged.push.isEmpty || !merged.clearOnServer.isEmpty,
+           let saved = try? await client.updateSync(credential: credential, authHeader: authHeader, values: merged.push,
+                                                    clearing: merged.clearOnServer, replace: false) {
+            let kept = saved.values
+            for (key, value) in merged.push where kept[key] == value { agreed[key] = value }
+            for key in merged.clearOnServer { agreed[key] = nil }
         }
         guard await isCurrent() else { return nil }
         defaults.set(agreed, forKey: lastSyncedKey(profile: profile))
         defaults.set(profile, forKey: lastProfileKey)
 
         let lastHandled = defaults.object(forKey: handledKey(profile: profile)) as? Date
-        guard shouldAsk(state: state, deviceID: deviceID, lastHandled: lastHandled, changes: held),
+        guard shouldAsk(state: state, deviceID: deviceID, lastHandled: lastHandled, changes: held, cleared: merged.clear),
               let updatedAt = state.updatedAt
         else { return nil }
         return RemoteSettingsChange(profile: profile, deviceName: state.updatedByDeviceName ?? "",
-                                    updatedAt: updatedAt, values: held)
+                                    updatedAt: updatedAt, values: held, cleared: merged.clear)
     }
 
     /// A question still waiting keeps waiting through later syncs (one that changed settings here
@@ -272,9 +280,12 @@ extension SettingsSyncEngine {
         guard useThem else { return }
         let locked = lockedKeys(profile: change.profile, defaults: defaults)
         let values = change.values.filter { !locked.contains($0.key) }
+        let cleared = change.cleared.subtracting(locked)
         apply(SyncPayload(settings: values), defaults: defaults)
+        for key in cleared { defaults.removeObject(forKey: key) }
         var agreed = lastSynced(profile: change.profile, defaults: defaults) ?? [:]
         for (key, value) in values { agreed[key] = value }
+        for key in cleared { agreed[key] = nil }
         defaults.set(agreed, forKey: lastSyncedKey(profile: change.profile))
     }
 

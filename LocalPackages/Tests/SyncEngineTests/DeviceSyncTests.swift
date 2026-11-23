@@ -69,6 +69,17 @@ struct DeviceSyncTests {
         #expect(defaults.bool(forKey: "skipIntro") == false)
     }
 
+    @Test("Using them clears what the other device cleared")
+    func answerClears() {
+        let profile = UUID().uuidString
+        defaults.set(false, forKey: "autoPlayNext")
+        defaults.set(["autoPlayNext": "false"], forKey: SettingsSyncEngine.lastSyncedKey(profile: profile))
+        let change = RemoteSettingsChange(profile: profile, deviceName: "TV", updatedAt: .now, values: [:], cleared: ["autoPlayNext"])
+        SettingsSyncEngine.answer(change, useThem: true, defaults: defaults)
+        #expect(defaults.object(forKey: "autoPlayNext") == nil)
+        #expect(!SettingsSyncEngine.hasLocalChanges(profile: profile, defaults: defaults))
+    }
+
     @Test("A question still waiting isn't lost to a later sync, but a newer one replaces it")
     func pendingSurvivesSyncs() {
         let old = RemoteSettingsChange(profile: "a", deviceName: "TV", updatedAt: Date(timeIntervalSince1970: 1), values: ["skipIntro": "true"])
@@ -91,6 +102,23 @@ struct DeviceSyncTests {
         // Downloads aren't on Apple TV, and the Seerr sign-in never goes.
         #expect(!result.clear.contains("wifiOnly"))
         #expect(!result.clear.contains("seerrURL"))
+    }
+
+    @Test("A setting Use These Settings Here clears is then cleared on the server, not taken back from it")
+    func useSettingsClearsOnServer() {
+        let profile = UUID().uuidString
+        defaults.set(false, forKey: "autoPlayNext")
+        defaults.set(true, forKey: "skipIntro")
+        let agreed = ["autoPlayNext": "false", "skipIntro": "true"]
+        defaults.set(agreed, forKey: SettingsSyncEngine.lastSyncedKey(profile: profile))
+        let tv = ArcfinSyncDevice(deviceId: "tv", name: "TV", platform: "tvOS", settings: ["skipIntro": "true"])
+        SettingsSyncEngine.useSettings(of: tv, profile: profile, defaults: defaults)
+        #expect(defaults.object(forKey: "autoPlayNext") == nil)
+
+        let local = SettingsSyncEngine.collectLocalPayload(defaults: defaults).settings
+        let result = SettingsSyncEngine.merge(local: local, remote: agreed, base: agreed, locked: [], canClearOnServer: true)
+        #expect(result.clearOnServer == ["autoPlayNext"])
+        #expect(result.apply.isEmpty)
     }
 
     @Test("An iPad's settings count as iOS's")

@@ -498,32 +498,50 @@ public enum SettingsSyncEngine {
     /// The profile that synced last on this device.
     static let lastProfileKey = "arcfin.settingsSync.lastProfile"
 
+    /// What a sync does with each setting. `clear`: cleared on another device, so cleared here
+    /// too. `clearOnServer`: cleared here, so cleared on the server too.
+    struct MergeResult: Equatable {
+        var apply: [String: String] = [:]
+        var push: [String: String] = [:]
+        var clear: Set<String> = []
+        var clearOnServer: Set<String> = []
+    }
+
     /// Which values to take from the server and which to send it. `base` is what both last
     /// agreed on, nil before the first sync that kept it.
     /// `adoptRemote`: this device's values belong to another profile (its first sync here after
     /// a switch), so the server's are taken and nothing is sent.
+    /// With `canClearOnServer` (plugin v2, which takes a clear), a setting both had that's now
+    /// missing on one side was cleared there, and is cleared on the other side too, except the
+    /// Seerr sign-in (see `neverCleared`). An older server can't clear one, so one it lacks is
+    /// sent again, and the server's value comes back for one cleared here.
     static func merge(local: [String: String], remote: [String: String], base: [String: String]?,
-                      locked: Set<String>, adoptRemote: Bool = false) -> (apply: [String: String], push: [String: String]) {
-        var toApply: [String: String] = [:]
-        var toPush: [String: String] = [:]
+                      locked: Set<String>, adoptRemote: Bool = false, canClearOnServer: Bool = false) -> MergeResult {
+        var result = MergeResult()
         for key in Set(remote.keys).union(local.keys) where SettingsSyncRegistry.allKeys.contains(key) {
-            let remoteValue = remote[key], localValue = local[key]
-            if adoptRemote {
-                if let remoteValue, remoteValue != localValue { toApply[key] = remoteValue }
+            let remoteValue = remote[key], localValue = local[key], baseValue = base?[key]
+            if adoptRemote || locked.contains(key) {
+                if let remoteValue, remoteValue != localValue { result.apply[key] = remoteValue }
                 continue
             }
-            if locked.contains(key) {
-                if let remoteValue, remoteValue != localValue { toApply[key] = remoteValue }
-                continue
-            }
-            let changedHere = localValue != nil && localValue != base?[key]
-            if let localValue, remoteValue == nil || (changedHere && localValue != remoteValue) {
-                toPush[key] = localValue
-            } else if let remoteValue, remoteValue != localValue {
-                toApply[key] = remoteValue
+            let clearable = canClearOnServer && baseValue != nil && !neverCleared.contains(key)
+            if let localValue {
+                if remoteValue == nil {
+                    if clearable && localValue == baseValue { result.clear.insert(key) } else { result.push[key] = localValue }
+                } else if localValue != baseValue && localValue != remoteValue {
+                    result.push[key] = localValue
+                } else if let remoteValue, remoteValue != localValue {
+                    result.apply[key] = remoteValue
+                }
+            } else if let remoteValue {
+                if clearable && remoteValue == baseValue {
+                    result.clearOnServer.insert(key)
+                } else {
+                    result.apply[key] = remoteValue
+                }
             }
         }
-        return (toApply, toPush)
+        return result
     }
 
     static func lockedKey(profile: String) -> String { "arcfin.settingsSync.locked.\(profile)" }
@@ -561,13 +579,14 @@ public enum SettingsSyncEngine {
     /// a switch would read and write the next profile's settings, so it stops there.
     @discardableResult
     public static func sync(credential: ServerCredential, authHeader: String, defaults: UserDefaults = .standard,
+                            clearsOnServer: Bool = false,
                             isCurrent: @Sendable () async -> Bool = { true }) async -> Set<String>? {
-        let pluginClient = ArcfinPluginSyncClient(credential: credential, authHeader: authHeader)
+        let client = ArcfinSyncClient()
         let profile = credential.id.uuidString
 
         // One read gives both the values and the locks, so a merge never runs with the locks
         // missing and sends this device's value for a locked key.
-        guard let settings = try? await ArcfinSyncClient().fetchSettings(credential: credential, authHeader: authHeader)
+        guard let settings = try? await client.fetchSettings(credential: credential, authHeader: authHeader)
         else { return nil }
         var remote: [String: String] = [:]
         for setting in settings {
@@ -579,17 +598,37 @@ public enum SettingsSyncEngine {
         let local = collectLocalPayload(defaults: defaults).settings
         let (base, adoptRemote) = startingPoint(profile: profile, defaults: defaults)
 
-        let (toApply, toPush) = merge(local: local, remote: remote, base: base, locked: locked, adoptRemote: adoptRemote)
-        apply(SyncPayload(settings: toApply), defaults: defaults)
+        let merged = merge(local: local, remote: remote, base: base, locked: locked, adoptRemote: adoptRemote,
+                           canClearOnServer: clearsOnServer)
+        apply(SyncPayload(settings: merged.apply), defaults: defaults)
+        for key in merged.clear { defaults.removeObject(forKey: key) }
         var agreed = collectLocalPayload(defaults: defaults).settings
-        if !toPush.isEmpty, (try? await pluginClient.push(SyncPayload(settings: toPush))) == nil {
-            // Not sent: keep those as changed here, so the next sync sends them again.
-            for key in toPush.keys { agreed[key] = base?[key] }
+        if !merged.push.isEmpty || !merged.clearOnServer.isEmpty {
+            let kept: [String: String]?
+            if clearsOnServer {
+                kept = try? await client.updateSync(credential: credential, authHeader: authHeader, values: merged.push,
+                                                    clearing: merged.clearOnServer, replace: false).values
+            } else {
+                kept = (try? await client.updateSettings(credential: credential, authHeader: authHeader, values: merged.push))
+                    .map { Dictionary($0.compactMap { s in s.value.map { (s.key, $0) } }, uniquingKeysWith: { _, last in last }) }
+            }
+            agreed = agreedAfterSending(agreed, pushed: merged.push, cleared: merged.clearOnServer, kept: kept, base: base)
         }
         guard await isCurrent() else { return locked }
         defaults.set(agreed, forKey: lastSyncedKey(profile: profile))
         defaults.set(profile, forKey: lastProfileKey)
         return locked
+    }
+
+    /// Only what the server kept counts as agreed. One it didn't take (not sent, or a value it
+    /// refused) stays as changed here, so the next sync sends it again rather than reading the
+    /// server's lack of it as a clear made elsewhere.
+    static func agreedAfterSending(_ agreed: [String: String], pushed: [String: String], cleared: Set<String>,
+                                   kept: [String: String]?, base: [String: String]?) -> [String: String] {
+        var agreed = agreed
+        for (key, value) in pushed where kept?[key] != value { agreed[key] = base?[key] }
+        if kept == nil { for key in cleared { agreed[key] = base?[key] } }
+        return agreed
     }
 
     /// What this profile last agreed on here, and whether the device's values are someone
