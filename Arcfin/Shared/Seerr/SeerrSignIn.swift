@@ -38,6 +38,8 @@ enum SeerrSignInText {
             String(localized: "Quick Connect is turned off on your Jellyfin server. Ask your admin to turn it on, or enter your password instead.")
         case .quickConnectRefused(let reason?):
             reason
+        case .quickConnectNotStarted:
+            String(localized: "Seerr couldn't start a Quick Connect sign-in. Check that Seerr can reach your Jellyfin server, or enter your password instead.")
         case .quickConnectRefused(nil):
             String(localized: "Seerr didn't accept your Jellyfin account. Ask your admin to add you to Seerr.")
         case .requestFailed, nil:

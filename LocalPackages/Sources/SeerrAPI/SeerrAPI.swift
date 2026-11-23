@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Foundation
-import OpenAPIRuntime
-import OpenAPIURLSession
 import AuthCore
 import Telemetry
 
 // MARK: - Client protocol
-// Stub — replace with OpenAPI-generated types once seerr openapi.yaml is wired up.
 
 public protocol SeerrClientProtocol: Sendable {
     func getRequests(page: Int, filter: RequestFilter) async throws -> RequestsPage
@@ -17,7 +14,7 @@ public protocol SeerrClientProtocol: Sendable {
     func searchMedia(query: String) async throws -> [SearchResult]
 }
 
-// MARK: - Stub models
+// MARK: - Models
 
 public enum RequestFilter: String, Sendable {
     case all, approved, pending, processing, available, unavailable

@@ -13,8 +13,8 @@ import Observation
 @MainActor
 @Observable
 final class AppIntroduction {
-    static let onboardingVersion = 1
-    static let whatsNewVersion = 5
+    static let onboardingVersion = 2
+    static let whatsNewVersion = 6
 
     enum Presentation: Equatable {
         case onboarding, whatsNew
@@ -27,9 +27,14 @@ final class AppIntroduction {
     static let whatsNewKey = "arcfin.introduction.whatsNewSeen"
 
     private let defaults: UserDefaults
+    /// Signed in or shown What's New before this launch: someone updating, who gets this
+    /// version's news after the tour as well.
+    private let isUpdating: Bool
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        isUpdating = defaults.string(forKey: "arcfin.activeProfileID") != nil
+            || defaults.object(forKey: Self.whatsNewKey) != nil
         // 0.2.0 and earlier had no tour. Someone who signed in on one of those is updating,
         // not new, so they get What's New instead of the welcome.
         if defaults.object(forKey: Self.onboardingKey) == nil,
@@ -48,10 +53,21 @@ final class AppIntroduction {
     }
 
     /// Someone new has nothing to compare against, so this version's news counts as seen too.
+    /// Someone updating gets What's New next, once the tour has gone: a second full-screen
+    /// presentation started while the first is closing doesn't appear on Apple TV.
     func finishOnboarding() {
         defaults.set(Self.onboardingVersion, forKey: Self.onboardingKey)
-        defaults.set(Self.whatsNewVersion, forKey: Self.whatsNewKey)
         presentation = nil
+        guard isUpdating, defaults.integer(forKey: Self.whatsNewKey) < Self.whatsNewVersion,
+              !WhatsNew.items.isEmpty else {
+            defaults.set(Self.whatsNewVersion, forKey: Self.whatsNewKey)
+            return
+        }
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(700))
+            guard let self, self.presentation == nil else { return }
+            self.presentation = .whatsNew
+        }
     }
 
     func finishWhatsNew() {

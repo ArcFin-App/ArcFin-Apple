@@ -23,36 +23,15 @@ let package = Package(
         .library(name: "JellyfinAPI",     targets: ["JellyfinAPI"]),
         .library(name: "SeerrAPI",   targets: ["SeerrAPI"]),
         // MARK: Feature Packages
-        .library(name: "AppState",        targets: ["AppState"]),
         .library(name: "MediaEngine",     targets: ["MediaEngine"]),
         .library(name: "SyncEngine",      targets: ["SyncEngine"]),
-        .library(name: "SearchKit",       targets: ["SearchKit"]),
         .library(name: "CastKit",         targets: ["CastKit"]),
     ],
     dependencies: [
-        // State management
-        .package(
-            url: "https://github.com/pointfreeco/swift-composable-architecture",
-            from: "1.15.0"
-        ),
         // Image caching
         .package(
             url: "https://github.com/kean/Nuke",
             from: "12.0.0"
-        ),
-        // OpenAPI — runtime + transport (generator plugin applied per-target when specs are ready)
-        .package(
-            url: "https://github.com/apple/swift-openapi-runtime",
-            from: "1.3.0"
-        ),
-        .package(
-            url: "https://github.com/apple/swift-openapi-urlsession",
-            from: "1.0.0"
-        ),
-        // OpenAPI generator build-tool plugin (wire up per-target alongside openapi.yaml)
-        .package(
-            url: "https://github.com/apple/swift-openapi-generator",
-            from: "1.3.0"
         ),
         // Primary player engine — FFmpeg demux + VideoToolbox hardware decode + a real
         // AVPlayer leg for Dolby Vision display-criteria switching and Atmos passthrough.
@@ -128,49 +107,22 @@ let package = Package(
             dependencies: ["Telemetry"]
         ),
 
-        // API clients — manual stubs now; swap to OpenAPI-generated when specs land.
-        // To enable generation: add the plugin + openapi.yaml + openapi-generator-config.yaml
-        // to the target directory, then uncomment the plugins line below.
+        // API clients, written by hand.
         .target(
             name: "JellyfinAPI",
-            dependencies: [
-                "AuthCore",
-                "Telemetry",
-                .product(name: "OpenAPIRuntime",    package: "swift-openapi-runtime"),
-                .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
-            ]
-            // plugins: [.plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator")]
+            dependencies: ["AuthCore", "Telemetry"]
         ),
 
         .target(
             name: "SeerrAPI",
-            dependencies: [
-                "AuthCore",
-                "Telemetry",
-                .product(name: "OpenAPIRuntime",    package: "swift-openapi-runtime"),
-                .product(name: "OpenAPIURLSession", package: "swift-openapi-urlsession"),
-            ]
-            // plugins: [.plugin(name: "OpenAPIGenerator", package: "swift-openapi-generator")]
+            dependencies: ["AuthCore", "Telemetry"]
         ),
 
         // ── Feature Packages ───────────────────────────────────────────────
 
         .target(
-            name: "AppState",
-            dependencies: [
-                "JellyfinAPI",
-                "SeerrAPI",
-                "Persistence",
-                "AuthCore",
-                "Telemetry",
-                .product(name: "ComposableArchitecture", package: "swift-composable-architecture"),
-            ]
-        ),
-
-        .target(
             name: "MediaEngine",
             dependencies: [
-                "AppState",
                 "AuthCore",
                 "JellyfinAPI",
                 "Telemetry",
@@ -188,23 +140,12 @@ let package = Package(
         .target(
             name: "SyncEngine",
             dependencies: [
-                "AppState",
                 "AuthCore",
                 "JellyfinAPI",
                 "Persistence",
                 "Telemetry",
             ],
             resources: [.copy("Resources/settings-schema.json")]
-        ),
-
-        .target(
-            name: "SearchKit",
-            dependencies: [
-                "AppState",
-                "JellyfinAPI",
-                "Persistence",
-                "Telemetry",
-            ]
         ),
 
         .target(
@@ -218,12 +159,10 @@ let package = Package(
 
         // ── Tests ─────────────────────────────────────────────────────────
 
-        .testTarget(name: "AppStateTests",    dependencies: ["AppState"]),
         .testTarget(name: "JellyfinAPITests", dependencies: ["JellyfinAPI"]),
         .testTarget(name: "AuthCoreTests",    dependencies: ["AuthCore"]),
         .testTarget(name: "PersistenceTests", dependencies: ["Persistence"]),
         .testTarget(name: "MediaEngineTests", dependencies: ["MediaEngine"]),
-        .testTarget(name: "SearchKitTests",   dependencies: ["SearchKit"]),
         .testTarget(name: "SyncEngineTests",  dependencies: ["SyncEngine"]),
     ]
 )

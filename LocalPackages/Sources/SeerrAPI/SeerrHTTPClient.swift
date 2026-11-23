@@ -92,6 +92,8 @@ public actor SeerrHTTPClient {
 
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
+    /// Why the last sign-in failed, so the requests stopped after it report the same reason.
+    private var lastSignInError: SeerrError?
     private var loginTask: Task<Void, Error>?
     /// Watchlist and request titles' details by "tv:123", kept a while: both lists ask Seerr
     /// for each title one by one, and they're reloaded by Home, Discover, Requests and after
@@ -133,6 +135,7 @@ public actor SeerrHTTPClient {
     /// password's hour-long cooldown still holds, so that password isn't sent again sooner.
     public func allowSignInRetry() {
         authPermanentlyFailed = false
+        lastSignInError = nil
     }
 
     /// Clears any persisted auth-failure cooldown. Call this when the user updates credentials.
@@ -140,6 +143,7 @@ public actor SeerrHTTPClient {
         UserDefaults.standard.removeObject(forKey: authFailedKey)
         UserDefaults.standard.removeObject(forKey: rejectedPasswordKey)
         authPermanentlyFailed = false
+        lastSignInError = nil
     }
 
     /// Where the hash of a saved password Seerr refused is kept, per server and user, so the
@@ -207,6 +211,7 @@ public actor SeerrHTTPClient {
         if http.statusCode == 401 || http.statusCode == 403 {
             // Real credential rejection — back off to protect against Jellyfin brute-force lockout.
             authPermanentlyFailed = true
+            lastSignInError = .authFailed
             UserDefaults.standard.set(Date().addingTimeInterval(3600), forKey: authFailedKey)
             throw SeerrError.authFailed
         }
@@ -227,14 +232,18 @@ public actor SeerrHTTPClient {
         start.timeoutInterval = 15
         let (startData, startResponse) = try await session.data(for: start)
         let startStatus = (startResponse as? HTTPURLResponse)?.statusCode ?? -1
-        // 404: a Seerr older than 3.0. Anything else: Jellyfin has Quick Connect turned off.
+        // 404: a Seerr older than 3.0. Anything else: Seerr couldn't start it with Jellyfin.
         guard (200...299).contains(startStatus),
               let initiated = try? JSONDecoder().decode(Initiated.self, from: startData) else {
             authPermanentlyFailed = true
-            throw SeerrError.quickConnectUnavailable(seerrTooOld: startStatus == 404)
+            let error: SeerrError = startStatus == 404 ? .quickConnectUnavailable(seerrTooOld: true) : .quickConnectNotStarted
+            lastSignInError = error
+            throw error
         }
+        // Jellyfin refused to approve the code: its Quick Connect is turned off.
         guard try await authorizeQuickConnect(initiated.code) else {
             authPermanentlyFailed = true
+            lastSignInError = .quickConnectUnavailable(seerrTooOld: false)
             throw SeerrError.quickConnectUnavailable(seerrTooOld: false)
         }
         var finish = URLRequest(url: baseURL.appendingPathComponent("api/v1/auth/jellyfin/quickconnect/authenticate"))
@@ -248,13 +257,15 @@ public actor SeerrHTTPClient {
             // Seerr refused this Jellyfin user, e.g. new Jellyfin sign-ins are turned off.
             struct Message: Decodable { let message: String? }
             authPermanentlyFailed = true
-            throw SeerrError.quickConnectRefused((try? JSONDecoder().decode(Message.self, from: data))?.message)
+            let error = SeerrError.quickConnectRefused((try? JSONDecoder().decode(Message.self, from: data))?.message)
+            lastSignInError = error
+            throw error
         }
         guard (200...299).contains(status) else { throw URLError(.badServerResponse) }
     }
 
     private func ensureAuthenticated() async throws {
-        guard !authPermanentlyFailed else { throw SeerrError.authFailed }
+        guard !authPermanentlyFailed else { throw lastSignInError ?? SeerrError.authFailed }
         // The cooldown guards Jellyfin against repeated wrong passwords; Quick Connect sends none.
         if authorizeQuickConnect == nil || authMethod != .jellyfin,
            let until = UserDefaults.standard.object(forKey: authFailedKey) as? Date,
@@ -938,11 +949,13 @@ public enum SeerrError: Error, LocalizedError {
     case quickConnectUnavailable(seerrTooOld: Bool)
     /// Seerr turned the Jellyfin account away after Quick Connect, with its reason if it gave one.
     case quickConnectRefused(String?)
+    /// Seerr couldn't start a Quick Connect sign-in with its Jellyfin server.
+    case quickConnectNotStarted
 
     /// Seerr wouldn't sign in, as opposed to a request that failed once signed in.
     public var isSignInFailure: Bool {
         switch self {
-        case .authFailed, .quickConnectUnavailable, .quickConnectRefused: true
+        case .authFailed, .quickConnectUnavailable, .quickConnectRefused, .quickConnectNotStarted: true
         case .requestFailed: false
         }
     }
@@ -957,6 +970,8 @@ public enum SeerrError: Error, LocalizedError {
                 : "Quick Connect is turned off on your Jellyfin server. Ask your admin to turn it on, or enter your password instead."
         case .quickConnectRefused(let reason):
             return reason ?? "Seerr didn't accept your Jellyfin account. Ask your admin to import you into Seerr."
+        case .quickConnectNotStarted:
+            return "Seerr couldn't start a Quick Connect sign-in with your Jellyfin server."
         case .requestFailed(let status, let body):
             let trimmed = body.trimmingCharacters(in: .whitespacesAndNewlines)
             return trimmed.isEmpty ? "Server returned HTTP \(status)." : "HTTP \(status): \(trimmed.prefix(200))"

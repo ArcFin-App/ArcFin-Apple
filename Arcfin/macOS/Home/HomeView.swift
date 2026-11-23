@@ -134,7 +134,7 @@ struct HomeView: View {
                     }
                 }
                 .navigationDestination(item: $seeAllShelf) { shelf in
-                    ShelfSeeAllView(title: shelf.title, items: shelf.items, isLandscape: shelf.isLandscape)
+                    ShelfSeeAllView(title: shelf.title, items: shelf.items, isLandscape: shelf.isLandscape, query: shelf.query)
                 }
                 // macOS doesn't present from the hero's playback request at all — see
                 // PlaybackPresenter's doc comment. Its own onChange below forwards a set

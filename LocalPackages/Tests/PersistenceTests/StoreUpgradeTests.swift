@@ -164,6 +164,25 @@ struct StoreUpgradeTests {
         #expect(try context.fetchCount(FetchDescriptor<DownloadedItem>()) == 3)
     }
 
+    @Test("A store from before the versioned schema opens as version 1 with its downloads")
+    func opensUnversionedStore() throws {
+        let url = try storeURL()
+        let schema = Schema([DownloadedItem.self, DownloadedSeries.self])
+        do {
+            let container = try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
+            let context = ModelContext(container)
+            context.insert(DownloadedItem(itemId: "movie-1", name: "First", typeRaw: "Movie", serverId: "profile-a",
+                                          serverBaseURL: "https://media.example", userId: "user-a", videoFileName: "video.mp4"))
+            context.insert(DownloadedSeries(seriesId: "series-1", name: "A Series"))
+            try context.save()
+        }
+        let container = Persistence.makeContainerRecoveringFromFailure(at: url)
+        #expect(isOnDisk(container))
+        #expect(!Persistence.hasSetAsideStore(at: url))
+        #expect(try itemIds(container) == ["movie-1"])
+        #expect(try ModelContext(container).fetch(FetchDescriptor<DownloadedSeries>()).map(\.seriesId) == ["series-1"])
+    }
+
     @Test("A store from a model this build can't read is set aside, and the app gets a fresh one on disk")
     func setsAsideIncompatible() throws {
         let url = try storeURL()
