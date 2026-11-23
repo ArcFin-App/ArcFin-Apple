@@ -7,6 +7,7 @@ struct ShelfSeeAllView: View {
     let title: String
     let items: [MediaItem]
     var isLandscape: Bool = false
+    var query: ShelfQuery? = nil
 
     @State private var selectedItem: MediaItem?
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -21,7 +22,7 @@ struct ShelfSeeAllView: View {
     }
 
     var body: some View {
-        ShelfSeeAllGrid(items: items, isLandscape: isLandscape, columns: columns) { selectedItem = $0 }
+        ShelfSeeAllGrid(items: items, isLandscape: isLandscape, columns: columns, query: query) { selectedItem = $0 }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             // Self-contained rather than relying on an ancestor's navigationDestination(for:) —

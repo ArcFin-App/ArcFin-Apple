@@ -9,14 +9,23 @@ struct ShelfSeeAllGrid: View {
     let items: [MediaItem]
     let isLandscape: Bool
     let columns: [GridItem]
+    /// The shelf's query: every title it covers, a page at a time, in place of the row's.
+    var query: ShelfQuery? = nil
     let select: (MediaItem) -> Void
 
     @Environment(MediaRepository.self) private var mediaRepo
+    @State private var list: MusicPagedList<MediaItem>?
+
+    /// The row's titles until the first page is in, so the grid isn't empty meanwhile.
+    private var shown: [MediaItem] {
+        guard let list, list.hasLoaded, !list.hasFailed || !list.items.isEmpty else { return items }
+        return list.items
+    }
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(items) { item in
+                ForEach(shown) { item in
                     Button { select(item) } label: {
                         ShelfSeeAllCard(
                             imageURL: imageURL(for: item),
@@ -26,11 +35,30 @@ struct ShelfSeeAllGrid: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .task { await list?.rowAppeared(item) }
                 }
             }
             .padding(DT.Spacing.pagePad)
+            if list?.isLoading == true, list?.hasLoaded == true {
+                ProgressView().padding(.bottom, DT.Spacing.pagePad)
+            }
         }
         .screenBackground()
+        .task {
+            guard let query, list == nil else { return }
+            let pages = MusicPagedList<MediaItem> { start in
+                let page = try await MusicAPI.call {
+                    try await $0.getLibraryItems(
+                        credential: $1, authHeader: $2, libraryId: query.parentID, startIndex: start, limit: 60,
+                        includeItemTypes: query.itemTypes.isEmpty ? nil : query.itemTypes, genres: query.genres,
+                        minCommunityRating: query.minCommunityRating, isPlayed: query.isPlayed,
+                        isFavorite: query.isFavorite, sortBy: query.sortBy, sortOrder: query.sortOrder)
+                }
+                return (page.items, page.total)
+            }
+            list = pages
+            await pages.loadIfNeeded()
+        }
     }
 
     private func imageURL(for item: MediaItem) -> URL? {

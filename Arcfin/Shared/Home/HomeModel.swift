@@ -299,4 +299,19 @@ struct SeeAllShelf: Identifiable, Hashable {
     let title: String
     let items: [MediaItem]
     var isLandscape: Bool = false
+    /// The query behind the shelf, so See All pages through all of it, not just the row (#679).
+    /// Shelves with no such query (recommendations, Continue Watching) show the row's titles.
+    var query: ShelfQuery? = nil
+}
+
+/// A library query a Home shelf comes from, for See All to page through.
+struct ShelfQuery: Hashable, Sendable {
+    var parentID = ""
+    var itemTypes = "Movie,Series"
+    var genres: [String] = []
+    var isPlayed: Bool? = nil
+    var isFavorite: Bool? = nil
+    var minCommunityRating: Double? = nil
+    var sortBy: String
+    var sortOrder = "Descending"
 }

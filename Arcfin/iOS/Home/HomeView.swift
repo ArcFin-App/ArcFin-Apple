@@ -137,7 +137,7 @@ struct HomeView: View {
                     }
                 }
                 .navigationDestination(item: $seeAllShelf) { shelf in
-                    ShelfSeeAllView(title: shelf.title, items: shelf.items, isLandscape: shelf.isLandscape)
+                    ShelfSeeAllView(title: shelf.title, items: shelf.items, isLandscape: shelf.isLandscape, query: shelf.query)
                 }
                 .fullScreenCover(item: $hero.playbackRequest) { request in
                     PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in

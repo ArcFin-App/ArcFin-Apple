@@ -375,7 +375,8 @@ struct HomeShelfView<Card: View>: View {
             // Placeholders only until the first load finishes; an empty answer hides the shelf.
             if !mediaRepo.recentlyAddedMovies.isEmpty || (!mediaRepo.loaded && !mediaRepo.connectionFailed) {
                 ShelfRow(title: "Recently Added Movies", badge: "NEW", onSeeAll: {
-                    seeAll(SeeAllShelf(title: String(localized: "Recently Added Movies"), items: mediaRepo.recentlyAddedMovies))
+                    seeAll(SeeAllShelf(title: String(localized: "Recently Added Movies"), items: mediaRepo.recentlyAddedMovies,
+                                       query: ShelfQuery(itemTypes: "Movie", sortBy: "DateCreated")))
                 }) {
                     posters(mediaRepo.recentlyAddedMovies)
                 }
@@ -383,7 +384,8 @@ struct HomeShelfView<Card: View>: View {
         case .recentlyAddedShows:
             if !mediaRepo.recentlyAddedShows.isEmpty || (!mediaRepo.loaded && !mediaRepo.connectionFailed) {
                 ShelfRow(title: "Recently Added Shows", badge: "NEW", onSeeAll: {
-                    seeAll(SeeAllShelf(title: String(localized: "Recently Added Shows"), items: mediaRepo.recentlyAddedShows))
+                    seeAll(SeeAllShelf(title: String(localized: "Recently Added Shows"), items: mediaRepo.recentlyAddedShows,
+                                       query: ShelfQuery(itemTypes: "Series", sortBy: "DateLastContentAdded")))
                 }) {
                     posters(mediaRepo.recentlyAddedShows)
                 }
@@ -391,7 +393,8 @@ struct HomeShelfView<Card: View>: View {
         case .recentlyReleasedMovies:
             if !mediaRepo.recentlyReleasedMovies.isEmpty {
                 ShelfRow(title: "Recently Released Movies", onSeeAll: {
-                    seeAll(SeeAllShelf(title: String(localized: "Recently Released Movies"), items: mediaRepo.recentlyReleasedMovies))
+                    seeAll(SeeAllShelf(title: String(localized: "Recently Released Movies"), items: mediaRepo.recentlyReleasedMovies,
+                                       query: ShelfQuery(itemTypes: "Movie", sortBy: "PremiereDate")))
                 }) {
                     posters(mediaRepo.recentlyReleasedMovies)
                 }
@@ -399,7 +402,8 @@ struct HomeShelfView<Card: View>: View {
         case .recentlyAiredEpisodes:
             if !mediaRepo.recentlyAiredEpisodes.isEmpty {
                 ShelfRow(title: "Recently Aired Episodes", onSeeAll: {
-                    seeAll(SeeAllShelf(title: String(localized: "Recently Aired Episodes"), items: mediaRepo.recentlyAiredEpisodes, isLandscape: true))
+                    seeAll(SeeAllShelf(title: String(localized: "Recently Aired Episodes"), items: mediaRepo.recentlyAiredEpisodes, isLandscape: true,
+                                       query: ShelfQuery(itemTypes: "Episode", sortBy: "PremiereDate")))
                 }) {
                     ForEach(mediaRepo.recentlyAiredEpisodes) { item in
                         card(item, true)
@@ -409,7 +413,8 @@ struct HomeShelfView<Card: View>: View {
         case .watchAgain:
             if !mediaRepo.watchAgain.isEmpty {
                 ShelfRow(title: "Watch Again", onSeeAll: {
-                    seeAll(SeeAllShelf(title: String(localized: "Watch Again"), items: mediaRepo.watchAgain))
+                    seeAll(SeeAllShelf(title: String(localized: "Watch Again"), items: mediaRepo.watchAgain,
+                                       query: ShelfQuery(isPlayed: true, sortBy: "DatePlayed")))
                 }) {
                     posters(mediaRepo.watchAgain)
                 }
@@ -417,7 +422,8 @@ struct HomeShelfView<Card: View>: View {
         case .serverPicks:
             ForEach(mediaRepo.promotedCollections, id: \.collection.id) { shelf in
                 ShelfRow(title: shelf.collection.name, onSeeAll: {
-                    seeAll(SeeAllShelf(title: shelf.collection.name, items: shelf.items))
+                    seeAll(SeeAllShelf(title: shelf.collection.name, items: shelf.items,
+                                       query: ShelfQuery(parentID: shelf.collection.id, itemTypes: "", sortBy: "SortName", sortOrder: "Ascending")))
                 }) {
                     posters(shelf.items)
                 }
@@ -426,7 +432,8 @@ struct HomeShelfView<Card: View>: View {
             ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
                 let title = String(localized: "More \(shelf.genre)")
                 ShelfRow(title: title, onSeeAll: {
-                    seeAll(SeeAllShelf(title: title, items: shelf.items))
+                    seeAll(SeeAllShelf(title: title, items: shelf.items,
+                                       query: ShelfQuery(genres: [shelf.genre], isPlayed: false, sortBy: "SortName", sortOrder: "Ascending")))
                 }) {
                     posters(shelf.items)
                 }
@@ -443,7 +450,8 @@ struct HomeShelfView<Card: View>: View {
         case .favorites:
             if !mediaRepo.favorites.isEmpty {
                 ShelfRow(title: "Favorites", onSeeAll: {
-                    seeAll(SeeAllShelf(title: String(localized: "Favorites"), items: mediaRepo.favorites))
+                    seeAll(SeeAllShelf(title: String(localized: "Favorites"), items: mediaRepo.favorites,
+                                       query: ShelfQuery(isFavorite: true, sortBy: "SortName", sortOrder: "Ascending")))
                 }) {
                     posters(mediaRepo.favorites)
                 }
@@ -451,7 +459,8 @@ struct HomeShelfView<Card: View>: View {
         case .topRatedUnwatched:
             if !mediaRepo.topRatedUnwatched.isEmpty {
                 ShelfRow(title: "Top Rated, Unwatched", onSeeAll: {
-                    seeAll(SeeAllShelf(title: String(localized: "Top Rated, Unwatched"), items: mediaRepo.topRatedUnwatched))
+                    seeAll(SeeAllShelf(title: String(localized: "Top Rated, Unwatched"), items: mediaRepo.topRatedUnwatched,
+                                       query: ShelfQuery(isPlayed: false, minCommunityRating: 7, sortBy: "CommunityRating")))
                 }) {
                     posters(mediaRepo.topRatedUnwatched)
                 }
