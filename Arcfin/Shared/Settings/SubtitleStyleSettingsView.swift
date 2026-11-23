@@ -2,8 +2,8 @@
 
 import SwiftUI
 
-/// Subtitle appearance shared by both players — read back via the same @AppStorage keys from
-/// PlayerView+Controls.swift and OfflinePlayerView.swift.
+/// Subtitle appearance for the player, streaming or playing a file from this device — read back
+/// via the same @AppStorage keys in PlayerComponents.swift.
 struct SubtitleStyleSettingsView: View {
     @Environment(AuthManager.self) private var authManager
     @AppStorage("subtitleTextSize") private var size = SubtitleTextSize.medium

@@ -163,8 +163,8 @@ struct MediaDetailView: View {
             Button("Stream Online") { model.streamInstead() }
             Button("Cancel", role: .cancel) { model.pendingPlaybackChoice = nil }
         }
-        // fullScreenCover is unavailable on macOS; the offline player sizes itself in a sheet,
-        // as on the downloaded titles' own pages.
+        // fullScreenCover is unavailable on macOS; a download plays in a sheet, as on the
+        // downloaded titles' own pages.
         .sheet(item: $model.offlinePlaybackTarget, onDismiss: { Task { await model.refreshAfterPlayback(authManager: authManager) } }) { downloaded in
             PlayerView(download: downloaded, startPositionOverride: model.offlineStartOverride) { model.playDownloaded($0) }
                 .id(downloaded.itemId)
