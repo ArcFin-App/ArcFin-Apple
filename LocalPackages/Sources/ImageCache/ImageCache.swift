@@ -246,8 +246,13 @@ public struct LazyHeroImage: View {
                 }
             }
         .task(id: url) {
-            guard let url else { return }
-            guard let response = try? await ImageCache.load(url) else { return }
+            // A title without a backdrop, or whose backdrop fails, shows the placeholder, not the
+            // previous title's art.
+            guard let url, let response = try? await ImageCache.load(url) else {
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeInOut(duration: 0.35)) { displayed = nil }
+                return
+            }
             #if canImport(UIKit)
             let loaded = Image(uiImage: response)
             #else
