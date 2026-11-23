@@ -18,9 +18,10 @@ struct ContinueWatchingEntry: TimelineEntry {
 
 struct ContinueWatchingProvider: TimelineProvider {
     private static let sample = ContinueWatchingEntry(date: Date(), items: [
-        .init(id: "sample-1", title: "Continue Watching", subtitle: "S1 · E3", detail: "Pilot", progress: 0.4, posterFileName: nil),
-        .init(id: "sample-2", title: "Up Next", subtitle: "2024", progress: 0.7, posterFileName: nil),
-        .init(id: "sample-3", title: "Resume", subtitle: "2023", progress: 0.2, posterFileName: nil),
+        .init(id: "sample-1", title: String(localized: "Continue Watching"), subtitle: "S1 · E3", detail: String(localized: "Pilot"),
+              progress: 0.4, posterFileName: nil),
+        .init(id: "sample-2", title: String(localized: "Up Next"), subtitle: "2024", progress: 0.7, posterFileName: nil),
+        .init(id: "sample-3", title: String(localized: "Resume"), subtitle: "2023", progress: 0.2, posterFileName: nil),
     ])
 
     func placeholder(in context: Context) -> ContinueWatchingEntry { Self.sample }

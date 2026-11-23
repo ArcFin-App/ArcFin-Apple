@@ -270,7 +270,7 @@ final class HomeModel {
         do {
             trailer = try await client.getTrailers(credential: credential, authHeader: authHeader, itemId: item.id, limit: 1).first
         } catch {
-            log.error("getTrailers failed for \(item.id, privacy: .public): \(error, privacy: .public)")
+            log.error("getTrailers failed for \(item.id, privacy: .public): \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             return nil
         }
         guard let trailer, !Task.isCancelled else {
@@ -281,7 +281,7 @@ final class HomeModel {
         do {
             info = try await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: trailer.id)
         } catch {
-            log.error("getPlaybackInfo failed for trailer \(trailer.id, privacy: .public): \(error, privacy: .public)")
+            log.error("getPlaybackInfo failed for trailer \(trailer.id, privacy: .public): \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             return nil
         }
         return info.playURL

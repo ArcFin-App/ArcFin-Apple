@@ -9,16 +9,17 @@ import SyncEngine
 import Telemetry
 import os
 import Security
+import Network
 #if os(iOS)
 import NetworkExtension
 import CoreLocation
-import Network
 #endif
 #if os(iOS) || os(tvOS)
 import UIKit
 #endif
 #if !os(tvOS)
 import CoreSpotlight
+import LiveActivityKit
 #endif
 
 private final class TimeoutResult<Value: Sendable>: @unchecked Sendable {
@@ -51,10 +52,16 @@ final class AuthManager {
             if let id = state.credential?.id, id != oldValue.credential?.id {
                 ProfileSettings.activate(profile: id.uuidString, profiles: profiles.map(\.id.uuidString))
                 activateSeerrAccount(for: id)
-                if oldValue.credential != nil { forgetPreviousProfile() }
+                // Also after an expired sign-in, when someone else signs in from signed out.
+                if oldValue.credential != nil || lastActiveProfileID.map({ $0 != id }) == true { forgetPreviousProfile() }
+                lastActiveProfileID = id
             }
         }
     }
+    /// The profile last in use, kept through a signed-out spell (an expired sign-in) so a
+    /// different one signing in still clears what the last one left outside the app.
+    @ObservationIgnored private var lastActiveProfileID: UUID? =
+        UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap(UUID.init(uuidString:))
     var isChecking: Bool = true
     var profiles: [ServerCredential] = []
     /// Not persisted — re-checked once per sign-in/cold launch (see checkStoredAuth/save).
@@ -198,6 +205,8 @@ final class AuthManager {
         guard let url = URL(string: "https://demo.jellyfin.org/stable"),
               let credential = try? await authClient.authenticate(baseURL: url, username: "demo", password: "")
         else { return }
+        // Not a switch from this Mac's own profile: what it left outside the app stays.
+        lastActiveProfileID = nil
         profiles = [credential]
         state = .authenticated(credential)
     }
@@ -205,11 +214,9 @@ final class AuthManager {
 
     // MARK: - Live Wi-Fi switching
 
-    #if os(iOS)
     private var pathMonitor: NWPathMonitor?
     private let pathMonitorQueue = DispatchQueue(label: "arcfin.pathMonitor")
     private var reresolveTask: Task<Void, Never>?
-    #endif
 
     /// Watches for network changes (leaving/joining the home Wi-Fi, Wi-Fi↔cellular) and
     /// re-resolves Local vs Remote server URL live — previously this only happened once at
@@ -219,7 +226,6 @@ final class AuthManager {
     private(set) var networkChanges = 0
 
     func startNetworkMonitoring() {
-        #if os(iOS)
         guard pathMonitor == nil else { return }
         let monitor = NWPathMonitor()
         pathMonitor = monitor
@@ -228,10 +234,8 @@ final class AuthManager {
             Task { @MainActor in self.scheduleReresolve() }
         }
         monitor.start(queue: pathMonitorQueue)
-        #endif
     }
 
-    #if os(iOS)
     private func scheduleReresolve() {
         // NWPathMonitor can fire several updates in quick succession during a network
         // transition — debounce so we don't hammer the SSID lookup and server for each one.
@@ -239,11 +243,14 @@ final class AuthManager {
         reresolveTask = Task {
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled else { return }
+            #if os(iOS)
             await reresolveBaseURLIfNeeded()
+            #endif
             networkChanges += 1
         }
     }
 
+    #if os(iOS)
     /// Not private — also called directly when the app returns to the foreground (see
     /// ContentView), since NWPathMonitor's callback can be suspended along with the rest of
     /// the app while backgrounded and not reliably fire again the moment it resumes. Coming
@@ -656,18 +663,30 @@ final class AuthManager {
     /// Spotlight (pages it opened too) and the widgets, and what the background check had seen, so the next check
     /// only records the new profile's library instead of announcing it.
     private func forgetPreviousProfile() {
+        forgetOutsideTheApp()
+        #if !os(tvOS)
+        BackgroundRefresh.resetState()
+        #endif
+        SplashMosaicStore.clear()
+        PlaylistStore.shared.clear()
+    }
+
+    /// The active profile's titles wherever they show outside the app: Spotlight (pages it
+    /// opened too), the widgets, the Home Screen quick action, the Top Shelf and the watch.
+    private func forgetOutsideTheApp() {
         #if !os(tvOS)
         Task { await SpotlightIndexer.clear() }
         NSUserActivity.deleteAllSavedUserActivities {}
+        MusicWidgetStore.clear()
         WidgetSnapshotUpdater.clear()
         SeerrSpotlightStore.clear()
-        BackgroundRefresh.resetState()
+        #endif
+        #if os(iOS)
+        QuickActions.update(resumeItemID: nil, title: nil)
         #endif
         #if os(tvOS)
         TopShelfArtwork.clear()
         #endif
-        SplashMosaicStore.clear()
-        PlaylistStore.shared.clear()
     }
 
     func removeProfile(id: UUID) {
@@ -698,6 +717,7 @@ final class AuthManager {
         } else {
             forgetPreviousProfile()
             UserDefaults.standard.removeObject(forKey: "arcfin.activeProfileID")
+            lastActiveProfileID = nil
             state = .unauthenticated
         }
     }
@@ -825,12 +845,27 @@ final class AuthManager {
         }
     }
 
+    /// A PIN for the profile in use takes its titles away from everywhere outside the app, once
+    /// it's saved: what's published next checks for it.
     func savePin(_ pin: String, for credentialID: UUID) {
-        keychainWrite { try $0.savePin(pin, for: credentialID) }
+        keychainWrite({ try $0.savePin(pin, for: credentialID) }) { [weak self] in
+            guard let self, self.state.credential?.id == credentialID else { return }
+            self.forgetOutsideTheApp()
+            #if os(iOS)
+            WatchLink.shared.send()
+            #endif
+        }
     }
 
     func removePin(for credentialID: UUID) {
+        #if os(iOS)
+        keychainWrite({ try $0.deletePin(for: credentialID) }) { [weak self] in
+            guard let self, self.state.credential?.id == credentialID else { return }
+            WatchLink.shared.send()
+        }
+        #else
         keychainWrite { try $0.deletePin(for: credentialID) }
+        #endif
     }
 
     // MARK: - Seerr account per profile
@@ -1048,12 +1083,14 @@ final class AuthManager {
     private nonisolated static let keychainQueue = DispatchQueue(label: "arcfin.keychain", qos: .userInitiated)
     private nonisolated static let keychainLog = Telemetry.logger(category: "Keychain")
 
-    private func keychainWrite(_ work: @escaping @Sendable (KeychainStore) throws -> Void) {
+    private func keychainWrite(_ work: @escaping @Sendable (KeychainStore) throws -> Void,
+                               then done: (@MainActor @Sendable () -> Void)? = nil) {
         let k = keychain
         Self.keychainQueue.async {
             do { try work(k) } catch {
                 Self.keychainLog.error("Keychain write failed: \(String(describing: error), privacy: .public)")
             }
+            if let done { Task { @MainActor in done() } }
         }
     }
 

@@ -509,6 +509,8 @@ final class RemotePlaybackActivity {
         // A Lock Screen button can launch the app in the background, before the stored
         // sign-in has been read.
         await AppServices.authManager.checkStoredAuthOnce()
+        // While the app lock is up, the buttons do nothing, like the music widget's.
+        if await AppServices.isLocked() { return }
         let remote = AppServices.remoteSessions
         remote.attach(AppServices.authManager)
         remote.selectedID = sessionID
@@ -588,8 +590,8 @@ final class RemotePlaybackActivity {
 
     private func thumbnail(for session: JellyfinSession) async -> Data? {
         guard let url = AppServices.remoteSessions.artworkURL(for: session, type: "Primary", width: 160),
-              let response = try? await URLSession.shared.data(from: url),
-              let image = UIImage(data: response.0),
+              let data = await URLSession.arcfin.imageData(from: url),
+              let image = UIImage(data: data),
               let small = await image.byPreparingThumbnail(ofSize: CGSize(width: 64, height: 64 * image.size.height / max(image.size.width, 1)))
         else { return nil }
         for quality in [0.6, 0.4, 0.25] {
@@ -627,11 +629,24 @@ final class WatchLink: NSObject, WCSessionDelegate {
         }
     }
 
-    private func send() {
+    func send() {
+        Task { await sendContext() }
+    }
+
+    /// A profile with an app-lock PIN reads as signed out on the watch, as it does to Siri. The
+    /// PIN is read after any Keychain write still queued, so a PIN just set is seen.
+    private func sendContext() async {
         let session = WCSession.default
         guard session.activationState == .activated, session.isPaired, session.isWatchAppInstalled else { return }
+        let auth = AppServices.authManager
+        var unlocked: ServerCredential?
+        if let credential = auth.state.credential, await auth.storedPIN(for: credential.id) == .none {
+            // Another profile took over meanwhile: its own send follows.
+            guard auth.state.credential?.id == credential.id else { return }
+            unlocked = credential
+        }
         let context: [String: Any]
-        if let credential = AppServices.authManager.state.credential {
+        if let credential = unlocked {
             context = [
                 "serverURLs": Self.addresses(for: credential),
                 "authHeader": AppServices.authManager.authClient.authHeader(token: credential.accessToken),

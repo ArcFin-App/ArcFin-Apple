@@ -4,6 +4,7 @@
 import AppIntents
 import CoreSpotlight
 import Foundation
+import JellyfinAPI
 import SeerrAPI
 
 // MARK: - Snapshot
@@ -135,6 +136,8 @@ struct OpenSeerrTitleIntent: OpenIntent {
 enum SeerrSpotlightIndexer {
     /// Replaces what Spotlight holds for Seerr with the current watchlist and requests.
     static func index(watchlist: [SeerrItem], requests: [SeerrRequestItem]) async {
+        // Like the library's titles, nothing from a profile with an app-lock PIN.
+        guard IntentSession.credential() != nil else { return }
         var entries: [String: SeerrSpotlightEntry] = [:]
         for item in watchlist {
             let status = item.availabilityStatus == .available ? "Available" : "On your watchlist"
@@ -174,7 +177,7 @@ enum SeerrSpotlightIndexer {
             for entry in all {
                 group.addTask {
                     var entity = SeerrTitleEntity(entry: entry)
-                    if let url = entity.posterURL, let (data, _) = try? await URLSession.shared.data(from: url) {
+                    if let url = entity.posterURL, let (data, _) = try? await URLSession.arcfin.data(from: url) {
                         entity.thumbnailData = data
                     }
                     return entity
