@@ -67,7 +67,8 @@ struct DownloadedSeriesDetailView: View {
         .onAppear {
             if model.selectedSeason == nil { model.selectedSeason = DownloadedSeriesDetailModel.seasonNumbers(of: episodes).first }
         }
-        .fullScreenCover(item: $model.playingItem) { item in
+        .fullScreenCover(item: $model.playingItem.playerCover) { playback in
+            let item = playback.item
             PlayerView(download: item, startPositionOverride: model.playStartOverride) { next in
                 PlayerView.keepOrientationOnNextDisappear = true
                 model.play(next, startOverride: nil)

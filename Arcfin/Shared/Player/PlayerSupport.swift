@@ -3,6 +3,7 @@
 import SwiftUI
 import JellyfinAPI
 import MediaEngine
+import Persistence
 
 // MARK: - Shared playback request
 
@@ -13,6 +14,22 @@ struct PlaybackRequest: Identifiable, Equatable {
     var id: String { "player" }
     let item: MediaItem
     let startTicks: Int64
+}
+
+/// A download playing in a cover, with the same constant identity as `PlaybackRequest`, so the
+/// next episode updates the open cover instead of dismissing and presenting it again.
+struct DownloadPlayback: Identifiable {
+    var id: String { "player" }
+    let item: DownloadedItem
+}
+
+extension Binding where Value == DownloadedItem? {
+    var playerCover: Binding<DownloadPlayback?> {
+        Binding<DownloadPlayback?>(
+            get: { wrappedValue.map(DownloadPlayback.init) },
+            set: { wrappedValue = $0?.item }
+        )
+    }
 }
 
 // MARK: - Skip interval

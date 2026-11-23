@@ -14,7 +14,8 @@ struct DownloadedItemDetailView: View {
         DownloadedItemDetailPage(item: item, model: model)
             .task(id: item.itemId) { await model.load(item, downloadManager: downloadManager) }
             // fullScreenCover is unavailable on macOS; the player has its own full screen (F).
-            .sheet(item: $model.playingItem) { item in
+            .sheet(item: $model.playingItem.playerCover) { playback in
+                let item = playback.item
                 PlayerView(download: item, startPositionOverride: model.startOverride) { model.play($0, startOverride: nil) }
                     .id(item.itemId)
                     .frame(minWidth: 900, minHeight: 560)

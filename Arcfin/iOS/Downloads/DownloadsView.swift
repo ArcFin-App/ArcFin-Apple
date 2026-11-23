@@ -56,7 +56,8 @@ struct DownloadsView: View {
         .navigationDestination(item: $model.selectedMedia) { item in
             MediaDetailView(item: item)
         }
-        .fullScreenCover(item: $model.playingItem) { item in
+        .fullScreenCover(item: $model.playingItem.playerCover) { playback in
+            let item = playback.item
             PlayerView(download: item) { next in
                 PlayerView.keepOrientationOnNextDisappear = true
                 model.playingItem = next

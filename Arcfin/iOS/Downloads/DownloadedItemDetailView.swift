@@ -15,7 +15,8 @@ struct DownloadedItemDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .task(id: item.itemId) { await model.load(item, downloadManager: downloadManager) }
-            .fullScreenCover(item: $model.playingItem) { item in
+            .fullScreenCover(item: $model.playingItem.playerCover) { playback in
+                let item = playback.item
                 PlayerView(download: item, startPositionOverride: model.startOverride) { next in
                     PlayerView.keepOrientationOnNextDisappear = true
                     model.play(next, startOverride: nil)

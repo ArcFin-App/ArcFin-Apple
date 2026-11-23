@@ -162,7 +162,8 @@ struct MediaDetailView: View {
             Button("Stream Online") { model.streamInstead() }
             Button("Cancel", role: .cancel) { model.pendingPlaybackChoice = nil }
         }
-        .fullScreenCover(item: $model.offlinePlaybackTarget, onDismiss: { Task { await model.refreshAfterPlayback(authManager: authManager) } }) { downloaded in
+        .fullScreenCover(item: $model.offlinePlaybackTarget.playerCover, onDismiss: { Task { await model.refreshAfterPlayback(authManager: authManager) } }) { playback in
+            let downloaded = playback.item
             PlayerView(download: downloaded, startPositionOverride: model.offlineStartOverride) { next in
                 PlayerView.keepOrientationOnNextDisappear = true
                 model.playDownloaded(next)

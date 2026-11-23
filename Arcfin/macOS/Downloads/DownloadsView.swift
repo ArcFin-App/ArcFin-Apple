@@ -55,7 +55,8 @@ struct DownloadsView: View {
         .navigationDestination(item: $model.selectedMedia) { item in
             MediaDetailView(item: item)
         }
-        .sheet(item: $model.playingItem) { item in
+        .sheet(item: $model.playingItem.playerCover) { playback in
+            let item = playback.item
             PlayerView(download: item) { model.playingItem = $0 }
                 .id(item.itemId)
                 .frame(minWidth: 900, minHeight: 560)

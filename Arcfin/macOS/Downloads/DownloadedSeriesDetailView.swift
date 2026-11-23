@@ -61,7 +61,8 @@ struct DownloadedSeriesDetailView: View {
             if model.selectedSeason == nil { model.selectedSeason = DownloadedSeriesDetailModel.seasonNumbers(of: episodes).first }
         }
         // fullScreenCover is unavailable on macOS; the player has its own full screen (F).
-        .sheet(item: $model.playingItem) { item in
+        .sheet(item: $model.playingItem.playerCover) { playback in
+            let item = playback.item
             PlayerView(download: item, startPositionOverride: model.playStartOverride) { model.play($0, startOverride: nil) }
                 .id(item.itemId)
                 .frame(minWidth: 900, minHeight: 560)

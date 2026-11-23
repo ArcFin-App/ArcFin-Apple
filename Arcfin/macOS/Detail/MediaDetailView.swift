@@ -165,7 +165,8 @@ struct MediaDetailView: View {
         }
         // fullScreenCover is unavailable on macOS; a download plays in a sheet, as on the
         // downloaded titles' own pages.
-        .sheet(item: $model.offlinePlaybackTarget, onDismiss: { Task { await model.refreshAfterPlayback(authManager: authManager) } }) { downloaded in
+        .sheet(item: $model.offlinePlaybackTarget.playerCover, onDismiss: { Task { await model.refreshAfterPlayback(authManager: authManager) } }) { playback in
+            let downloaded = playback.item
             PlayerView(download: downloaded, startPositionOverride: model.offlineStartOverride) { model.playDownloaded($0) }
                 .id(downloaded.itemId)
                 .frame(minWidth: 900, minHeight: 560)
