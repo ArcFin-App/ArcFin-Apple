@@ -217,7 +217,8 @@ nonisolated enum BackgroundRefresh {
     // MARK: - Seerr
 
     private static func checkSeerr(requestUpdates: Bool, watchlist: Bool) async {
-        guard requestUpdates || watchlist else { return }
+        // Like the other checks, nothing for a profile with an app-lock PIN.
+        guard requestUpdates || watchlist, IntentSession.credential() != nil else { return }
         let defaults = UserDefaults.standard
         // Nobody signed in: the Seerr sign-in left behind isn't anyone's to check.
         guard defaults.string(forKey: "arcfin.activeProfileID") != nil,
