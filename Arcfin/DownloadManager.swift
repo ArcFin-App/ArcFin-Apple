@@ -2594,13 +2594,15 @@ extension DownloadManager: URLSessionDownloadDelegate {
         let capturedMoveError = moveError
         let capturedPath = downloadTask.taskDescription
         Task { @MainActor in
+            // The transfer is over: its entry would otherwise stay for the whole session.
+            let finishedItemId = self.taskItemIds.removeValue(forKey: taskId)
             if let continuation = self.continuations[taskId] {
                 self.continuations[taskId] = nil
                 if let capturedMoveError { continuation.resume(throwing: capturedMoveError) } else { continuation.resume() }
                 return
             }
             // Handed off ahead of its turn and done before it came: the queue picks it up.
-            if let itemId = self.taskItemIds[taskId], self.handedOffItemIds.contains(itemId) {
+            if let itemId = finishedItemId, self.handedOffItemIds.contains(itemId) {
                 self.handedOffResults[itemId] = capturedMoveError.map { .failure($0) } ?? .success(())
                 return
             }
@@ -2637,12 +2639,13 @@ extension DownloadManager: URLSessionDownloadDelegate {
         let taskId = task.taskIdentifier
         let capturedPath = task.taskDescription
         Task { @MainActor in
+            let failedItemId = self.taskItemIds.removeValue(forKey: taskId)
             if let continuation = self.continuations[taskId] {
                 self.continuations[taskId] = nil
                 continuation.resume(throwing: error)
                 return
             }
-            if let itemId = self.taskItemIds[taskId], self.handedOffItemIds.contains(itemId) {
+            if let itemId = failedItemId, self.handedOffItemIds.contains(itemId) {
                 self.handedOffResults[itemId] = .failure(error)
                 return
             }
