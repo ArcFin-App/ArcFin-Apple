@@ -28,9 +28,10 @@ struct MusicProvider: TimelineProvider {
     }
 
     static let sample = MusicWidgetSnapshot(
-        nowPlaying: .init(id: "sample", title: "Song Title", artist: "Artist", album: "Album", coverFileName: nil),
+        nowPlaying: .init(id: "sample", title: String(localized: "Song Title"), artist: String(localized: "Artist"),
+                          album: String(localized: "Album"), coverFileName: nil),
         isPlaying: true, position: 60, duration: 210, upNext: [],
-        recentlyPlayed: (1...8).map { .init(id: "r\($0)", title: "Song \($0)", artist: "Artist", album: nil, coverFileName: nil) })
+        recentlyPlayed: (1...8).map { .init(id: "r\($0)", title: String(localized: "Song \($0)"), artist: String(localized: "Artist"), album: nil, coverFileName: nil) })
 }
 
 private let coral = Color(red: 1, green: 0.416, blue: 0.302)

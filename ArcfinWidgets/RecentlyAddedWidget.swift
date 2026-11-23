@@ -11,7 +11,7 @@ struct RecentlyAddedEntry: TimelineEntry {
 
 struct RecentlyAddedProvider: TimelineProvider {
     private static let sample = RecentlyAddedEntry(date: Date(), items: (1...12).map {
-        .init(id: "sample-\($0)", title: "New Title", subtitle: "2026", progress: 0, posterFileName: nil)
+        .init(id: "sample-\($0)", title: String(localized: "New Title"), subtitle: "2026", progress: 0, posterFileName: nil)
     })
 
     func placeholder(in context: Context) -> RecentlyAddedEntry { Self.sample }
