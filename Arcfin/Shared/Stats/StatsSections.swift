@@ -11,10 +11,12 @@ struct StatsSections: View {
     /// Landscape, iPad and TV: the cards go in two columns instead of one long, stretched one.
     let isWide: Bool
     let compactHero: Bool
+    /// Off under All, which has its own hero for watching and listening together.
+    var showsHero = true
 
     var body: some View {
         // A phone on its side has little height; the full-size hero would fill it.
-        StatsHero(stats: stats, compact: compactHero)
+        if showsHero { StatsHero(stats: stats, compact: compactHero) }
         if isWide {
             HStack(alignment: .top, spacing: 24) {
                 VStack(alignment: .leading, spacing: 28) { chartSections(stats) }
@@ -396,5 +398,95 @@ struct StatsEmptyPeriod: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 40)
+    }
+}
+
+/// The stepper's name and heading for the period, from the stats the tab shows.
+struct StatsStepperTitle {
+    let name: String
+    let heading: String
+
+    init?(kind: StatsKind, model: StatsModel) {
+        if kind != .music, let stats = model.stats {
+            name = stats.periodName
+            heading = stats.periodHeading
+        } else if kind != .video, let music = model.music {
+            name = music.periodName
+            heading = music.periodHeading
+        } else {
+            return nil
+        }
+    }
+}
+
+/// What's under the pickers: watching, listening, or both with one hero over them.
+struct StatsKindContent: View {
+    let kind: StatsKind
+    let model: StatsModel
+    let period: StatsPeriod
+    let isWide: Bool
+    let compactHero: Bool
+
+    var body: some View {
+        switch kind {
+        case .video:
+            if let stats = model.stats { video(stats, showsHero: true) }
+        case .music:
+            if let music = model.music {
+                if music.isEmpty {
+                    MusicStatsEmptyPeriod(period: period, stats: music)
+                } else {
+                    MusicStatsSections(stats: music, isWide: isWide, compactHero: compactHero)
+                }
+            } else if model.musicPhase == .failed {
+                ContentUnavailableView("Couldn't Load Music Stats", systemImage: "wifi.exclamationmark",
+                                       description: Text("Check your connection to the server, then try again."))
+            } else {
+                loading
+            }
+        case .all:
+            if let stats = model.stats {
+                let music = model.music.flatMap { $0.isEmpty ? nil : $0 }
+                if stats.isEmpty && music == nil {
+                    if model.musicPhase == .loading { loading } else {
+                        StatsEmptyPeriod(period: period, stats: stats, offset: model.offset)
+                    }
+                } else {
+                    AllStatsHero(watch: stats, music: music, compact: compactHero)
+                    if !stats.isEmpty {
+                        groupHeader(StatsKind.video.label)
+                        video(stats, showsHero: false)
+                    }
+                    if let music {
+                        groupHeader(StatsKind.music.label)
+                        MusicStatsSections(stats: music, isWide: isWide, showsHero: false)
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func video(_ stats: WatchStats, showsHero: Bool) -> some View {
+        if stats.isEmpty {
+            StatsEmptyPeriod(period: period, stats: stats, offset: model.offset)
+        } else {
+            StatsSections(stats: stats, counts: model.counts, isWide: isWide, compactHero: compactHero, showsHero: showsHero)
+        }
+    }
+
+    private var loading: some View {
+        ProgressView("Adding up what you've played…")
+            .foregroundStyle(DT.Color.textSecondary)
+            .frame(maxWidth: .infinity)
+            .padding(.top, 40)
+    }
+
+    private func groupHeader(_ title: String) -> some View {
+        Text(title)
+            .font(.title2.bold())
+            .foregroundStyle(DT.Color.textPrimary)
+            .padding(.top, 8)
+            .accessibilityAddTraits(.isHeader)
     }
 }

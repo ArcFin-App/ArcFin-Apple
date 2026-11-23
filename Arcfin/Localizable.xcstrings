@@ -513,6 +513,134 @@
         }
       }
     },
+    "%@ listened" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ gehört"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ escuchado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ écoutés"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ ascoltati"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@再生"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ 감상함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ geluisterd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ ouvidos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Прослушано: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已收听 %@"
+          }
+        }
+      }
+    },
+    "%@ listens" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ Wiedergaben"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ escuchas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ écoutes"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ ascolti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@回再生"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@회 재생"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ keer geluisterd"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ reproduções"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Прослушиваний: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "收听 %@ 次"
+          }
+        }
+      }
+    },
     "%@ Mb/s" : {
       "localizations" : {
         "de" : {
@@ -10451,6 +10579,70 @@
         }
       }
     },
+    "Busiest: %@, %lld plays" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Am meisten: %@, %lld Wiedergaben"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Con más actividad: %@, %lld reproducciones"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le plus chargé : %@, %lld écoutes"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Più attivo: %@, %lld ascolti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "最も多い時期：%@、%lld回再生"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "가장 많이 들은 때: %@, %lld회 재생"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Drukst: %@, %lld keer gespeeld"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mais movimentado: %@, %lld reproduções"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Самый активный период: %@, %lld прослушиваний"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "播放最多：%@，%lld 次"
+          }
+        }
+      }
+    },
     "Buy" : {
       "localizations" : {
         "de" : {
@@ -11921,6 +12113,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法载入活跃会话。"
+          }
+        }
+      }
+    },
+    "Couldn't Load Music Stats" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Musikstatistik konnte nicht geladen werden"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudieron cargar las estadísticas de música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible de charger les statistiques musicales"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile caricare le statistiche musicali"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音楽の統計を読み込めませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "음악 통계를 불러올 수 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan muziekstatistieken niet laden"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível carregar as estatísticas de música"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось загрузить статистику музыки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法载入音乐统计"
           }
         }
       }
@@ -16467,6 +16723,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "一起聆听"
+          }
+        }
+      }
+    },
+    "Listening" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Hören"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escucha"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Écoute"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ascolto"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "リスニング"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "감상"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Luisteren"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escuta"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Прослушивание"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "收听"
           }
         }
       }
@@ -39698,6 +40018,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在“设置”→“插件”→“Seerr”中添加你的 Seerr 服务器 URL 和凭证。"
+          }
+        }
+      }
+    },
+    "Adding up what you've played…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Wiedergaben werden zusammengezählt …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sumando lo que has escuchado…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Calcul de vos écoutes…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sommando ciò che hai ascoltato…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生した曲を集計しています…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "재생한 항목을 집계하는 중…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bezig met optellen wat je hebt afgespeeld…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Somando o que você ouviu…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Подсчитываем прослушанное…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在统计你的播放记录…"
           }
         }
       }
@@ -74270,6 +74654,70 @@
         }
       }
     },
+    "From your ListenBrainz listens, which count every play. ListenBrainz updates its stats once a day." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Aus deinen ListenBrainz-Wiedergaben, die jedes Anhören zählen. ListenBrainz aktualisiert die Statistik einmal am Tag."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De tus escuchas en ListenBrainz, que cuentan cada reproducción. ListenBrainz actualiza sus estadísticas una vez al día."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "D’après vos écoutes ListenBrainz, qui comptent chaque lecture. ListenBrainz met à jour ses statistiques une fois par jour."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dai tuoi ascolti su ListenBrainz, che contano ogni riproduzione. ListenBrainz aggiorna le statistiche una volta al giorno."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "すべての再生を数えるListenBrainzの記録から集計しています。ListenBrainzの統計は1日に1回更新されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "모든 재생을 세는 ListenBrainz 감상 기록을 기준으로 합니다. ListenBrainz는 하루에 한 번 통계를 업데이트합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Op basis van je ListenBrainz-luisterbeurten, die elke keer afspelen tellen. ListenBrainz werkt zijn statistieken één keer per dag bij."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Das suas reproduções no ListenBrainz, que contam cada vez que você ouve. O ListenBrainz atualiza as estatísticas uma vez por dia."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "По вашим прослушиваниям в ListenBrainz, где учитывается каждое воспроизведение. ListenBrainz обновляет статистику раз в день."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "来自你的 ListenBrainz 收听记录，每次播放都会计入。ListenBrainz 每天更新一次统计。"
+          }
+        }
+      }
+    },
     "General" : {
       "localizations" : {
         "de" : {
@@ -98793,6 +99241,70 @@
         }
       }
     },
+    "Nothing Played in %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nichts gespielt im Zeitraum %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada reproducido en %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rien écouté en %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niente ascoltato in %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@の再生はありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@에 재생한 항목 없음"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Niets afgespeeld in %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nada reproduzido em %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ничего не прослушано: %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "%@ 没有播放记录"
+          }
+        }
+      }
+    },
     "Nothing played yet" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -104941,6 +105453,70 @@
         }
       }
     },
+    "Pick a longer period, or go back to an earlier one." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wähle einen längeren Zeitraum oder geh zu einem früheren zurück."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Elige un periodo más largo o vuelve a uno anterior."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Choisissez une période plus longue ou revenez à une période précédente."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scegli un periodo più lungo o torna a uno precedente."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "もっと長い期間を選ぶか、前の期間に戻ってください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "더 긴 기간을 선택하거나 이전 기간으로 돌아가세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kies een langere periode of ga terug naar een eerdere."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escolha um período mais longo ou volte para um anterior."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выберите более длинный период или вернитесь к более раннему."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "选择更长的时间段，或返回更早的时间段。"
+          }
+        }
+      }
+    },
     "Pick a programme in the guide to record it, or record every episode of a series." : {
       "localizations" : {
         "de" : {
@@ -106922,6 +107498,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在 Arcfin 中播放或暂停音乐。"
+          }
+        }
+      }
+    },
+    "Play some music and your listening stats start here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Spiel Musik ab, dann beginnt hier deine Hörstatistik."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduce algo de música y tus estadísticas de escucha empezarán aquí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Écoutez de la musique et vos statistiques d’écoute commenceront ici."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ascolta un po’ di musica e le tue statistiche di ascolto inizieranno qui."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音楽を再生すると、ここにリスニングの統計が表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "음악을 재생하면 여기에 감상 통계가 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Speel wat muziek af en je luisterstatistieken beginnen hier."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ouça algumas músicas e suas estatísticas de escuta começam aqui."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Включите музыку, и здесь появится статистика прослушивания."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "播放一些音乐，你的收听统计就会从这里开始。"
           }
         }
       }
@@ -109547,6 +110187,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "播放你上次观看的内容。"
+          }
+        }
+      }
+    },
+    "Plays, %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wiedergaben, %@"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproducciones, %@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Écoutes, %@"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ascolti, %@"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生回数、%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "재생, %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Keer gespeeld, %@"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduções, %@"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Прослушивания, %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "播放次数，%@"
           }
         }
       }
@@ -163209,6 +163913,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "有 Apple Music 订阅时，搜索也会找到服务器上没有的歌曲，并从 Apple Music 播放。"
+          }
+        }
+      }
+    },
+    "Worked out from what's marked played on your Jellyfin server. Inside a period, a song counts once, on the last day you played it; All Time counts every play. Add your ListenBrainz token in Settings › Integrations to count every listen." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Berechnet aus dem, was auf deinem Jellyfin-Server als gespielt markiert ist. Innerhalb eines Zeitraums zählt ein Song einmal, am letzten Tag, an dem du ihn gespielt hast; „Gesamt“ zählt jede Wiedergabe. Füge deinen ListenBrainz-Token unter Einstellungen › Integrationen hinzu, damit jedes Anhören zählt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Calculado a partir de lo marcado como reproducido en tu servidor Jellyfin. Dentro de un periodo, una canción cuenta una vez, el último día que la reprodujiste; Todo el tiempo cuenta cada reproducción. Añade tu token de ListenBrainz en Ajustes › Integraciones para contar cada escucha."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Calculé à partir de ce qui est marqué comme lu sur votre serveur Jellyfin. Sur une période, un morceau compte une fois, le dernier jour où vous l’avez écouté ; Depuis toujours compte chaque lecture. Ajoutez votre jeton ListenBrainz dans Réglages › Intégrations pour compter chaque écoute."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Calcolato da ciò che è segnato come riprodotto sul tuo server Jellyfin. In un periodo, un brano conta una volta, l’ultimo giorno in cui l’hai ascoltato; Sempre conta ogni riproduzione. Aggiungi il tuo token ListenBrainz in Impostazioni › Integrazioni per contare ogni ascolto."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfinサーバで再生済みとマークされた曲から集計しています。期間内では、曲は最後に再生した日に1回だけ数えます。「全期間」ではすべての再生を数えます。すべての再生を数えるには、設定 › 連携でListenBrainzのトークンを追加してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin 서버에서 재생함으로 표시된 항목을 기준으로 계산합니다. 한 기간 안에서는 곡을 마지막으로 재생한 날에 한 번만 셉니다. 전체 기간은 모든 재생을 셉니다. 모든 감상을 세려면 설정 › 통합에서 ListenBrainz 토큰을 추가하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Berekend op basis van wat op je Jellyfin-server als afgespeeld is gemarkeerd. Binnen een periode telt een nummer één keer, op de laatste dag dat je het afspeelde; ‘Altijd’ telt elke keer afspelen. Voeg je ListenBrainz-token toe in Instellingen › Integraties om elke luisterbeurt te tellen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Calculado a partir do que está marcado como reproduzido no seu servidor Jellyfin. Dentro de um período, uma música conta uma vez, no último dia em que você a reproduziu; Todo o período conta cada reprodução. Adicione seu token do ListenBrainz em Ajustes › Integrações para contar cada vez que você ouve."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Рассчитывается по тому, что отмечено как воспроизведённое на сервере Jellyfin. В пределах периода трек засчитывается один раз, в последний день воспроизведения; «За всё время» учитывает каждое воспроизведение. Добавьте токен ListenBrainz в разделе «Настройки › Интеграции», чтобы учитывать каждое прослушивание."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "根据你的 Jellyfin 服务器上标记为已播放的内容计算。在一个时间段内，一首歌只计一次，计在你最后播放它的那天；“全部时间”会计算每次播放。在“设置 › 集成”中添加你的 ListenBrainz 令牌，即可计算每次收听。"
           }
         }
       }

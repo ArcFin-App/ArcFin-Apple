@@ -4,13 +4,16 @@ import SwiftUI
 import JellyfinAPI
 import AuthCore
 
-/// Watch stats worked out from the server's own record of what this profile has watched.
+/// Watch and listening stats worked out from the server's own record of what this profile has
+/// watched and played, and from ListenBrainz for music when the profile sends its listens there.
 struct StatsView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(MediaRepository.self) private var mediaRepo
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @AppStorage("statsPeriod") private var period = StatsPeriod.month
     @State private var model = StatsModel()
+    @State private var kind = StatsKind.all
     /// Landscape, iPad and TV: the cards go in two columns instead of one long, stretched one.
     @State private var isWide = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -22,7 +25,7 @@ struct StatsView: View {
                 .screenBackground()
                 .arcfinNavTitleLarge("Stats")
                 .toolbar {
-                    if let stats = model.stats, !stats.isEmpty {
+                    if shownKind != .music, let stats = model.stats, !stats.isEmpty {
                         ToolbarItem(placement: .primaryAction) {
                             Button { showShare = true } label: {
                                 Label("Share", systemImage: "square.and.arrow.up")
@@ -42,8 +45,15 @@ struct StatsView: View {
         }
         .task(id: authManager.state.credential?.id) { await model.load(authManager: authManager) }
         .task(id: model.input(period: period)) { await model.compute(period: period, reduceMotion: reduceMotion) }
+        .task(id: musicTaskID) { if shownKind != .video { await model.loadMusic(authManager: authManager) } }
+        .task(id: model.musicInput(period: period)) { await model.computeMusic(period: period, reduceMotion: reduceMotion) }
         .onChange(of: period) { model.offset = 0 }
     }
+
+    /// Music shows up only with a music library to play from.
+    private var hasMusic: Bool { mediaRepo.libraries.contains { $0.collectionType == .music } }
+    private var shownKind: StatsKind { hasMusic ? kind : .video }
+    private var musicTaskID: String { "\(authManager.state.credential?.id.uuidString ?? "")-\(shownKind != .video)" }
 
     @ViewBuilder
     private var content: some View {
@@ -64,16 +74,11 @@ struct StatsView: View {
         default:
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
+                    if hasMusic { kindPicker }
                     periodPicker
-                    if period != .allTime, let stats = model.stats { periodStepper(stats) }
-                    if let stats = model.stats {
-                        if stats.isEmpty {
-                            StatsEmptyPeriod(period: period, stats: model.stats, offset: model.offset)
-                        } else {
-                            StatsSections(stats: stats, counts: model.counts, isWide: isWide,
-                                          compactHero: verticalSizeClass == .compact)
-                        }
-                    }
+                    if period != .allTime, let title = stepperTitle { periodStepper(title) }
+                    StatsKindContent(kind: shownKind, model: model, period: period, isWide: isWide,
+                                     compactHero: verticalSizeClass == .compact)
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.top, 8)
@@ -86,6 +91,18 @@ struct StatsView: View {
         }
     }
 
+    private var kindPicker: some View {
+        Picker("Show", selection: $kind) {
+            ForEach(StatsKind.allCases) { Text($0.label).tag($0) }
+        }
+        .pickerStyle(.segmented)
+    }
+
+    /// The period's name and heading, from whichever stats the tab shows.
+    private var stepperTitle: StatsStepperTitle? {
+        StatsStepperTitle(kind: shownKind, model: model)
+    }
+
     private var periodPicker: some View {
         Picker("Period", selection: $period) {
             ForEach(StatsPeriod.allCases) { Text($0.label).tag($0) }
@@ -95,15 +112,15 @@ struct StatsView: View {
     }
 
     /// Steps back through earlier weeks, months or years, and forward again to the current one.
-    private func periodStepper(_ stats: WatchStats) -> some View {
+    private func periodStepper(_ title: StatsStepperTitle) -> some View {
         HStack(spacing: 12) {
-            stepButton("chevron.left", label: period.previousLabel, disabled: !stats.hasEarlier) { model.offset -= 1 }
+            stepButton("chevron.left", label: period.previousLabel, disabled: !model.hasEarlier(shownKind)) { model.offset -= 1 }
             VStack(spacing: 1) {
-                Text(stats.periodName)
+                Text(title.name)
                     .font(.system(.headline))
                     .foregroundStyle(DT.Color.textPrimary)
                     .contentTransition(.numericText())
-                Text(stats.periodHeading)
+                Text(title.heading)
                     .font(.system(.caption))
                     .foregroundStyle(DT.Color.textSecondary)
             }

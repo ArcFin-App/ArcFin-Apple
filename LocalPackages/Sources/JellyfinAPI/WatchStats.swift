@@ -26,7 +26,7 @@ public enum StatsPeriod: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    var component: Calendar.Component {
+    public var component: Calendar.Component {
         switch self {
         case .week: .weekOfYear
         case .month: .month
@@ -192,31 +192,8 @@ public struct WatchStats: Sendable {
 
         // Activity over time.
         let dated = titles.compactMap { title in title.lastPlayed.map { ($0, title.runtimeSeconds) } }
-        let unit: BucketUnit
-        let bucketStarts: [Date]
-        switch period {
-        case .week, .month:
-            unit = .day
-            let first = interval?.start ?? calendar.startOfDay(for: now)
-            let count = interval.flatMap { calendar.dateComponents([.day], from: $0.start, to: $0.end).day } ?? 1
-            bucketStarts = (0..<count).compactMap { calendar.date(byAdding: .day, value: $0, to: first) }
-        case .year:
-            unit = .month
-            bucketStarts = (0..<12).compactMap { calendar.date(byAdding: .month, value: $0, to: start ?? now) }
-        case .allTime:
-            let earliest = dated.map(\.0).min() ?? now
-            let months = calendar.dateComponents([.month], from: earliest, to: now).month ?? 0
-            if months < 24 {
-                unit = .month
-                let first = calendar.dateInterval(of: .month, for: earliest)?.start ?? earliest
-                bucketStarts = (0...months).compactMap { calendar.date(byAdding: .month, value: $0, to: first) }
-            } else {
-                unit = .year
-                let firstYear = calendar.component(.year, from: earliest)
-                let lastYear = calendar.component(.year, from: now)
-                bucketStarts = (firstYear...lastYear).compactMap { calendar.date(from: DateComponents(year: $0)) }
-            }
-        }
+        let (unit, bucketStarts) = Self.bucketStarts(period: period, interval: interval,
+                                                     earliest: dated.map(\.0).min(), now: now, calendar: calendar)
         bucketUnit = unit
         let component: Calendar.Component = unit == .day ? .day : unit == .month ? .month : .year
         var byBucket: [Date: Double] = [:]
@@ -337,6 +314,30 @@ public struct WatchStats: Sendable {
         heading = period.heading(offset: offset)
         name = period.name(now: reference, calendar: calendar, firstPlayed: firstPlayed)
         hasEarlier = start.map { start in all.contains { ($0.lastPlayed ?? .distantFuture) < start } } ?? false
+    }
+
+    /// The chart's bars: days for a week or month, months for a year, and months (under two
+    /// years) or years for all time, from the earliest play.
+    public static func bucketStarts(period: StatsPeriod, interval: DateInterval?, earliest: Date?,
+                                    now: Date, calendar: Calendar) -> (BucketUnit, [Date]) {
+        switch period {
+        case .week, .month:
+            let first = interval?.start ?? calendar.startOfDay(for: now)
+            let count = interval.flatMap { calendar.dateComponents([.day], from: $0.start, to: $0.end).day } ?? 1
+            return (.day, (0..<count).compactMap { calendar.date(byAdding: .day, value: $0, to: first) })
+        case .year:
+            return (.month, (0..<12).compactMap { calendar.date(byAdding: .month, value: $0, to: interval?.start ?? now) })
+        case .allTime:
+            let earliest = earliest ?? now
+            let months = calendar.dateComponents([.month], from: earliest, to: now).month ?? 0
+            if months < 24 {
+                let first = calendar.dateInterval(of: .month, for: earliest)?.start ?? earliest
+                return (.month, (0...months).compactMap { calendar.date(byAdding: .month, value: $0, to: first) })
+            }
+            let firstYear = calendar.component(.year, from: earliest)
+            let lastYear = calendar.component(.year, from: now)
+            return (.year, (firstYear...lastYear).compactMap { calendar.date(from: DateComponents(year: $0)) })
+        }
     }
 
     static func longestRun(in days: Set<Date>, calendar: Calendar) -> Int {
