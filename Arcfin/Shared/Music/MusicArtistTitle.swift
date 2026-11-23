@@ -8,6 +8,8 @@ struct MusicArtistTitle: View {
     let artist: MusicArtist
     var logoSize = CGSize(width: 300, height: 110)
     var alignment: Alignment = .center
+    /// White, over artwork, rather than the page's text colour.
+    var onArt = false
 
     var body: some View {
         if let url = MusicAPI.logoURL(artist) {
@@ -34,6 +36,9 @@ struct MusicArtistTitle: View {
     private var name: some View {
         Text(verbatim: artist.name)
             .font(.largeTitle.weight(.bold))
-            .foregroundStyle(DT.Color.textPrimary)
+            .foregroundStyle(onArt ? .white : DT.Color.textPrimary)
+            .lineLimit(2)
+            .minimumScaleFactor(0.6)
+            .shadow(color: .black.opacity(onArt ? 0.5 : 0), radius: 8)
     }
 }

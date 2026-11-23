@@ -6,11 +6,13 @@ import SwiftUI
 /// the top of the screen, under the navigation bar, carrying on below as a blurred copy of
 /// itself that fades into the page, as Now Playing does. Play and Shuffle sit at the foot of
 /// the cover, and the names over the soft part below it.
-struct MusicHero<Art: View, Info: View>: View {
+struct MusicHero<Art: View, Info: View, Heading: View>: View {
     let play: () -> Void
     let shuffle: () -> Void
     var canPlay = true
     @ViewBuilder let art: (CGSize) -> Art
+    /// Over the foot of the cover, just above Play and Shuffle.
+    @ViewBuilder let heading: () -> Heading
     @ViewBuilder let info: () -> Info
 
     /// How much taller than the art: the blurred part below it.
@@ -63,9 +65,13 @@ struct MusicHero<Art: View, Info: View>: View {
                 .accessibilityHidden(true)
                 .overlay {
                     GeometryReader { proxy in
-                        buttons
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, max(proxy.size.height / extent - 72, 0))
+                        VStack(spacing: 14) {
+                            heading()
+                            buttons
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, DT.Spacing.pagePad)
+                        .frame(height: max(proxy.size.height / extent - 22, 0), alignment: .bottom)
                     }
                 }
             info()
@@ -100,6 +106,13 @@ struct MusicHero<Art: View, Info: View>: View {
         }
         .disabled(!canPlay)
         .opacity(canPlay ? 1 : 0.5)
+    }
+}
+
+extension MusicHero where Heading == EmptyView {
+    init(play: @escaping () -> Void, shuffle: @escaping () -> Void, canPlay: Bool = true,
+         @ViewBuilder art: @escaping (CGSize) -> Art, @ViewBuilder info: @escaping () -> Info) {
+        self.init(play: play, shuffle: shuffle, canPlay: canPlay, art: art, heading: { EmptyView() }, info: info)
     }
 }
 

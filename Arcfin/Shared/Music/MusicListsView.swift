@@ -361,11 +361,13 @@ struct MusicArtistView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
-                // The artist's photo across the top, like an album page, with their logo or name below.
+                // The artist's photo across the top, like an album page, with their logo or name on it.
                 MusicHero(play: { play(shuffled: false) }, shuffle: { play(shuffled: true) }) { _ in
                     MusicHeroImage(url: heroArtURL(width: 1600))
+                } heading: {
+                    MusicArtistTitle(artist: artist, logoSize: CGSize(width: 280, height: 96), onArt: true)
                 } info: {
-                    MusicArtistTitle(artist: artist)
+                    EmptyView()
                 }
                 VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                     if !topSongs.isEmpty {
