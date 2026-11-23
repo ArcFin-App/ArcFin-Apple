@@ -125,6 +125,11 @@ struct AdminView: View {
                 NavigationLink { AdminPluginsView() } label: {
                     AdminRow(title: "Plugins", systemImage: "puzzlepiece.extension", detail: nil)
                 }
+                if authManager.hasArcfinSyncDevices {
+                    NavigationLink { ArcfinSyncAdminView() } label: {
+                        AdminRow(title: "Arcfin for Everyone", systemImage: "slider.horizontal.3", detail: nil)
+                    }
+                }
                 NavigationLink { AdminAPIKeysView() } label: {
                     AdminRow(title: "API Keys", systemImage: "key", detail: nil)
                 }

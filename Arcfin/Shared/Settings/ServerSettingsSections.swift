@@ -138,6 +138,11 @@ struct ArcfinSyncSection: View {
                 NavigationLink { DevicesSyncView().tvSettingsPage() } label: {
                     TVRowLabelText(title: "Devices & Sync", detail: "Name this device, choose how it syncs, and see your other devices.")
                 }
+                if authManager.isAdmin {
+                    NavigationLink { ArcfinSyncAdminView().tvSettingsPage() } label: {
+                        TVRowLabelText(title: "Arcfin for Everyone", detail: "Defaults and locks for every Arcfin app on this server, and everyone's devices.")
+                    }
+                }
             }
         }
     }
