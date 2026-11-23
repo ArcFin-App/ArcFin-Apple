@@ -1983,10 +1983,9 @@ final class PlayerModel {
         if source.tracksComeFromEngine {
             // A track inside the file is drawn from what the engine decodes; any other leaves it off.
             let stream = selectedSubtitleIndex.flatMap { index in info.subtitleStreams.first { $0.index == index } }
+            // Set every time: one asked for before a load is only recorded, not acted on.
             let engineTrack = stream.flatMap { source.drawsSubtitleInEngine($0) ? $0.index : nil }
-            if engineTrack != player.selectedSubtitleTrackIndex || engineTrack == nil {
-                await player.setSubtitleTrack(index: engineTrack)
-            }
+            await player.setSubtitleTrack(index: engineTrack)
         }
         guard let index = selectedSubtitleIndex,
               let stream = info.subtitleStreams.first(where: { $0.index == index }),
@@ -2061,6 +2060,7 @@ final class PlayerModel {
                     if let liveStreamId = info.liveStreamId { closeLiveStream(liveStreamId) }
                     return
                 }
+                let previousInfo = playbackInfo
                 playbackInfo = info
                 await loadSubtitleCues(from: info)
                 guard reloadIsCurrent(generation) else { return }
@@ -2074,7 +2074,7 @@ final class PlayerModel {
                 guard reloadIsCurrent(generation) else { return }
                 if let listed = await source.tracksLoaded(on: player, info: info) {
                     guard reloadIsCurrent(generation) else { return }
-                    carryTrackPicks(from: info, to: listed)
+                    carryTrackPicks(from: previousInfo ?? info, to: listed)
                     playbackInfo = listed
                     await loadSubtitleCues(from: listed)
                 }

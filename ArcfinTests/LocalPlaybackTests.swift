@@ -139,4 +139,13 @@ struct LocalPlaybackTests {
         #expect(file.isLocal && file.tracksComeFromEngine)
         #expect(file.item.name == "movie")
     }
+
+    @Test func aLocalFileStaysOnAetherUnlessVLCIsPicked() {
+        let file = FilePlaybackSource(url: URL(fileURLWithPath: "/tmp/movie.mkv"))
+        #expect(file.engine(for: .auto) == .aether)
+        #expect(file.engine(for: .avFoundation) == .aether)
+        #expect(file.engine(for: .aether) == .aether)
+        #expect(file.engine(for: .vlc) == .vlc)
+        #expect(ServerPlaybackSource().engine(for: .avFoundation) == .avFoundation)
+    }
 }

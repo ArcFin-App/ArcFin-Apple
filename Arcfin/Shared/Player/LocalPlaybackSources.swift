@@ -80,6 +80,8 @@ final class FilePlaybackSource: PlaybackSource {
 
     var capabilities: PlaybackCapabilities { .local }
     var isLocal: Bool { true }
+    /// AVFoundation can't open most files' containers, so a file stays on Aether unless VLC is picked.
+    func engine(for preference: PlaybackEngineKind) -> PlaybackEngineKind { preference == .vlc ? .vlc : .aether }
     var tracksComeFromEngine: Bool { true }
     var unavailableMessage: String? { nil }
 
@@ -166,6 +168,8 @@ final class DownloadPlaybackSource: PlaybackSource {
 
     var capabilities: PlaybackCapabilities { .local }
     var isLocal: Bool { true }
+    /// AVFoundation can't open most files' containers, so a file stays on Aether unless VLC is picked.
+    func engine(for preference: PlaybackEngineKind) -> PlaybackEngineKind { preference == .vlc ? .vlc : .aether }
     var tracksComeFromEngine: Bool { true }
     var unavailableMessage: String? { nil }
 
