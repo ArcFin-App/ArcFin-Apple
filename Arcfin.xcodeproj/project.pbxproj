@@ -150,7 +150,6 @@
 				iOS/App/ContentView.swift = (ios, );
 				iOS/App/PlayerFirstResponder.swift = (ios, );
 				iOS/App/PlayerWindow.swift = (ios, );
-				iOS/ArcfiniOS.entitlements = (ios, );
 				iOS/CarPlay/CarPlaySceneDelegate.swift = (ios, );
 				iOS/CarPlay/CarPlaySearch.swift = (ios, );
 				iOS/CarPlay/CarPlayVoiceSearch.swift = (ios, );
@@ -366,7 +365,6 @@
 				tvOS/App/ArcfinScenes.swift = (tvos, );
 				tvOS/App/ContentView.swift = (tvos, );
 				tvOS/App/PlayerFirstResponder.swift = (tvos, );
-				tvOS/ArcfintvOS.entitlements = (tvos, );
 				tvOS/Components/PINPadPlatform.swift = (tvos, );
 				tvOS/Components/PosterCard.swift = (tvos, );
 				tvOS/Components/SeerrRequestCancel.swift = (tvos, );
