@@ -6257,6 +6257,70 @@
         }
       }
     },
+    "Choose how each device syncs its settings: automatically, Ask First to check with you before using changes from another device, or Off." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle, wie jedes Gerät seine Einstellungen synchronisiert: automatisch, „Zuerst fragen“, damit es dich fragt, bevor es Änderungen von einem anderen Gerät übernimmt, oder „Aus“."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige cómo sincroniza sus ajustes cada dispositivo: automáticamente, «Preguntar antes» para consultarte antes de usar los cambios de otro dispositivo, o «Desactivado»."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez comment chaque appareil synchronise ses réglages : automatiquement, « Demander d’abord » pour vous consulter avant d’utiliser les changements d’un autre appareil, ou « Désactivé »."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli come ogni dispositivo sincronizza le impostazioni: automaticamente, «Chiedi prima» per chiederti conferma prima di usare le modifiche di un altro dispositivo, oppure «Disattivato»."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "デバイスごとに設定の同期方法を選べます。自動、ほかのデバイスでの変更を使う前に確認する「先に確認」、または「オフ」です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "기기마다 설정을 동기화하는 방법을 선택하세요. 자동으로, 다른 기기의 변경 사항을 사용하기 전에 확인하는 '먼저 묻기', 또는 '끔' 중에서 고를 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kies hoe elk apparaat zijn instellingen synchroniseert: automatisch, 'Eerst vragen' om het je te vragen voordat wijzigingen van een ander apparaat worden gebruikt, of 'Uit'."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha como cada dispositivo sincroniza os ajustes: automaticamente, “Perguntar antes” para confirmar com você antes de usar mudanças de outro dispositivo, ou “Desativado”."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите, как каждое устройство синхронизирует настройки: автоматически, «Сначала спрашивать», чтобы уточнять у вас перед применением изменений с другого устройства, или «Выкл.»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择每台设备如何同步设置：自动、“先询问”（使用其他设备的更改前先征求你的同意）或“关闭”。"
+          }
+        }
+      }
+    },
     "Collection Sort" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6517,6 +6581,134 @@
         }
       }
     },
+    "Downloads and files you open play in the same player as streaming, with Aether, chapters, scrub previews and Up Next." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads und Dateien, die du öffnest, laufen im selben Player wie Streams, mit Aether, Kapiteln, Vorschaubildern beim Spulen und „Als Nächstes“."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las descargas y los archivos que abres se reproducen en el mismo reproductor que el streaming, con Aether, capítulos, vistas previas al desplazarte y «A continuación»."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les téléchargements et les fichiers que vous ouvrez se lisent dans le même lecteur que le streaming, avec Aether, les chapitres, les aperçus pendant la recherche et « À suivre »."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "I download e i file che apri si riproducono nello stesso player dello streaming, con Aether, capitoli, anteprime durante lo scorrimento e «Prossimi»."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロードや開いたファイルも、ストリーミングと同じプレーヤーで再生されます。Aether、チャプター、シーク時のプレビュー、「次に見る」に対応します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드한 항목과 연 파일도 스트리밍과 같은 플레이어에서 재생됩니다. Aether, 챕터, 탐색 미리보기, '다음 볼 작품'을 지원합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads en bestanden die je opent spelen af in dezelfde speler als streams, met Aether, hoofdstukken, voorbeelden bij het spoelen en 'Hierna'."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads e arquivos que você abre tocam no mesmo player do streaming, com Aether, capítulos, prévias ao avançar e “A seguir”."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загрузки и открытые вами файлы воспроизводятся в том же плеере, что и потоковое видео, с Aether, главами, превью при перемотке и «Далее»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载内容和你打开的文件与流媒体使用同一个播放器播放，支持 Aether、章节、拖动预览和“接下来”。"
+          }
+        }
+      }
+    },
+    "Downloads in the Full Player" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads im vollständigen Player"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Descargas en el reproductor completo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Téléchargements dans le lecteur complet"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Download nel player completo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ダウンロードもフルプレーヤーで"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다운로드도 전체 플레이어에서"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads in de volledige speler"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Downloads no player completo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Загрузки в полном плеере"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下载内容也用完整播放器"
+          }
+        }
+      }
+    },
     "English" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6578,6 +6770,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "英语"
+          }
+        }
+      }
+    },
+    "Every Music section has its own search: favourites, playlists, artists, albums, songs and genres." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jeder Bereich in Musik hat seine eigene Suche: Favoriten, Playlists, Künstler, Alben, Titel und Genres."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada sección de Música tiene su propia búsqueda: favoritos, listas, artistas, álbumes, canciones y géneros."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chaque section de Musique a sa propre recherche : favoris, listes de lecture, artistes, albums, morceaux et genres."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ogni sezione di Musica ha la sua ricerca: preferiti, playlist, artisti, album, brani e generi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ミュージックの各セクションに専用の検索があります。お気に入り、プレイリスト、アーティスト、アルバム、曲、ジャンルです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음악의 모든 섹션에 자체 검색이 있습니다. 즐겨찾기, 재생 목록, 아티스트, 앨범, 노래, 장르입니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elk onderdeel van Muziek heeft een eigen zoekfunctie: favorieten, afspeellijsten, artiesten, albums, nummers en genres."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cada seção de Música tem sua própria pesquisa: favoritos, playlists, artistas, álbuns, músicas e gêneros."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "В каждом разделе «Музыки» есть свой поиск: избранное, плейлисты, артисты, альбомы, песни и жанры."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“音乐”的每个部分都有自己的搜索：收藏、播放列表、艺人、专辑、歌曲和类型。"
           }
         }
       }
@@ -7032,6 +7288,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示的首页行"
+          }
+        }
+      }
+    },
+    "If you run the server, choose defaults and lock settings for everyone or for one person, in Settings › Server › Arcfin for Everyone. Needs Arcfin Sync 0.4." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wenn du den Server betreibst, legst du unter Einstellungen › Server › Arcfin für alle Standardwerte fest und sperrst Einstellungen, für alle oder für eine Person. Erfordert Arcfin Sync 0.4."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si administras el servidor, elige valores predeterminados y bloquea ajustes para todos o para una persona en Ajustes › Servidor › Arcfin para todos. Requiere Arcfin Sync 0.4."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Si vous gérez le serveur, choisissez des valeurs par défaut et verrouillez des réglages pour tout le monde ou pour une personne, dans Réglages › Serveur › Arcfin pour tous. Nécessite Arcfin Sync 0.4."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se gestisci il server, scegli i valori predefiniti e blocca le impostazioni per tutti o per una persona in Impostazioni › Server › Arcfin per tutti. Richiede Arcfin Sync 0.4."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバを管理しているなら、設定 › サーバ › みんなのArcfinで、全員または特定の人のデフォルトを選び、設定をロックできます。Arcfin Sync 0.4が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서버를 운영한다면 설정 › 서버 › 모두를 위한 Arcfin에서 모든 사람이나 한 사람의 기본값을 정하고 설정을 잠글 수 있습니다. Arcfin Sync 0.4가 필요합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beheer je de server, kies dan standaardwaarden en vergrendel instellingen voor iedereen of voor één persoon in Instellingen › Server › Arcfin voor iedereen. Vereist Arcfin Sync 0.4."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se você administra o servidor, escolha padrões e bloqueie ajustes para todos ou para uma pessoa em Ajustes › Servidor › Arcfin para todos. Requer o Arcfin Sync 0.4."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Если вы управляете сервером, выберите значения по умолчанию и заблокируйте настройки для всех или для одного человека в разделе «Настройки › Сервер › Arcfin для всех». Нужен Arcfin Sync 0.4."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "如果你管理服务器，可在“设置 › 服务器 › 所有人的 Arcfin”中为所有人或某个人选择默认值并锁定设置。需要 Arcfin Sync 0.4。"
           }
         }
       }
@@ -8330,6 +8650,70 @@
         }
       }
     },
+    "Search Your Music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Durchsuche deine Musik"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Busca en tu música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cherchez dans votre musique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cerca nella tua musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ミュージックを検索"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음악 검색"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zoek in je muziek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pesquise sua música"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Поиск по музыке"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索你的音乐"
+          }
+        }
+      }
+    },
     "Searching your music…" : {
       "localizations" : {
         "de" : {
@@ -8585,6 +8969,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seerr 用户名"
+          }
+        }
+      }
+    },
+    "Skip from the Controls" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Überspringen in der Steuerung"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saltar desde los controles"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Passer depuis les commandes"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Salta dai controlli"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コントロールからスキップ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "컨트롤에서 건너뛰기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overslaan vanuit de bediening"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pule pelos controles"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Пропуск в элементах управления"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在控制栏中跳过"
+          }
+        }
+      }
+    },
+    "Skip Intro and Skip Credits sit with the player's controls while they're showing, instead of floating over them." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "„Intro überspringen“ und „Abspann überspringen“ sitzen bei eingeblendeter Steuerung jetzt in der Steuerung des Players, statt darüber zu schweben."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Saltar intro» y «Saltar créditos» aparecen junto a los controles del reproductor mientras se muestran, en lugar de flotar sobre ellos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "« Passer l’intro » et « Passer le générique » se placent parmi les commandes du lecteur quand elles sont affichées, au lieu de flotter par-dessus."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Salta intro» e «Salta titoli di coda» stanno insieme ai controlli del player quando sono visibili, invece di galleggiarci sopra."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プレーヤーのコントロールが表示されている間、「イントロをスキップ」と「クレジットをスキップ」はその上に浮かばず、コントロールの中に表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "플레이어 컨트롤이 표시되는 동안 '인트로 건너뛰기'와 '크레딧 건너뛰기'가 컨트롤 위에 떠 있지 않고 컨트롤 안에 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "'Intro overslaan' en 'Aftiteling overslaan' staan bij de bediening van de speler zolang die te zien is, in plaats van eroverheen te zweven."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“Pular abertura” e “Pular créditos” ficam junto aos controles do player enquanto eles aparecem, em vez de flutuar sobre eles."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "«Пропустить заставку» и «Пропустить титры» теперь находятся среди элементов управления плеера, пока они показаны, а не парят поверх них."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "控制栏显示时，“跳过片头”和“跳过片尾”位于播放器控制栏中，而不是浮在其上方。"
           }
         }
       }
@@ -8845,6 +9357,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "流媒体服务"
+          }
+        }
+      }
+    },
+    "Sync Your Way" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sync, wie du willst"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincroniza a tu manera"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchronisez à votre façon"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronizza a modo tuo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同期は思いどおりに"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원하는 방식으로 동기화"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Synchroniseer zoals jij wilt"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sincronize do seu jeito"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Синхронизация по-вашему"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按你的方式同步"
           }
         }
       }
@@ -26471,6 +27047,70 @@
         }
       }
     },
+    "Who's Watching" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wer schaut zu"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quién está viendo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qui regarde"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chi sta guardando"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "視聴者の確認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "누가 보고 있나요"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wie kijkt er"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quem está assistindo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Кто смотрит"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "谁在观看"
+          }
+        }
+      }
+    },
     "With Ads" : {
       "localizations" : {
         "de" : {
@@ -26531,6 +27171,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "含广告"
+          }
+        }
+      }
+    },
+    "With Arcfin Sync 0.4 on your server, Settings › Server › Devices & Sync names this device and lists your others. Send this device's settings to all of them, or use another one's here." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit Arcfin Sync 0.4 auf deinem Server benennst du unter Einstellungen › Server › Geräte & Sync dieses Gerät und siehst deine anderen. Sende die Einstellungen dieses Geräts an alle, oder verwende hier die eines anderen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con Arcfin Sync 0.4 en tu servidor, en Ajustes › Servidor › Dispositivos y sincronización puedes poner nombre a este dispositivo y ver los demás. Envía los ajustes de este dispositivo a todos o usa aquí los de otro."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avec Arcfin Sync 0.4 sur votre serveur, Réglages › Serveur › Appareils et synchro permet de nommer cet appareil et liste vos autres appareils. Envoyez les réglages de cet appareil à tous, ou utilisez ici ceux d’un autre."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con Arcfin Sync 0.4 sul tuo server, in Impostazioni › Server › Dispositivi e sincronizzazione puoi dare un nome a questo dispositivo e vedere gli altri. Invia le impostazioni di questo dispositivo a tutti, o usa qui quelle di un altro."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバにArcfin Sync 0.4があれば、設定 › サーバ › デバイスと同期で、このデバイスに名前を付けたり、ほかのデバイスを一覧で見たりできます。このデバイスの設定をすべてに送ったり、ほかのデバイスの設定をここで使ったりできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서버에 Arcfin Sync 0.4가 있으면 설정 › 서버 › 기기 및 동기화에서 이 기기의 이름을 정하고 다른 기기를 볼 수 있습니다. 이 기기의 설정을 모든 기기로 보내거나, 다른 기기의 설정을 여기서 사용하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Met Arcfin Sync 0.4 op je server geef je dit apparaat een naam en zie je je andere apparaten in Instellingen › Server › Apparaten en synchronisatie. Stuur de instellingen van dit apparaat naar alle andere, of gebruik hier die van een ander."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Com o Arcfin Sync 0.4 no seu servidor, em Ajustes › Servidor › Dispositivos e sincronização você dá um nome a este dispositivo e vê os outros. Envie os ajustes deste dispositivo para todos ou use aqui os de outro."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Если на сервере есть Arcfin Sync 0.4, в разделе «Настройки › Сервер › Устройства и синхронизация» можно назвать это устройство и увидеть остальные. Отправьте настройки этого устройства на все или используйте здесь настройки другого."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服务器装有 Arcfin Sync 0.4 时，可在“设置 › 服务器 › 设备与同步”中为此设备命名并查看你的其他设备。将此设备的设置发送到所有设备，或在此使用其他设备的设置。"
+          }
+        }
+      }
+    },
+    "With two or more profiles, turn on Always Ask Who's Watching in Settings › Profiles, and Apple TV asks when it opens and when you come back after a while." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mit zwei oder mehr Profilen schaltest du unter Einstellungen › Profile „Immer fragen, wer zuschaut“ ein, und Apple TV fragt beim Start und wenn du nach einer Weile zurückkommst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con dos o más perfiles, activa «Preguntar siempre quién está viendo» en Ajustes › Perfiles y el Apple TV preguntará al abrirse y cuando vuelvas tras un rato."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avec deux profils ou plus, activez « Toujours demander qui regarde » dans Réglages › Profils, et l’Apple TV le demande à l’ouverture et à votre retour après un moment."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Con due o più profili, attiva «Chiedi sempre chi sta guardando» in Impostazioni › Profili e Apple TV lo chiede all’apertura e quando torni dopo un po’."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プロファイルが2つ以上あるときは、設定 › プロファイルで「毎回視聴者を確認」をオンにすると、Apple TVを開いたときと、しばらくしてから戻ったときに確認します。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "프로필이 두 개 이상이면 설정 › 프로필에서 '항상 시청자 묻기'를 켜세요. Apple TV를 열 때와 잠시 후 돌아왔을 때 누가 보는지 묻습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Met twee of meer profielen zet je 'Altijd vragen wie er kijkt' aan in Instellingen › Profielen, en Apple TV vraagt het bij het openen en als je na een tijdje terugkomt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Com dois ou mais perfis, ative “Sempre perguntar quem está assistindo” em Ajustes › Perfis, e a Apple TV pergunta ao abrir e quando você volta depois de um tempo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Если профилей два или больше, включите «Всегда спрашивать, кто смотрит» в разделе «Настройки › Профили», и Apple TV будет спрашивать при запуске и когда вы возвращаетесь через некоторое время."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有两个或更多描述文件时，在“设置 › 描述文件”中打开“始终询问谁在观看”，Apple TV 会在打开时以及你离开一段时间后返回时询问。"
           }
         }
       }
