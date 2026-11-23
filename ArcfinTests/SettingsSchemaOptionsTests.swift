@@ -50,4 +50,15 @@ struct SettingsSchemaOptionsTests {
         #expect(values("subtitleReachEarlier") == PlayerModel.subtitleReachOptions.map(String.init))
         #expect(values("holdSpeedRate") == PlayerModel.holdSpeedOptions.map { String(Double($0)) })
     }
+
+    /// Devices & Sync and Arcfin for Everyone show the schema's titles and options through the
+    /// String Catalog, so each has a translation.
+    @Test func schemaTextIsTranslated() throws {
+        let schema = SettingsSchema.bundled
+        let texts = Set(schema.groups.map(\.title) + schema.settings.flatMap { [$0.title] + ($0.options ?? []).map(\.title) })
+        let app = Bundle(for: AuthManager.self)
+        let german = try #require(app.path(forResource: "de", ofType: "lproj").flatMap(Bundle.init(path:)))
+        let untranslated = texts.filter { german.localizedString(forKey: $0, value: "\u{0}", table: nil) == "\u{0}" }
+        #expect(untranslated.isEmpty, "\(untranslated.sorted())")
+    }
 }
