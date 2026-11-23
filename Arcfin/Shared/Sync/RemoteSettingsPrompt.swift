@@ -39,5 +39,9 @@ struct RemoteSettingsPrompt: ViewModifier {
             .onChange(of: authManager.pendingRemoteSettings == nil) { _, answered in
                 if answered { isPresented = false }
             }
+            // The lock, Who's Watching or the player came up: the question waits for them to go.
+            .onChange(of: canAsk) { _, can in
+                if !can { isPresented = false }
+            }
     }
 }
