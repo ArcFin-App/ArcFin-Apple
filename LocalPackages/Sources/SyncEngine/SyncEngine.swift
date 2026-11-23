@@ -468,7 +468,7 @@ public enum SettingsSyncEngine {
     static let lastSyncedKey = "arcfin.settingsSync.lastSynced"
     static func lastSyncedKey(profile: String) -> String { "\(lastSyncedKey).\(profile)" }
     /// The profile that synced last on this device.
-    private static let lastProfileKey = "arcfin.settingsSync.lastProfile"
+    static let lastProfileKey = "arcfin.settingsSync.lastProfile"
 
     /// Which values to take from the server and which to send it. `base` is what both last
     /// agreed on, nil before the first sync that kept it.

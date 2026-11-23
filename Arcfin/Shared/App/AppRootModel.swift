@@ -174,6 +174,20 @@ final class AppRootModel {
         return phase == .login || phase == .main || phase == .offline
     }
 
+    /// Ask First's question about settings changed on another device. Like What's New it waits
+    /// for the splash and the lock, and never comes up over a player or the tour.
+    /// `isCovered`: something else is presented over the window.
+    func remoteSettingsBinding(phase: AppPhase, isCovered: Bool = false) -> Binding<Bool> {
+        Binding(
+            get: {
+                self.authManager.pendingRemoteSettings != nil && phase == .main && self.splashDone && self.isPastLock
+                    && self.introduction.presentation == nil && !self.playerCoversWindow
+                    && !PlayerActivity.shared.isPlayerOpen && !isCovered
+            },
+            set: { _ in }
+        )
+    }
+
     /// Any way the presentation closes counts as seen, a swipe down or Menu included.
     func introductionBinding(_ presentation: AppIntroduction.Presentation, phase: AppPhase) -> Binding<Bool> {
         Binding(

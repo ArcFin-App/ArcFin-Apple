@@ -137,6 +137,7 @@ struct ContentView: View {
             WhatsNewView { model.introduction.finishWhatsNew() }
                 .frame(width: 520, height: 620)
         }
+        .modifier(RemoteSettingsPrompt(isPresented: model.remoteSettingsBinding(phase: phase)))
         .modifier(AppRootLifecycle(model: model))
         // An arcfin:// link from a widget or notification goes to the open window instead of
         // opening another one with its own launch checks.

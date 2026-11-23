@@ -151,6 +151,10 @@ public struct JellyfinAuthClient: Sendable {
     private let deviceId: String
     private let deviceName: String
 
+    /// What this device tells Jellyfin it is, in every request's auth header.
+    public var currentDeviceID: String { deviceId }
+    public var currentDeviceName: String { deviceName }
+
     /// Keeps the MediaBrowser auth header's Device="..." field to plain, printable ASCII
     /// with no double quotes or backslashes — those would break the quoted-string field
     /// outright, and there's no guarantee every Jellyfin server (or a reverse proxy in

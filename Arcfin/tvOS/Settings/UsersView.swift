@@ -72,6 +72,7 @@ struct UsersView: View {
                         TVRowLabelText(title: "Always Ask Who's Watching",
                                        detail: "Shows the profiles when Arcfin opens, and when you come back after 30 minutes or more with nothing playing.")
                     }
+                    .syncLocked(WhoIsWatching.settingKey, authManager)
                 }
             }
             .buttonStyle(TVSettingsRowStyle())

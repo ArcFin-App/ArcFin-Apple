@@ -81,6 +81,18 @@ final class AuthManager {
     /// which only means the plugin was detected — this is what a "Last synced" label reads.
     var arcfinSyncLastSyncedAt: Date?
     var isSyncingArcfin: Bool = false
+    /// The profile whose server has Arcfin Sync 0.4 or later, with devices, Ask First and the
+    /// admin's defaults. Unlike arcfinSyncStatus it stays through each sync, so the screens it
+    /// opens don't close while one runs.
+    private(set) var arcfinSyncDevicesProfile: UUID?
+    var hasArcfinSyncDevices: Bool { arcfinSyncDevicesProfile != nil && arcfinSyncDevicesProfile == state.credential?.id }
+    /// Ask First: settings changed on another device, waiting for an answer here.
+    var pendingRemoteSettings: RemoteSettingsChange?
+    /// The server's record of this device, as of the last sync.
+    var arcfinSyncCurrentDevice: ArcfinSyncDevice?
+    /// What this device last told the server it has, so a change to a setting that doesn't sync
+    /// still updates its record.
+    @ObservationIgnored private var registeredSnapshot: [String: String]?
 
     /// Keychain-backed (not UserDefaults/@AppStorage like the rest of the Seerr fields —
     /// this one is a secret). Loaded once in checkStoredAuth(); every read/write site in the
@@ -391,6 +403,12 @@ final class AuthManager {
         // A push the previous profile scheduled mustn't land in this one's record.
         settingsPushTask?.cancel()
         arcfinSyncStatus = nil
+        if arcfinSyncDevicesProfile != credential.id {
+            arcfinSyncDevicesProfile = nil
+            pendingRemoteSettings = nil
+            arcfinSyncCurrentDevice = nil
+            registeredSnapshot = nil
+        }
         arcfinSyncLockedKeys = SettingsSyncEngine.lockedKeys(profile: credential.id.uuidString)
         arcfinSyncLastSyncedAt = nil
         isSyncingArcfin = true
@@ -407,14 +425,19 @@ final class AuthManager {
                 if presence == .notInstalled {
                     SettingsSyncEngine.forgetLockedKeys(profile: credential.id.uuidString)
                     self.arcfinSyncLockedKeys = []
+                    self.arcfinSyncDevicesProfile = nil
+                    self.pendingRemoteSettings = nil
                 }
                 return
             }
-            Self.syncLog.notice("Arcfin Sync plugin detected: version \(status.version, privacy: .public)")
+            Self.syncLog.notice("Arcfin Sync plugin detected: version \(status.version, privacy: .public), API \(status.apiVersion, privacy: .public)")
             self.arcfinSyncStatus = status
+            self.arcfinSyncDevicesProfile = status.hasDevicesAndPolicy ? credential.id : nil
             let header = self.authClient.authHeader(token: credential.accessToken)
-            let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
-                                                       isCurrent: { await self.isActive(credential) })
+            let locked = status.hasDevicesAndPolicy
+                ? await self.syncDevice(credential: credential, header: header)
+                : await SettingsSyncEngine.sync(credential: credential, authHeader: header,
+                                                isCurrent: { await self.isActive(credential) })
             guard self.isActive(credential) else { return }
             if let locked {
                 self.arcfinSyncLockedKeys = locked
@@ -451,18 +474,127 @@ final class AuthManager {
         settingsPushTask = Task { [weak self] in
             try? await Task.sleep(for: .seconds(2))
             guard let self, !Task.isCancelled, !self.isSyncingArcfin,
-                  case .authenticated(let credential) = self.state,
-                  SettingsSyncEngine.hasLocalChanges(profile: credential.id.uuidString)
+                  case .authenticated(let credential) = self.state
             else { return }
-            self.isSyncingArcfin = true
-            defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
+            let profile = credential.id.uuidString
             let header = self.authClient.authHeader(token: credential.accessToken)
-            let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
-                                                       isCurrent: { await self.isActive(credential) })
-            guard self.isActive(credential), let locked else { return }
-            self.arcfinSyncLockedKeys = locked
-            self.arcfinSyncLastSyncedAt = .now
+            guard self.hasArcfinSyncDevices else {
+                guard SettingsSyncEngine.hasLocalChanges(profile: profile) else { return }
+                self.isSyncingArcfin = true
+                defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
+                let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
+                                                           isCurrent: { await self.isActive(credential) })
+                guard self.isActive(credential), let locked else { return }
+                self.arcfinSyncLockedKeys = locked
+                self.arcfinSyncLastSyncedAt = .now
+                return
+            }
+            // Off sends nothing, so only this device's record follows a change.
+            if SettingsSyncMode.current() != .off, SettingsSyncEngine.hasLocalChanges(profile: profile) {
+                self.isSyncingArcfin = true
+                defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
+                guard let locked = await self.syncDevice(credential: credential, header: header),
+                      self.isActive(credential) else { return }
+                self.arcfinSyncLockedKeys = locked
+                self.arcfinSyncLastSyncedAt = .now
+            } else if SettingsSyncEngine.snapshot() != self.registeredSnapshot {
+                await self.registerDevice(credential: credential, header: header)
+            }
         }
+    }
+
+    // MARK: - Arcfin Sync devices
+
+    /// A plugin v2 sync: settings by this device's sync mode, then its record.
+    private func syncDevice(credential: ServerCredential, header: String) async -> Set<String>? {
+        let result = await SettingsSyncEngine.syncDevice(
+            credential: credential, authHeader: header, deviceID: authClient.currentDeviceID,
+            registration: { await self.deviceRegistration(settings: $0) },
+            isCurrent: { await self.isActive(credential) })
+        guard let result, isActive(credential) else { return nil }
+        if let device = result.device {
+            arcfinSyncCurrentDevice = device
+            registeredSnapshot = device.settings
+        }
+        pendingRemoteSettings = result.pending
+        return result.locked
+    }
+
+    private func deviceRegistration(settings: [String: String], name: String? = nil) -> ArcfinSyncDeviceRegistration {
+        ArcfinSyncDeviceRegistration(name: name, renameCurrent: name != nil, platform: ArcfinDeviceInfo.platform,
+                                     model: ArcfinDeviceInfo.model, appVersion: ArcfinDeviceInfo.appVersion,
+                                     syncMode: SettingsSyncMode.current().rawValue, settings: settings)
+    }
+
+    /// Updates this device's record without syncing settings.
+    private func registerDevice(credential: ServerCredential, header: String, name: String? = nil) async {
+        let snapshot = SettingsSyncEngine.snapshot()
+        guard let device = try? await syncClient.registerDevice(
+            credential: credential, authHeader: header, deviceRegistration(settings: snapshot, name: name)),
+            isActive(credential) else { return }
+        arcfinSyncCurrentDevice = device
+        registeredSnapshot = snapshot
+    }
+
+    /// The credential and header for the Devices & Sync screens, with plugin v2 only.
+    var arcfinSyncDevicesSession: (credential: ServerCredential, header: String)? {
+        guard hasArcfinSyncDevices, case .authenticated(let credential) = state else { return nil }
+        return (credential, authClient.authHeader(token: credential.accessToken))
+    }
+
+    /// Ask First's answer.
+    func answerRemoteSettings(useThem: Bool) {
+        guard let change = pendingRemoteSettings else { return }
+        pendingRemoteSettings = nil
+        guard state.credential?.id.uuidString == change.profile else { return }
+        SettingsSyncEngine.answer(change, useThem: useThem)
+    }
+
+    /// This device's sync mode changed: the server's record says so, and Automatic or Ask
+    /// First catch up straight away.
+    func syncModeChanged() {
+        guard let session = arcfinSyncDevicesSession else { return }
+        if SettingsSyncMode.current() == .off {
+            pendingRemoteSettings = nil
+            Task { await registerDevice(credential: session.credential, header: session.header) }
+        } else {
+            refreshArcfinSync(for: session.credential)
+        }
+    }
+
+    /// A name for this device of its own; empty goes back to the one Jellyfin has.
+    func renameThisDevice(_ name: String) async -> Bool {
+        guard let session = arcfinSyncDevicesSession,
+              let device = try? await syncClient.renameDevice(credential: session.credential, authHeader: session.header,
+                                                              deviceID: authClient.currentDeviceID, name: name),
+              isActive(session.credential)
+        else { return false }
+        arcfinSyncCurrentDevice = device
+        return true
+    }
+
+    /// "Send This Device's Settings to My Other Devices".
+    func sendSettingsToOtherDevices() async -> Bool {
+        guard let session = arcfinSyncDevicesSession else { return false }
+        isSyncingArcfin = true
+        defer { if isActive(session.credential) { isSyncingArcfin = false } }
+        do {
+            try await SettingsSyncEngine.sendToAll(credential: session.credential, authHeader: session.header,
+                                                   platform: ArcfinDeviceInfo.platform)
+        } catch {
+            return false
+        }
+        pendingRemoteSettings = nil
+        arcfinSyncLastSyncedAt = .now
+        return true
+    }
+
+    /// "Use These Settings Here", from another device. In Automatic and Ask First they then go
+    /// to the server as this device's change, like any change made here.
+    func useSettings(of device: ArcfinSyncDevice) {
+        guard let credential = state.credential, hasArcfinSyncDevices else { return }
+        SettingsSyncEngine.useSettings(of: device, profile: credential.id.uuidString)
+        pendingRemoteSettings = nil
     }
 
     private func isActive(_ credential: ServerCredential) -> Bool { state.credential?.id == credential.id }

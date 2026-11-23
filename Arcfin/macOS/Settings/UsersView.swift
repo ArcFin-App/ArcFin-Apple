@@ -87,6 +87,7 @@ struct UsersView: View {
                 Toggle(isOn: $appLockUseFaceID) {
                     TVRowLabelText(title: "Use \(Biometrics.label)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
                 }
+                .syncLocked("appLockUseFaceID", authManager)
             } header: {
                 Text("App Lock")
             }

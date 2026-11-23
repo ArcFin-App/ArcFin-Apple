@@ -8,10 +8,32 @@ import AuthCore
 public struct ArcfinSyncStatus: Sendable, Decodable, Equatable {
     public let installed: Bool
     public let version: String
+    /// 1 for a plugin from before devices and admin policy, which doesn't say.
+    public let apiVersion: Int
+    public let features: [String]
+
+    public var hasDevicesAndPolicy: Bool { apiVersion >= 2 }
 
     enum CodingKeys: String, CodingKey {
         case installed = "Installed"
         case version = "Version"
+        case apiVersion = "ApiVersion"
+        case features = "Features"
+    }
+
+    public init(installed: Bool, version: String, apiVersion: Int = 1, features: [String] = []) {
+        self.installed = installed
+        self.version = version
+        self.apiVersion = apiVersion
+        self.features = features
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        installed = try container.decode(Bool.self, forKey: .installed)
+        version = try container.decode(String.self, forKey: .version)
+        apiVersion = try container.decodeIfPresent(Int.self, forKey: .apiVersion) ?? 1
+        features = try container.decodeIfPresent([String].self, forKey: .features) ?? []
     }
 }
 

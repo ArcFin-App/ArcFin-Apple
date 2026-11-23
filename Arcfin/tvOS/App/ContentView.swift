@@ -85,6 +85,7 @@ struct ContentView: View {
         .fullScreenCover(isPresented: model.introductionBinding(.whatsNew, phase: phase)) {
             WhatsNewView { model.introduction.finishWhatsNew() }
         }
+        .modifier(RemoteSettingsPrompt(isPresented: model.remoteSettingsBinding(phase: phase, isCovered: RootPresentation.isCovered)))
         .focusEffectDisabled()
         // Apple TV stays dark: its screens are full-bleed artwork, like the system TV app.
         .preferredColorScheme(.dark)

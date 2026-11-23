@@ -138,6 +138,7 @@ struct ContentView: View {
         .sheet(isPresented: model.introductionBinding(.whatsNew, phase: phase)) {
             WhatsNewView { model.introduction.finishWhatsNew() }
         }
+        .modifier(RemoteSettingsPrompt(isPresented: model.remoteSettingsBinding(phase: phase)))
         .modifier(AppRootLifecycle(model: model) { model.refreshOnForeground($0, modelContext: modelContext) })
     }
 }
