@@ -439,67 +439,67 @@
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin nutzt dein lokales Netzwerk, um deinen Jellyfin-Server zu finden und sich damit zu verbinden und um Medien an Geräte in der Nähe zu übertragen."
+            "value" : "Arcfin nutzt dein lokales Netzwerk, um deinen Jellyfin-Server zu finden und sich damit zu verbinden, um Medien an Geräte in der Nähe zu übertragen und um ein Apple TV, iPad oder einen Mac in der Nähe von einem iPhone oder iPad aus einzurichten."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "new",
-            "value" : "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices."
+            "value" : "Arcfin uses your local network to find and connect to your Jellyfin server, to cast to nearby devices, and to set up an Apple TV, iPad or Mac nearby from an iPhone or iPad."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin usa tu red local para encontrar tu servidor Jellyfin y conectarse a él, y para transmitir contenido a dispositivos cercanos."
+            "value" : "Arcfin usa tu red local para encontrar tu servidor Jellyfin y conectarse a él, para transmitir contenido a dispositivos cercanos y para configurar un Apple TV, iPad o Mac cercano desde un iPhone o iPad."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin utilise votre réseau local pour trouver votre serveur Jellyfin et s’y connecter, et pour diffuser des médias sur les appareils à proximité."
+            "value" : "Arcfin utilise votre réseau local pour trouver votre serveur Jellyfin et s’y connecter, pour diffuser des médias sur les appareils à proximité et pour configurer une Apple TV, un iPad ou un Mac à proximité depuis un iPhone ou un iPad."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin usa la tua rete locale per trovare il server Jellyfin e connettersi, e per trasmettere contenuti ai dispositivi vicini."
+            "value" : "Arcfin usa la tua rete locale per trovare il server Jellyfin e connettersi, per trasmettere contenuti ai dispositivi vicini e per configurare un Apple TV, un iPad o un Mac vicino da un iPhone o un iPad."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfinは、Jellyfinサーバを見つけて接続し、近くのデバイスにメディアをキャストするためにローカルネットワークを使用します。"
+            "value" : "Arcfinは、Jellyfinサーバを見つけて接続し、近くのデバイスにメディアをキャストし、iPhoneやiPadから近くのApple TV、iPad、Macを設定するためにローカルネットワークを使用します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin은 로컬 네트워크를 사용하여 Jellyfin 서버를 찾아 연결하고 근처 기기로 미디어를 전송합니다."
+            "value" : "Arcfin은 로컬 네트워크를 사용하여 Jellyfin 서버를 찾아 연결하고, 근처 기기로 미디어를 전송하고, iPhone 또는 iPad에서 근처의 Apple TV, iPad 또는 Mac을 설정합니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin gebruikt je lokale netwerk om je Jellyfin-server te vinden en ermee te verbinden, en om media naar apparaten in de buurt te casten."
+            "value" : "Arcfin gebruikt je lokale netwerk om je Jellyfin-server te vinden en ermee te verbinden, om media naar apparaten in de buurt te casten en om een Apple TV, iPad of Mac in de buurt in te stellen vanaf een iPhone of iPad."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "O Arcfin usa sua rede local para encontrar e se conectar ao seu servidor Jellyfin e para transmitir mídia para dispositivos por perto."
+            "value" : "O Arcfin usa sua rede local para encontrar e se conectar ao seu servidor Jellyfin, para transmitir mídia para dispositivos por perto e para configurar uma Apple TV, um iPad ou um Mac por perto a partir de um iPhone ou iPad."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin использует локальную сеть, чтобы находить сервер Jellyfin и подключаться к нему, а также транслировать медиа на устройства поблизости."
+            "value" : "Arcfin использует локальную сеть, чтобы находить сервер Jellyfin и подключаться к нему, транслировать медиа на устройства поблизости и настраивать находящиеся рядом Apple TV, iPad или Mac с iPhone или iPad."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin 使用你的本地网络来发现并连接你的 Jellyfin 服务器，以及将媒体投放到附近的设备。"
+            "value" : "Arcfin 使用你的本地网络来发现并连接你的 Jellyfin 服务器、将媒体投放到附近的设备，以及从 iPhone 或 iPad 设置附近的 Apple TV、iPad 或 Mac。"
           }
         }
       }
