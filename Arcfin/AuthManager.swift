@@ -9,10 +9,10 @@ import SyncEngine
 import Telemetry
 import os
 import Security
+import Network
 #if os(iOS)
 import NetworkExtension
 import CoreLocation
-import Network
 #endif
 #if os(iOS) || os(tvOS)
 import UIKit
@@ -205,11 +205,9 @@ final class AuthManager {
 
     // MARK: - Live Wi-Fi switching
 
-    #if os(iOS)
     private var pathMonitor: NWPathMonitor?
     private let pathMonitorQueue = DispatchQueue(label: "arcfin.pathMonitor")
     private var reresolveTask: Task<Void, Never>?
-    #endif
 
     /// Watches for network changes (leaving/joining the home Wi-Fi, Wi-Fi↔cellular) and
     /// re-resolves Local vs Remote server URL live — previously this only happened once at
@@ -219,7 +217,6 @@ final class AuthManager {
     private(set) var networkChanges = 0
 
     func startNetworkMonitoring() {
-        #if os(iOS)
         guard pathMonitor == nil else { return }
         let monitor = NWPathMonitor()
         pathMonitor = monitor
@@ -228,10 +225,8 @@ final class AuthManager {
             Task { @MainActor in self.scheduleReresolve() }
         }
         monitor.start(queue: pathMonitorQueue)
-        #endif
     }
 
-    #if os(iOS)
     private func scheduleReresolve() {
         // NWPathMonitor can fire several updates in quick succession during a network
         // transition — debounce so we don't hammer the SSID lookup and server for each one.
@@ -239,11 +234,14 @@ final class AuthManager {
         reresolveTask = Task {
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled else { return }
+            #if os(iOS)
             await reresolveBaseURLIfNeeded()
+            #endif
             networkChanges += 1
         }
     }
 
+    #if os(iOS)
     /// Not private — also called directly when the app returns to the foreground (see
     /// ContentView), since NWPathMonitor's callback can be suspended along with the rest of
     /// the app while backgrounded and not reliably fire again the moment it resumes. Coming
