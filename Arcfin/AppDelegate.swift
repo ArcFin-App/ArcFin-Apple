@@ -106,7 +106,8 @@ enum QuickActions {
                 type: downloadsType, localizedTitle: String(localized: "Downloads"), localizedSubtitle: nil,
                 icon: UIApplicationShortcutIcon(systemImageName: "arrow.down.circle"), userInfo: nil)
         ]
-        if let resumeItemID, let title {
+        // Like the widgets and Siri, nothing from a profile with an app-lock PIN.
+        if let resumeItemID, let title, IntentSession.credential() != nil {
             items.insert(
                 UIApplicationShortcutItem(
                     type: resumeType, localizedTitle: String(localized: "Continue Watching"), localizedSubtitle: title,
