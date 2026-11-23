@@ -6,6 +6,22 @@ import SwiftData
 import Telemetry
 import os
 
+// MARK: - Schema versions
+
+/// The downloads store as it was when the first App Store build shipped (#660). A model change
+/// that isn't a lightweight migration adds a version 2, with the version 1 models frozen as
+/// they are here, and a stage in `ArcfinMigrationPlan` to move the data across. Without that,
+/// such a change would set aside everyone's downloads after the update.
+public enum ArcfinSchemaV1: VersionedSchema {
+    public static var versionIdentifier: Schema.Version { Schema.Version(1, 0, 0) }
+    public static var models: [any PersistentModel.Type] { [DownloadedItem.self, DownloadedSeries.self] }
+}
+
+public enum ArcfinMigrationPlan: SchemaMigrationPlan {
+    public static var schemas: [any VersionedSchema.Type] { [ArcfinSchemaV1.self] }
+    public static var stages: [MigrationStage] { [] }
+}
+
 // MARK: - Container factory
 
 public enum Persistence: Sendable {
@@ -13,17 +29,20 @@ public enum Persistence: Sendable {
     private static let log = Telemetry.logger(category: "Persistence")
 
     public static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
-        let schema = Schema(currentModels)
+        let schema = currentSchema
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)
-        return try ModelContainer(for: schema, configurations: [config])
+        return try ModelContainer(for: schema, migrationPlan: ArcfinMigrationPlan.self, configurations: [config])
     }
 
     static func makeContainer(at url: URL) throws -> ModelContainer {
-        let schema = Schema(currentModels)
-        return try ModelContainer(for: schema, configurations: [ModelConfiguration(schema: schema, url: url)])
+        let schema = currentSchema
+        return try ModelContainer(for: schema, migrationPlan: ArcfinMigrationPlan.self,
+                                  configurations: [ModelConfiguration(schema: schema, url: url)])
     }
 
-    static var defaultStoreURL: URL { ModelConfiguration(schema: Schema(currentModels)).url }
+    static var defaultStoreURL: URL { ModelConfiguration(schema: currentSchema).url }
+
+    static var currentSchema: Schema { Schema(versionedSchema: ArcfinSchemaV1.self) }
 
     /// A store this build's models can't be opened against is set aside, not crashed on at every
     /// launch: the app starts with an empty one, and the old files stay beside it until a later
@@ -60,11 +79,6 @@ public enum Persistence: Sendable {
 
     static func hasSetAsideStore(at store: URL) -> Bool {
         !setAsideStamps(of: store).isEmpty
-    }
-
-    // Register new SwiftData models here as they are created.
-    static var currentModels: [any PersistentModel.Type] {
-        [DownloadedItem.self, DownloadedSeries.self]
     }
 
     // MARK: - Setting a store aside and back
