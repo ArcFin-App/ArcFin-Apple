@@ -509,6 +509,8 @@ final class RemotePlaybackActivity {
         // A Lock Screen button can launch the app in the background, before the stored
         // sign-in has been read.
         await AppServices.authManager.checkStoredAuthOnce()
+        // While the app lock is up, the buttons do nothing, like the music widget's.
+        if await AppServices.isLocked() { return }
         let remote = AppServices.remoteSessions
         remote.attach(AppServices.authManager)
         remote.selectedID = sessionID
