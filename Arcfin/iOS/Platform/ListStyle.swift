@@ -32,6 +32,12 @@ extension View {
     func tvListRow() -> some View {
         self
     }
+
+    /// A music section's own search, always showing under the title so it's found without
+    /// pulling the list down.
+    func sectionSearchable(text: Binding<String>, prompt: LocalizedStringKey) -> some View {
+        searchable(text: text, placement: .navigationBarDrawer(displayMode: .always), prompt: prompt)
+    }
 }
 
 /// A settings page. A grouped form on the Mac.
