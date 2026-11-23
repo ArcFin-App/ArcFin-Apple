@@ -24,7 +24,13 @@ struct ArcfinApp: App {
 enum AppServices {
     /// Static so the app delegate can reach it on a background relaunch, before any window.
     static let modelContainer: ModelContainer = Persistence.makeContainerRecoveringFromFailure()
-    static let authManager = AuthManager()
+    static let authManager: AuthManager = {
+        let manager = AuthManager()
+        manager.onStoredSignInRead = { credential in
+            Task { await mediaRepo.load(credential: credential, authClient: manager.authClient) }
+        }
+        return manager
+    }()
     static let mediaRepo = MediaRepository()
     static let seerrRepo = SeerrRepository()
     static let downloadManager = DownloadManager()
