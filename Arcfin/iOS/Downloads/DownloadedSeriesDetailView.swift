@@ -19,7 +19,7 @@ struct DownloadedSeriesDetailView: View {
     @State private var editMode: EditMode = .inactive
 
     private var series: DownloadedSeries? { DownloadedSeriesDetailModel.series(seriesId, in: allSeries) }
-    private var episodes: [DownloadedItem] { DownloadedSeriesDetailModel.episodes(of: seriesId, in: allItems) }
+    private var episodes: [DownloadedItem] { DownloadedSeriesDetailModel.episodes(of: seriesId, in: downloadManager.ownDownloads(allItems)) }
 
     var body: some View {
         List {
@@ -67,8 +67,13 @@ struct DownloadedSeriesDetailView: View {
         .onAppear {
             if model.selectedSeason == nil { model.selectedSeason = DownloadedSeriesDetailModel.seasonNumbers(of: episodes).first }
         }
-        .fullScreenCover(item: $model.playingItem) { item in
-            OfflinePlayerView(downloadedItem: item, startPositionOverride: model.playStartOverride)
+        .fullScreenCover(item: $model.playingItem.playerCover) { playback in
+            let item = playback.item
+            PlayerView(download: item, startPositionOverride: model.playStartOverride) { next in
+                PlayerView.keepOrientationOnNextDisappear = true
+                model.play(next, startOverride: nil)
+            }
+            .id(item.itemId)
         }
         .alert("Delete this episode?", isPresented: Binding(
             get: { model.pendingDelete != nil }, set: { if !$0 { model.pendingDelete = nil } }
@@ -85,7 +90,8 @@ struct DownloadedSeriesDetailView: View {
             }
             Button("Cancel", role: .cancel) { model.pendingDelete = nil }
         }
-        .alert("Delete \(model.selection.count) selected episode\(model.selection.count == 1 ? "" : "s")?", isPresented: $model.showBulkDeleteConfirm) {
+        .alert(model.selection.count == 1 ? "Delete 1 selected episode?" : "Delete \(model.selection.count) selected episodes?",
+               isPresented: $model.showBulkDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 model.deleteSelection(of: episodes, downloadManager: downloadManager)
                 editMode = .inactive

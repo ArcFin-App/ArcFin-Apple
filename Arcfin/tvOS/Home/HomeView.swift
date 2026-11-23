@@ -10,6 +10,8 @@ struct HomeView: View {
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.isBehindLock) private var isBehindLock
 
     @AppStorage("seerrDiscoverEnabled") private var seerrDiscoverEnabled = true
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
@@ -34,6 +36,7 @@ struct HomeView: View {
     @State private var heroVideoBackdropTask: Task<Void, Never>?
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
     @AppStorage("heroTrailerSound") private var heroTrailerSound = false
+    @AppStorage("topShelfTrailers") private var topShelfTrailers = true
     @State private var isHomeShowing = false
     @State private var homePath = NavigationPath()
     @State private var isHeroScrolledAway = false
@@ -106,7 +109,7 @@ struct HomeView: View {
     private var heroVideoAllowed: Bool {
         isHomeShowing && homePath.isEmpty && model.detailItem == nil && model.seerrDetailItem == nil
             && (modernHome || !isHeroScrolledAway) && model.playbackRequest == nil
-            && !PlayerActivity.shared.isPlayerOpen
+            && !PlayerActivity.shared.isPlayerOpen && !isBehindLock
     }
 
     private var heroDisplayItem: MediaItem? {
@@ -151,7 +154,11 @@ struct HomeView: View {
             .onAppear { isHomeShowing = true }
             .onDisappear { isHomeShowing = false }
             .navigationDestination(item: $model.detailItem) { item in
-                MediaDetailView(item: item)
+                if item.type == .boxSet {
+                    CollectionDetailView(collection: item)
+                } else {
+                    MediaDetailView(item: item)
+                }
             }
             .navigationDestination(for: MediaItem.self) { item in
                 MediaDetailView(item: item)
@@ -175,7 +182,7 @@ struct HomeView: View {
                 await model.liveTV.load(.liveFavoriteChannels, authManager: authManager)
             }
             model.saveTopShelf(mediaRepo: mediaRepo, title: topShelfTitle, subtitle: itemSubtitle)
-            await TopShelfArtwork.refresh()
+            await TopShelfArtwork.refresh(trailer: topShelfTrailer)
         }
         // The hero already shows the first Continue Watching item until something's focused.
         // Assigning focus to it here pulled the page down to that row once Home loaded.
@@ -197,12 +204,15 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { note in
             if let id = note.userInfo?["itemID"] as? String {
                 UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-                model.deepLinkItemID = id
-                model.detailItem = (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).first { $0.id == id }
+                model.openDeepLinkItem(id: id, authManager: authManager, mediaRepo: mediaRepo)
             }
         }
+        // Kept under the lock, a SharePlay title waits in the buffer until it opens.
         .onReceive(NotificationCenter.default.publisher(for: WatchRoute.notification)) { _ in
-            model.playPendingWatch(authManager: authManager)
+            if !isBehindLock { model.playPendingWatch(authManager: authManager) }
+        }
+        .onChange(of: isBehindLock) { _, behind in
+            if !behind { model.playPendingWatch(authManager: authManager) }
         }
         .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.hasCatalog)-\(seerrRegionOverride)") {
             await model.loadServiceRows(seerrRepo: seerrRepo)
@@ -211,24 +221,28 @@ struct HomeView: View {
             await model.loadNowAvailable(HomeShelfLoader.recentlyAvailable(seerrRepo.requests), authManager: authManager)
         }
         .onDisappear { if shuffleHomeShelves { model.reshuffleShelves() } }
+        // Apple TV has no pull to refresh: Home catches up when the app comes back to the
+        // front (at most once a minute, as MediaRepository's load allows).
+        .onChange(of: scenePhase) { _, phase in
+            guard phase == .active else { return }
+            Task { _ = await model.loadShelves(force: false, shelves: orderedShelves, authManager: authManager, mediaRepo: mediaRepo) }
+        }
     }
 
     // MARK: - Load
 
     private func load() async {
         guard await model.loadShelves(force: false, shelves: orderedShelves, authManager: authManager, mediaRepo: mediaRepo) else { return }
-        // Preheat full-res hero backdrops + logos into the Nuke decoded cache so
-        // backdrop transitions are instant with no load jump.
-        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
+        // The first hero backdrops + logos go into the decoded cache so the opening
+        // transitions are instant; the rest only to disk, two at a time. Decoding all of them
+        // (about 8 MB each at 1920 px) at once crowded out the posters on screen.
+        let heroURLs = (mediaRepo.continueWatching + mediaRepo.recentlyAdded).flatMap { item -> [URL] in
+            [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 1920),
              heroLogoURL(item)].compactMap { $0 }
         }
-        ImageCache.preheat(urls: heroURLs)
-        let pendingID = model.deepLinkItemID ?? UserDefaults.standard.string(forKey: "arcfin.pendingPlayID")
-        if let id = pendingID {
-            UserDefaults.standard.removeObject(forKey: "arcfin.pendingPlayID")
-            model.deepLinkItemID = nil
-            model.detailItem = (mediaRepo.continueWatching + mediaRepo.nextUp + mediaRepo.recentlyAdded).first { $0.id == id }
-        }
+        ImageCache.preheat(urls: Array(heroURLs.prefix(8)))
+        ImageCache.prefetch(urls: Array(heroURLs.dropFirst(8)))
+        model.openPendingDeepLink(authManager: authManager, mediaRepo: mediaRepo)
         model.playPendingWatch(authManager: authManager)
         await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
         // Modern Home starts on its first row by itself; the same title can also be in a row
@@ -356,7 +370,13 @@ struct HomeView: View {
                         // focus target stuck on this (now-hidden) screen instead of the
                         // player, which claims its own initial focus via .prefersDefaultFocus.
                         focusedCard = nil
-                        model.playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+                        if item.type == .boxSet {
+                            model.detailItem = item
+                        } else if item.type == .series {
+                            Task { model.playbackRequest = await HomeModel.seriesPlayback(item, authManager: authManager) }
+                        } else {
+                            model.playbackRequest = PlaybackRequest(item: item, startTicks: item.userData?.playbackPositionTicks ?? 0)
+                        }
                     } label: {
                         TVHeroButtonLabel(icon: "play.fill", text: "Play", isPrimary: true)
                             .opacity(heroChromeOpacity)
@@ -407,7 +427,7 @@ struct HomeView: View {
                 Text("·").accessibilityHidden(true).foregroundStyle(.white.opacity(0.3)).font(.system(size: 23))
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16)).foregroundStyle(DT.Color.accent)
-                    Text(String(format: "%.1f", rating))
+                    Text(rating.ratingText)
                         .font(.system(size: 23, weight: .bold)).foregroundStyle(DT.Color.accent)
                 }
             }
@@ -590,27 +610,27 @@ struct HomeView: View {
             EmptyView()
         case .nextUp:
             if !mergeContinueWatchingAndUpNext, !mediaRepo.nextUp.isEmpty {
-                mediaShelf(title: "Next Up", items: mediaRepo.nextUp)
+                mediaShelf(title: String(localized: "Next Up"), items: mediaRepo.nextUp)
             }
         case .recentlyAddedMovies:
             if !mediaRepo.recentlyAddedMovies.isEmpty {
-                mediaShelf(title: "Recently Added Movies", badge: "NEW", items: mediaRepo.recentlyAddedMovies)
+                mediaShelf(title: String(localized: "Recently Added Movies"), badge: String(localized: "NEW"), items: mediaRepo.recentlyAddedMovies)
             }
         case .recentlyAddedShows:
             if !mediaRepo.recentlyAddedShows.isEmpty {
-                mediaShelf(title: "Recently Added Shows", badge: "NEW", items: mediaRepo.recentlyAddedShows)
+                mediaShelf(title: String(localized: "Recently Added Shows"), badge: String(localized: "NEW"), items: mediaRepo.recentlyAddedShows)
             }
         case .recentlyReleasedMovies:
             if !mediaRepo.recentlyReleasedMovies.isEmpty {
-                mediaShelf(title: "Recently Released Movies", items: mediaRepo.recentlyReleasedMovies)
+                mediaShelf(title: String(localized: "Recently Released Movies"), items: mediaRepo.recentlyReleasedMovies)
             }
         case .recentlyAiredEpisodes:
             if !mediaRepo.recentlyAiredEpisodes.isEmpty {
-                mediaShelf(title: "Recently Aired Episodes", items: mediaRepo.recentlyAiredEpisodes)
+                mediaShelf(title: String(localized: "Recently Aired Episodes"), items: mediaRepo.recentlyAiredEpisodes)
             }
         case .watchAgain:
             if !mediaRepo.watchAgain.isEmpty {
-                mediaShelf(title: "Watch Again", items: mediaRepo.watchAgain)
+                mediaShelf(title: String(localized: "Watch Again"), items: mediaRepo.watchAgain)
             }
         case .serverPicks:
             ForEach(mediaRepo.promotedCollections, id: \.collection.id) { shelf in
@@ -618,23 +638,23 @@ struct HomeView: View {
             }
         case .genreShelves:
             ForEach(mediaRepo.genreShelves, id: \.genre) { shelf in
-                mediaShelf(title: "More \(shelf.genre)", rowID: "genre-\(shelf.genre)", items: shelf.items)
+                mediaShelf(title: String(localized: "More \(shelf.genre)"), rowID: "genre-\(shelf.genre)", items: shelf.items)
             }
         case .becauseYouWatched:
             if let recommendation = mediaRepo.becauseYouWatched {
-                mediaShelf(title: "Because You Watched \(recommendation.source.name)", rowID: HomeShelf.becauseYouWatched.rawValue, items: recommendation.items)
+                mediaShelf(title: String(localized: "Because You Watched \(recommendation.source.name)"), rowID: HomeShelf.becauseYouWatched.rawValue, items: recommendation.items)
             }
         case .favorites:
             if !mediaRepo.favorites.isEmpty {
-                mediaShelf(title: "Favorites", items: mediaRepo.favorites)
+                mediaShelf(title: String(localized: "Favorites"), items: mediaRepo.favorites)
             }
         case .topRatedUnwatched:
             if !mediaRepo.topRatedUnwatched.isEmpty {
-                mediaShelf(title: "Top Rated, Unwatched", items: mediaRepo.topRatedUnwatched)
+                mediaShelf(title: String(localized: "Top Rated, Unwatched"), items: mediaRepo.topRatedUnwatched)
             }
         case .suggested:
             if !mediaRepo.suggestions.isEmpty {
-                mediaShelf(title: "Suggested for You", items: mediaRepo.suggestions)
+                mediaShelf(title: String(localized: "Suggested for You"), items: mediaRepo.suggestions)
             }
         case .recommendations:
             ForEach(mediaRepo.recommendations) { category in
@@ -642,31 +662,31 @@ struct HomeView: View {
             }
         case .nowAvailable:
             if seerrRepo.isConfigured, !model.nowAvailable.isEmpty {
-                mediaShelf(title: "Now Available", items: model.nowAvailable)
+                mediaShelf(title: String(localized: "Now Available"), items: model.nowAvailable)
             }
         case .streamingServices:
             if seerrRepo.hasCatalog {
                 ForEach(StreamingServicePrefs.decode(streamingServicesData)) { provider in
                     if let items = model.serviceRows[provider.id], !items.isEmpty {
-                        seerrShelf(title: "Popular on \(provider.name)", rowID: "service-\(provider.id)", items: items)
+                        seerrShelf(title: String(localized: "Popular on \(provider.name)"), rowID: "service-\(provider.id)", items: items)
                     }
                 }
             }
         case .seerrWatchlist:
             if seerrRepo.isConfigured, seerrDiscoverEnabled, !seerrRepo.watchlist.isEmpty {
-                seerrShelf(title: "Watchlist", items: seerrRepo.watchlist)
+                seerrShelf(title: String(localized: "Watchlist"), items: seerrRepo.watchlist)
             }
         case .seerrTrending:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.trending.isEmpty {
-                seerrShelf(title: "Trending", items: seerrRepo.trending)
+                seerrShelf(title: String(localized: "Trending"), items: seerrRepo.trending)
             }
         case .seerrPopularMovies:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularMovies.isEmpty {
-                seerrShelf(title: "Popular Movies", items: seerrRepo.popularMovies)
+                seerrShelf(title: String(localized: "Popular Movies"), items: seerrRepo.popularMovies)
             }
         case .seerrPopularSeries:
             if seerrRepo.hasCatalog, seerrDiscoverEnabled, !seerrRepo.popularTV.isEmpty {
-                seerrShelf(title: "Popular Series", items: seerrRepo.popularTV)
+                seerrShelf(title: String(localized: "Popular Series"), items: seerrRepo.popularTV)
             }
         case .liveFavoriteChannels, .liveOnNow, .liveRecentChannels:
             if HomeShelf.hasLiveTV(in: mediaRepo) {
@@ -1029,7 +1049,7 @@ struct HomeView: View {
         Label(item.name, systemImage: item.type == .series ? "tv" : "film")
         if let year = item.productionYear { Label(String(year), systemImage: "calendar") }
         if let rating = item.communityRating {
-            Label(String(format: "%.1f / 10", rating), systemImage: "star.fill")
+            Label(String(localized: "\(rating.ratingText) / 10"), systemImage: "star.fill")
         }
     }
 
@@ -1057,8 +1077,15 @@ struct HomeView: View {
 
     // Changes when the shelf's items or their progress do, so it follows what was just watched.
     private var topShelfSignature: [String] {
-        (mediaRepo.continueWatching.prefix(5) + mediaRepo.nextUp.prefix(3) + mediaRepo.recentlyAdded.prefix(3))
+        let items = (mediaRepo.continueWatching.prefix(5) + mediaRepo.nextUp.prefix(3) + mediaRepo.recentlyAdded.prefix(3))
             .map { "\($0.id)-\(Int($0.userData?.playedPercentage ?? 0))" }
+        return items.isEmpty ? [] : items + ["trailers-\(topShelfTrailers)"]
+    }
+
+    private var topShelfTrailer: ((String) async -> URL?)? {
+        guard topShelfTrailers, case .authenticated(let credential) = authManager.state else { return nil }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        return { await HomeModel.trailerURL(itemID: $0, credential: credential, authHeader: authHeader) }
     }
 
     // Top Shelf title includes S/E so users see context without needing a subtitle row

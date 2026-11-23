@@ -77,7 +77,7 @@ struct DownloadedSeriesHeader: View {
                     if let rating = series?.communityRating, rating > 0 {
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(.caption2)).accessibilityHidden(true)
-                            Text(String(format: "%.1f", rating))
+                            Text(rating.formatted(.number.precision(.fractionLength(1))))
                         }
                         .font(.system(.caption2))
                         .foregroundStyle(DT.Color.palette("f59e0b"))
@@ -127,7 +127,7 @@ struct DownloadedSeriesHeader: View {
                         .font(.system(.title3, weight: .heavy))
                         .foregroundStyle(DT.Color.textPrimary)
                         .lineLimit(3)
-                    Label("\(episodes.count) episode\(episodes.count == 1 ? "" : "s") downloaded", systemImage: "arrow.down.circle.fill")
+                    Label(episodes.count == 1 ? "1 episode downloaded" : "\(episodes.count) episodes downloaded", systemImage: "arrow.down.circle.fill")
                         .font(.system(.caption2, weight: .semibold))
                         .foregroundStyle(DT.Color.accent)
                 }
@@ -202,7 +202,7 @@ struct DownloadedEpisodeRowContent: View {
     private var episodeThumbnail: some View {
         Group {
             if let fileName = episode.posterFileName,
-               let image = PlatformImage.from(contentsOfFile: DownloadStore.directory(for: episode.itemId).appendingPathComponent(fileName).path) {
+               let image = PlatformImage.from(contentsOfFile: DownloadStore.directory(for: episode).appendingPathComponent(fileName).path) {
                 Image(platformImage: image).resizable().scaledToFill()
             } else {
                 DT.Color.backgroundSecondary
@@ -228,7 +228,7 @@ struct DownloadedEpisodeRowPreview: View {
         VStack(alignment: .leading, spacing: 8) {
             Group {
                 if let fileName = episode.posterFileName,
-                   let image = PlatformImage.from(contentsOfFile: DownloadStore.directory(for: episode.itemId).appendingPathComponent(fileName).path) {
+                   let image = PlatformImage.from(contentsOfFile: DownloadStore.directory(for: episode).appendingPathComponent(fileName).path) {
                     Image(platformImage: image).resizable().scaledToFill()
                 } else {
                     DT.Color.backgroundSecondary

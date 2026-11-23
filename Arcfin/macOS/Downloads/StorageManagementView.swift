@@ -5,7 +5,9 @@ import SwiftData
 import Persistence
 
 struct StorageManagementView: View {
-    @Query(sort: [SortDescriptor(\DownloadedItem.downloadedAt, order: .reverse)]) private var items: [DownloadedItem]
+    @Environment(DownloadManager.self) private var downloadManager
+    @Query(sort: [SortDescriptor(\DownloadedItem.downloadedAt, order: .reverse)]) private var allItems: [DownloadedItem]
+    private var items: [DownloadedItem] { downloadManager.ownDownloads(allItems) }
 
     var body: some View {
         StorageManagementContent(items: items)

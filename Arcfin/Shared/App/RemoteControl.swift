@@ -3,6 +3,7 @@
 import Foundation
 import Observation
 import JellyfinAPI
+import AuthCore
 
 /// Carries out what the web app and the dashboard send this device: Play On, the playback
 /// controls and messages. Whichever socket the server picked hands the command over here.
@@ -37,14 +38,27 @@ final class RemoteControl {
     private(set) var command: Command?
     /// A message sent while no player is open, shown over the app.
     var message: Message?
+    /// Play On and queueing sent before the app lock opened, with the profile they came for.
+    @ObservationIgnored private var held: [(command: JellyfinRemoteCommand, profileID: UUID?)] = []
 
     func handle(_ remote: JellyfinRemoteCommand) {
+        if !AppServices.hasPassedLock {
+            switch remote {
+            case .play, .queue:
+                held.append((remote, AppServices.authManager.state.credential?.id))
+                return
+            default:
+                break
+            }
+        }
         switch remote {
         case .play(let ids, let startTicks, let startIndex):
+            // Some clients send -1.
+            let index = max(0, min(startIndex ?? 0, ids.count - 1))
             Task {
                 // Songs go to the music player; anything else opens as a title.
-                if await AppServices.music.playFromRemote(ids, startIndex: startIndex ?? 0, startTicks: startTicks) { return }
-                play(id: ids[min(startIndex ?? 0, ids.count - 1)], startTicks: startTicks)
+                if await AppServices.music.playFromRemote(ids, startIndex: index, startTicks: startTicks) { return }
+                play(id: ids[index], startTicks: startTicks)
             }
         case .queue(let ids, let next):
             Task { _ = await AppServices.music.queueFromRemote(ids, next: next) }
@@ -93,6 +107,15 @@ final class RemoteControl {
             if let index = arguments["Index"].flatMap(Int.init) { send(.subtitleTrack(index < 0 ? nil : index)) }
         default:
             break
+        }
+    }
+
+    /// Once the lock opens; a different profile picked there doesn't get the other's titles.
+    func runHeld() {
+        let commands = held
+        held = []
+        for item in commands where item.profileID == AppServices.authManager.state.credential?.id {
+            handle(item.command)
         }
     }
 

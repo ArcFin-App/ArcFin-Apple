@@ -23,12 +23,15 @@ struct AuthView: View {
     @State private var signingIn: Bool = false
     @State private var signedIn: Bool = false
     @State private var authError: String? = nil
+    @FocusState private var passwordFocused: Bool
 
     // Quick Connect
     @State private var qcCode: String = ""
     @State private var qcSecret: String? = nil
     @State private var qcLoading: Bool = false
     @State private var qcPolling: Bool = false
+    /// The server has Quick Connect turned off, so the page moved to the password.
+    @State private var qcDisabled: Bool = false
 
     var body: some View {
         if signedIn {
@@ -86,6 +89,8 @@ struct AuthView: View {
             }
             .pickerStyle(.segmented)
 
+            quickConnectOffNotice
+
             if mode == .quickConnect {
                 quickConnectView
             } else {
@@ -95,7 +100,7 @@ struct AuthView: View {
             if let err = authError {
                 Label(err, systemImage: "exclamationmark.circle.fill")
                     .font(.footnote)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(DT.Color.palette("F43F5E"))
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -139,23 +144,26 @@ struct AuthView: View {
             .foregroundStyle(DT.Color.accent)
             .arcfinPlainButton(cornerRadius: DT.Radius.pill)
         } trailing: {
-            Group {
-                if qcPolling, let link = QuickConnectLink.url(server: serverURL, code: qcCode.filter(\.isNumber)),
-                   let image = QuickConnectQR.image(for: link) {
-                    Image(decorative: image, scale: 1)
-                        .interpolation(.none)
-                        .resizable()
-                } else {
-                    ProgressView()
+            // No panel without a code coming: a failed request left it spinning for good.
+            if qcLoading || qcPolling {
+                Group {
+                    if qcPolling, let link = QuickConnectLink.url(server: serverURL, code: qcCode.filter(\.isNumber)),
+                       let image = QuickConnectQR.image(for: link) {
+                        Image(decorative: image, scale: 1)
+                            .interpolation(.none)
+                            .resizable()
+                    } else {
+                        ProgressView()
+                    }
                 }
+                .frame(width: 400, height: 400)
+                .padding(24)
+                .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+                .accessibilityLabel("QR code to sign in")
+                Text("Scan with your iPhone's Camera")
+                    .font(.footnote)
+                    .foregroundStyle(DT.Color.textSecondary)
             }
-            .frame(width: 400, height: 400)
-            .padding(24)
-            .background(.white, in: RoundedRectangle(cornerRadius: 28, style: .continuous))
-            .accessibilityLabel("QR code to sign in")
-            Text("Scan with your iPhone's Camera")
-                .font(.footnote)
-                .foregroundStyle(DT.Color.textSecondary)
             if !qcCode.isEmpty {
                 Text(qcCode)
                     .font(.system(.largeTitle, design: .rounded, weight: .bold))
@@ -182,6 +190,7 @@ struct AuthView: View {
             LoginBackButton(title: serverName, action: onBack)
             LoginSplitHeader(title: "Sign In", message: Text("Use your Jellyfin username and password for \(serverName)."))
             expiredNotice
+            quickConnectOffNotice
             Button { mode = .quickConnect } label: {
                 Label("Sign In with Quick Connect", systemImage: "qrcode").loginLinkPadding()
             }
@@ -209,11 +218,21 @@ struct AuthView: View {
     }
 
     @ViewBuilder
+    private var quickConnectOffNotice: some View {
+        if qcDisabled && mode == .credentials {
+            Label("Quick Connect is turned off on this server, so sign in with your username and password.", systemImage: "info.circle")
+                .font(.footnote)
+                .foregroundStyle(DT.Color.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    @ViewBuilder
     private var errorLabel: some View {
         if let err = authError {
             Label(err, systemImage: "exclamationmark.circle.fill")
                 .font(.footnote)
-                .foregroundStyle(.red)
+                .foregroundStyle(DT.Color.palette("F43F5E"))
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -284,9 +303,10 @@ struct AuthView: View {
 
     private var credentialsView: some View {
         VStack(spacing: 18) {
-            LoginTextField(title: "Username", prompt: Text("Username"), text: $username, kind: .username)
+            LoginTextField(title: "Username", prompt: Text("Username"), text: $username, kind: .username,
+                           onSubmit: { passwordFocused = true })
             LoginTextField(title: "Password", prompt: Text("Password"), text: $password, kind: .password,
-                           onSubmit: submitCredentials)
+                           onSubmit: submitCredentials, isFocused: $passwordFocused)
         }
     }
 
@@ -350,8 +370,8 @@ struct AuthView: View {
     /// If the server's Arcfin Sync plugin has Seerr Account Type locked to "Jellyfin Account",
     /// every user's Seerr login is their Jellyfin login by definition — there's no separate
     /// Seerr credential to ask for. The password just typed is available here for exactly one
-    /// use (this one-shot check + prefill), persisted through AuthManager.saveSeerrPassword
-    /// (Keychain) the same way SeerrPluginView persists a password a user types in by hand.
+    /// use (this one-shot check + prefill), saved (Keychain) under the profile being signed
+    /// in, not the one in use: adding a profile runs this while the previous one is active.
     /// Quick Connect sign-in never has a password at all, so it can't reach this.
     private func attemptSeerrAutoLogin(credential: ServerCredential, jellyfinPassword: String) async {
         let header = authManager.authClient.authHeader(token: credential.accessToken)
@@ -362,10 +382,8 @@ struct AuthView: View {
               let seerrURLString = seerrURLSetting.value, !seerrURLString.isEmpty
         else { return }
 
-        UserDefaults.standard.set(seerrURLString, forKey: "seerrURL")
-        UserDefaults.standard.set("jellyfin", forKey: "seerrAuthMethod")
-        UserDefaults.standard.set(username, forKey: "seerrUsername")
-        authManager.saveSeerrPassword(jellyfinPassword)
+        authManager.saveSeerrSignIn(url: seerrURLString, authMethod: "jellyfin", username: username,
+                                    password: jellyfinPassword, for: credential)
     }
 
     private func initiateQC() async {
@@ -379,6 +397,9 @@ struct AuthView: View {
             qcCode = formatCode(code)
             qcSecret = secret
             qcPolling = true
+        } catch JellyfinAuthError.quickConnectDisabled {
+            qcDisabled = true
+            mode = .credentials
         } catch {
             authError = error.localizedDescription
         }

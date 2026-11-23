@@ -9,6 +9,7 @@ struct PINPadView: View {
     // Increment to trigger a shake + digit reset
     var resetToken: Int = 0
     var onCancel: (() -> Void)? = nil
+    var onSignOut: (() -> Void)? = nil
     var onComplete: (String) -> Void
 
     @State private var digits: [Int] = []
@@ -23,13 +24,21 @@ struct PINPadView: View {
 
             VStack(spacing: 0) {
                 // Cancel row
-                if let onCancel {
+                if onCancel != nil || onSignOut != nil {
                     HStack {
-                        Button("Cancel", action: onCancel)
-                            .font(.system(.callout, design: .default))
-                            .foregroundStyle(DT.Color.accent)
-                            .pinPadCancelStyle()
+                        if let onCancel {
+                            Button("Cancel", action: onCancel)
+                                .font(.system(.callout, design: .default))
+                                .foregroundStyle(DT.Color.accent)
+                                .pinPadCancelStyle()
+                        }
                         Spacer()
+                        if let onSignOut {
+                            Button("Sign Out", role: .destructive, action: onSignOut)
+                                .font(.system(.callout, design: .default))
+                                .foregroundStyle(DT.Color.accent)
+                                .pinPadCancelStyle()
+                        }
                     }
                     .padding(.horizontal, 24)
                     .padding(.top, 20)

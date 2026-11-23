@@ -10,17 +10,12 @@ import AppKit
 
 // MARK: - Cross-platform image typealias
 
-// TrickplayLoader, NowPlayingManager artwork, and OfflinePlayerView's trickplay cropping all
+// TrickplayLoader (server and downloaded tiles) and NowPlayingManager artwork all
 // need a concrete image type — UIImage doesn't exist on macOS, so this is the one place that
 // picks the real type per platform and everything else spells `PlatformImage`.
 public typealias PlatformImage = NSImage
 
 extension PlatformImage {
-    var cgImageRepresentation: CGImage? {
-        var rect = CGRect(origin: .zero, size: size)
-        return cgImage(forProposedRect: &rect, context: nil, hints: nil)
-    }
-
     static func from(cgImage: CGImage) -> PlatformImage {
         return PlatformImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
     }

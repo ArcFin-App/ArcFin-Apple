@@ -6,7 +6,8 @@ import TVServices
 
 /// The Top Shelf carousel has no logo or progress fields, so both are drawn into its image.
 enum TopShelfArtwork {
-    static func refresh() async {
+    /// `trailer` gives the server trailer of a movie or show, when Top Shelf Trailers is on.
+    static func refresh(trailer: ((String) async -> URL?)? = nil) async {
         guard let directory = TopShelfBridge.artworkDirectory else { return }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
@@ -18,6 +19,12 @@ enum TopShelfArtwork {
         await addArtwork(to: &nextUp, in: directory)
         await addArtwork(to: &recentlyAdded, in: directory)
         await addArtwork(to: &liveChannels, in: directory)
+        if let trailer {
+            var found: [String: URL?] = [:]
+            for index in continueWatching.indices { await addTrailer(to: &continueWatching[index], from: trailer, found: &found) }
+            for index in nextUp.indices { await addTrailer(to: &nextUp[index], from: trailer, found: &found) }
+            for index in recentlyAdded.indices { await addTrailer(to: &recentlyAdded[index], from: trailer, found: &found) }
+        }
         guard !Task.isCancelled else { return }
 
         TopShelfBridge.save(continueWatching: continueWatching, nextUp: nextUp, recentlyAdded: recentlyAdded,
@@ -32,6 +39,13 @@ enum TopShelfArtwork {
         TopShelfBridge.clear()
         if let directory = TopShelfBridge.artworkDirectory { removeUnused(keeping: [], in: directory) }
         TVTopShelfContentProvider.topShelfContentDidChange()
+    }
+
+    private static func addTrailer(to item: inout TopShelfMediaItem, from trailer: (String) async -> URL?,
+                                   found: inout [String: URL?]) async {
+        guard let id = item.trailerItemID else { return }
+        if found[id] == nil { found[id] = await trailer(id) }
+        item.previewVideoURL = found[id] ?? nil
     }
 
     private static func addArtwork(to items: inout [TopShelfMediaItem], in directory: URL) async {

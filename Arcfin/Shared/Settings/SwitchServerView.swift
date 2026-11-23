@@ -17,7 +17,6 @@ struct SwitchServerView: View {
     @State private var switchTarget: ServerCredential?
     @State private var switchPINResetToken = 0
     @State private var switchPINError: String?
-    @State private var switchStoredPIN: String?
 
     private var activeID: UUID? { authManager.state.credential?.id }
 
@@ -45,7 +44,7 @@ struct SwitchServerView: View {
                     .buttonStyle(.plain)
                 } else {
                     NavigationLink(value: group) {
-                        serverRow(group, subtitle: "\(group.profiles.count) users")
+                        serverRow(group, subtitle: String(localized: "\(group.profiles.count) users"))
                     }
                 }
             }
@@ -71,9 +70,8 @@ struct SwitchServerView: View {
         .task { await pins.load(authManager: authManager) }
         .appSheet(item: $switchTarget) { target in
             PINEntrySheet(
-                title: "Switch to \(target.displayName)",
+                title: String(localized: "Switch to \(target.displayName)"),
                 subtitle: target.baseURL.host,
-                storedPIN: switchStoredPIN,
                 resetToken: switchPINResetToken,
                 errorMessage: switchPINError,
                 onCancel: {
@@ -81,14 +79,18 @@ struct SwitchServerView: View {
                     switchPINError = nil
                 },
                 onComplete: { entered in
-                    if entered == switchStoredPIN {
-                        authManager.switchTo(target)
-                        switchTarget = nil
-                        switchPINError = nil
-                        dismiss()
-                    } else {
-                        switchPINError = "Incorrect PIN"
-                        switchPINResetToken += 1
+                    Task {
+                        let result = await authManager.checkPIN(entered, for: target.id)
+                        guard switchTarget?.id == target.id else { return }
+                        if result == .correct {
+                            authManager.switchTo(target)
+                            switchTarget = nil
+                            switchPINError = nil
+                            dismiss()
+                        } else {
+                            switchPINError = result.message
+                            switchPINResetToken += 1
+                        }
                     }
                 }
             )
@@ -128,18 +130,19 @@ struct SwitchServerView: View {
         .contentShape(Rectangle())
     }
 
+    /// Decided from the PIN as read now; `pins` only draws the locks and may not have loaded.
     private func handleTap(_ profile: ServerCredential) {
         guard profile.id != activeID else { dismiss(); return }
-        if pins.hasPIN(profile.id) {
-            switchPINError = nil
-            switchPINResetToken = 0
-            Task {
-                switchStoredPIN = await authManager.pin(for: profile.id)
-                switchTarget = profile
+        Task {
+            let stored = await authManager.storedPIN(for: profile.id)
+            guard stored != .none else {
+                authManager.switchTo(profile)
+                dismiss()
+                return
             }
-        } else {
-            authManager.switchTo(profile)
-            dismiss()
+            switchPINError = AuthManager.PINCheck.message(opening: stored, for: profile.id)
+            switchPINResetToken = 0
+            switchTarget = profile
         }
     }
 }

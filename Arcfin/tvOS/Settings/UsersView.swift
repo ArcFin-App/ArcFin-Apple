@@ -10,6 +10,7 @@ struct UsersView: View {
     @State private var pins = ProfilePINStates()
     @State private var pinTask: TVPINTask?
     @State private var signOutTarget: ServerCredential?
+    @AppStorage(WhoIsWatching.settingKey) private var alwaysAskWhoIsWatching = false
 
     private var activeID: UUID? { authManager.state.credential?.id }
 
@@ -40,7 +41,7 @@ struct UsersView: View {
                     Button(role: .destructive) {
                         signOutTarget = active
                     } label: {
-                        Text("Sign Out").foregroundStyle(.red)
+                        Text("Sign Out").foregroundStyle(DT.Color.palette("F43F5E"))
                     }
                 }
                 .buttonStyle(TVSettingsRowStyle())
@@ -55,12 +56,7 @@ struct UsersView: View {
                     sectionLabel("Switch To")
                     ForEach(otherProfiles) { profile in
                         Button {
-                            if pins.hasPIN(profile.id) {
-                                pinTask = TVPINTask(profile: profile, kind: .unlock)
-                            } else {
-                                authManager.switchTo(profile)
-                                dismiss()
-                            }
+                            choose(profile)
                         } label: {
                             tvProfileRow(profile, isActive: false)
                         }
@@ -70,6 +66,13 @@ struct UsersView: View {
                     TVAddProfileFlowView(onProfileAdded: { dismiss() })
                 } label: {
                     Label("Add Profile", systemImage: "plus")
+                }
+                if authManager.profiles.count >= 2 {
+                    Toggle(isOn: $alwaysAskWhoIsWatching) {
+                        TVRowLabelText(title: "Always Ask Who's Watching",
+                                       detail: "Shows the profiles when Arcfin opens, and when you come back after 30 minutes or more with nothing playing.")
+                    }
+                    .syncLocked(WhoIsWatching.settingKey, authManager)
                 }
             }
             .buttonStyle(TVSettingsRowStyle())
@@ -88,6 +91,18 @@ struct UsersView: View {
                 Task { await pins.load(authManager: authManager) }
                 if switched { dismiss() }
             }
+        }
+    }
+
+    /// Decided from the PIN as read now; `pins` only draws the locks and may not have loaded.
+    private func choose(_ profile: ServerCredential) {
+        Task {
+            guard await authManager.storedPIN(for: profile.id) == .none else {
+                pinTask = TVPINTask(profile: profile, kind: .unlock)
+                return
+            }
+            authManager.switchTo(profile)
+            dismiss()
         }
     }
 
@@ -161,7 +176,6 @@ private struct TVPINFlow: View {
     let onDone: (Bool) -> Void
 
     @Environment(AuthManager.self) private var authManager
-    @State private var storedPIN: String?
     @State private var verified = false
     @State private var firstEntry: String?
     @State private var errorMessage: String?
@@ -186,24 +200,20 @@ private struct TVPINFlow: View {
             onComplete: handle
         )
         .id(title)
-        .task { storedPIN = await authManager.pin(for: task.profile.id) }
+        .task {
+            guard needsCurrent else { return }
+            let stored = await authManager.storedPIN(for: task.profile.id)
+            errorMessage = AuthManager.PINCheck.message(opening: stored, for: task.profile.id)
+        }
+    }
+
+    private var needsCurrent: Bool {
+        task.kind == .unlock || task.kind == .remove || (task.kind == .change && !verified)
     }
 
     private func handle(_ entered: String) {
-        let needsCurrent = task.kind == .unlock || task.kind == .remove || (task.kind == .change && !verified)
         if needsCurrent {
-            guard entered == storedPIN else { return fail("Incorrect PIN") }
-            errorMessage = nil
-            switch task.kind {
-            case .unlock:
-                authManager.switchTo(task.profile)
-                onDone(true)
-            case .remove:
-                authManager.removePin(for: task.profile.id)
-                onDone(false)
-            default:
-                verified = true
-            }
+            Task { await checkCurrent(entered) }
             return
         }
         guard let first = firstEntry else {
@@ -213,13 +223,35 @@ private struct TVPINFlow: View {
         }
         guard entered == first else {
             firstEntry = nil
-            return fail("PINs don't match")
+            return fail(String(localized: "PINs don't match"))
         }
-        authManager.savePin(entered, for: task.profile.id)
-        onDone(false)
+        Task {
+            // Offered before the list had read the PIN: one already set is only changed with it.
+            var canSave = true
+            if task.kind == .set { canSave = await authManager.storedPIN(for: task.profile.id) == .none }
+            if canSave { authManager.savePin(entered, for: task.profile.id) }
+            onDone(false)
+        }
     }
 
-    private func fail(_ message: String) {
+    private func checkCurrent(_ entered: String) async {
+        let result = await authManager.checkPIN(entered, for: task.profile.id)
+        guard needsCurrent else { return }
+        guard result == .correct else { return fail(result.message) }
+        errorMessage = nil
+        switch task.kind {
+        case .unlock:
+            authManager.switchTo(task.profile)
+            onDone(true)
+        case .remove:
+            authManager.removePin(for: task.profile.id)
+            onDone(false)
+        default:
+            verified = true
+        }
+    }
+
+    private func fail(_ message: String?) {
         errorMessage = message
         resetToken += 1
     }

@@ -65,13 +65,15 @@ public struct MusicArtist: Sendable, Identifiable, Equatable, Hashable {
     public var overview: String?
     public var primaryImageTag: String?
     public var backdropImageTags: [String]
+    public var logoImageTag: String?
     public var genres: [String]
     public var isFavorite: Bool
 
     public init(id: String, name: String, overview: String? = nil, primaryImageTag: String? = nil,
-                backdropImageTags: [String] = [], genres: [String] = [], isFavorite: Bool = false) {
+                backdropImageTags: [String] = [], logoImageTag: String? = nil, genres: [String] = [], isFavorite: Bool = false) {
         self.id = id; self.name = name; self.overview = overview; self.primaryImageTag = primaryImageTag
-        self.backdropImageTags = backdropImageTags; self.genres = genres; self.isFavorite = isFavorite
+        self.backdropImageTags = backdropImageTags; self.logoImageTag = logoImageTag
+        self.genres = genres; self.isFavorite = isFavorite
     }
 }
 
@@ -210,12 +212,15 @@ public struct MusicFilter: Sendable, Equatable {
     public var playedOnly = false
     /// Only what this profile has never played.
     public var unplayedOnly = false
+    /// Only names that match, as the server searches them.
+    public var searchTerm: String?
 
     public init(favoritesOnly: Bool = false, genreId: String? = nil, artistId: String? = nil, playedOnly: Bool = false,
-                unplayedOnly: Bool = false) {
+                unplayedOnly: Bool = false, searchTerm: String? = nil) {
         self.favoritesOnly = favoritesOnly; self.genreId = genreId; self.artistId = artistId
         self.playedOnly = playedOnly
         self.unplayedOnly = unplayedOnly
+        self.searchTerm = searchTerm
     }
 }
 
@@ -262,6 +267,7 @@ extension JellyfinMediaClient {
         ]
         if filter.favoritesOnly { query.append(.init(name: "IsFavorite", value: "true")) }
         if let genreId = filter.genreId { query.append(.init(name: "GenreIds", value: genreId)) }
+        if let term = filter.searchTerm { query.append(.init(name: "SearchTerm", value: term)) }
         let page: MusicPage = try await getMusic(albumArtistsOnly ? "Artists/AlbumArtists" : "Artists", query: query,
                                                  credential: credential, authHeader: authHeader)
         let artists = page.items.map { $0.asArtist }
@@ -515,7 +521,7 @@ extension JellyfinMediaClient {
         ]
     }
 
-    private func musicItemsQuery(credential: ServerCredential, types: String, parentId: String?, sort: MusicSort,
+    func musicItemsQuery(credential: ServerCredential, types: String, parentId: String?, sort: MusicSort,
                                  ascending: Bool, filter: MusicFilter, startIndex: Int, limit: Int) -> [URLQueryItem] {
         var query = baseQuery(credential: credential, startIndex: startIndex, limit: limit)
         if let parentId { query.append(.init(name: "ParentId", value: parentId)) }
@@ -530,6 +536,7 @@ extension JellyfinMediaClient {
         if let genreId = filter.genreId { query.append(.init(name: "GenreIds", value: genreId)) }
         if filter.playedOnly { query.append(.init(name: "IsPlayed", value: "true")) }
         if filter.unplayedOnly { query.append(.init(name: "IsPlayed", value: "false")) }
+        if let term = filter.searchTerm { query.append(.init(name: "SearchTerm", value: term)) }
         return query
     }
 
@@ -688,7 +695,7 @@ struct MusicItemResponse: Decodable {
 
     var asArtist: MusicArtist {
         MusicArtist(id: id, name: name ?? "", overview: overview, primaryImageTag: imageTags?["Primary"],
-                    backdropImageTags: backdropImageTags ?? [], genres: genres ?? [],
+                    backdropImageTags: backdropImageTags ?? [], logoImageTag: imageTags?["Logo"], genres: genres ?? [],
                     isFavorite: userData?.isFavorite ?? false)
     }
 

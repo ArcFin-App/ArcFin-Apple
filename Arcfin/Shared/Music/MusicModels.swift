@@ -35,9 +35,9 @@ enum MusicAPI {
         return try await body(client, credential, auth.authClient.authHeader(token: credential.accessToken))
     }
 
-    static func imageURL(itemID: String, tag: String?, width: Int) -> URL? {
+    static func imageURL(itemID: String, tag: String?, type: JellyfinImageType = .primary, width: Int) -> URL? {
         guard let tag, let credential = AppServices.authManager.state.credential else { return nil }
-        return JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: itemID, tag: tag,
+        return JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: itemID, tag: tag, type: type,
                                             fillWidth: width, token: credential.accessToken)
     }
 
@@ -47,6 +47,14 @@ enum MusicAPI {
 
     static func artworkURL(_ artist: MusicArtist, width: Int = 400) -> URL? {
         imageURL(itemID: artist.id, tag: artist.primaryImageTag, width: width)
+    }
+
+    static func backdropURL(_ artist: MusicArtist, width: Int = 1600) -> URL? {
+        imageURL(itemID: artist.id, tag: artist.backdropImageTags.first, type: .backdrop, width: width)
+    }
+
+    static func logoURL(_ artist: MusicArtist, width: Int = 800) -> URL? {
+        imageURL(itemID: artist.id, tag: artist.logoImageTag, type: .logo, width: width)
     }
 
     static func artworkURL(_ playlist: MusicPlaylist, width: Int = 400) -> URL? {
@@ -110,7 +118,9 @@ final class MusicPagedList<Item: Identifiable & Sendable> {
             self.total = total
             hasFailed = false
         } catch {
-            guard started == generation, !(error is CancellationError) else { return }
+            // Left unloaded, so coming back to the list loads it again: a request cancelled by
+            // leaving the screen arrives as URLError.cancelled, not CancellationError.
+            guard started == generation, !Task.isCancelled, !SeerrRepository.isCancellation(error) else { return }
             hasFailed = true
         }
         hasLoaded = true
@@ -122,17 +132,23 @@ final class MusicPagedList<Item: Identifiable & Sendable> {
 final class MusicFavorites {
     static let shared = MusicFavorites()
     private var changed: [String: Bool] = [:]
+    /// Favourites are per user, so changes made under another profile don't apply.
+    private var owner: UUID?
     @ObservationIgnored private var edits = MusicEdits()
 
-    func isFavorite(_ id: String, server: Bool) -> Bool { changed[id] ?? server }
+    func isFavorite(_ id: String, server: Bool) -> Bool {
+        owner == MusicEdits.activeProfile ? changed[id] ?? server : server
+    }
 
     /// What the server said when asked at `asked`, unless it's been changed here since.
     func sync(_ id: String, isFavorite: Bool, asked: Date) {
+        claim()
         guard !edits.changed(id, since: asked) else { return }
         changed[id] = isFavorite
     }
 
     func toggle(_ id: String, server: Bool) {
+        claim()
         let before = isFavorite(id, server: server), favorite = !before
         changed[id] = favorite
         let edit = edits.begin(id)
@@ -149,11 +165,21 @@ final class MusicFavorites {
             Task { await MusicDownloads.shared.downloadFavorite(id) }
         }
     }
+
+    private func claim() {
+        let profile = MusicEdits.activeProfile
+        guard owner != profile else { return }
+        owner = profile
+        changed = [:]
+        edits = MusicEdits()
+    }
 }
 
 /// Which favourites and ratings are being saved, so an older answer from the server can't
 /// put back what was just changed.
 struct MusicEdits {
+    @MainActor static var activeProfile: UUID? { AppServices.authManager.state.credential?.id }
+
     private var pending: [String: Int] = [:]
     private var last: [String: Date] = [:]
     private var count = 0
@@ -180,26 +206,31 @@ struct MusicEdits {
 final class MusicRatings {
     static let shared = MusicRatings()
     private var changed: [String: Bool?] = [:]
+    /// Likes are per user, so changes made under another profile don't apply.
+    private var owner: UUID?
     @ObservationIgnored private var edits = MusicEdits()
 
     func likes(_ id: String, server: Bool?) -> Bool? {
-        if let local = changed[id] { return local }
+        if owner == MusicEdits.activeProfile, let local = changed[id] { return local }
         return server
     }
 
     /// What the server said when asked at `asked`, unless it's been changed here since.
     func sync(_ id: String, likes: Bool?, asked: Date) {
+        claim()
         guard !edits.changed(id, since: asked) else { return }
         changed[id] = .some(likes)
     }
 
     /// Rated elsewhere (ListenBrainz): shown here and saved to Jellyfin, not sent back.
     func adopt(_ id: String, likes: Bool) {
+        claim()
         save(id, likes, before: changed[id] ?? nil)
     }
 
     /// Tapping the one already chosen clears it.
     func set(_ id: String, likes: Bool, server: Bool?) {
+        claim()
         let before = self.likes(id, server: server)
         let value: Bool? = before == likes ? nil : likes
         save(id, value, before: before)
@@ -218,6 +249,14 @@ final class MusicRatings {
                 AppServices.music.ratingsChanged()
             }
         }
+    }
+
+    private func claim() {
+        let profile = MusicEdits.activeProfile
+        guard owner != profile else { return }
+        owner = profile
+        changed = [:]
+        edits = MusicEdits()
     }
 }
 
@@ -366,5 +405,30 @@ final class MusicSearchModel {
             guard !Task.isCancelled else { return }
             appleMusic = catalog
         }
+    }
+}
+
+extension View {
+    /// A section's search: `term` follows `query` a moment after typing stops, trimmed, and nil
+    /// for the whole section. Clearing the field shows everything again at once.
+    func musicSearchTerm(_ query: String, _ term: Binding<String?>) -> some View {
+        task(id: query) {
+            let trimmed = query.trimmingCharacters(in: .whitespaces)
+            let next = trimmed.isEmpty ? nil : trimmed
+            guard next != term.wrappedValue else { return }
+            if next != nil {
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+            }
+            term.wrappedValue = next
+        }
+    }
+}
+
+extension Array {
+    /// A list that's all loaded at once, narrowed to the names that match.
+    func matching(_ term: String?, _ name: (Element) -> String) -> [Element] {
+        guard let term else { return self }
+        return filter { name($0).localizedStandardContains(term) }
     }
 }

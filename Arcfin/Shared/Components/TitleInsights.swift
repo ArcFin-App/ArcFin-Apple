@@ -78,18 +78,18 @@ struct TitleInsights: View {
                     scoreChip(
                         systemImage: score >= 60 ? "checkmark.seal.fill" : "xmark.seal.fill",
                         tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
-                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: ratings.criticsRating ?? "Critics",
+                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: ratings.criticsRating ?? String(localized: "Critics"),
                         url: ratings.rottenTomatoesURL)
                 }
                 if let score = ratings.audienceScore {
                     scoreChip(
                         systemImage: "person.3.fill",
                         tint: score >= 60 ? DT.Color.palette("10b981") : DT.Color.palette("f59e0b"),
-                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: "Audience", url: ratings.rottenTomatoesURL)
+                        value: (Double(score) / 100).formatted(.percent.precision(.fractionLength(0))), label: String(localized: "Audience"), url: ratings.rottenTomatoesURL)
                 }
                 if let imdb = ratings.imdbScore {
                     scoreChip(systemImage: "star.fill", tint: DT.Color.palette("f5c518"),
-                              value: String(format: "%.1f", imdb), label: "IMDb", url: ratings.imdbURL)
+                              value: imdb.ratingText, label: "IMDb", url: ratings.imdbURL)
                 }
             }
             .padding(.horizontal, rowInset)
@@ -149,8 +149,10 @@ struct TitleInsights: View {
             Text(region.isEmpty ? "Where to Watch" : "Where to Watch in \(Locale.current.localizedString(forRegionCode: region) ?? region)")
                 .font(DT.Font.cardTitle)
                 .foregroundStyle(DT.Color.textPrimary)
-            providerGroup("Stream", watch.streaming)
-            providerGroup("Free", watch.free)
+                .accessibilityAddTraits(.isHeader)
+            // Own keys: the catalog's "Stream" and "Free" are the verb and free space elsewhere.
+            providerGroup(LocalizedStringResource("Stream (Where to Watch)", defaultValue: "Stream"), watch.streaming)
+            providerGroup(LocalizedStringResource("Free (Where to Watch)", defaultValue: "Free"), watch.free)
             providerGroup("With Ads", watch.ads)
             providerGroup("Rent", watch.rent)
             providerGroup("Buy", watch.buy)
@@ -162,12 +164,13 @@ struct TitleInsights: View {
     }
 
     @ViewBuilder
-    private func providerGroup(_ title: String, _ providers: [SeerrWatchProvider]) -> some View {
+    private func providerGroup(_ title: LocalizedStringResource, _ providers: [SeerrWatchProvider]) -> some View {
         if !providers.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(DT.Color.textSecondary)
+                    .accessibilityAddTraits(.isHeader)
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(alignment: .top, spacing: 12) {
                         ForEach(providers) { provider in
@@ -190,7 +193,7 @@ struct TitleInsights: View {
                             .frame(width: Self.logoSize + 18)
                             .tvFocusable(cornerRadius: 12)
                             .accessibilityElement(children: .combine)
-                            .accessibilityLabel("\(provider.name), \(title.lowercased())")
+                            .accessibilityLabel(Text(verbatim: "\(provider.name), \(String(localized: title).localizedLowercase)"))
                         }
                     }
                 }
@@ -205,39 +208,55 @@ struct TitleInsights: View {
         var rows: [(String, String)] = []
         let original = detail?.originalTitle ?? info?.originalTitle
         let name = detail?.item.name
-        if let original, !original.isEmpty, original != name { rows.append(("Original Title", original)) }
+        if let original, !original.isEmpty, original != name { rows.append((String(localized: "Original Title"), original)) }
         if let language = info?.originalLanguage, let languageName = Locale.current.localizedString(forLanguageCode: language) {
-            rows.append(("Original Language", languageName))
+            rows.append((String(localized: "Original Language"), languageName))
         }
-        if let status = detail?.status ?? info?.status { rows.append(("Status", status == "Continuing" ? "Returning" : status)) }
+        if let status = detail?.status ?? info?.status { rows.append((String(localized: "Status"), Self.statusText(status))) }
         if let premiere = detail?.premiereDate {
-            rows.append((detail?.item.type == .series ? "First Aired" : "Released", premiere.formatted(date: .long, time: .omitted)))
+            rows.append((detail?.item.type == .series ? String(localized: "First Aired") : String(localized: "Released"), premiere.formatted(date: .long, time: .omitted)))
         }
-        if let end = detail?.endDate, detail?.status == "Ended" { rows.append(("Last Aired", end.formatted(date: .long, time: .omitted))) }
+        if let end = detail?.endDate, detail?.status == "Ended" { rows.append((String(localized: "Last Aired"), end.formatted(date: .long, time: .omitted))) }
         if let days = detail?.airDays, !days.isEmpty {
-            rows.append(("Airs", days.joined(separator: ", ") + (detail?.airTime.map { " at \($0)" } ?? "")))
+            let dayList = days.joined(separator: ", ")
+            rows.append((String(localized: "Airs"), detail?.airTime.map { String(localized: "\(dayList) at \($0)") } ?? dayList))
         }
-        if let seasons = info?.numberOfSeasons { rows.append(("Seasons", "\(seasons)")) }
-        if let creators = info?.createdBy, !creators.isEmpty { rows.append(("Created by", creators.joined(separator: ", "))) }
-        if let networks = info?.networks, !networks.isEmpty { rows.append(("Network", networks.prefix(3).joined(separator: ", "))) }
+        if let seasons = info?.numberOfSeasons { rows.append((String(localized: "Seasons"), seasons.formatted())) }
+        if let creators = info?.createdBy, !creators.isEmpty { rows.append((String(localized: "Created by"), creators.joined(separator: ", "))) }
+        if let networks = info?.networks, !networks.isEmpty { rows.append((String(localized: "Network"), networks.prefix(3).joined(separator: ", "))) }
         let studios = detail?.studios ?? []
-        if !studios.isEmpty, mediaType != .tv { rows.append(("Studio", studios.prefix(3).joined(separator: ", "))) }
+        if !studios.isEmpty, mediaType != .tv { rows.append((String(localized: "Studio"), studios.prefix(3).joined(separator: ", "))) }
         let countries = info?.countries.isEmpty == false ? info!.countries : (detail?.productionLocations ?? [])
-        if !countries.isEmpty { rows.append(("Country", countries.prefix(3).joined(separator: ", "))) }
-        if let budget = info?.budget { rows.append(("Budget", money(budget))) }
-        if let revenue = info?.revenue { rows.append(("Box Office", money(revenue))) }
+        if !countries.isEmpty { rows.append((String(localized: "Country"), countries.prefix(3).joined(separator: ", "))) }
+        if let budget = info?.budget { rows.append((String(localized: "Budget"), money(budget))) }
+        if let revenue = info?.revenue { rows.append((String(localized: "Box Office"), money(revenue))) }
         for file in detail?.files ?? [] {
             var parts: [String] = []
             if let container = file.container { parts.append(container.uppercased()) }
             if let size = file.sizeBytes, size > 0 { parts.append(ByteCountFormatter.string(fromByteCount: size, countStyle: .file)) }
-            if let bitrate = file.bitrate, bitrate > 0 { parts.append("\(bitrate / 1_000_000) Mb/s") }
+            if let bitrate = file.bitrate, bitrate > 0 {
+                parts.append(Measurement(value: Double(bitrate) / 1_000_000, unit: UnitInformationStorage.megabits).formatted(.measurement(width: .abbreviated, usage: .asProvided, numberFormatStyle: .number.precision(.fractionLength(0)))) + "/s")
+            }
             if !parts.isEmpty {
-                let label = (detail?.files.count ?? 0) > 1 ? (file.name ?? "File") : "File"
+                let label = (detail?.files.count ?? 0) > 1 ? (file.name ?? String(localized: "File")) : String(localized: "File")
                 rows.append((label, parts.joined(separator: " · ")))
             }
         }
-        if let tags = detail?.tags, !tags.isEmpty { rows.append(("Tags", tags.prefix(6).joined(separator: ", "))) }
+        if let tags = detail?.tags, !tags.isEmpty { rows.append((String(localized: "Tags"), tags.prefix(6).joined(separator: ", "))) }
         return rows
+    }
+
+    /// TMDB's and Jellyfin's status words are English; the common ones are translated.
+    private static func statusText(_ status: String) -> String {
+        switch status {
+        case "Continuing", "Returning Series": String(localized: "Returning")
+        case "Ended": String(localized: "Ended")
+        case "Canceled", "Cancelled": String(localized: "Canceled")
+        case "Released": String(localized: "Released")
+        case "In Production": String(localized: "In Production")
+        case "Planned": String(localized: "Planned")
+        default: status
+        }
     }
 
     private var detailsList: some View {
@@ -245,6 +264,7 @@ struct TitleInsights: View {
             Text("Details")
                 .font(DT.Font.cardTitle)
                 .foregroundStyle(DT.Color.textPrimary)
+                .accessibilityAddTraits(.isHeader)
             VStack(spacing: 0) {
                 ForEach(Array(detailRows.enumerated()), id: \.offset) { index, row in
                     if index > 0 { Divider().overlay(DT.Color.textPrimary.opacity(0.05)).padding(.leading, 14) }

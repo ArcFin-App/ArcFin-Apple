@@ -23,8 +23,8 @@ struct SeerrItemDetailView: View {
     private var detail: SeerrMediaDetail? { model.detail }
 
     private var statusLabel: (label: String, colorHex: String)? {
-        if let status = item.availabilityStatus { return (status.label, status.colorHex) }
-        return seerrRepo.matchingRequest(for: item)?.displayStatus
+        if let status = item.availabilityStatus { return (status.localizedLabel, status.colorHex) }
+        return seerrRepo.matchingRequest(for: item)?.localizedDisplayStatus
     }
 
     var body: some View {
@@ -52,6 +52,13 @@ struct SeerrItemDetailView: View {
             get: { model.collectionRequestMessage != nil }, set: { if !$0 { model.collectionRequestMessage = nil } }
         )) {
             Button("OK", role: .cancel) {}
+        }
+        .alert("Watchlist", isPresented: Binding(
+            get: { model.watchlistError != nil }, set: { if !$0 { model.watchlistError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.watchlistError ?? "")
         }
         .task(id: item.id) { await model.loadDetail(seerrRepo: seerrRepo) }
         .task(id: item.id) { await model.loadDiscovery(seerrRepo: seerrRepo) }
@@ -124,13 +131,13 @@ struct SeerrItemDetailView: View {
             }
             if let runtime = detail?.runtimeMinutes {
                 dot
-                Text("\(runtime)m")
+                Text(Duration.seconds(runtime * 60).formatted(.units(allowed: [.minutes], width: .narrow)))
             }
             if let rating = detail?.voteAverage, rating > 0 {
                 dot
                 HStack(spacing: 5) {
                     Image(systemName: "star.fill").font(.system(size: 16))
-                    Text(String(format: "%.1f", rating)).font(.system(size: 23, weight: .bold))
+                    Text(rating.formatted(.number.precision(.fractionLength(1)))).font(.system(size: 23, weight: .bold))
                 }
                 .foregroundStyle(DT.Color.palette("f59e0b"))
             }
@@ -207,7 +214,7 @@ struct SeerrItemDetailView: View {
         }
     }
 
-    private func infoRow(_ label: String, _ value: String) -> some View {
+    private func infoRow(_ label: LocalizedStringKey, _ value: String) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 23, weight: .bold))
@@ -228,9 +235,9 @@ struct SeerrItemDetailView: View {
             if let seasons = detail?.seasons, !seasons.isEmpty { seasonsRow(seasons) }
             if let cast = detail?.cast, !cast.isEmpty { castRow(cast) }
             if let collection = model.collection { collectionRow(collection) }
-            if !model.moreLikeThis.isEmpty { discoveryRow("More Like This", model.moreLikeThis) }
-            if let companyRow = model.companyRow { discoveryRow("More from \(companyRow.name)", companyRow.items) }
-            if let keywordRow = model.keywordRow { discoveryRow("More About \(keywordRow.name.capitalized)", keywordRow.items) }
+            if !model.moreLikeThis.isEmpty { discoveryRow(String(localized: "More Like This"), model.moreLikeThis) }
+            if let companyRow = model.companyRow { discoveryRow(String(localized: "More from \(companyRow.name)"), companyRow.items) }
+            if let keywordRow = model.keywordRow { discoveryRow(String(localized: "More About \(keywordRow.name.capitalized)"), keywordRow.items) }
             TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .details)
                 .padding(.horizontal, 80)
                 .focusSection()
@@ -242,7 +249,7 @@ struct SeerrItemDetailView: View {
         let parts = model.requestableParts(seerrRepo: seerrRepo)
         return VStack(alignment: .leading, spacing: 16) {
             discoveryRow(collection.name, collection.parts)
-            if seerrRepo.isConfigured, !parts.isEmpty {
+            if seerrRepo.isConfigured, model.mayRequest, !parts.isEmpty {
                 Button { model.isConfirmingCollectionRequest = true } label: {
                     Label(model.isRequestingCollection ? "Requesting…" : "Request Collection", systemImage: "plus.circle.fill")
                         .font(.system(size: 24, weight: .semibold))
@@ -273,7 +280,7 @@ struct SeerrItemDetailView: View {
 
     private func seasonsRow(_ seasons: [SeerrSeasonInfo]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Seasons")
+            sectionTitle(String(localized: "Seasons"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 16) {
                     ForEach(seasons) { season in
@@ -305,7 +312,7 @@ struct SeerrItemDetailView: View {
 
     private func castRow(_ cast: [SeerrCastMember]) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Cast")
+            sectionTitle(String(localized: "Cast"))
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(alignment: .top, spacing: 24) {
                     ForEach(cast.prefix(20)) { member in

@@ -17,6 +17,7 @@ struct SearchView: View {
     /// Artists, albums and songs, after the library's titles.
     @State private var music = MusicSearchModel()
     @State private var requestingSeerrItem: SeerrItem?
+    @State private var openedSeerrItem: SeerrItem?
     @AppStorage(RecentSearches.key) private var recentSearchesData = Data()
     @AppStorage("saveSearchHistory") private var saveSearchHistory = true
     /// Off brings back the plain Library and Discover poster grids.
@@ -54,7 +55,9 @@ struct SearchView: View {
                         .buttonStyle(.plain)
                 }
             } else if query.isEmpty || foundNothing {
-                SearchEmptyState(query: query)
+                SearchEmptyState(query: query, failed: model.libraryFailed) {
+                    model.search(query, authManager: authManager, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
+                }
             } else if !modernSearch {
                 classicResults
             } else {
@@ -87,7 +90,7 @@ struct SearchView: View {
                                                   posterWidth: discoverPosterWidth) { item in
                                 Button {
                                     saveRecentSearch()
-                                    requestingSeerrItem = item
+                                    openSeerrResult(item)
                                 } label: { SearchDiscoverRow(item: item, posterWidth: discoverPosterWidth) }
                                 .buttonStyle(PressableButtonStyle())
                             }
@@ -101,7 +104,8 @@ struct SearchView: View {
             }
         }
         .screenBackground()
-        .onChange(of: query) { _, newValue in
+        // The view is created with a whole pasted, dictated or suggested term already in place.
+        .onChange(of: query, initial: true) { _, newValue in
             model.search(newValue, authManager: authManager, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
             liveTV.searchQuery = searchesLiveTV ? newValue : ""
             liveTV.search(authManager: authManager)
@@ -114,6 +118,12 @@ struct SearchView: View {
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
         }
+        .navigationDestination(item: $openedSeerrItem) { SeerrItemDetailView(item: $0) }
+    }
+
+    /// The request sheet, or the title's Seerr page when this Seerr account can't request it.
+    private func openSeerrResult(_ item: SeerrItem) {
+        if seerrRepo.mayRequest(item.mediaType) { requestingSeerrItem = item } else { openedSeerrItem = item }
     }
 
     private func libraryShelf(_ group: SearchModel.LibraryGroup) -> some View {
@@ -174,7 +184,7 @@ struct SearchView: View {
                             ForEach(model.seerrResults) { item in
                                 Button {
                                     saveRecentSearch()
-                                    requestingSeerrItem = item
+                                    openSeerrResult(item)
                                 } label: {
                                     SearchResultCard(title: item.title, subtitle: item.year, imageURL: item.posterURL)
                                 }

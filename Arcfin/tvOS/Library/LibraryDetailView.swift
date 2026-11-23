@@ -33,29 +33,32 @@ struct LibraryDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .screenBackground()
-            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive {
+            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive, !model.isSearching, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "Empty Playlist",
                     description: "Add movies, shows and episodes, or long-press any title and choose Add to Playlist.",
                     buttonTitle: "Add Titles"
                 ) { model.showAddTitles = true }
-            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive {
+            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive, !model.isSearching, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "No Playlists",
                     description: "Make a playlist, then add movies, shows and episodes to it.",
                     buttonTitle: "New Playlist"
                 ) { model.showNewPlaylist = true }
             } else if model.items.isEmpty {
-                ContentUnavailableView(model.library.name,
-                                      systemImage: model.library.collectionType.systemIcon,
-                                      description: Text("Nothing found in this library."))
+                // The action row stays, so Filter & Sort can still be reached to undo filters
+                // that match nothing: the empty state alone left nothing to focus.
+                VStack(spacing: 0) {
+                    tvActionRow
+                    LibraryEmptyResults(model: model, retry: reload)
+                        .focusSection()
+                }
                 .screenBackground()
             } else {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
                         if model.playlist != nil { playlistHeader }
                         tvActionRow
-                        if model.showsLetterIndex { tvLetterRow }
                         LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
                             ForEach(model.gridEntries) { entry in
                                 Group {
@@ -76,15 +79,24 @@ struct LibraryDetailView: View {
                                 ProgressView()
                                     .frame(maxWidth: .infinity)
                                     .padding()
+                            } else if model.loadMoreFailed {
+                                Button("Try Again") { Task { await model.loadMore(authManager: authManager) } }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
                             }
                         }
                         .padding(DT.Spacing.pagePad)
+                        // Room for the A–Z column.
+                        .padding(.trailing, model.showsLetterIndex ? 64 : 0)
                         .accessibilityElement(children: .contain)
                         .accessibilityIdentifier("library.grid")
                         .focusSection()
                         .scrollClipDisabled()
                     }
                     .scrollPosition(id: $scrolledItemID)
+                    .overlay(alignment: .trailing) {
+                        if model.showsLetterIndex { tvLetterColumn }
+                    }
                     .modifier(PlaylistPageStyle(isPlaylist: model.playlist != nil, tint: model.playlistTint))
                     .onChange(of: model.jumpTarget) { _, target in
                         guard let target else { return }
@@ -104,11 +116,24 @@ struct LibraryDetailView: View {
                 extraFilters: $model.extraFilters, sortOptions: model.sortOptions
             )
         }
-        .onChange(of: model.selectedGenres) { _, _ in reload() }
-        .onChange(of: model.selectedYears) { _, _ in reload() }
-        .onChange(of: model.extraFilters) { _, _ in reload() }
-        .onChange(of: model.watchedFilter) { _, _ in reload() }
-        .onChange(of: model.favoritesOnly) { _, _ in reload() }
+        .confirmationDialog(
+            Text("Remove \(model.pendingGroupRemoval?.count ?? 0) Episodes from Playlist"),
+            isPresented: Binding(get: { model.pendingGroupRemoval != nil },
+                                 set: { if !$0 { model.pendingGroupRemoval = nil } }),
+            titleVisibility: .visible,
+            presenting: model.pendingGroupRemoval
+        ) { episodes in
+            Button("Remove", role: .destructive) {
+                model.removeFromPlaylist(episodes, authManager: authManager, mediaRepo: mediaRepo)
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .onChange(of: model.selectedGenres) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.selectedYears) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.extraFilters) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.watchedFilter) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.favoritesOnly) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .modifier(LibrarySearchModifier(model: model, authManager: authManager, mediaRepo: mediaRepo))
         .fullScreenCover(item: $model.playlistPlayback, onDismiss: {
             PlayQueue.clear()
             reload()
@@ -205,22 +230,19 @@ struct LibraryDetailView: View {
         .focusSection()
     }
 
-    private var tvLetterRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 16) {
-                ForEach(LibraryLetterIndex.letters, id: \.self) { letter in
-                    Button { Task { await model.jump(to: letter, authManager: authManager) } } label: {
-                        TVLetterLabel(letter: letter)
-                    }
-                    .accessibilityLabel(Text("Jump to \(letter)"))
+    /// The A–Z index down the trailing edge, as on the other platforms.
+    private var tvLetterColumn: some View {
+        VStack(spacing: 0) {
+            ForEach(LibraryLetterIndex.letters, id: \.self) { letter in
+                Button { Task { await model.jump(to: letter, authManager: authManager) } } label: {
+                    TVLetterLabel(letter: letter)
                 }
+                .accessibilityLabel(Text("Jump to \(letter)"))
             }
-            .buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .padding(.horizontal, DT.Spacing.pagePad)
-            .padding(.vertical, DT.Spacing.sm)
         }
-        .scrollClipDisabled()
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .padding(.trailing, DT.Spacing.md)
         .focusSection()
     }
 
@@ -274,7 +296,7 @@ struct LibraryDetailView: View {
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
         .contextMenu {
-            Button(role: .destructive) { model.removeFromPlaylist(episodes, authManager: authManager, mediaRepo: mediaRepo) } label: {
+            Button(role: .destructive) { model.pendingGroupRemoval = episodes } label: {
                 Label("Remove \(episodes.count) Episodes from Playlist", systemImage: "minus.circle")
             }
         }
@@ -287,6 +309,6 @@ struct LibraryDetailView: View {
                 Label("Remove from Playlist", systemImage: "minus.circle")
             }
         }
-        LibraryQuickLookMenu(item: item)
+        LibraryQuickLookMenu(item: item) { model.replace($0) }
     }
 }

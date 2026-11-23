@@ -16,7 +16,10 @@ struct LibraryView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    if libraries.isEmpty {
+                    if libraries.isEmpty, mediaRepo.connectionFailed || !mediaRepo.loaded {
+                        BrowseLibrariesStatus()
+                            .frame(maxWidth: .infinity, minHeight: 400)
+                    } else if libraries.isEmpty {
                         ContentUnavailableView(
                             "No Libraries",
                             systemImage: "square.grid.2x2",

@@ -7,6 +7,7 @@ import JellyfinAPI
 /// out yet or missing from the server, why it can't be played.
 struct DetailPlayButton: View {
     @Environment(DownloadManager.self) private var downloadManager
+    @Environment(AuthManager.self) private var authManager
     let model: MediaDetailModel
 
     private var resumeUserData: UserData? {
@@ -27,8 +28,7 @@ struct DetailPlayButton: View {
               let runTimeTicks = model.detail?.runTimeTicks, runTimeTicks > ud.playbackPositionTicks
         else { return nil }
         let remainingMinutes = Int(Double(runTimeTicks - ud.playbackPositionTicks) / 10_000_000 / 60)
-        if remainingMinutes >= 60 { return "\(remainingMinutes / 60)h \(remainingMinutes % 60)m left" }
-        return "\(remainingMinutes)m left"
+        return String(localized: "\(DurationText.minutes(remainingMinutes)) left")
     }
 
     /// Resume only: "19m left • Ends 9:42 PM" on its own line (too long to share the title
@@ -65,7 +65,7 @@ struct DetailPlayButton: View {
         HStack(spacing: 10) {
             Button {
                 model.requestPlayback(startTicks: isResumable ? (resumeUserData?.playbackPositionTicks ?? 0) : 0,
-                                      downloadManager: downloadManager)
+                                      downloadManager: downloadManager, authManager: authManager)
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "play.fill").contentFont(.subheadline)
@@ -112,7 +112,8 @@ struct DetailPlayButton: View {
 
             if isResumable {
                 Button {
-                    model.requestPlayback(startTicks: 0, isExplicitStartOver: true, downloadManager: downloadManager)
+                    model.requestPlayback(startTicks: 0, isExplicitStartOver: true, downloadManager: downloadManager,
+                                          authManager: authManager)
                 } label: {
                     Image(systemName: "arrow.counterclockwise")
                         .contentFont(.body, weight: .semibold)
@@ -180,13 +181,19 @@ struct DetailSeriesSection: View {
     let model: MediaDetailModel
     let spoilerProtection: Bool
     let openEpisode: (MediaItem) -> Void
+    @State private var pendingScopeChange: MediaDetailModel.WatchScopeChange?
 
     private var isSeasonFullyDownloaded: Bool {
         model.isSeasonFullyDownloaded(in: downloadManager)
     }
 
     private func markScopeWatched(_ scope: MediaDetailModel.WatchScope, watched: Bool) {
-        model.markScopeWatched(scope, watched: watched, update: .inPlace, authManager: authManager)
+        let change = MediaDetailModel.WatchScopeChange(scope: scope, watched: watched)
+        if change.needsConfirmation {
+            pendingScopeChange = change
+        } else {
+            model.markScopeWatched(scope, watched: watched, update: .inPlace, authManager: authManager)
+        }
     }
 
     var body: some View {
@@ -254,7 +261,10 @@ struct DetailSeriesSection: View {
             }
             .padding(.horizontal, DT.Spacing.pagePad)
 
-            VStack(spacing: 8) {
+            LazyVStack(spacing: 8) {
+                if model.episodesLoadFailed {
+                    EpisodesLoadFailedRow { model.retryEpisodes(authManager: authManager) }
+                }
                 ForEach(model.episodes) { ep in
                     EpisodeRow(
                         episode: ep,
@@ -271,6 +281,40 @@ struct DetailSeriesSection: View {
             .padding(.horizontal, DT.Spacing.pagePad)
         }
         .padding(.bottom, DT.Spacing.md)
+        .watchScopeConfirmation($pendingScopeChange) { change in
+            model.markScopeWatched(change.scope, watched: change.watched, update: .inPlace, authManager: authManager)
+        }
+    }
+}
+
+extension View {
+    /// Asks before a season or series watched-state change that's hard to undo.
+    func watchScopeConfirmation(_ pending: Binding<MediaDetailModel.WatchScopeChange?>,
+                                confirm: @escaping (MediaDetailModel.WatchScopeChange) -> Void) -> some View {
+        confirmationDialog(
+            pending.wrappedValue.map { Text($0.question) } ?? Text(verbatim: ""),
+            isPresented: Binding(get: { pending.wrappedValue != nil }, set: { if !$0 { pending.wrappedValue = nil } }),
+            titleVisibility: .visible,
+            presenting: pending.wrappedValue
+        ) { change in
+            Button(change.actionLabel, role: change.watched ? nil : .destructive) { confirm(change) }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+}
+
+/// A season whose episodes couldn't be fetched, with a way to ask again.
+struct EpisodesLoadFailedRow: View {
+    let retry: () -> Void
+
+    var body: some View {
+        HStack {
+            Text("Couldn't load this season's episodes.")
+                .contentFont(.callout)
+                .foregroundStyle(DT.Color.textSecondary)
+            Spacer()
+            Button("Try Again", action: retry)
+        }
     }
 }
 

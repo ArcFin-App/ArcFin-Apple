@@ -17,6 +17,7 @@ struct SeerrRequestConfirmSheet: View {
     @State private var isSubmitting = false
     @State private var submitError: String?
     @State private var alreadyRequested = false
+    @State private var seasonsFailed = false
 
     private var isSeries: Bool { item.mediaType == .tv }
     private var rows: [SeerrSeasonRow] { detail?.seasonRows ?? [] }
@@ -55,12 +56,14 @@ struct SeerrRequestConfirmSheet: View {
         ))
     }
     private var requestLabel: String {
-        if alreadyRequested { return "Already Requested" }
-        guard isSeries else { return isSubmitting ? "Sending…" : "Confirm Request" }
-        if unrequested.isEmpty { return "Already Requested" }
-        if !partialRequestsEnabled { return isSubmitting ? "Sending…" : "Request Series" }
-        if selectedSeasons.isEmpty { return "Select Seasons" }
-        return isSubmitting ? "Sending…" : "Request \(selectedSeasons.count) Season\(selectedSeasons.count == 1 ? "" : "s")"
+        if alreadyRequested { return String(localized: "Already Requested") }
+        guard isSeries else { return isSubmitting ? String(localized: "Sending…") : String(localized: "Confirm Request") }
+        // No detail means the seasons aren't known yet, not that they're all requested.
+        if detail == nil { return String(localized: "Select Seasons") }
+        if unrequested.isEmpty { return String(localized: "Already Requested") }
+        if !partialRequestsEnabled { return isSubmitting ? String(localized: "Sending…") : String(localized: "Request Series") }
+        if selectedSeasons.isEmpty { return String(localized: "Select Seasons") }
+        return isSubmitting ? String(localized: "Sending…") : String(localized: "Request \(selectedSeasons.count) Seasons")
     }
 
     var body: some View {
@@ -71,19 +74,26 @@ struct SeerrRequestConfirmSheet: View {
             // A movie has no per-season rows to say so; the loaded requests and the item's own
             // status do. A series is covered by its season rows below.
             if !isSeries, seerrRepo.isRequested(item) { alreadyRequested = true }
-            async let fetchedDetail = seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
-            async let fetchedSettings = seerrRepo.ensurePublicSettings()
-            let (resolvedDetail, resolvedSettings) = await (fetchedDetail, fetchedSettings)
-            detail = resolvedDetail
-            partialRequestsEnabled = resolvedSettings?.partialRequestsEnabled ?? true
-            // The sheet opens with nothing switched on, same as Seerr's own modal — not every
-            // unrequested season preselected, so a quota-limited user doesn't accidentally
-            // submit more than they meant to.
-            if isSeries {
-                quota = await seerrRepo.seasonQuota()
-            }
-            isLoadingDetail = false
+            await loadDetail()
         }
+    }
+
+    private func loadDetail() async {
+        isLoadingDetail = true
+        seasonsFailed = false
+        async let fetchedDetail = seerrRepo.mediaDetail(mediaType: item.mediaType, tmdbId: item.id)
+        async let fetchedSettings = seerrRepo.ensurePublicSettings()
+        let (resolvedDetail, resolvedSettings) = await (fetchedDetail, fetchedSettings)
+        detail = resolvedDetail
+        partialRequestsEnabled = resolvedSettings?.partialRequestsEnabled ?? true
+        // The sheet opens with nothing switched on, same as Seerr's own modal — not every
+        // unrequested season preselected, so a quota-limited user doesn't accidentally
+        // submit more than they meant to.
+        if isSeries {
+            quota = await seerrRepo.seasonQuota()
+            seasonsFailed = resolvedDetail == nil
+        }
+        isLoadingDetail = false
     }
 
     /// iPhone, iPad and Mac: one column, in a NavigationStack so Cancel can live in the
@@ -237,7 +247,7 @@ struct SeerrRequestConfirmSheet: View {
                         Image(systemName: "star.fill")
                             .font(.system(.caption2))
                             .foregroundStyle(DT.Color.palette("f59e0b"))
-                        Text(String(format: "%.1f", rating))
+                        Text(rating.formatted(.number.precision(.fractionLength(1))))
                             .font(.system(.caption, design: .default, weight: .semibold))
                             .foregroundStyle(DT.Color.textPrimary)
                     }
@@ -337,10 +347,18 @@ struct SeerrRequestConfirmSheet: View {
                     .padding(.horizontal, DT.Spacing.pagePad)
             }
 
-            if rows.isEmpty {
-                // Detail fetch failed or returned no seasons — don't strand the button
-                // disabled with no picker visible to explain why (same fallback as before
-                // this view had per-season status at all).
+            if seasonsFailed {
+                HStack {
+                    Text("Couldn't load the seasons.")
+                        .font(.system(.caption2, design: .default, weight: .medium))
+                        .foregroundStyle(DT.Color.palette("F43F5E"))
+                    Spacer()
+                    Button("Try Again") { Task { await loadDetail() } }
+                        .font(.system(.caption, design: .default, weight: .medium))
+                        .foregroundStyle(DT.Color.accent)
+                }
+                .padding(.horizontal, DT.Spacing.pagePad)
+            } else if rows.isEmpty {
                 EmptyView()
             } else {
                 VStack(spacing: 0) {
@@ -370,11 +388,12 @@ struct SeerrRequestConfirmSheet: View {
         } label: {
             HStack(spacing: 12) {
                 seasonStatusCircle(row: row, chosen: chosen)
+                    .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(row.label)
                         .font(.system(.footnote, design: .default, weight: .medium))
                         .foregroundStyle(DT.Color.textPrimary)
-                    Text("\(row.episodeCount) episode\(row.episodeCount == 1 ? "" : "s")")
+                    Text("\(row.episodeCount) episodes")
                         .font(.system(.caption2))
                         .foregroundStyle(DT.Color.textSecondary)
                 }
@@ -392,6 +411,7 @@ struct SeerrRequestConfirmSheet: View {
         }
         .arcfinPlainButton(cornerRadius: DT.Radius.md)
         .disabled(!interactive)
+        .accessibilityAddTraits(chosen && partialRequestsEnabled ? .isSelected : [])
     }
 
     private func seasonStatusCircle(row: SeerrSeasonRow, chosen: Bool) -> some View {
@@ -422,11 +442,11 @@ struct SeerrRequestConfirmSheet: View {
 
     private func seasonBadgeLabel(_ badge: SeerrSeasonBadge) -> String {
         switch badge {
-        case .notRequested:        "Not Requested"
-        case .pending:              "Pending"
-        case .requested:            "Requested"
-        case .partiallyAvailable:   "Partial"
-        case .available:            "Available"
+        case .notRequested:        String(localized: "Not Requested")
+        case .pending:              String(localized: "Pending")
+        case .requested:            String(localized: "Requested")
+        case .partiallyAvailable:   String(localized: "Partial")
+        case .available:            String(localized: "Available")
         }
     }
 
@@ -452,11 +472,13 @@ struct SeerrRequestConfirmSheet: View {
 
     private var quotaBanner: some View {
         let text: String = {
-            if overLimit { return "Not enough season requests remaining for the whole series." }
-            if overQuota { return "That's more seasons than you have requests remaining for." }
-            if remaining <= 0 { return "No season requests remaining." }
-            return "\(remaining) season request\(remaining == 1 ? "" : "s") remaining"
-                + (quota?.days.map { $0 > 0 ? " (resets every \($0) day\($0 == 1 ? "" : "s"))" : "" } ?? "")
+            if overLimit { return String(localized: "Not enough season requests remaining for the whole series.") }
+            if overQuota { return String(localized: "That's more seasons than you have requests remaining for.") }
+            if remaining <= 0 { return String(localized: "No season requests remaining.") }
+            if let days = quota?.days, days > 0 {
+                return String(localized: "\(remaining) season requests remaining (resets every \(days) days)")
+            }
+            return String(localized: "\(remaining) season requests remaining")
         }()
         let isWarning = overLimit || overQuota || remaining <= 0
         return Text(text)
@@ -490,9 +512,12 @@ struct SeerrRequestConfirmSheet: View {
                 } catch is SeerrRepository.AlreadyRequested {
                     isSubmitting = false
                     alreadyRequested = true
+                } catch SeerrError.requestFailed(status: 403, body: _) {
+                    isSubmitting = false
+                    submitError = String(localized: "Your Seerr account can't request this. Ask your Seerr admin for request permission, or check your request limit.")
                 } catch {
                     isSubmitting = false
-                    submitError = "Couldn't send request: \(error.localizedDescription)"
+                    submitError = String(localized: "Couldn't send request: \(error.localizedDescription)")
                 }
             }
         } label: {

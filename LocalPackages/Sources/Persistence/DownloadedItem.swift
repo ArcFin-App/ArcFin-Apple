@@ -7,7 +7,8 @@ import SwiftData
 /// metadata are all saved to disk at download time so playback needs zero network access.
 @Model
 public final class DownloadedItem {
-    @Attribute(.unique) public var itemId: String
+    // Not unique: each profile keeps its own copy of a title. DownloadManager keeps one per profile.
+    public var itemId: String
 
     public var name: String
     public var typeRaw: String
@@ -29,7 +30,11 @@ public final class DownloadedItem {
     public var serverBaseURL: String
     public var userId: String
 
-    // Local files — filenames only, resolved against DownloadStore.directory(for: itemId) at read time.
+    /// The folder under Downloads holding the files, when it isn't the itemId itself: another
+    /// profile's copy of the same title was already there. nil on downloads from before this was kept.
+    public var folderName: String?
+
+    // Local files — filenames only, resolved against DownloadStore.directory(for: self) at read time.
     public var videoFileName: String
     public var posterFileName: String?
     public var backdropFileName: String?
@@ -153,5 +158,98 @@ public enum DownloadStore {
 
     public static func deleteDirectory(for itemId: String) {
         try? FileManager.default.removeItem(at: directory(for: itemId))
+    }
+
+    /// Holds the folders of a second profile's copy of a title, one folder per profile.
+    public static let profilesFolderName = "Profiles"
+
+    /// A download's folder under Downloads: the itemId, as every download from before profiles
+    /// kept their own had, unless another profile's copy already has that folder.
+    public static func folderName(for itemId: String, profileId: String, itemFolderTaken: Bool) -> String {
+        itemFolderTaken ? "\(profilesFolderName)/\(profileId)/\(itemId)" : itemId
+    }
+
+    public static func directory(forFolder folderName: String) -> URL {
+        rootDirectory().appendingPathComponent(folderName, isDirectory: true)
+    }
+
+    public static func directory(for item: DownloadedItem) -> URL {
+        directory(forFolder: item.storedFolderName)
+    }
+
+    /// The folder name of a directory under Downloads, as `folderName` gives it.
+    public static func folderName(of directory: URL) -> String {
+        let root = rootDirectory().standardizedFileURL.pathComponents
+        let parts = directory.standardizedFileURL.pathComponents
+        if parts.count > root.count, Array(parts.prefix(root.count)) == root {
+            return parts.dropFirst(root.count).joined(separator: "/")
+        }
+        // A path saved under another container path: read from its end.
+        let tail = Array(parts.suffix(3))
+        return tail.count == 3 && tail[0] == profilesFolderName ? tail.joined(separator: "/") : directory.lastPathComponent
+    }
+
+    public static func ensureDirectory(forFolder folderName: String) throws -> URL {
+        let dir = directory(forFolder: folderName)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        var resourceValues = URLResourceValues()
+        resourceValues.isExcludedFromBackup = true
+        var mutableDir = dir
+        try? mutableDir.setResourceValues(resourceValues)
+        return dir
+    }
+
+    public static func deleteDirectory(forFolder folderName: String) {
+        try? FileManager.default.removeItem(at: directory(forFolder: folderName))
+    }
+
+    /// The folders, by `folderName`, that nothing points to any more: neither a kept folder nor
+    /// one for a title still under way (which can be in either place).
+    public static func leftoverFolders(present: [String], keeping kept: Set<String>, underway: Set<String>) -> [String] {
+        present.filter { folder in
+            !kept.contains(folder) && !underway.contains(folder.split(separator: "/").last.map(String.init) ?? folder)
+        }
+    }
+}
+
+extension DownloadedItem {
+    public var storedFolderName: String { folderName ?? itemId }
+
+    public var profile: DownloadProfile {
+        DownloadProfile(id: serverId, userId: userId, serverBaseURL: serverBaseURL)
+    }
+
+    public func belongs(to profile: DownloadProfile?) -> Bool {
+        profile?.owns(self.profile) ?? false
+    }
+
+    /// Names this profile's copy in lists kept outside SwiftData, like the downloads waiting
+    /// to be removed once watched.
+    public var profileKey: String { "\(serverId)|\(userId)|\(itemId)" }
+
+    /// Keys from before each profile kept its own downloads are a bare item id, naming the one
+    /// download of it there was then, which is still in the item's own folder.
+    public func matches(profileKey key: String) -> Bool {
+        key.contains("|") ? key == profileKey : (key == itemId && folderName == nil)
+    }
+}
+
+/// Who a download is for: the saved profile (its id is what DownloadedItem.serverId holds), and
+/// the Jellyfin user and server behind it.
+public struct DownloadProfile: Hashable, Sendable {
+    public let id: String
+    public let userId: String
+    public let serverBaseURL: String
+
+    public init(id: String, userId: String, serverBaseURL: String) {
+        self.id = id
+        self.userId = userId
+        self.serverBaseURL = serverBaseURL
+    }
+
+    /// The same profile, or the same user on the same server signed in again as a new profile
+    /// (signing out keeps the downloads, and a new sign-in gets a new profile id).
+    public func owns(_ other: DownloadProfile) -> Bool {
+        other.userId == userId && (other.id == id || other.serverBaseURL == serverBaseURL)
     }
 }

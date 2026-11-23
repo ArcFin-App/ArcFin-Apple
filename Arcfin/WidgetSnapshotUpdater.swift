@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 #if !os(tvOS)
+import AuthCore
 import Foundation
 import JellyfinAPI
 import LiveActivityKit
@@ -27,6 +28,18 @@ enum WidgetSnapshotUpdater {
         artworkURL: (MediaItem) -> URL?,
         posterURL: (MediaItem) -> URL?
     ) async {
+        // Like Siri and Spotlight, the widgets never show a library an app-lock PIN protects.
+        guard IntentSession.credential() != nil else {
+            if WidgetSnapshotStore.load() != nil { clear() }
+            return
+        }
+        let profile = AppServices.authManager.state.credential?.id
+        // Home hasn't loaded yet (cold launch, offline): keep the last titles rather than empty
+        // the widgets. Sign-out and a profile switch clear the snapshot through clear().
+        if items.isEmpty, recentlyAdded.isEmpty, let previous = WidgetSnapshotStore.load(),
+           !previous.items.isEmpty || !(previous.recentlyAdded ?? []).isEmpty {
+            return
+        }
         var keep = Set<String>()
         var entries: [WidgetSnapshot.Item] = []
         for item in items.prefix(maxItems) {
@@ -41,10 +54,30 @@ enum WidgetSnapshotUpdater {
             added.append(entry(for: item, fileName: fileName))
         }
 
+        guard AppServices.authManager.state.credential?.id == profile else { return }
         let previous = WidgetSnapshotStore.load()
         guard entries != previous?.items || added != (previous?.recentlyAdded ?? []) else { return }
         WidgetSnapshotStore.save(WidgetSnapshot(items: entries, recentlyAdded: added))
         WidgetSnapshotStore.prunePosters(keeping: keep)
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// From the background check: moves the progress of titles already on the widgets, which
+    /// watching more of them (here or elsewhere) changes without Home being open.
+    static func refreshProgress(credential: ServerCredential, authHeader: String) async {
+        guard var snapshot = WidgetSnapshotStore.load(), !snapshot.items.isEmpty,
+              let resumable = try? await JellyfinMediaClient().getContinueWatching(credential: credential, authHeader: authHeader)
+        else { return }
+        let progress = Dictionary(resumable.map { ($0.id, min(max(($0.userData?.playedPercentage ?? 0) / 100, 0), 1)) },
+                                  uniquingKeysWith: { first, _ in first })
+        var changed = false
+        for index in snapshot.items.indices {
+            guard let value = progress[snapshot.items[index].id], value != snapshot.items[index].progress else { continue }
+            snapshot.items[index].progress = value
+            changed = true
+        }
+        guard changed else { return }
+        WidgetSnapshotStore.save(WidgetSnapshot(items: snapshot.items, recentlyAdded: snapshot.recentlyAdded ?? []))
         WidgetCenter.shared.reloadAllTimelines()
     }
 

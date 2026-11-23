@@ -231,8 +231,11 @@ private struct NearbySetupHosting: ViewModifier {
                 if PlatformMetrics.hostsNearbySetup { host.start(authManager: authManager) }
             }
             .onDisappear { host.stop() }
-            .appSheet(isPresented: Binding(get: { host.phase != .idle },
-                                           set: { if !$0 { host.cancelSession() } })) {
+            .appSheet(isPresented: Binding(get: { host.phase != .idle }, set: { isShown in
+                // cancelSession leaves a failure in place, so the sheet came straight back.
+                guard !isShown else { return }
+                if case .failed = host.phase { host.dismissFailure() } else { host.cancelSession() }
+            })) {
                 NearbySetupHostView(host: host)
             }
             .onChange(of: host.completedSetups) { onAdded() }
@@ -521,7 +524,7 @@ final class NearbySetupGuide {
         var withPIN: Set<UUID> = []
         let active = authManager.state.credential?.id
         for profile in authManager.profiles where profile.id != active {
-            if await authManager.pin(for: profile.id) != nil { withPIN.insert(profile.id) }
+            if await authManager.storedPIN(for: profile.id) != .none { withPIN.insert(profile.id) }
         }
         locked = withPIN
         let free = authManager.profiles.filter { !(onTV?.contains($0.userID) ?? false) && !withPIN.contains($0.id) }
@@ -762,8 +765,6 @@ struct NearbySetupCard: View {
             }
             .padding(.horizontal, 16)
             .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
-            Button("Not Now") { guide.notNow() }
-                .foregroundStyle(DT.Color.textSecondary)
             Button("Not Now") { guide.notNow() }
                 .foregroundStyle(DT.Color.textSecondary)
         case .connecting(let name):

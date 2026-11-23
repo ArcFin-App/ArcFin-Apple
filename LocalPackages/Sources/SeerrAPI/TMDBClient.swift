@@ -163,6 +163,7 @@ public struct TMDBClient: Sendable {
         req.timeoutInterval = 15
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         if usesBearerToken { req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization") }
+        await withCheckedContinuation { PathWait(continuation: $0).start(timeoutSeconds: 6) }
         let (data, response) = try await session.data(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
             struct Message: Decodable { let statusMessage: String? }

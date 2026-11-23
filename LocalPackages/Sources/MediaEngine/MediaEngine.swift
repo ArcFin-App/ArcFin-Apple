@@ -179,6 +179,76 @@ private final class SeekableRangeWait: @unchecked Sendable {
     }
 }
 
+/// Waits for an AVPlayerItem to leave `.unknown`, resuming exactly once: on ready, on failure,
+/// after a timeout, or when cancelled. The status is observed with `.initial`, so a change
+/// between creating the item and observing it can't be missed, and the lock means a later
+/// ready → failed change can't resume the continuation a second time.
+private final class ItemReadyWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private var continuation: CheckedContinuation<Void, Error>?
+    private var observation: NSKeyValueObservation?
+    private var timeoutTask: Task<Void, Never>?
+
+    func start(item: AVPlayerItem, timeoutSeconds: Double, continuation: CheckedContinuation<Void, Error>) {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            continuation.resume(throwing: CancellationError())
+            return
+        }
+        self.continuation = continuation
+        lock.unlock()
+        let observation = item.observe(\.status, options: [.initial, .new]) { [weak self] item, _ in
+            switch item.status {
+            case .readyToPlay: self?.finish(.success(()))
+            case .failed: self?.finish(.failure(item.error ?? URLError(.cannotLoadFromNetwork)))
+            default: break
+            }
+        }
+        let timeoutTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            guard !Task.isCancelled else { return }
+            self?.finish(.failure(URLError(.timedOut)))
+        }
+        lock.lock()
+        // The initial callback can already have finished the wait.
+        if finished {
+            lock.unlock()
+            observation.invalidate()
+            timeoutTask.cancel()
+        } else {
+            self.observation = observation
+            self.timeoutTask = timeoutTask
+            lock.unlock()
+        }
+    }
+
+    /// The item was replaced (another load, or stop) or the waiting task was cancelled.
+    func cancel() {
+        finish(.failure(CancellationError()))
+    }
+
+    private func finish(_ result: Result<Void, Error>) {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            return
+        }
+        finished = true
+        let continuation = continuation
+        let observation = observation
+        let timeoutTask = timeoutTask
+        self.continuation = nil
+        self.observation = nil
+        self.timeoutTask = nil
+        lock.unlock()
+        observation?.invalidate()
+        timeoutTask?.cancel()
+        continuation?.resume(with: result)
+    }
+}
+
 // MARK: - AVFoundation adapter (primary until MPV wrapper lands)
 
 @MainActor
@@ -211,12 +281,14 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     @ObservationIgnored private var bufferObservation: NSKeyValueObservation?
     @ObservationIgnored private var endObserver: NSObjectProtocol?
     #if !os(macOS)
-    @ObservationIgnored private var interruptionObserver: NSObjectProtocol?
+    /// Removed by stop() and deinit: a block-based observer stays registered until removed.
+    @ObservationIgnored nonisolated(unsafe) private var interruptionObserver: NSObjectProtocol?
     /// Only true when handleInterruption itself paused playback — distinguishes that from
     /// the user having already paused before the interruption began, so .ended doesn't
     /// resume something the user deliberately stopped.
     @ObservationIgnored private var pausedByInterruption = false
     #endif
+    @ObservationIgnored private var readyWait: ItemReadyWait?
     @ObservationIgnored private var audioGroup: AVMediaSelectionGroup?
     @ObservationIgnored private var subtitleGroup: AVMediaSelectionGroup?
 
@@ -226,6 +298,19 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         // overriding an explicit setAudioTrack/setSubtitleTrack call the user just made.
         player.appliesMediaSelectionCriteriaAutomatically = false
         #if !os(macOS)
+        observeInterruptions()
+        #endif
+    }
+
+    deinit {
+        #if !os(macOS)
+        if let interruptionObserver { NotificationCenter.default.removeObserver(interruptionObserver) }
+        #endif
+    }
+
+    #if !os(macOS)
+    private func observeInterruptions() {
+        guard interruptionObserver == nil else { return }
         // `status` here is a plain flag this class owns, only ever set by its own play()/
         // pause() calls — it doesn't track player.rate or timeControlStatus. System UI that
         // briefly takes audio focus (Notification Center / Control Center appearing over the
@@ -251,10 +336,8 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
                 self?.handleInterruption(type: type, optionsValue: optionsValue)
             }
         }
-        #endif
     }
 
-    #if !os(macOS)
     private func handleInterruption(type: AVAudioSession.InterruptionType, optionsValue: UInt?) {
         switch type {
         case .began:
@@ -276,13 +359,19 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     #endif
 
     public func load(url: URL, startPositionTicks: Int64) async throws {
+        // The item an earlier load is still waiting on is about to be replaced and would
+        // never change status again.
+        readyWait?.cancel()
         teardownObservers()
+        #if !os(macOS)
+        observeInterruptions()
+        #endif
         status = .loading
         isBuffering = true
         positionTicks = 0
         durationTicks = 0
 
-        let headers = CustomHTTPHeaders.current
+        let headers = CustomHTTPHeaders.headers(for: url)
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
         // Stereo films get spatial audio too when the listener has Spatialize Stereo on.
@@ -333,20 +422,18 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         }
     }
 
+    /// A server that accepts the connection but never sends anything would otherwise hold the
+    /// load forever; a minute leaves room for a slow server starting a conversion.
     private func waitUntilReady(item: AVPlayerItem) async throws {
-        if item.status == .readyToPlay { return }
-        if item.status == .failed { throw item.error ?? URLError(.cannotLoadFromNetwork) }
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            nonisolated(unsafe) var observation: NSKeyValueObservation?
-            observation = item.observe(\.status, options: [.new]) { item, _ in
-                guard item.status != .unknown else { return }
-                observation?.invalidate()
-                if item.status == .failed {
-                    continuation.resume(throwing: item.error ?? URLError(.cannotLoadFromNetwork))
-                } else {
-                    continuation.resume()
-                }
+        let wait = ItemReadyWait()
+        readyWait = wait
+        defer { if readyWait === wait { readyWait = nil } }
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                wait.start(item: item, timeoutSeconds: 60, continuation: continuation)
             }
+        } onCancel: {
+            wait.cancel()
         }
     }
 
@@ -399,7 +486,12 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
     }
 
     public func stop() async {
+        readyWait?.cancel()
         teardownObservers()
+        #if !os(macOS)
+        if let interruptionObserver { NotificationCenter.default.removeObserver(interruptionObserver) }
+        interruptionObserver = nil
+        #endif
         player.pause()
         player.replaceCurrentItem(with: nil)
         status = .idle
@@ -473,9 +565,7 @@ public final class AVFoundationPlayer: MediaPlayerProtocol, @unchecked Sendable 
         endObserver = nil
         // interruptionObserver is deliberately not torn down here — teardownObservers()
         // runs at the top of every load()/reload(), not just final stop(), and an
-        // interruption can legitimately happen mid-reload. It lives for this player
-        // instance's whole lifetime instead; NotificationCenter auto-unregisters a stored
-        // observer token when it's deallocated, so no explicit deinit is needed for it.
+        // interruption can legitimately happen mid-reload. stop() and deinit remove it.
     }
 }
 

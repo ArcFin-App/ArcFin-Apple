@@ -15,7 +15,11 @@ final class AdminUsersModel {
     let admin = JellyfinAdminClient()
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         do {
             users = try await admin.users(credential: access.credential, authHeader: access.header)
                 .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
@@ -273,6 +277,7 @@ private struct AdminUserDetailView: View {
                           || ServerEditGuard.changedKeys(from: originalPolicy, to: policy).isEmpty)
             }
         }
+        .adminDiscardChangesGuard(!ServerEditGuard.changedKeys(from: originalPolicy, to: policy).isEmpty)
         .task { await load() }
         .untestedServerConfirmation(isPresented: $confirmUntested, status: ServerCompatibility.status(version)) { save() }
         .alert("Not All Saved", isPresented: Binding(get: { !notKept.isEmpty }, set: { if !$0 { notKept = [] } })) {
@@ -324,7 +329,11 @@ private struct AdminUserDetailView: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            model.actionError = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         version = await ServerVersions.version(for: access.credential)
         async let policyData = model.admin.policy(userId: user.id, credential: access.credential, authHeader: access.header)
         async let folders = model.admin.libraries(credential: access.credential, authHeader: access.header)
@@ -379,9 +388,13 @@ struct AdminDevicesView: View {
     @State private var removing: JellyfinDevice?
     @State private var error: String?
 
+    // Signing out the device Arcfin runs on would revoke the token it's using.
+    private let ownDeviceID = UserDefaults.standard.string(forKey: "arcfin.deviceId")
+
     var body: some View {
         List {
             ForEach(devices) { device in
+                let isThisDevice = device.id == ownDeviceID
                 HStack(spacing: 12) {
                     Image(systemName: icon(device))
                         .font(.system(.title3))
@@ -396,12 +409,22 @@ struct AdminDevicesView: View {
                             .font(.system(.caption))
                             .foregroundStyle(DT.Color.textSecondary)
                     }
+                    if isThisDevice {
+                        Spacer()
+                        Text("This Device")
+                            .font(.system(.caption, weight: .semibold))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
                 }
                 .swipeActions {
-                    Button("Sign Out", role: .destructive) { removing = device }
+                    if !isThisDevice {
+                        Button("Sign Out", role: .destructive) { removing = device }
+                    }
                 }
                 .contextMenu {
-                    Button("Sign Out Device", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { removing = device }
+                    if !isThisDevice {
+                        Button("Sign Out Device", systemImage: "rectangle.portrait.and.arrow.right", role: .destructive) { removing = device }
+                    }
                 }
             }
         }
@@ -435,7 +458,11 @@ struct AdminDevicesView: View {
     }
 
     private func load() async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            error = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         if let fetched = try? await JellyfinAdminClient().devices(credential: access.credential, authHeader: access.header) {
             devices = fetched.sorted { ($0.lastActivity ?? .distantPast) > ($1.lastActivity ?? .distantPast) }
         } else {

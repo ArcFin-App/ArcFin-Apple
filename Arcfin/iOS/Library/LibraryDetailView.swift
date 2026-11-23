@@ -44,23 +44,21 @@ struct LibraryDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .screenBackground()
-            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive {
+            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive, !model.isSearching, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "Empty Playlist",
                     description: "Add movies, shows and episodes, or long-press any title and choose Add to Playlist.",
                     buttonTitle: "Add Titles"
                 ) { model.showAddTitles = true }
-            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive {
+            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive, !model.isSearching, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "No Playlists",
                     description: "Make a playlist, then add movies, shows and episodes to it.",
                     buttonTitle: "New Playlist"
                 ) { model.showNewPlaylist = true }
             } else if model.items.isEmpty {
-                ContentUnavailableView(model.library.name,
-                                      systemImage: model.library.collectionType.systemIcon,
-                                      description: Text("Nothing found in this library."))
-                .screenBackground()
+                LibraryEmptyResults(model: model, retry: reload)
+                    .screenBackground()
             } else {
                 ScrollViewReader { proxy in
                     ScrollView(showsIndicators: false) {
@@ -85,6 +83,10 @@ struct LibraryDetailView: View {
                                 ProgressView()
                                     .frame(maxWidth: .infinity)
                                     .padding()
+                            } else if model.loadMoreFailed {
+                                Button("Try Again") { Task { await model.loadMore(authManager: authManager) } }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
                             }
                         }
                         .padding(DT.Spacing.pagePad)
@@ -92,6 +94,8 @@ struct LibraryDetailView: View {
                         .accessibilityIdentifier("library.grid")
                     }
                     .scrollPosition(id: $scrolledItemID)
+                    // New titles, or watched state changed on another device.
+                    .refreshable { await model.reload(authManager: authManager, mediaRepo: mediaRepo) }
                     .modifier(PlaylistPageStyle(isPlaylist: model.playlist != nil, tint: model.playlistTint))
                     .overlay {
                         if model.showsLetterIndex {
@@ -115,7 +119,7 @@ struct LibraryDetailView: View {
         .toolbarBackground(model.playlist != nil ? .hidden : .automatic, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
-            LibraryDetailToolbar(model: model, gridDensity: $gridDensity, showFilterSheet: $showFilterSheet) {
+            LibraryDetailToolbar(model: model, authManager: authManager, gridDensity: $gridDensity, showFilterSheet: $showFilterSheet) {
                 Task { await model.pickRandom(authManager: authManager) }
             }
         }
@@ -129,11 +133,24 @@ struct LibraryDetailView: View {
             .presentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
-        .onChange(of: model.selectedGenres) { _, _ in reload() }
-        .onChange(of: model.selectedYears) { _, _ in reload() }
-        .onChange(of: model.extraFilters) { _, _ in reload() }
-        .onChange(of: model.watchedFilter) { _, _ in reload() }
-        .onChange(of: model.favoritesOnly) { _, _ in reload() }
+        .confirmationDialog(
+            Text("Remove \(model.pendingGroupRemoval?.count ?? 0) Episodes from Playlist"),
+            isPresented: Binding(get: { model.pendingGroupRemoval != nil },
+                                 set: { if !$0 { model.pendingGroupRemoval = nil } }),
+            titleVisibility: .visible,
+            presenting: model.pendingGroupRemoval
+        ) { episodes in
+            Button("Remove", role: .destructive) {
+                model.removeFromPlaylist(episodes, authManager: authManager, mediaRepo: mediaRepo)
+            }
+            Button("Cancel", role: .cancel) {}
+        }
+        .onChange(of: model.selectedGenres) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.selectedYears) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.extraFilters) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.watchedFilter) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .onChange(of: model.favoritesOnly) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .modifier(LibrarySearchModifier(model: model, authManager: authManager, mediaRepo: mediaRepo))
         .quickPlayback($quickPlayRequest, trailer: $trailerLaunchItem)
         .fullScreenCover(item: $model.playlistPlayback, onDismiss: {
             PlayQueue.clear()
@@ -242,7 +259,7 @@ struct LibraryDetailView: View {
         .menuIndicator(.hidden)
         .buttonStyle(PressableButtonStyle())
         .contextMenu {
-            Button(role: .destructive) { model.removeFromPlaylist(episodes, authManager: authManager, mediaRepo: mediaRepo) } label: {
+            Button(role: .destructive) { model.pendingGroupRemoval = episodes } label: {
                 Label("Remove \(episodes.count) Episodes from Playlist", systemImage: "minus.circle")
             }
         }
@@ -264,6 +281,6 @@ struct LibraryDetailView: View {
         Button { trailerLaunchItem = item } label: {
             Label("Play Trailer", systemImage: "play.rectangle")
         }
-        LibraryQuickLookMenu(item: item)
+        LibraryQuickLookMenu(item: item) { model.replace($0) }
     }
 }

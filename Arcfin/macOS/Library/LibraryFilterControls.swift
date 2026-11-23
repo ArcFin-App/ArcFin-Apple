@@ -6,7 +6,7 @@ extension LibraryFilterList {
     @ViewBuilder
     var minimumScoreControls: some View {
         let score = extraFilters.minRating ?? 0
-        LabeledContent("Score", value: score > 0 ? String(format: "%.1f+", score) : "Any")
+        LabeledContent("Score", value: score > 0 ? "\(score.ratingText)+" : String(localized: "Any"))
         Slider(
             value: Binding(
                 get: { extraFilters.minRating ?? 0 },
@@ -15,7 +15,7 @@ extension LibraryFilterList {
             in: 0...9, step: 0.5
         )
         .accessibilityLabel("Minimum score")
-        .accessibilityValue(score > 0 ? String(format: "%.1f or higher", score) : "Any")
+        .accessibilityValue(score > 0 ? Text("\(score.ratingText) or higher") : Text("Any"))
     }
 
     @ViewBuilder
@@ -35,7 +35,7 @@ extension LibraryFilterList {
 
 /// A filter's choices, expanding in place.
 struct FilterGroup<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: String
     @ViewBuilder let content: () -> Content
 

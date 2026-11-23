@@ -6,10 +6,21 @@ import AuthCore
 /// Extra headers sent to the Jellyfin server, for one behind an access gateway such as
 /// Cloudflare Access or Pangolin.
 struct CustomHeadersView: View {
-    @State private var model = CustomHeadersModel()
+    @State private var model: CustomHeadersModel
+
+    /// `serverAddress`: the address being signed in to; without one, the profile in use's server.
+    init(serverAddress: String? = nil) {
+        _model = State(initialValue: CustomHeadersModel(serverAddress: serverAddress))
+    }
 
     var body: some View {
         List {
+            if model.needsAddress {
+                Text("Enter your server's address first. These headers are only sent to that server.")
+                    .font(.footnote)
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+
             Section {
                 ForEach($model.headers) { $header in
                     VStack(alignment: .leading, spacing: 6) {
@@ -17,10 +28,13 @@ struct CustomHeadersView: View {
                             .font(.system(.subheadline, design: .monospaced, weight: .semibold))
                         SecureField("Value", text: $header.value)
                             .font(.system(.subheadline, design: .monospaced))
+                        // No swipe to delete on Apple TV, so each has its own button.
+                        Button("Remove Header", systemImage: "minus.circle", role: .destructive) {
+                            model.remove(header.id)
+                        }
                     }
                     .padding(.vertical, 4)
                 }
-                .onDelete { model.headers.remove(atOffsets: $0); model.save() }
 
                 Button {
                     model.headers.append(.init(name: "", value: ""))
@@ -34,7 +48,7 @@ struct CustomHeadersView: View {
             }
 
             if let errorMessage = model.errorMessage {
-                Text(errorMessage).font(.footnote).foregroundStyle(.red)
+                Text(errorMessage).font(.footnote).foregroundStyle(DT.Color.palette("F43F5E"))
             }
         }
         .arcfinListStyle()

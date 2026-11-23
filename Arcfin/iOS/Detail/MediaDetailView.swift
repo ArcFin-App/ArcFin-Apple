@@ -19,7 +19,6 @@ struct MediaDetailView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(AuthManager.self) private var authManager
     @Environment(DownloadManager.self) private var downloadManager
-    @Environment(\.modelContext) private var modelContext
 
     @State private var model: MediaDetailModel
     @State private var showSubtitleSearch = false
@@ -85,7 +84,8 @@ struct MediaDetailView: View {
         .userActivity(ArcfinActivity.viewTitle) { activity in
             activity.title = item.name
             activity.isEligibleForHandoff = true
-            activity.isEligibleForSearch = true
+            // Kept out of Spotlight for a profile with an app-lock PIN, as its titles are.
+            activity.isEligibleForSearch = IntentSession.credential() != nil
             activity.userInfo = ["itemID": item.id]
             activity.webpageURL = shareURL
             activity.appEntityIdentifier = EntityIdentifier(for: MediaEntity.self, identifier: item.id)
@@ -158,12 +158,17 @@ struct MediaDetailView: View {
             "This is downloaded — play the offline copy or stream from the server?",
             isPresented: Binding(get: { model.pendingPlaybackChoice != nil }, set: { if !$0 { model.pendingPlaybackChoice = nil } })
         ) {
-            Button("Play Downloaded") { model.playDownloadedCopy(modelContext: modelContext) }
+            Button("Play Downloaded") { model.playDownloadedCopy(downloadManager: downloadManager) }
             Button("Stream Online") { model.streamInstead() }
             Button("Cancel", role: .cancel) { model.pendingPlaybackChoice = nil }
         }
-        .fullScreenCover(item: $model.offlinePlaybackTarget, onDismiss: { Task { await model.refreshAfterPlayback(authManager: authManager) } }) { downloaded in
-            OfflinePlayerView(downloadedItem: downloaded, startPositionOverride: model.offlineStartOverride)
+        .fullScreenCover(item: $model.offlinePlaybackTarget.playerCover, onDismiss: { Task { await model.refreshAfterPlayback(authManager: authManager) } }) { playback in
+            let downloaded = playback.item
+            PlayerView(download: downloaded, startPositionOverride: model.offlineStartOverride) { next in
+                PlayerView.keepOrientationOnNextDisappear = true
+                model.playDownloaded(next)
+            }
+            .id(downloaded.itemId)
         }
         .alert("Download Failed", isPresented: Binding(
             get: { model.seasonDownloadErrorMessage != nil }, set: { if !$0 { model.seasonDownloadErrorMessage = nil } }
@@ -195,9 +200,7 @@ struct MediaDetailView: View {
         // it would show the new title's name over the old one's details: start it over.
         .task(id: item.id) {
             if model.item.id != item.id { model = MediaDetailModel(item: item) }
-            await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: downloadManager,
-                             trailers: trailersEnabled ? .alongside(youTubeFallback: youtubeTrailersEnabled) : .skipped,
-                             seriesOpensOnSeasonInProgress: true)
+            await loadPage()
         }
         // Apart from load(): the first lookup reads every collection and playlist.
         .task(id: item.id) { await model.loadContainingSets(authManager: authManager) }
@@ -205,6 +208,12 @@ struct MediaDetailView: View {
         .onChange(of: model.selectedSeason) { _, season in
             model.showSeason(season, authManager: authManager)
         }
+    }
+
+    private func loadPage() async {
+        await model.load(authManager: authManager, seerrRepo: seerrRepo, downloadManager: downloadManager,
+                         trailers: trailersEnabled ? .alongside(youTubeFallback: youtubeTrailersEnabled) : .skipped,
+                         seriesOpensOnSeasonInProgress: true)
     }
 
     private func playerDismissed() {
@@ -226,6 +235,9 @@ struct MediaDetailView: View {
     @ViewBuilder
     private var detailContent: some View {
         DetailPlayButton(model: model)
+        if model.detailFailed {
+            DetailLoadFailedRow { Task { await loadPage() } }
+        }
         if model.hasPlayableTrailer(trailersEnabled: trailersEnabled, youTubeTrailersEnabled: youtubeTrailersEnabled) {
             DetailTrailerButton(model: model) { youTubeTrailer = $0 }
         }
@@ -268,10 +280,10 @@ struct MediaDetailView: View {
                 model.seerrRelatedSubtitle($0, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
             }, onSelect: openSeerrRelated)
         } else if !model.similarItems.isEmpty {
-            DetailTitleShelf(title: "More Like This", items: model.similarItems) { rec, poster in titleLink(rec, poster) }
+            DetailTitleShelf(title: Text("More Like This"), items: model.similarItems) { rec, poster in titleLink(rec, poster) }
         }
         if let jellyfinRecommended = model.jellyfinRecommended, !jellyfinRecommended.items.isEmpty {
-            DetailTitleShelf(title: jellyfinRecommended.title, items: jellyfinRecommended.items) { rec, poster in titleLink(rec, poster) }
+            DetailTitleShelf(title: Text(verbatim: jellyfinRecommended.title), items: jellyfinRecommended.items) { rec, poster in titleLink(rec, poster) }
         }
         if !model.containingCollections.isEmpty {
             DetailSetShelf(title: model.containingCollections.count == 1 ? "Collection" : "Collections", sets: model.containingCollections) { openedCollection = $0 }

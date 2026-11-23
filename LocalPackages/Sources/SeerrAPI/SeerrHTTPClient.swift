@@ -38,7 +38,7 @@ public enum SeerrAuthMethod: String, Sendable, CaseIterable {
 /// Races a one-shot NWPathMonitor read against a timeout — same lock-guarded resume-once
 /// pattern as MediaRepository's/JellyfinAuthClient's PathWait (duplicated rather than shared
 /// across the package boundary).
-private final class PathWait: @unchecked Sendable {
+final class PathWait: @unchecked Sendable {
     private let lock = NSLock()
     private var finished = false
     private let continuation: CheckedContinuation<Void, Never>
@@ -93,10 +93,11 @@ public actor SeerrHTTPClient {
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
     private var loginTask: Task<Void, Error>?
-    /// Watchlist titles' details by "tv:123", kept a while: the watchlist asks Seerr for each
-    /// title one by one, and it's reloaded by Home, Discover and the Watchlist screen alike.
-    private var watchlistDetails: [String: (item: SeerrItem, fetched: Date)] = [:]
-    private static let watchlistDetailLifetime: TimeInterval = 600
+    /// Watchlist and request titles' details by "tv:123", kept a while: both lists ask Seerr
+    /// for each title one by one, and they're reloaded by Home, Discover, Requests and after
+    /// every request, approval or decline.
+    private var titleDetails: [String: (item: SeerrItem, fetched: Date)] = [:]
+    private static let titleDetailLifetime: TimeInterval = 600
     private let session: URLSession
     // UserDefaults key used to persist a per-URL auth-failure cooldown across cold launches.
     private let authFailedKey: String
@@ -385,49 +386,88 @@ public actor SeerrHTTPClient {
             page += 1
         }
 
-        if refresh { watchlistDetails = [:] }
+        // A failed lookup on a pull to refresh falls back to what was shown before.
+        let previous = titleDetails
+        if refresh { titleDetails = [:] }
         let now = Date()
         var items = [SeerrItem?](repeating: nil, count: raw.count)
         var missing: [(index: Int, key: String, entry: SeerrWatchlistItemResponse)] = []
         for (index, r) in raw.enumerated() {
             let key = "\(r.mediaType ?? "movie"):\(r.tmdbId ?? -1)"
-            if let cached = watchlistDetails[key], now.timeIntervalSince(cached.fetched) < Self.watchlistDetailLifetime {
+            if let cached = titleDetails[key], now.timeIntervalSince(cached.fetched) < Self.titleDetailLifetime {
                 items[index] = cached.item
             } else {
                 missing.append((index, key, r))
             }
         }
-        var fetched: [(Int, String, SeerrItem?)] = []
+        // The same small window as getRequests: a watchlist runs to hundreds of titles, and
+        // firing every lookup at once made the tail of the burst time out.
+        let maxConcurrentDetailFetches = 4
         await withTaskGroup(of: (Int, String, SeerrItem?).self) { group in
-            for (index, key, r) in missing {
+            var next = 0
+            func addFetch() {
+                let (index, key, r) = missing[next]
+                next += 1
                 group.addTask {
-                    let detail = try? await self.mediaDetail(tmdbId: r.tmdbId, mediaType: r.mediaType)
-                    return (index, key, detail)
+                    do {
+                        return (index, key, try await self.mediaDetail(tmdbId: r.tmdbId, mediaType: r.mediaType))
+                    } catch {
+                        let nsError = error as NSError
+                        Telemetry.logger(category: "SeerrHTTPClient").error(
+                            "watchlist: detail fetch failed for tmdbId=\(r.tmdbId ?? -1, privacy: .public) mediaType=\(r.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public)"
+                        )
+                        return (index, key, nil)
+                    }
                 }
             }
-            for await result in group { fetched.append(result) }
+            while next < min(maxConcurrentDetailFetches, missing.count) { addFetch() }
+            for await (index, key, detail) in group {
+                if let detail {
+                    titleDetails[key] = (detail, now)
+                    items[index] = detail
+                } else {
+                    // Kept in the list, so it doesn't vanish from the watchlist and its bookmarks
+                    // until the next load.
+                    let r = raw[index]
+                    items[index] = previous[key]?.item ?? SeerrItem.watchlistPlaceholder(tmdbId: r.tmdbId, mediaType: r.mediaType)
+                }
+                if next < missing.count { addFetch() }
+            }
         }
-        for (index, key, item) in fetched {
-            items[index] = item
-            if let item { watchlistDetails[key] = (item, now) }
-        }
+        // A cancelled load would otherwise come back as a list of placeholders.
+        try Task.checkCancellation()
         return items.compactMap { $0 }
     }
 
     // MARK: - Requests
 
-    public func getRequests(filter: String = "all", skip: Int = 0, take: Int = 40) async throws -> [SeerrRequestItem] {
+    /// Every request, newest first, up to `limit`: someone who manages requests needs the
+    /// older pending ones too, not only the newest page.
+    public func getRequests(filter: String = "all", limit: Int = 1000) async throws -> [SeerrRequestItem] {
         try await ensureAuthenticated()
-        var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/request"),
-                                  resolvingAgainstBaseURL: false)!
-        comps.queryItems = [
-            URLQueryItem(name: "filter", value: filter),
-            URLQueryItem(name: "skip", value: "\(skip)"),
-            URLQueryItem(name: "take", value: "\(take)"),
-        ]
-        let data = try await fetch(comps.url!)
-        struct Page: Decodable { let results: [SeerrRequestResponse] }
-        let raw = try JSONDecoder().decode(Page.self, from: data).results
+        struct Page: Decodable {
+            struct Info: Decodable { let results: Int? }
+            let pageInfo: Info?
+            let results: [SeerrRequestResponse]
+        }
+        let take = 100
+        var collected: [SeerrRequestResponse] = []
+        while collected.count < limit {
+            var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/request"),
+                                      resolvingAgainstBaseURL: false)!
+            comps.queryItems = [
+                URLQueryItem(name: "filter", value: filter),
+                URLQueryItem(name: "skip", value: "\(collected.count)"),
+                URLQueryItem(name: "take", value: "\(take)"),
+            ]
+            let page = try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!))
+            collected += page.results
+            // Seerr may serve fewer than asked for, so stop on its total, not a short page.
+            let done = page.pageInfo?.results.map { collected.count >= $0 } ?? (page.results.count < take)
+            if page.results.isEmpty || done { break }
+        }
+        let raw = collected
+        let now = Date()
 
         // The request list only carries tmdbId/mediaType — title and artwork
         // live on TMDB, so fetch each item's detail to fill them in. A failure here used to
@@ -440,36 +480,47 @@ public actor SeerrHTTPClient {
         // every one of those rows came back as "Unknown".
         let maxConcurrentDetailFetches = 4
         var items = [SeerrRequestItem?](repeating: nil, count: raw.count)
-        await withTaskGroup(of: (Int, SeerrRequestItem).self) { group in
-            func fetchItem(_ index: Int) async -> (Int, SeerrRequestItem) {
+        // The cache is read and written only here, on the actor, never from the child tasks:
+        // they ran at the same time and corrupted it.
+        var misses: [Int] = []
+        for (index, r) in raw.enumerated() {
+            if let cached = titleDetails[Self.detailKey(r)], now.timeIntervalSince(cached.fetched) < Self.titleDetailLifetime {
+                items[index] = r.toItem(detail: cached.item)
+            } else {
+                misses.append(index)
+            }
+        }
+        await withTaskGroup(of: (Int, SeerrItem?).self) { group in
+            var next = 0
+            func addFetch() {
+                let index = misses[next]
                 let r = raw[index]
-                var detail: SeerrItem?
-                do {
-                    detail = try await mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType)
-                } catch {
-                    let nsError = error as NSError
-                    Telemetry.logger(category: "SeerrHTTPClient").error(
-                        "getRequests: detail fetch failed for tmdbId=\(r.media.tmdbId ?? -1, privacy: .public) mediaType=\(r.media.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
-                    )
+                next += 1
+                group.addTask {
+                    do {
+                        return (index, try await self.mediaDetail(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType))
+                    } catch {
+                        let nsError = error as NSError
+                        Telemetry.logger(category: "SeerrHTTPClient").error(
+                            "getRequests: detail fetch failed for tmdbId=\(r.media.tmdbId ?? -1, privacy: .public) mediaType=\(r.media.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public) \(nsError.localizedDescription, privacy: .public)"
+                        )
+                        return (index, nil)
+                    }
                 }
-                return (index, r.toItem(detail: detail))
             }
-            var nextIndex = 0
-            while nextIndex < min(maxConcurrentDetailFetches, raw.count) {
-                let index = nextIndex
-                group.addTask { await fetchItem(index) }
-                nextIndex += 1
-            }
-            for await (index, item) in group {
-                items[index] = item
-                if nextIndex < raw.count {
-                    let next = nextIndex
-                    group.addTask { await fetchItem(next) }
-                    nextIndex += 1
-                }
+            while next < min(maxConcurrentDetailFetches, misses.count) { addFetch() }
+            for await (index, detail) in group {
+                let r = raw[index]
+                if let detail { titleDetails[Self.detailKey(r)] = (detail, now) }
+                items[index] = r.toItem(detail: detail)
+                if next < misses.count { addFetch() }
             }
         }
         return items.compactMap { $0 }
+    }
+
+    private static func detailKey(_ r: SeerrRequestResponse) -> String {
+        "\(r.media.mediaType ?? "movie"):\(r.media.tmdbId ?? -1)"
     }
 
     private func mediaDetail(tmdbId: Int?, mediaType: String?) async throws -> SeerrItem? {
@@ -730,11 +781,9 @@ public actor SeerrHTTPClient {
         if mediaType == .tv { body["seasons"] = seasons }
         req.httpBody = try JSONSerialization.data(withJSONObject: body)
         req.timeoutInterval = 15
-        let (data, response) = try await session.data(for: req)
-        guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-            let bodyText = String(data: data, encoding: .utf8) ?? ""
-            throw SeerrError.requestFailed(status: status, body: bodyText)
+        let (data, status) = try await sendWrite(req)
+        guard (200...299).contains(status) else {
+            throw SeerrError.requestFailed(status: status, body: Self.message(in: data))
         }
     }
 
@@ -869,11 +918,14 @@ public actor SeerrHTTPClient {
     private static func check(_ response: URLResponse, data: Data) throws {
         guard let http = response as? HTTPURLResponse else { throw URLError(.badServerResponse) }
         guard (200...299).contains(http.statusCode) else {
-            struct Message: Decodable { let message: String? }
-            let message = (try? JSONDecoder().decode(Message.self, from: data))?.message
-                ?? String(data: data.prefix(200), encoding: .utf8) ?? ""
-            throw SeerrError.requestFailed(status: http.statusCode, body: message)
+            throw SeerrError.requestFailed(status: http.statusCode, body: message(in: data))
         }
+    }
+
+    private static func message(in data: Data) -> String {
+        struct Message: Decodable { let message: String? }
+        return (try? JSONDecoder().decode(Message.self, from: data))?.message
+            ?? String(data: data.prefix(200), encoding: .utf8) ?? ""
     }
 }
 

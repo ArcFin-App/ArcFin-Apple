@@ -222,14 +222,19 @@ struct MusicAlbumsView: View {
     var fixedSort: MusicSort?
     @Environment(\.horizontalSizeClass) private var sizeClass
     @AppStorage("music.albumSort") private var savedSort: MusicSort = .name
+    @Environment(AuthManager.self) private var authManager
     private var sort: MusicSort { fixedSort ?? savedSort }
     @State private var favoritesOnly = false
     @State private var list: MusicPagedList<MusicAlbum>?
+    /// The sort, filter and search `list` was made for.
+    @State private var listKey: String?
+    @State private var query = ""
+    @State private var term: String?
 
     var body: some View {
         ScrollView {
             if let list {
-                MusicListState(list: list, empty: favoritesOnly ? "No Favorite Albums" : "No Albums")
+                MusicListState(list: list, empty: favoritesOnly ? "No Favorite Albums" : "No Albums", searchTerm: term)
                 LazyVGrid(columns: MusicGrid.columns(sizeClass), alignment: .leading, spacing: DT.Spacing.lg) {
                     ForEach(list.items) { album in
                         MusicAlbumCard(album: album)
@@ -242,6 +247,8 @@ struct MusicAlbumsView: View {
         }
         .screenBackground()
         .navigationTitle(Text(verbatim: title))
+        .sectionSearchable(text: $query, prompt: "Search Albums")
+        .musicSearchTerm(query, $term)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -252,6 +259,7 @@ struct MusicAlbumsView: View {
                         Text("Year").tag(MusicSort.year)
                         Text("Recently Added").tag(MusicSort.dateAdded)
                         }
+                        .syncLocked("music.albumSort", authManager)
                     }
                     Toggle("Favorites Only", systemImage: "star", isOn: $favoritesOnly)
                 } label: {
@@ -259,15 +267,19 @@ struct MusicAlbumsView: View {
                 }
             }
         }
-        .task(id: "\(sort.rawValue)-\(favoritesOnly)") {
-            let list = makeList()
-            self.list = list
-            await list.loadIfNeeded()
+        .task(id: "\(sort.rawValue)-\(favoritesOnly)-\(term ?? "")") {
+            // The task runs again on coming back from an album; the list and its place stay.
+            let key = "\(sort.rawValue)-\(favoritesOnly)-\(term ?? "")"
+            if key != listKey {
+                list = makeList()
+                listKey = key
+            }
+            await list?.loadIfNeeded()
         }
     }
 
     private func makeList() -> MusicPagedList<MusicAlbum> {
-        let filter = MusicFilter(favoritesOnly: favoritesOnly, genreId: genreID)
+        let filter = MusicFilter(favoritesOnly: favoritesOnly, genreId: genreID, searchTerm: term)
         let libraryID = libraryID, sort = sort
         return MusicPagedList { start in
             let page = try await MusicAPI.call {
@@ -350,6 +362,7 @@ struct MusicLibraryRowsEditor: View {
     @Binding var order: String
     @Binding var hidden: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var authManager
     @State private var rows: [MusicLibraryRow] = []
     @State private var hiddenRows: Set<String> = []
 
@@ -370,9 +383,11 @@ struct MusicLibraryRowsEditor: View {
                             }
                         }
                         .buttonStyle(.plain)
+                        .syncLocked(MusicLibraryRow.hiddenKey, authManager)
                         .accessibilityAddTraits(hiddenRows.contains(row.rawValue) ? [] : .isSelected)
                     }
                     .onMove { rows.move(fromOffsets: $0, toOffset: $1) }
+                    .moveDisabled(authManager.arcfinSyncLockedKeys.contains(MusicLibraryRow.orderKey))
                 } footer: {
                     Text("Tick the rows to show, and drag them into the order you like.")
                 }
@@ -382,14 +397,14 @@ struct MusicLibraryRowsEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Reset") {
-                        rows = MusicLibraryRow.allCases
-                        hiddenRows = []
+                        if !isLocked(MusicLibraryRow.orderKey) { rows = MusicLibraryRow.allCases }
+                        if !isLocked(MusicLibraryRow.hiddenKey) { hiddenRows = [] }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
-                        order = rows.map(\.rawValue).joined(separator: ",")
-                        hidden = hiddenRows.sorted().joined(separator: ",")
+                        if !isLocked(MusicLibraryRow.orderKey) { order = rows.map(\.rawValue).joined(separator: ",") }
+                        if !isLocked(MusicLibraryRow.hiddenKey) { hidden = hiddenRows.sorted().joined(separator: ",") }
                         dismiss()
                     }
                 }
@@ -400,4 +415,6 @@ struct MusicLibraryRowsEditor: View {
             hiddenRows = Set(hidden.split(separator: ",").map(String.init))
         }
     }
+
+    private func isLocked(_ key: String) -> Bool { authManager.arcfinSyncLockedKeys.contains(key) }
 }

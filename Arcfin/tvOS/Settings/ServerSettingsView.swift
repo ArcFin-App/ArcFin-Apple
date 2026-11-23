@@ -2,77 +2,34 @@
 
 import SwiftUI
 import AuthCore
-import JellyfinAPI
 
 struct ServerSettingsView: View {
     @Environment(AuthManager.self) private var authManager
 
-    // Scoped to the profile these were configured for — a flat, unscoped key here is what
-    // let one server's Local/Remote URL silently get applied to a completely different
-    // server after switching profiles or signing into a new one. See AuthManager.resolveBaseURL.
-    @AppStorage private var remoteURL: String
-    @AppStorage private var localURL: String
-    @AppStorage private var homeSSID: String
-
     @State private var model = ServerSettingsModel()
-
-    init(profileID: UUID) {
-        let idKey = profileID.uuidString
-        _remoteURL = AppStorage(wrappedValue: "", "serverRemoteURL.\(idKey)")
-        _localURL = AppStorage(wrappedValue: "", "serverLocalURL.\(idKey)")
-        _homeSSID = AppStorage(wrappedValue: "", "serverHomeSSID.\(idKey)")
-    }
 
     private var activeBaseURL: URL? { authManager.state.credential?.baseURL }
 
+    // No Local and Remote URLs here: switching between them by home Wi-Fi network is
+    // iPhone and iPad only, so on Apple TV they'd be saved and never used.
     var body: some View {
         List {
             ServerPublicInfoSection(model: model)
 
-            ArcfinSyncSection()
+            ArcfinSyncSection(showsAdminLink: true)
 
             Section {
-                ServerURLField(placeholder: "https://your-server.example.com", kind: .remote, saved: $remoteURL,
-                               serverID: model.publicInfo?.id)
-            } header: {
-                Label("Remote URL", systemImage: "globe")
-                    .font(.system(.caption, design: .default, weight: .semibold))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .textCase(nil)
-            } footer: {
-                Text("Used when you're not on the saved home Wi-Fi network below.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
-            }
-
-            Section {
-                ServerURLField(placeholder: "http://10.0.1.50:8096", kind: .local, saved: $localURL,
-                               serverID: model.publicInfo?.id)
-
-                HStack {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Home Wi-Fi Network")
-                            .font(.system(.subheadline, design: .default))
-                        Text(homeSSID.isEmpty ? "Not set" : homeSSID)
-                            .font(.caption)
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-                    Spacer()
+                NavigationLink { ServerConnectionView().tvSettingsPage() } label: {
+                    TVRowLabelText(title: "Server & Connection", detail: "Test your speed to the server, and see what your account and this device can play.")
                 }
-            } header: {
-                Label("Local URL", systemImage: "wifi")
-                    .font(.system(.caption, design: .default, weight: .semibold))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .textCase(nil)
-            } footer: {
-                Text("Used automatically when this device is connected to the saved home Wi-Fi network. Requires the Access Wi-Fi Information capability.")
-                    .font(.caption)
-                    .foregroundStyle(DT.Color.textSecondary)
+                NavigationLink { CustomHeadersView().tvSettingsPage() } label: {
+                    TVRowLabelText(title: "Custom Headers", detail: "Extra headers for a server behind an access gateway, such as Cloudflare Access.")
+                }
+                if let activeBaseURL {
+                    LabeledContent("Address", value: activeBaseURL.absoluteString)
+                        .tvReadOnlyRow()
+                }
             }
-
-            ServerConnectionSections(currentlyUsing: ServerSettingsModel.currentlyUsing(
-                activeBaseURL: activeBaseURL, localURL: localURL, remoteURL: remoteURL),
-                                     localURL: localURL, remoteURL: remoteURL)
         }
         .arcfinListStyle()
         .screenBackground()

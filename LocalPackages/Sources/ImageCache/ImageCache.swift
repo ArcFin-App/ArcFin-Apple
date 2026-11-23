@@ -2,6 +2,7 @@
 
 import Foundation
 import SwiftUI
+import Network
 import Nuke
 import AuthCore
 import JellyfinAPI
@@ -13,30 +14,31 @@ public enum ImageCache: Sendable {
 
     private static let log = Telemetry.logger(category: "ImageCache")
 
-    /// Rebuilt when the custom headers change, keeping the same on-disk cache.
-    public static var shared: ImagePipeline {
-        PipelineBox.pipeline(for: CustomHTTPHeaders.current)
-    }
+    public static let shared: ImagePipeline = {
+        var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
+        config.dataCachePolicy = .automatic
+        let session = URLSessionConfiguration.default
+        session.urlCache = nil
+        // A poster asked for at cold launch, before the network path is up, otherwise fails
+        // at once and the card keeps its placeholder.
+        session.waitsForConnectivity = true
+        session.timeoutIntervalForResource = 30
+        config.dataLoader = ServerHeadersDataLoader(base: DataLoader(configuration: session))
+        return ImagePipeline(configuration: config)
+    }()
 
-    private enum PipelineBox {
-        private static let lock = NSLock()
-        nonisolated(unsafe) private static var cached: (headers: [String: String], pipeline: ImagePipeline)?
+    /// Adds each server's custom headers to that server's own images.
+    private struct ServerHeadersDataLoader: DataLoading {
+        let base: DataLoader
 
-        static func pipeline(for headers: [String: String]) -> ImagePipeline {
-            lock.lock()
-            defer { lock.unlock() }
-            if let cached, cached.headers == headers { return cached.pipeline }
-            var config = ImagePipeline.Configuration.withDataCache(name: "com.psmattas.arcfin.images")
-            config.dataCachePolicy = .automatic
-            if !headers.isEmpty {
-                let session = URLSessionConfiguration.default
-                session.httpAdditionalHeaders = headers
-                session.urlCache = nil
-                config.dataLoader = DataLoader(configuration: session)
+        func loadData(with request: URLRequest,
+                      didReceiveData: @escaping @Sendable (Data, URLResponse) -> Void,
+                      completion: @escaping @Sendable (Error?) -> Void) -> any Cancellable {
+            var request = request
+            for (name, value) in CustomHTTPHeaders.headers(for: request.url) where request.value(forHTTPHeaderField: name) == nil {
+                request.setValue(value, forHTTPHeaderField: name)
             }
-            let pipeline = ImagePipeline(configuration: config)
-            cached = (headers, pipeline)
-            return pipeline
+            return base.loadData(with: request, didReceiveData: didReceiveData, completion: completion)
         }
     }
 
@@ -64,18 +66,100 @@ public enum ImageCache: Sendable {
         shared.cache[ImageRequest(url: url)]?.image
     }
 
+    /// Waited on once, before the first load: waitsForConnectivity alone doesn't cover a
+    /// request made before the system has any network path to report.
+    private static let networkPathReady = Task {
+        await withCheckedContinuation { continuation in
+            PathWait(continuation: continuation).start(timeoutSeconds: 6)
+        }
+    }
+
     /// Loads through the shared pipeline: memory cache, then disk cache, then network, with
-    /// decoding off the main thread and duplicate in-flight requests coalesced.
+    /// decoding off the main thread and duplicate in-flight requests coalesced. The only place
+    /// a failed image is tried again, at most once: two requests at most, one for a 4xx.
     public static func load(_ url: URL) async throws -> PlatformImage {
+        let pipeline = shared
+        if !pipeline.cache.containsCachedImage(for: ImageRequest(url: url)) {
+            await networkPathReady.value
+        }
         do {
             return try await shared.image(for: url)
         } catch {
-            // Jellyfin's resize cache can answer one size of an image with an empty 200
-            // forever; the original size still loads.
-            guard !Task.isCancelled, let original = JellyfinMediaClient.unresizedImageURL(url) else { throw error }
-            let image = try await shared.image(for: original)
-            shared.cache[ImageRequest(url: url)] = ImageContainer(image: image)
-            return image
+            guard !Task.isCancelled else { throw error }
+            switch retry(after: error) {
+            case .giveUp:
+                throw error
+            case .sameURL:
+                try await Task.sleep(for: .seconds(1))
+                return try await shared.image(for: url)
+            case .originalSize:
+                // Jellyfin's resize cache can answer one size of an image with an empty 200
+                // forever; the original size still loads.
+                guard let original = JellyfinMediaClient.unresizedImageURL(url) else { throw error }
+                let image = try await shared.image(for: original)
+                shared.cache[ImageRequest(url: url)] = ImageContainer(image: image)
+                return image
+            }
+        }
+    }
+
+    /// What to do after a failed image load.
+    public enum Retry: Sendable, Equatable {
+        /// The server answered that there's no image (a title with no logo), or the load was
+        /// cancelled: trying again can't help.
+        case giveUp
+        /// The connection failed: the same image a moment later can work.
+        case sameURL
+        /// Anything else, an empty or broken image or a server error: the unresized original.
+        case originalSize
+    }
+
+    public static func retry(after error: Error) -> Retry {
+        if error is CancellationError || (error as? URLError)?.code == .cancelled { return .giveUp }
+        var statusCode: Int?
+        if case ImagePipeline.Error.dataLoadingFailed(let inner) = error,
+           case DataLoader.Error.statusCodeUnacceptable(let code)? = inner as? DataLoader.Error {
+            statusCode = code
+        }
+        return retry(statusCode: statusCode, isConnectivityError: isConnectivityError(error))
+    }
+
+    public static func retry(statusCode: Int?, isConnectivityError: Bool) -> Retry {
+        if let statusCode, (400..<500).contains(statusCode) { return .giveUp }
+        return isConnectivityError ? .sameURL : .originalSize
+    }
+
+    /// The connection failed (as opposed to the server answering with an error, such as a
+    /// title with no logo), so trying again a moment later can work.
+    public static func isConnectivityError(_ error: Error) -> Bool {
+        var underlying = error
+        if case ImagePipeline.Error.dataLoadingFailed(let inner) = error { underlying = inner }
+        guard let urlError = underlying as? URLError else { return false }
+        let codes: [URLError.Code] = [.notConnectedToInternet, .networkConnectionLost, .timedOut, .cannotConnectToHost,
+                                      .cannotFindHost, .dnsLookupFailed, .dataNotAllowed, .internationalRoamingOff]
+        return codes.contains(urlError.code)
+    }
+
+    /// Downloads images into the disk cache the image views read, two at a time and without
+    /// decoding them, so a screen opened next shows them without waiting on the network.
+    public static func prefetch(urls: [URL]) {
+        let unique = Array(Set(urls))
+        guard !unique.isEmpty else { return }
+        PrefetcherBox.prefetcher(for: shared).startPrefetching(with: unique)
+    }
+
+    /// The prefetcher cancels its downloads when released, so one is kept per pipeline.
+    private enum PrefetcherBox {
+        private static let lock = NSLock()
+        nonisolated(unsafe) private static var cached: (pipeline: ImagePipeline, prefetcher: ImagePrefetcher)?
+
+        static func prefetcher(for pipeline: ImagePipeline) -> ImagePrefetcher {
+            lock.lock()
+            defer { lock.unlock() }
+            if let cached, cached.pipeline === pipeline { return cached.prefetcher }
+            let prefetcher = ImagePrefetcher(pipeline: pipeline, destination: .diskCache)
+            cached = (pipeline, prefetcher)
+            return prefetcher
         }
     }
 
@@ -90,6 +174,43 @@ public enum ImageCache: Sendable {
                 }
             }
         }
+    }
+}
+
+/// Races a one-shot NWPathMonitor read against a timeout, resuming once — the same pattern
+/// as the HTTP clients' own path waits.
+private final class PathWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private let continuation: CheckedContinuation<Void, Never>
+    private let monitor = NWPathMonitor()
+
+    init(continuation: CheckedContinuation<Void, Never>) {
+        self.continuation = continuation
+    }
+
+    func start(timeoutSeconds: Double) {
+        monitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            self?.finish()
+        }
+        monitor.start(queue: DispatchQueue(label: "arcfin.imagecache.pathwait"))
+        Task {
+            try? await Task.sleep(for: .seconds(timeoutSeconds))
+            self.finish()
+        }
+    }
+
+    private func finish() {
+        lock.lock()
+        guard !finished else {
+            lock.unlock()
+            return
+        }
+        finished = true
+        lock.unlock()
+        monitor.cancel()
+        continuation.resume()
     }
 }
 
@@ -125,8 +246,13 @@ public struct LazyHeroImage: View {
                 }
             }
         .task(id: url) {
-            guard let url else { return }
-            guard let response = try? await ImageCache.load(url) else { return }
+            // A title without a backdrop, or whose backdrop fails, shows the placeholder, not the
+            // previous title's art.
+            guard let url, let response = try? await ImageCache.load(url) else {
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeInOut(duration: 0.35)) { displayed = nil }
+                return
+            }
             #if canImport(UIKit)
             let loaded = Image(uiImage: response)
             #else

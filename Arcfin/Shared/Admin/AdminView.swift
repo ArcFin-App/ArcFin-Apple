@@ -11,6 +11,10 @@ enum AdminAccess {
         guard authManager.isAdmin, case .authenticated(let credential) = authManager.state else { return nil }
         return (credential, authManager.authClient.authHeader(token: credential.accessToken))
     }
+
+    static var unavailableMessage: String {
+        String(localized: "This profile isn't an admin, or the server can't be reached.")
+    }
 }
 
 @MainActor @Observable
@@ -31,7 +35,11 @@ final class AdminDashboardModel {
     var converting: Int { playing.filter { $0.playMethod == "Transcode" }.count }
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         async let info = admin.systemInfo(credential: access.credential, authHeader: access.header)
         async let sessions = media.getActiveSessions(credential: access.credential, authHeader: access.header)
         async let tasks = admin.scheduledTasks(credential: access.credential, authHeader: access.header)
@@ -117,6 +125,11 @@ struct AdminView: View {
                 NavigationLink { AdminPluginsView() } label: {
                     AdminRow(title: "Plugins", systemImage: "puzzlepiece.extension", detail: nil)
                 }
+                if authManager.hasArcfinSyncDevices {
+                    NavigationLink { ArcfinSyncAdminView() } label: {
+                        AdminRow(title: "Arcfin for Everyone", systemImage: "slider.horizontal.3", detail: nil)
+                    }
+                }
                 NavigationLink { AdminAPIKeysView() } label: {
                     AdminRow(title: "API Keys", systemImage: "key", detail: nil)
                 }
@@ -199,12 +212,12 @@ struct AdminView: View {
                 if info.hasUpdateAvailable || info.hasPendingRestart {
                     HStack(spacing: 8) {
                         if info.hasUpdateAvailable { AdminPill(text: "Update Available", color: DT.Color.palette("60A5FA")) }
-                        if info.hasPendingRestart { AdminPill(text: "Restart Needed", color: .orange) }
+                        if info.hasPendingRestart { AdminPill(text: "Restart Needed", color: DT.Color.palette("f59e0b")) }
                     }
                 }
                 HStack(spacing: 12) {
                     AdminStat(value: model.playing.count, label: "Playing", systemImage: "play.fill", color: DT.Color.accent)
-                    AdminStat(value: model.converting, label: "Converting", systemImage: "gearshape.2.fill", color: .orange)
+                    AdminStat(value: model.converting, label: "Converting", systemImage: "gearshape.2.fill", color: DT.Color.palette("f59e0b"))
                     AdminStat(value: model.runningTasks, label: "Tasks Running", systemImage: "clock.fill", color: DT.Color.palette("60A5FA"))
                 }
             }

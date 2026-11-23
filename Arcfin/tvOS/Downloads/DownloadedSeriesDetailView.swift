@@ -18,7 +18,7 @@ struct DownloadedSeriesDetailView: View {
     @State private var model = DownloadedSeriesDetailModel()
 
     private var series: DownloadedSeries? { DownloadedSeriesDetailModel.series(seriesId, in: allSeries) }
-    private var episodes: [DownloadedItem] { DownloadedSeriesDetailModel.episodes(of: seriesId, in: allItems) }
+    private var episodes: [DownloadedItem] { DownloadedSeriesDetailModel.episodes(of: seriesId, in: downloadManager.ownDownloads(allItems)) }
 
     var body: some View {
         List {
@@ -62,7 +62,8 @@ struct DownloadedSeriesDetailView: View {
             }
             Button("Cancel", role: .cancel) { model.pendingDelete = nil }
         }
-        .alert("Delete \(model.selection.count) selected episode\(model.selection.count == 1 ? "" : "s")?", isPresented: $model.showBulkDeleteConfirm) {
+        .alert(model.selection.count == 1 ? "Delete 1 selected episode?" : "Delete \(model.selection.count) selected episodes?",
+               isPresented: $model.showBulkDeleteConfirm) {
             Button("Delete", role: .destructive) { model.deleteSelection(of: episodes, downloadManager: downloadManager) }
             Button("Cancel", role: .cancel) {}
         }

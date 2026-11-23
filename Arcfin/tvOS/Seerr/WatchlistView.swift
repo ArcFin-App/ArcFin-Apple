@@ -47,6 +47,11 @@ struct WatchlistView: View {
         .navigationTitle("Watchlist")
         .arcfinNavTitleLarge("Watchlist")
         .task { await model.load(seerrRepo: seerrRepo) }
+        .alert("Watchlist", isPresented: Binding(get: { model.error != nil }, set: { if !$0 { model.error = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.error ?? "")
+        }
         .refreshable { await seerrRepo.loadWatchlist(refresh: true) }
     }
 }

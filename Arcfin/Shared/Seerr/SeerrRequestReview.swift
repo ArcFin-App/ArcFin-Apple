@@ -8,6 +8,7 @@ import SeerrAPI
 @MainActor @Observable
 final class SeerrRequestReview {
     var declining: SeerrRequestItem?
+    var removing: SeerrRequestItem?
     var error: String?
     var errorTitle = ""
     private(set) var inProgress: Set<Int> = []
@@ -18,6 +19,20 @@ final class SeerrRequestReview {
 
     func decline(_ request: SeerrRequestItem, seerrRepo: SeerrRepository) {
         Task { await set(request, approved: false, seerrRepo: seerrRepo) }
+    }
+
+    func remove(_ request: SeerrRequestItem, seerrRepo: SeerrRepository) {
+        Task {
+            inProgress.insert(request.id)
+            defer { inProgress.remove(request.id) }
+            do {
+                try await seerrRepo.cancelRequest(id: request.id)
+            } catch where SeerrRepository.isCancellation(error) {
+            } catch {
+                errorTitle = String(localized: "Couldn't Remove Request")
+                self.error = String(localized: "Seerr didn't remove “\(request.mediaTitle)”. Check your connection and try again.")
+            }
+        }
     }
 
     private func set(_ request: SeerrRequestItem, approved: Bool, seerrRepo: SeerrRepository) async {
@@ -39,10 +54,56 @@ final class SeerrRequestReview {
     }
 }
 
+extension SeerrAvailabilityStatus {
+    /// The package's label is English.
+    var localizedLabel: String {
+        switch self {
+        case .unknown: String(localized: "Unknown")
+        case .pending: String(localized: "Pending")
+        case .processing: String(localized: "Processing")
+        case .partiallyAvailable: String(localized: "Partial")
+        case .available: String(localized: "Available")
+        }
+    }
+}
+
+extension RequestStatus {
+    var localizedLabel: String {
+        switch self {
+        case .pending: String(localized: "Pending")
+        case .approved: String(localized: "Approved")
+        case .declined: String(localized: "Declined")
+        case .failed: String(localized: "Failed")
+        case .completed: String(localized: "Completed")
+        }
+    }
+}
+
+extension SeerrRequestItem {
+    /// `displayStatus` with a label in the app's language.
+    var localizedDisplayStatus: (label: String, colorHex: String) {
+        if let mediaStatus { return (mediaStatus.localizedLabel, mediaStatus.colorHex) }
+        return (status.localizedLabel, displayStatus.colorHex)
+    }
+}
+
 extension SeerrRepository {
     /// Approve and Decline apply: the user manages requests and this one is waiting.
     func canReview(_ request: SeerrRequestItem) -> Bool {
         canManageRequests && request.status == .pending
+    }
+
+    /// Seerr lets a request manager remove any request, and anyone else only their own
+    /// pending ones.
+    func canRemove(_ request: SeerrRequestItem) -> Bool {
+        canManageRequests
+            || (request.status == .pending && (request.requestedByID == nil || request.requestedByID == currentUser?.id))
+    }
+
+    /// False only once the signed-in Seerr user is known not to be allowed to request this
+    /// kind of title.
+    func mayRequest(_ mediaType: RequestMediaType) -> Bool {
+        currentUser.map { SeerrPermission.canRequest(mediaType, in: $0.permissions) } ?? true
     }
 
     /// "Requested by" is worth saying: the list holds other people's requests too.
@@ -105,7 +166,7 @@ struct SeerrRequestReviewButtons: View {
 }
 
 extension View {
-    /// The decline confirmation and the error alert for `review`.
+    /// The decline and remove confirmations and the error alert for `review`.
     func seerrRequestReview(_ review: SeerrRequestReview) -> some View {
         modifier(SeerrRequestReviewPresentations(review: review))
     }
@@ -128,6 +189,14 @@ private struct SeerrRequestReviewPresentations: ViewModifier {
                 if let name = request.requestedByName, !name.isEmpty {
                     Text("\(name) will see that their request was declined.")
                 }
+            }
+            .alert(
+                "Remove this request?",
+                isPresented: Binding(get: { review.removing != nil }, set: { if !$0 { review.removing = nil } }),
+                presenting: review.removing
+            ) { request in
+                Button("Remove Request", role: .destructive) { review.remove(request, seerrRepo: seerrRepo) }
+                Button("Cancel", role: .cancel) {}
             }
             .alert(review.errorTitle, isPresented: Binding(get: { review.error != nil }, set: { if !$0 { review.error = nil } })) {
                 Button("OK", role: .cancel) {}

@@ -496,6 +496,7 @@ final class RemotePlaybackActivity {
     private var shown: Attributes.ContentState?
     private var artworkItemID: String?
     private var artwork: Data?
+    private static let pausedStaleAfter: TimeInterval = 5 * 60
 
     func install() {
         activity = Activity<Attributes>.activities.first
@@ -505,6 +506,11 @@ final class RemotePlaybackActivity {
     }
 
     private func perform(_ action: RemotePlaybackAction, sessionID: String) async {
+        // A Lock Screen button can launch the app in the background, before the stored
+        // sign-in has been read.
+        await AppServices.authManager.checkStoredAuthOnce()
+        // While the app lock is up, the buttons do nothing, like the music widget's.
+        if await AppServices.isLocked() { return }
         let remote = AppServices.remoteSessions
         remote.attach(AppServices.authManager)
         remote.selectedID = sessionID
@@ -545,7 +551,11 @@ final class RemotePlaybackActivity {
             updatedAt: .now,
             artwork: artwork
         )
-        let content = ActivityContent(state: state, staleDate: state.playbackSpan?.upperBound.addingTimeInterval(60))
+        // Paused (or no runtime) has no end to go stale after, so it goes stale a few minutes
+        // after the last word from the server: once the app stops refreshing, a session that
+        // since stopped is marked stale instead of looking current for hours.
+        let content = ActivityContent(state: state, staleDate: state.playbackSpan?.upperBound.addingTimeInterval(60)
+                                                    ?? state.updatedAt.addingTimeInterval(Self.pausedStaleAfter))
         if let activity {
             guard needsUpdate(state) else { return }
             await activity.update(content)
@@ -569,6 +579,10 @@ final class RemotePlaybackActivity {
             || shown.isPaused != state.isPaused || shown.durationSeconds != state.durationSeconds || shown.artwork != state.artwork {
             return true
         }
+        // Pushes the paused stale date on while the list keeps coming back.
+        if shown.playbackSpan == nil, state.updatedAt.timeIntervalSince(shown.updatedAt) > Self.pausedStaleAfter / 2 {
+            return true
+        }
         let expected = shown.isPaused ? shown.positionSeconds
             : shown.positionSeconds + state.updatedAt.timeIntervalSince(shown.updatedAt)
         return abs(expected - state.positionSeconds) > 3
@@ -576,8 +590,8 @@ final class RemotePlaybackActivity {
 
     private func thumbnail(for session: JellyfinSession) async -> Data? {
         guard let url = AppServices.remoteSessions.artworkURL(for: session, type: "Primary", width: 160),
-              let response = try? await URLSession.shared.data(from: url),
-              let image = UIImage(data: response.0),
+              let data = await URLSession.arcfin.imageData(from: url),
+              let image = UIImage(data: data),
               let small = await image.byPreparingThumbnail(ofSize: CGSize(width: 64, height: 64 * image.size.height / max(image.size.width, 1)))
         else { return nil }
         for quality in [0.6, 0.4, 0.25] {
@@ -615,11 +629,24 @@ final class WatchLink: NSObject, WCSessionDelegate {
         }
     }
 
-    private func send() {
+    func send() {
+        Task { await sendContext() }
+    }
+
+    /// A profile with an app-lock PIN reads as signed out on the watch, as it does to Siri. The
+    /// PIN is read after any Keychain write still queued, so a PIN just set is seen.
+    private func sendContext() async {
         let session = WCSession.default
         guard session.activationState == .activated, session.isPaired, session.isWatchAppInstalled else { return }
+        let auth = AppServices.authManager
+        var unlocked: ServerCredential?
+        if let credential = auth.state.credential, await auth.storedPIN(for: credential.id) == .none {
+            // Another profile took over meanwhile: its own send follows.
+            guard auth.state.credential?.id == credential.id else { return }
+            unlocked = credential
+        }
         let context: [String: Any]
-        if let credential = AppServices.authManager.state.credential {
+        if let credential = unlocked {
             context = [
                 "serverURLs": Self.addresses(for: credential),
                 "authHeader": AppServices.authManager.authClient.authHeader(token: credential.accessToken),

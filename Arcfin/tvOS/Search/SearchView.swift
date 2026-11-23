@@ -55,7 +55,9 @@ struct SearchView: View {
                         .tvFocusRing(cornerRadius: DT.Radius.md)
                 }
             } else if query.isEmpty || foundNothing {
-                SearchEmptyState(query: query)
+                SearchEmptyState(query: query, failed: model.libraryFailed) {
+                    model.search(query, authManager: authManager, mediaRepo: mediaRepo, seerrRepo: seerrRepo)
+                }
             } else if !modernSearch {
                 classicResults
             } else {
@@ -64,6 +66,7 @@ struct SearchView: View {
                         if let top = model.jellyfinResults.first {
                             NavigationLink(value: top) {
                                 SearchTopResultCard(item: top, height: topResultHeight)
+                                    .tvLabelFocusRing(cornerRadius: DT.Radius.lg)
                             }
                             .buttonStyle(TVCardButtonStyle())
                             .focusEffectDisabled()
@@ -76,7 +79,7 @@ struct SearchView: View {
                             libraryShelf(group)
                         }
                         if !music.results.isEmpty {
-                            TVMusicSearchSection(results: music.results)
+                            TVMusicSearchSection(results: music.results) { saveRecentSearch() }
                         }
                         if liveTV.hasSearchResults {
                             LiveTVSearchSection(model: liveTV)
@@ -159,7 +162,7 @@ struct SearchView: View {
                     ProgressView().frame(maxWidth: .infinity)
                 }
                 if !music.results.isEmpty {
-                    TVMusicSearchSection(results: music.results)
+                    TVMusicSearchSection(results: music.results) { saveRecentSearch() }
                         .padding(.horizontal, -DT.Spacing.pagePad)
                 }
                 if liveTV.hasSearchResults {

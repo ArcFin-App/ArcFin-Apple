@@ -22,16 +22,19 @@ public enum ListenTogether {
         public var songIDs: [String]
         public var position: Double
         public var isPlaying: Bool
+        /// Nil from a device on a version that didn't send it.
+        public var repeatMode: MusicQueue.RepeatMode?
         /// Higher wins; between equals, the higher sender.
         public var version: Int
         public var sender: UUID
         public var sentAt: Date
 
-        public init(songIDs: [String], position: Double, isPlaying: Bool, version: Int, sender: UUID,
-                    sentAt: Date = Date()) {
+        public init(songIDs: [String], position: Double, isPlaying: Bool, repeatMode: MusicQueue.RepeatMode? = nil,
+                    version: Int, sender: UUID, sentAt: Date = Date()) {
             self.songIDs = songIDs
             self.position = position
             self.isPlaying = isPlaying
+            self.repeatMode = repeatMode
             self.version = version
             self.sender = sender
             self.sentAt = sentAt
@@ -58,12 +61,15 @@ public enum ListenTogether {
         public var upcomingIDs: [String]
         public var position: Double
         public var isPlaying: Bool
+        public var repeatMode: MusicQueue.RepeatMode
 
-        public init(currentID: String?, upcomingIDs: [String], position: Double, isPlaying: Bool) {
+        public init(currentID: String?, upcomingIDs: [String], position: Double, isPlaying: Bool,
+                    repeatMode: MusicQueue.RepeatMode = .off) {
             self.currentID = currentID
             self.upcomingIDs = upcomingIDs
             self.position = position
             self.isPlaying = isPlaying
+            self.repeatMode = repeatMode
         }
     }
 
@@ -75,6 +81,7 @@ public enum ListenTogether {
         /// The same song, with different songs after it.
         case replaceUpcoming([String])
         case seek(to: Double)
+        case setRepeat(MusicQueue.RepeatMode)
         case play
         case pause
     }
@@ -83,7 +90,8 @@ public enum ListenTogether {
     public static func state(for local: Local, after last: State?, sender: UUID, now: Date = Date()) -> State? {
         guard let current = local.currentID else { return nil }
         return State(songIDs: [current] + local.upcomingIDs.prefix(upcomingLimit), position: local.position,
-                     isPlaying: local.isPlaying, version: (last?.version ?? 0) + 1, sender: sender, sentAt: now)
+                     isPlaying: local.isPlaying, repeatMode: local.repeatMode, version: (last?.version ?? 0) + 1,
+                     sender: sender, sentAt: now)
     }
 
     /// What to do with `incoming`, given the newest state seen so far; empty when it's stale.
@@ -91,7 +99,9 @@ public enum ListenTogether {
         if let newest, incoming != newest, !incoming.supersedes(newest) { return [] }
         guard let current = incoming.currentID else { return [] }
         let position = expectedPosition(of: incoming, now: now)
-        var steps: [Step] = []
+        // Each device moves on by itself, so Repeat has to match for the next song to.
+        let repeatSteps: [Step] = incoming.repeatMode.flatMap { $0 != local.repeatMode ? [.setRepeat($0)] : nil } ?? []
+        var steps: [Step] = repeatSteps
         let upcoming = Array(incoming.upcomingIDs)
         if local.currentID != current {
             if local.upcomingIDs.contains(current) {
@@ -100,7 +110,7 @@ public enum ListenTogether {
                 if differs(after, from: upcoming) { steps.append(.replaceUpcoming(upcoming)) }
                 if position > positionTolerance { steps.append(.seek(to: position)) }
             } else {
-                return [.load(incoming.songIDs, at: position)] + (incoming.isPlaying ? [] : [.pause])
+                return [.load(incoming.songIDs, at: position)] + repeatSteps + (incoming.isPlaying ? [] : [.pause])
             }
         } else {
             if differs(local.upcomingIDs, from: upcoming) { steps.append(.replaceUpcoming(upcoming)) }

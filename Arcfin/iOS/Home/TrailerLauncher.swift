@@ -85,8 +85,10 @@ private struct QuickPlayback: ViewModifier {
             .fullScreenCover(item: $trailer) { TrailerLauncher(item: $0) }
             .fullScreenCover(item: $request, onDismiss: onDismiss) { current in
                 PlayerView(item: current.item, startPositionTicks: current.startTicks) { next in
+                    PlayerView.keepOrientationOnNextDisappear = true
                     request = PlaybackRequest(item: next, startTicks: 0)
                 }
+                .id(current.item.id)
             }
     }
 }

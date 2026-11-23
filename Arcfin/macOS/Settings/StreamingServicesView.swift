@@ -5,6 +5,7 @@ import SeerrAPI
 
 struct StreamingServicesView: View {
     @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
     @AppStorage(StreamingServicePrefs.key) private var selectedData = Data()
 
     @State private var model = StreamingServicesModel()
@@ -23,6 +24,7 @@ struct StreamingServicesView: View {
                             Text(region.name).tag(region.code)
                         }
                     }
+                    .syncLocked(SeerrRepository.regionOverrideKey, authManager)
                 } footer: {
                     Text("Automatic uses the region set in Seerr, the same one its own pages use. Choose a country to see what streams there instead.")
                 }
@@ -35,6 +37,7 @@ struct StreamingServicesView: View {
                             list.move(fromOffsets: from, toOffset: to)
                             selectedData = StreamingServicePrefs.encode(list)
                         }
+                        .moveDisabled(authManager.arcfinSyncLockedKeys.contains(StreamingServicePrefs.key))
                 } header: {
                     Text("Your Services")
                 } footer: {
@@ -83,6 +86,7 @@ struct StreamingServicesView: View {
             StreamingServiceRowLabel(provider: provider, isSelected: isSelected)
         }
         .buttonStyle(.plain)
+        .syncLocked(StreamingServicePrefs.key, authManager)
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
@@ -90,6 +94,6 @@ struct StreamingServicesView: View {
         let list = model.toggling(provider, in: selected)
         selectedData = StreamingServicePrefs.encode(list)
         HapticManager.impact(.light)
-        if !list.isEmpty { model.showRowsOnHome() }
+        if !list.isEmpty, !authManager.arcfinSyncLockedKeys.contains(HomeShelfPrefs.activeKey) { model.showRowsOnHome() }
     }
 }

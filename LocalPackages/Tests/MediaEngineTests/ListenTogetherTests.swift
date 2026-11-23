@@ -50,6 +50,21 @@ struct ListenTogetherTests {
         #expect(steps == [.replaceUpcoming(["c", "b"])])
     }
 
+    @Test func repeatFollowsTheSender() throws {
+        let local = Local(currentID: "a", upcomingIDs: ["b"], position: 10, isPlaying: true, repeatMode: .off)
+        var incoming = state(["a", "b"], at: 10)
+        incoming.repeatMode = .one
+        #expect(ListenTogether.plan(incoming, newest: nil, local: local, now: now) == [.setRepeat(.one)])
+        let sent = try #require(ListenTogether.state(for: Local(currentID: "a", upcomingIDs: [], position: 0, isPlaying: true,
+                                                                repeatMode: .all), after: nil, sender: me, now: now))
+        #expect(sent.repeatMode == .all)
+    }
+
+    @Test func noRepeatFromAnOlderDeviceLeavesItAlone() {
+        let local = Local(currentID: "a", upcomingIDs: ["b"], position: 10, isPlaying: true, repeatMode: .all)
+        #expect(ListenTogether.plan(state(["a", "b"], at: 10), newest: nil, local: local, now: now).isEmpty)
+    }
+
     @Test func aClearedQueueClearsHereToo() {
         let local = Local(currentID: "a", upcomingIDs: ["b", "c"], position: 10, isPlaying: true)
         #expect(ListenTogether.plan(state(["a"], at: 10), newest: nil, local: local, now: now) == [.replaceUpcoming([])])

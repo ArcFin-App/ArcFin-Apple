@@ -9,7 +9,12 @@ struct MusicSongsView: View {
     let libraryID: String
     var favoritesOnly = false
     @AppStorage("music.songSort") private var sort: MusicSort = .name
+    @Environment(AuthManager.self) private var authManager
     @State private var list: MusicPagedList<MusicSong>?
+    /// The sort and search `list` was made for.
+    @State private var listKey: String?
+    @State private var query = ""
+    @State private var term: String?
 
     var body: some View {
         List {
@@ -18,7 +23,7 @@ struct MusicSongsView: View {
                     .disabled(list.items.isEmpty)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-                MusicListState(list: list, empty: favoritesOnly ? "No Favorite Songs" : "No Songs")
+                MusicListState(list: list, empty: favoritesOnly ? "No Favorite Songs" : "No Songs", searchTerm: term)
                     .listRowBackground(Color.clear)
                 ForEach(Array(list.items.enumerated()), id: \.element.id) { index, song in
                     MusicSongRow(song: song) { MusicActions.play(list.items, from: index) }
@@ -30,6 +35,8 @@ struct MusicSongsView: View {
         .scrollContentBackground(.hidden)
         .screenBackground()
         .navigationTitle(favoritesOnly ? "Favorite Songs" : "Songs")
+        .sectionSearchable(text: $query, prompt: favoritesOnly ? "Search Favorites" : "Search Songs")
+        .musicSearchTerm(query, $term)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -40,29 +47,34 @@ struct MusicSongsView: View {
                         Text("Recently Added").tag(MusicSort.dateAdded)
                         Text("Most Played").tag(MusicSort.playCount)
                     }
+                    .syncLocked("music.songSort", authManager)
                 } label: {
                     Label("Sort", systemImage: "arrow.up.arrow.down")
                 }
             }
         }
-        .task(id: sort) {
-            let libraryID = libraryID, sort = sort, filter = MusicFilter(favoritesOnly: favoritesOnly)
-            let list = MusicPagedList<MusicSong> { start in
-                let page = try await MusicAPI.call {
-                    try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
-                                                ascending: sort != .dateAdded && sort != .playCount, filter: filter,
-                                                startIndex: start)
+        .task(id: "\(sort.rawValue)-\(term ?? "")") {
+            // The task runs again on coming back from a pushed screen; the list and its place stay.
+            let key = "\(sort.rawValue)-\(term ?? "")"
+            if key != listKey {
+                let libraryID = libraryID, sort = sort, filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
+                list = MusicPagedList<MusicSong> { start in
+                    let page = try await MusicAPI.call {
+                        try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
+                                                    ascending: sort != .dateAdded && sort != .playCount, filter: filter,
+                                                    startIndex: start)
+                    }
+                    return (page.tracks, page.total)
                 }
-                return (page.tracks, page.total)
+                listKey = key
             }
-            self.list = list
-            await list.loadIfNeeded()
+            await list?.loadIfNeeded()
         }
     }
 
     /// The whole list at random, not only the songs loaded so far.
     private func shuffleAll() {
-        let libraryID = libraryID, filter = MusicFilter(favoritesOnly: favoritesOnly)
+        let libraryID = libraryID, filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
         Task {
             let page = try? await MusicAPI.call {
                 try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: .random,
@@ -139,7 +151,7 @@ struct MusicSongRow: View {
         }
         .swipeActions(edge: .trailing) {
             Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") { MusicActions.addToQueue([song]) }
-                .tint(.indigo)
+                .tint(DT.Color.textSecondary)
         }
     }
 }
@@ -148,15 +160,24 @@ struct MusicSongRow: View {
 struct MusicArtistsView: View {
     let libraryID: String
     @State private var list: MusicPagedList<MusicArtist>
+    @State private var query = ""
+    @State private var term: String?
+    /// The search `list` was made for.
+    @State private var listTerm: String?
 
     init(libraryID: String) {
         self.libraryID = libraryID
-        _list = State(initialValue: MusicPagedList { start in
+        _list = State(initialValue: Self.list(libraryID: libraryID, term: nil))
+    }
+
+    private static func list(libraryID: String, term: String?) -> MusicPagedList<MusicArtist> {
+        MusicPagedList { start in
             let page = try await MusicAPI.call {
-                try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: libraryID, startIndex: start, limit: 500)
+                try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: libraryID,
+                                             filter: MusicFilter(searchTerm: term), startIndex: start, limit: 500)
             }
             return (page.artists, page.total)
-        })
+        }
     }
 
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -167,9 +188,12 @@ struct MusicArtistsView: View {
             : Array(repeating: GridItem(.flexible(), spacing: DT.Spacing.md), count: 3)
     }
 
-    /// The artists under the letter they start with, # first as in the other libraries.
-    private var sections: [(letter: String, artists: [MusicArtist])] {
-        let grouped = Dictionary(grouping: list.items) { Self.letter(of: $0.name) }
+    /// The artists under the letter they start with, # first as in the other libraries; worked
+    /// out as pages arrive, not on every render.
+    @State private var sections: [(letter: String, artists: [MusicArtist])] = []
+
+    private static func sections(of artists: [MusicArtist]) -> [(letter: String, artists: [MusicArtist])] {
+        let grouped = Dictionary(grouping: artists) { letter(of: $0.name) }
         return LibraryLetterIndex.letters.compactMap { letter in grouped[letter].map { (letter, $0) } }
     }
 
@@ -182,7 +206,7 @@ struct MusicArtistsView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                MusicListState(list: list, empty: "No Artists")
+                MusicListState(list: list, empty: "No Artists", searchTerm: term)
                 LazyVStack(alignment: .leading, spacing: DT.Spacing.lg, pinnedViews: [.sectionHeaders]) {
                     ForEach(sections, id: \.letter) { section in
                         Section {
@@ -221,14 +245,23 @@ struct MusicArtistsView: View {
                 .padding(.bottom, DT.Spacing.xl)
             }
             .overlay {
-                if list.hasLoaded, !list.items.isEmpty {
+                if list.hasLoaded, !list.items.isEmpty, term == nil {
                     LetterIndexBar { letter in Task { await jump(to: letter, proxy) } }
                 }
             }
         }
         .screenBackground()
         .navigationTitle("Artists")
-        .task { await list.loadIfNeeded() }
+        .sectionSearchable(text: $query, prompt: "Search Artists")
+        .musicSearchTerm(query, $term)
+        .onChange(of: list.items, initial: true) { _, artists in sections = Self.sections(of: artists) }
+        .task(id: term) {
+            if term != listTerm {
+                list = Self.list(libraryID: libraryID, term: term)
+                listTerm = term
+            }
+            await list.loadIfNeeded()
+        }
     }
 
     /// To the letter, or the next one that has artists, loading more until it's there.
@@ -241,6 +274,7 @@ struct MusicArtistsView: View {
             await list.loadMore()
             if list.items.count == before { break }
         }
+        let sections = Self.sections(of: list.items)
         let present = Set(sections.map(\.letter))
         guard let target = letters[start...].first(where: present.contains) ?? sections.last?.letter else { return }
         withAnimation(DT.Animation.standard) { proxy.scrollTo(target, anchor: .top) }
@@ -251,6 +285,8 @@ struct MusicArtistsView: View {
 struct MusicGenresView: View {
     let libraryID: String
     @State private var list: MusicPagedList<MusicGenre>
+    @State private var query = ""
+    @State private var term: String?
 
     init(libraryID: String) {
         self.libraryID = libraryID
@@ -272,8 +308,12 @@ struct MusicGenresView: View {
     var body: some View {
         ScrollView {
             MusicListState(list: list, empty: "No Genres")
+            let genres = list.items.matching(term, \.name)
+            if list.hasLoaded, !list.items.isEmpty, genres.isEmpty, let term {
+                ContentUnavailableView.search(text: term)
+            }
             LazyVGrid(columns: MusicGrid.columns(sizeClass), spacing: DT.Spacing.md) {
-                ForEach(list.items) { genre in
+                ForEach(genres) { genre in
                     NavigationLink { MusicDestination(route: MusicRoute.albums(libraryID: libraryID, title: genre.name, genreID: genre.id)) } label: {
                         MusicGenreTile(genre: genre, libraryID: libraryID, tint: tint(genre))
                     }
@@ -285,6 +325,8 @@ struct MusicGenresView: View {
         }
         .screenBackground()
         .navigationTitle("Genres")
+        .sectionSearchable(text: $query, prompt: "Search Genres")
+        .musicSearchTerm(query, $term)
         .task { await list.loadIfNeeded() }
     }
 }
@@ -301,6 +343,7 @@ struct MusicArtistView: View {
     @State private var topSongs: [MusicSong] = []
     @State private var appearsOn: [MusicAlbum] = []
     @State private var similar: [MusicArtist] = []
+    @State private var confirmDownloadAll = false
 
     init(artist: MusicArtist, libraryID: String?) {
         self.libraryID = libraryID
@@ -318,13 +361,13 @@ struct MusicArtistView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
-                // The artist's photo across the top, like an album page, with their name below.
+                // The artist's photo across the top, like an album page, with their logo or name on it.
                 MusicHero(play: { play(shuffled: false) }, shuffle: { play(shuffled: true) }) { _ in
-                    MusicHeroImage(url: MusicAPI.artworkURL(artist, width: 1200))
+                    MusicHeroImage(url: heroArtURL(width: 1600))
+                } heading: {
+                    MusicArtistTitle(artist: artist, logoSize: CGSize(width: 280, height: 96), onArt: true)
                 } info: {
-                    Text(verbatim: artist.name)
-                        .font(.largeTitle.weight(.bold))
-                        .foregroundStyle(DT.Color.textPrimary)
+                    EmptyView()
                 }
                 VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                     if !topSongs.isEmpty {
@@ -399,7 +442,7 @@ struct MusicArtistView: View {
             .padding(.bottom, DT.Spacing.xl)
         }
         .ignoresSafeArea(edges: .top)
-        .musicHeroBackground(MusicAPI.artworkURL(artist, width: 300))
+        .musicHeroBackground(heroArtURL(width: 300))
         .inlineNavigationTitle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -408,8 +451,15 @@ struct MusicArtistView: View {
                         let id = artist.id
                         Task { await MusicActions.instantMix(from: id) }
                     }
-                    MusicArtistDownloadButton(artist: artist, albums: albums.items)
+                    MusicArtistDownloadButton(artist: artist, albums: albums.items) { confirmDownloadAll = true }
                 }
+            }
+        }
+        .confirmationDialog(Text("Download all \(max(albums.total, albums.items.count)) albums by \(artist.name)?"),
+                            isPresented: $confirmDownloadAll, titleVisibility: .visible) {
+            Button("Download All Albums") {
+                let artist = artist
+                Task { await MusicDownloads.shared.download(artist: artist) }
             }
         }
         .task {
@@ -430,6 +480,12 @@ struct MusicArtistView: View {
             appearsOn = await on ?? []
             similar = await like ?? []
         }
+    }
+
+    /// The square hero takes the photo, the wide strip the backdrop; either stands in for the other.
+    private func heroArtURL(width: Int) -> URL? {
+        let photo = MusicAPI.artworkURL(artist, width: width), backdrop = MusicAPI.backdropURL(artist, width: width)
+        return sizeClass == .regular ? backdrop ?? photo : photo ?? backdrop
     }
 
     private func sectionTitle(_ title: LocalizedStringKey) -> some View {
@@ -477,12 +533,20 @@ struct MusicPlaylistsView: View {
         let playlists = try await MusicAPI.call { try await $0.getMusicPlaylists(credential: $1, authHeader: $2) }
         return (playlists, playlists.count)
     }
+    @State private var query = ""
+    @State private var term: String?
 
     var body: some View {
+        let playlists = list.items.matching(term, \.name)
         List {
             MusicListState(list: list, empty: "No Playlists")
                 .listRowBackground(Color.clear)
-            ForEach(list.items) { playlist in
+            if list.hasLoaded, !list.items.isEmpty, playlists.isEmpty, let term {
+                ContentUnavailableView.search(text: term)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+            ForEach(playlists) { playlist in
                 NavigationLink { MusicDestination(route: MusicRoute.playlist(playlist)) } label: {
                     HStack(spacing: DT.Spacing.sm) {
                         MusicArtwork(url: MusicAPI.artworkURL(playlist, width: 200), cornerRadius: DT.Radius.sm)
@@ -513,6 +577,8 @@ struct MusicPlaylistsView: View {
         .scrollContentBackground(.hidden)
         .screenBackground()
         .navigationTitle("Playlists")
+        .sectionSearchable(text: $query, prompt: "Search Playlists")
+        .musicSearchTerm(query, $term)
         .task { await list.loadIfNeeded() }
         .refreshable { await list.reload() }
         .onChange(of: MusicPlaylistEditor.shared.changeCount) { Task { await list.reload() } }
@@ -549,7 +615,9 @@ struct MusicPlaylistView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
-            ForEach(Array(songs.enumerated()), id: \.offset) { index, song in
+            // By the playlist entry, not the position: after a removal the rows below kept the
+            // removed row's place and state.
+            ForEach(Array(songs.enumerated()), id: \.element.playlistRowID) { index, song in
                 MusicSongRow(song: song, onRemove: { Task { await MusicPlaylistEditor.shared.remove(song, from: playlist) } }) {
                     MusicActions.play(songs, from: index)
                 }
@@ -614,4 +682,9 @@ private struct MusicGenreTile: View {
                 cover = albums?.albums.first.flatMap { MusicAPI.artworkURL($0, width: 300) }
             }
     }
+}
+
+private extension MusicSong {
+    /// The same song can be in a playlist twice; each entry has its own id.
+    var playlistRowID: String { playlistEntryId ?? id }
 }

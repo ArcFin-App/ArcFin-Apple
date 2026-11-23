@@ -64,9 +64,9 @@ enum SubtitleBackgroundStyle: String, CaseIterable, Identifiable {
     }
 }
 
-/// Shared subtitle rendering for both the online and offline players, driven by the three
-/// @AppStorage-backed prefs set in SubtitleStyleSettingsView — kept as one view so the two
-/// players can't drift out of sync on how a style option actually renders.
+/// Shared subtitle rendering, driven by the three @AppStorage-backed prefs set in
+/// SubtitleStyleSettingsView — kept as one view so every place subtitles are drawn agrees on
+/// how a style option actually renders.
 struct SubtitleText: View {
     let text: String
     var size: SubtitleTextSize

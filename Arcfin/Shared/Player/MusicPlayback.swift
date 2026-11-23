@@ -66,6 +66,7 @@ final class MusicPlayback {
         }
         player.onEvent = { [weak self] event in self?.handle(event) }
         followPlayer()
+        followNowPlayingDetails()
         followProfile(authManager.state.credential?.userID)
         followCast()
         followVisualizerSetting()
@@ -152,13 +153,17 @@ final class MusicPlayback {
     var isPlaying: Bool { isCasting ? !cast.isPaused : player.isPlaying }
     var position: Double { isCasting ? castPosition : player.position }
 
+    /// The remote's Play/Pause and Now Playing included: a song paused under the app lock
+    /// stays paused until it opens.
     func togglePlayPause() {
+        guard AppServices.hasPassedLock || isPlaying else { return }
         let playing = !isPlaying
         isCasting ? cast.togglePlayPause() : player.togglePlayPause()
         onUserAction?(playing)
     }
 
     func resume() {
+        guard AppServices.hasPassedLock else { return }
         isCasting ? cast.play() : player.resume()
         onUserAction?(true)
     }
@@ -187,6 +192,36 @@ final class MusicPlayback {
     func addToQueue(_ songs: [MusicSong]) {
         player.addToQueue(songs)
         onUserAction?(nil)
+    }
+
+    func remove(_ id: MusicQueue.Entry.ID) {
+        player.remove(id)
+        onUserAction?(nil)
+    }
+
+    func moveUpNext(from source: Int, to destination: Int) {
+        player.moveUpNext(from: source, to: destination)
+        onUserAction?(nil)
+    }
+
+    func clearUpNext() {
+        player.clearUpNext()
+        onUserAction?(nil)
+    }
+
+    func setRepeatMode(_ mode: MusicQueue.RepeatMode) {
+        player.repeatMode = mode
+        onUserAction?(nil)
+    }
+
+    /// Off, then all, then one, as the Repeat buttons go round.
+    func cycleRepeatMode() {
+        let next: MusicQueue.RepeatMode = switch player.repeatMode {
+        case .off: .all
+        case .all: .one
+        case .one: .off
+        }
+        setRepeatMode(next)
     }
 
     func seek(to seconds: Double) {
@@ -682,7 +717,6 @@ final class MusicPlayback {
         withObservationTracking {
             _ = player.current
             _ = player.isPlaying
-            _ = player.duration
             _ = player.queue.currentIndex
             _ = player.seekCount
             _ = player.volume
@@ -693,6 +727,21 @@ final class MusicPlayback {
                 // A remote sees a pause, a seek or a volume change straight away.
                 self?.reportProgress()
                 self?.followPlayer()
+            }
+        }
+    }
+
+    /// What only the lock screen and the car show: a length learnt as a song streams (the
+    /// server isn't sent a report for it), and Shuffle and Repeat.
+    private func followNowPlayingDetails() {
+        withObservationTracking {
+            _ = player.duration
+            _ = player.queue.isShuffled
+            _ = player.repeatMode
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.updateNowPlaying()
+                self?.followNowPlayingDetails()
             }
         }
     }
@@ -730,6 +779,14 @@ final class MusicPlayback {
         center.nowPlayingInfo = info
         if PlatformMetrics.setsNowPlayingState { center.playbackState = isPlaying ? .playing : .paused }
         updateRatingCommands(for: song)
+        // CarPlay's Shuffle and Repeat buttons show these.
+        let commands = MPRemoteCommandCenter.shared()
+        commands.changeShuffleModeCommand.currentShuffleType = player.queue.isShuffled ? .items : .off
+        commands.changeRepeatModeCommand.currentRepeatType = switch player.repeatMode {
+        case .off: .off
+        case .all: .all
+        case .one: .one
+        }
     }
 
     /// The system's Like, Dislike and Favorite show what this song has.
@@ -791,7 +848,8 @@ final class MusicPlayback {
         let center = MPRemoteCommandCenter.shared()
         return [center.playCommand, center.pauseCommand, center.togglePlayPauseCommand,
                 center.nextTrackCommand, center.previousTrackCommand, center.changePlaybackPositionCommand,
-                center.likeCommand, center.dislikeCommand, center.bookmarkCommand]
+                center.likeCommand, center.dislikeCommand, center.bookmarkCommand,
+                center.changeShuffleModeCommand, center.changeRepeatModeCommand]
     }
 
     private func removeCommands() {
@@ -823,6 +881,24 @@ final class MusicPlayback {
         center.likeCommand.addTarget { _ in Task { @MainActor in AppServices.music.rateCurrent(likes: true) }; return .success }
         center.dislikeCommand.addTarget { _ in Task { @MainActor in AppServices.music.rateCurrent(likes: false) }; return .success }
         center.bookmarkCommand.addTarget { _ in Task { @MainActor in AppServices.music.favoriteCurrent() }; return .success }
+        // Set to what the event asks for rather than toggled, so a tap that also runs a button's
+        // own handler lands in the same place.
+        center.changeShuffleModeCommand.addTarget { event in
+            guard let event = event as? MPChangeShuffleModeCommandEvent else { return .commandFailed }
+            let on = event.shuffleType != .off
+            Task { @MainActor in AppServices.music.setShuffled(on) }
+            return .success
+        }
+        center.changeRepeatModeCommand.addTarget { event in
+            guard let event = event as? MPChangeRepeatModeCommandEvent else { return .commandFailed }
+            let mode: MusicQueue.RepeatMode = switch event.repeatType {
+            case .one: .one
+            case .all: .all
+            default: .off
+            }
+            Task { @MainActor in AppServices.music.setRepeatMode(mode) }
+            return .success
+        }
         Self.commands.forEach { $0.isEnabled = true }
         // A song is skipped, not jumped through ten seconds at a time.
         center.skipForwardCommand.isEnabled = false

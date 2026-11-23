@@ -8,6 +8,7 @@ struct PersonDetailView: View {
     let person: MediaPerson
 
     @Environment(AuthManager.self) private var authManager
+    @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
 
     @State private var model: PersonDetailModel
@@ -37,12 +38,14 @@ struct PersonDetailView: View {
     /// The card focus lands on: the first library title, else the first credit.
     private var firstCard: FocusTarget? {
         if let item = model.items.first { return .card("item-\(item.id)") }
-        if let credit = model.missingCredits(seerrRepo: seerrRepo).first { return .card("credit-\(credit.id)") }
+        if let credit = model.missingCredits.first { return .card("credit-\(credit.id)") }
         return nil
     }
 
     var body: some View {
-        PersonDetailContent(model: model, columns: columns, creditScale: 1.8) { item, poster in
+        // Apple TV's cards are landscape: the portrait poster was cropped to a strip.
+        PersonDetailContent(model: model, columns: columns, creditScale: 1.8,
+                            cardImageURL: { mediaRepo.tvImageURL(for: $0, fillWidth: 640) }) { item, poster in
             Button { selectedItem = item } label: { poster }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()

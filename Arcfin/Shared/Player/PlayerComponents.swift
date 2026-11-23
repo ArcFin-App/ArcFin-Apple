@@ -45,7 +45,7 @@ struct PlayerSeekFeedbackView: View {
             VStack(spacing: 4) {
                 Image(systemName: skipIconName(seconds: feedback.seconds, forward: feedback.forward))
                     .font(.system(.title))
-                Text("\(feedback.seconds)s")
+                Text(Duration.seconds(feedback.seconds).formatted(.units(allowed: [.seconds], width: .narrow)))
                     .font(.system(.caption2, design: .default, weight: .semibold))
             }
             .foregroundStyle(.white)
@@ -206,7 +206,7 @@ struct ChapterListSheet: View {
                     } label: {
                         HStack(spacing: 12) {
                             ChapterThumbnailView(loader: model.trickplayLoader, positionTicks: chapter.startPositionTicks)
-                            Text(chapter.name ?? "Chapter \(index + 1)")
+                            Text(chapter.name ?? String(localized: "Chapter \(index + 1)"))
                                 .font(.system(.footnote, design: .default, weight: isCurrent ? .semibold : .regular))
                                 .foregroundStyle(isCurrent ? DT.Color.accent : DT.Color.textPrimary)
                             Spacer()
@@ -301,12 +301,11 @@ struct PlayerMediaInfoSheet: View {
     private func mediaInfoTrackLabel(_ stream: JellyfinMediaStream) -> String {
         if let title = stream.displayTitle, !title.isEmpty { return title }
         let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
-        return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "Track \(stream.index)") : parts.joined(separator: " · ")
     }
 
     private func mediaInfoBitrateLabel(_ bitrate: Int) -> String {
-        let mbps = Double(bitrate) / 1_000_000
-        return mbps >= 1 ? String(format: "%.1f Mb/s", mbps) : String(format: "%.0f Kb/s", Double(bitrate) / 1000)
+        PlayerModel.bitrateLabel(bitrate, fractionDigits: 1)
     }
 }
 
@@ -357,7 +356,13 @@ struct SyncPlaySheet: View {
                                     } label: {
                                         VStack(alignment: .leading, spacing: 2) {
                                             Text(group.groupName).foregroundStyle(DT.Color.textPrimary)
-                                            Text("\(group.participants.count) watching" + (group.playingItemName.map { " · \($0)" } ?? ""))
+                                            Group {
+                                                if let playing = group.playingItemName {
+                                                    Text("\(group.participants.count) watching · \(playing)")
+                                                } else {
+                                                    Text("\(group.participants.count) watching")
+                                                }
+                                            }
                                                 .font(.system(.caption2))
                                                 .foregroundStyle(DT.Color.textSecondary)
                                         }
@@ -398,7 +403,7 @@ struct SyncPlaySheet: View {
 
 /// One of the Up Next card's buttons: Play Next, Like or Dislike.
 struct CreditsActionButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     let isSelected: Bool
     var countdown: PlayerView.AutoActionCountdown? = nil
@@ -428,7 +433,7 @@ struct CreditsActionButton: View {
 
 /// Skip Credits, Like or Dislike along the bottom of the More Like This panel.
 struct CreditsRatingButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let systemImage: String
     let isSelected: Bool
     let action: () -> Void
@@ -530,10 +535,11 @@ struct SuggestionRow: View {
 struct CastPanelPersonRow: View {
     let person: MediaPerson
     let compact: Bool
+    var localPhoto: URL? = nil
     @Environment(MediaRepository.self) private var mediaRepo
 
     var body: some View {
-        let photo = CachedAsyncImage(url: person.primaryImageTag.flatMap {
+        let photo = CachedAsyncImage(url: localPhoto ?? person.primaryImageTag.flatMap {
             mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 160)
         }) { phase in
             switch phase {
@@ -591,6 +597,7 @@ struct CastPanelPersonRow: View {
 // MARK: - Audio & subtitle track selection
 
 struct TrackSelectionSheet: View {
+    @Environment(AuthManager.self) private var authManager
     let audioStreams: [JellyfinMediaStream]
     let subtitleStreams: [JellyfinMediaStream]
     let selectedAudioIndex: Int?
@@ -624,17 +631,21 @@ struct TrackSelectionSheet: View {
                     if let dialogueBoost {
                         Toggle(isOn: dialogueBoost) {
                             Label("Dialogue Boost", systemImage: "waveform.badge.plus")
+                                .labelStyle(ToggleRowLabelStyle())
                                 .foregroundStyle(DT.Color.textPrimary)
                         }
                         .tint(DT.Color.accent)
+                        .syncLocked(PlayerModel.dialogueBoostKey, authManager)
                         .listRowBackground(rowBackground)
                     }
                     if let raiseQuietAudio {
                         Toggle(isOn: raiseQuietAudio) {
                             Label("Raise Quiet Audio", systemImage: "speaker.wave.3")
+                                .labelStyle(ToggleRowLabelStyle())
                                 .foregroundStyle(DT.Color.textPrimary)
                         }
                         .tint(DT.Color.accent)
+                        .syncLocked(PlayerModel.raiseQuietAudioKey, authManager)
                         .listRowBackground(rowBackground)
                     }
                 } header: {
@@ -649,6 +660,7 @@ struct TrackSelectionSheet: View {
                 Section {
                     Toggle(isOn: lineArt) {
                         Label("Animation Upscaling", systemImage: "sparkles.tv")
+                            .labelStyle(ToggleRowLabelStyle())
                             .foregroundStyle(DT.Color.textPrimary)
                     }
                     .tint(DT.Color.accent)
@@ -660,7 +672,7 @@ struct TrackSelectionSheet: View {
                 }
             }
             Section("Subtitles") {
-                trackRow("Off", isSelected: selectedSubtitleIndex == nil) {
+                trackRow(String(localized: "Off"), isSelected: selectedSubtitleIndex == nil) {
                     onSelectSubtitle(nil)
                 }
                 ForEach(subtitleStreams, id: \.index) { stream in
@@ -687,18 +699,33 @@ struct TrackSelectionSheet: View {
         Button(action: action) {
             TrackRowLabel(label: label, isSelected: isSelected, followsFocus: followsFocus)
         }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .listRowBackground(rowBackground)
     }
 
     private func label(for stream: JellyfinMediaStream) -> String {
         if let title = stream.displayTitle, !title.isEmpty { return title }
         let parts = [stream.language, stream.codec?.uppercased()].compactMap { $0 }
-        return parts.isEmpty ? "Track \(stream.index)" : parts.joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "Track \(stream.index)") : parts.joined(separator: " · ")
     }
 
     private func audioLabel(for stream: JellyfinMediaStream) -> String {
         guard audioDescriptionIndices.contains(stream.index) else { return label(for: stream) }
         return String(localized: "\(label(for: stream)) · Audio Description")
+    }
+}
+
+/// A toggle row's icon and title side by side, with room between them: the default style
+/// drew the wider symbols over the start of the title.
+struct ToggleRowLabelStyle: LabelStyle {
+    @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = 28
+
+    func makeBody(configuration: Configuration) -> some View {
+        HStack(spacing: iconWidth / 2) {
+            configuration.icon
+                .frame(minWidth: iconWidth)
+            configuration.title
+        }
     }
 }
 
@@ -717,6 +744,7 @@ private struct TrackRowLabel: View {
             Spacer()
             if isSelected {
                 Image(systemName: "checkmark").foregroundStyle(isFocused ? Color.black : DT.Color.accent)
+                    .accessibilityHidden(true)
             }
         }
     }

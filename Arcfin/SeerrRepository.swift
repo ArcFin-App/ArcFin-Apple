@@ -146,7 +146,8 @@ final class SeerrRepository {
               let url = URL(string: trimURL) else {
             client = nil
             configuredURL = ""; configuredUsername = ""; configuredPassword = ""
-            trending = []; popularMovies = []; popularTV = []; requests = []
+            currentUser = nil; canManageRequests = false; publicSettings = nil; authFailed = false
+            trending = []; popularMovies = []; popularTV = []; requests = []; watchlist = []
             upcomingMovies = []; upcomingTV = []; movieGenres = []; tvGenres = []
             return
         }
@@ -168,9 +169,10 @@ final class SeerrRepository {
         // A different Seerr user, whose permissions and quota are their own.
         currentUser = nil
         canManageRequests = false
+        publicSettings = nil
         authFailed = false
         cachedRegion = nil
-        trending = []; popularMovies = []; popularTV = []; requests = []
+        trending = []; popularMovies = []; popularTV = []; requests = []; watchlist = []
         upcomingMovies = []; upcomingTV = []; movieGenres = []; tvGenres = []
     }
 
@@ -256,11 +258,11 @@ final class SeerrRepository {
             return
         } catch let error as SeerrError where error.isSignInFailure {
             authFailed = true
-            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             scheduleRetry()
             return
         } catch {
-            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             scheduleRetry()
             return
         }
@@ -317,9 +319,9 @@ final class SeerrRepository {
                 for item in requests where item.requestedByID == nil || item.requestedByID == currentUser?.id {
                     guard let previous = known[item.id] else { continue }
                     if previous.status != .approved, item.status == .approved {
-                        Task { await NotificationManager.notifyRequestApproved(title: item.mediaTitle) }
+                        Task { await NotificationManager.notifyRequestApproved(title: item.mediaTitle, requestID: item.id) }
                     } else if previous.mediaStatus != .available, item.mediaStatus == .available {
-                        Task { await NotificationManager.notifyRequestAvailable(title: item.mediaTitle) }
+                        Task { await NotificationManager.notifyRequestAvailable(title: item.mediaTitle, requestID: item.id) }
                     }
                 }
             }

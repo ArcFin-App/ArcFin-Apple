@@ -118,6 +118,12 @@ public struct SeerrItem: Sendable, Identifiable, Equatable, Hashable {
     public var backdropURL: URL? {
         backdropPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w1280\($0)") }
     }
+
+    /// A watchlist entry whose details couldn't be fetched, titled like a request row in the
+    /// same state. Nil without a tmdbId, which nothing could open.
+    public static func watchlistPlaceholder(tmdbId: Int?, mediaType: String?) -> SeerrItem? {
+        tmdbId.map { SeerrItem(id: $0, title: "Unknown", mediaType: mediaType == "tv" ? .tv : .movie) }
+    }
 }
 
 /// A genre with a representative backdrop image — the picker data for /discover/genreslider,

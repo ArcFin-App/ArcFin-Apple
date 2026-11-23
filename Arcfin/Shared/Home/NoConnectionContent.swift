@@ -17,10 +17,10 @@ struct NoConnectionContent<MoreActions: View>: View {
     @Environment(MediaRepository.self) private var mediaRepo
 
     private let tips = [
-        "Check that Wi-Fi or Mobile Data is turned on",
-        "Try turning Wi-Fi or Mobile Data off, then back on",
-        "Quit Arcfin completely and reopen it",
-        "Confirm your server is online and reachable from this network",
+        String(localized: "Check that Wi-Fi or Mobile Data is turned on"),
+        String(localized: "Try turning Wi-Fi or Mobile Data off, then back on"),
+        String(localized: "Quit Arcfin completely and reopen it"),
+        String(localized: "Confirm your server is online and reachable from this network"),
     ]
 
     var body: some View {

@@ -15,21 +15,27 @@ struct DownloadedItemDetailView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbarBackground(.hidden, for: .navigationBar)
             .task(id: item.itemId) { await model.load(item, downloadManager: downloadManager) }
-            .fullScreenCover(item: $model.playingItem) { item in
-                OfflinePlayerView(downloadedItem: item, startPositionOverride: model.startOverride)
+            .fullScreenCover(item: $model.playingItem.playerCover) { playback in
+                let item = playback.item
+                PlayerView(download: item, startPositionOverride: model.startOverride) { next in
+                    PlayerView.keepOrientationOnNextDisappear = true
+                    model.play(next, startOverride: nil)
+                }
+                .id(item.itemId)
             }
             .alert("Delete this download?", isPresented: $model.showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
-                    downloadManager.deleteDownload(item)
+                    model.deleteOnClose = .delete
                     dismiss()
                 }
                 if downloadManager.smartIgnoreTarget(itemId: item.itemId) != nil {
                     Button("Delete & Ignore in Smart Downloads", role: .destructive) {
-                        downloadManager.deleteAndIgnore(itemIds: [item.itemId])
+                        model.deleteOnClose = .deleteAndIgnore
                         dismiss()
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             }
+            .onDisappear { model.pageClosed(item, downloadManager: downloadManager) }
     }
 }

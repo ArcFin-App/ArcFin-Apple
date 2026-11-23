@@ -20,8 +20,8 @@ struct DownloadButton: View {
     @State private var isSheetShown = false
 
     private var isDownloaded: Bool { downloadManager.isDownloaded(item.id) }
-    private var progress: Double? { downloadManager.progress[item.id] }
-    private var isQueued: Bool { downloadManager.activeItemTitles[item.id] != nil }
+    private var progress: Double? { isQueued ? downloadManager.progress[item.id] : nil }
+    private var isQueued: Bool { downloadManager.isInProgress(item.id) }
 
     private var downloadAccessibilityLabel: LocalizedStringKey {
         if isDownloaded { return "Downloaded, tap to delete" }

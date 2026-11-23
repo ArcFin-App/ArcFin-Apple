@@ -7,10 +7,13 @@ import AuthCore
 /// Watch stats worked out from the server's own record of what this profile has watched.
 struct StatsView: View {
     @Environment(AuthManager.self) private var authManager
+    @Environment(MediaRepository.self) private var mediaRepo
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
 
     @AppStorage("statsPeriod") private var period = StatsPeriod.month
     @State private var model = StatsModel()
+    @State private var kind = StatsKind.all
     /// Landscape, iPad and TV: the cards go in two columns instead of one long, stretched one.
     private let isWide = true
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -29,8 +32,24 @@ struct StatsView: View {
         }
         .task(id: authManager.state.credential?.id) { await model.load(authManager: authManager) }
         .task(id: model.input(period: period)) { await model.compute(period: period, reduceMotion: reduceMotion) }
+        .task(id: musicTaskID) { if shownKind != .video { await model.loadMusic(authManager: authManager) } }
+        .task(id: model.musicInput(period: period)) { await model.computeMusic(period: period, reduceMotion: reduceMotion) }
         .onChange(of: period) { model.offset = 0 }
+        // No pull to refresh on Apple TV: pick up what's been watched since when the tab comes
+        // back into view or the app comes back to the front.
+        .onAppear { refresh() }
+        .onChange(of: scenePhase) { _, phase in if phase == .active { refresh() } }
     }
+
+    private func refresh() {
+        guard model.phase != .loading else { return }
+        Task { await model.load(authManager: authManager) }
+    }
+
+    /// Music shows up only with a music library to play from.
+    private var hasMusic: Bool { mediaRepo.libraries.contains { $0.collectionType == .music } }
+    private var shownKind: StatsKind { hasMusic ? kind : .video }
+    private var musicTaskID: String { "\(authManager.state.credential?.id.uuidString ?? "")-\(shownKind != .video)" }
 
     @ViewBuilder
     private var content: some View {
@@ -55,16 +74,11 @@ struct StatsView: View {
                         .font(.title2.bold())
                         .foregroundStyle(DT.Color.textPrimary)
                         .accessibilityAddTraits(.isHeader)
+                    if hasMusic { kindPicker }
                     periodPicker
-                    if period != .allTime, let stats = model.stats { periodStepper(stats) }
-                    if let stats = model.stats {
-                        if stats.isEmpty {
-                            StatsEmptyPeriod(period: period, stats: model.stats, offset: model.offset)
-                        } else {
-                            StatsSections(stats: stats, counts: model.counts, isWide: isWide,
-                                          compactHero: verticalSizeClass == .compact)
-                        }
-                    }
+                    if period != .allTime, let title = StatsStepperTitle(kind: shownKind, model: model) { periodStepper(title) }
+                    StatsKindContent(kind: shownKind, model: model, period: period, isWide: isWide,
+                                     compactHero: verticalSizeClass == .compact)
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.top, 8)
@@ -74,30 +88,39 @@ struct StatsView: View {
         }
     }
 
-    private var periodPicker: some View {
-        Picker("Period", selection: $period) {
-            ForEach(StatsPeriod.allCases) { Text($0.title).tag($0) }
+    private var kindPicker: some View {
+        Picker("Show", selection: $kind) {
+            ForEach(StatsKind.allCases) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
         .focusSection()
     }
 
+    private var periodPicker: some View {
+        Picker("Period", selection: $period) {
+            ForEach(StatsPeriod.allCases) { Text($0.label).tag($0) }
+        }
+        .pickerStyle(.segmented)
+        .syncLocked("statsPeriod", authManager)
+        .focusSection()
+    }
+
     /// Steps back through earlier weeks, months or years, and forward again to the current one.
-    private func periodStepper(_ stats: WatchStats) -> some View {
+    private func periodStepper(_ title: StatsStepperTitle) -> some View {
         HStack(spacing: 12) {
-            stepButton("chevron.left", label: "Previous \(period.title)", disabled: !stats.hasEarlier) { model.offset -= 1 }
+            stepButton("chevron.left", label: period.previousLabel, disabled: !model.hasEarlier(shownKind)) { model.offset -= 1 }
             VStack(spacing: 1) {
-                Text(stats.name)
+                Text(title.name)
                     .font(.system(.headline))
                     .foregroundStyle(DT.Color.textPrimary)
                     .contentTransition(.numericText())
-                Text(stats.heading)
+                Text(title.heading)
                     .font(.system(.caption))
                     .foregroundStyle(DT.Color.textSecondary)
             }
             .frame(maxWidth: .infinity)
             .accessibilityElement(children: .combine)
-            stepButton("chevron.right", label: "Next \(period.title)", disabled: model.offset == 0) { model.offset += 1 }
+            stepButton("chevron.right", label: period.nextLabel, disabled: model.offset == 0) { model.offset += 1 }
         }
         .focusSection()
     }

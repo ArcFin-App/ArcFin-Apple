@@ -244,13 +244,29 @@ public struct ListenBrainzYear: Sendable, Equatable {
 }
 
 extension ListenBrainzClient {
+    /// The ranges ListenBrainz works stats out for: the current week, month and year, the
+    /// previous ones, and all time.
+    public enum StatsRange: String, Sendable {
+        case thisWeek = "this_week", thisMonth = "this_month", thisYear = "this_year"
+        case lastWeek = "week", lastMonth = "month", lastYear = "year"
+        case allTime = "all_time"
+    }
+
     /// This year's top songs, artists and albums and listens per month. ListenBrainz works
     /// stats out once a day; a part it hasn't worked out yet comes back empty.
     public func thisYear(userName: String) async throws -> ListenBrainzYear {
+        let startOfYear = Calendar.current.date(from: Calendar.current.dateComponents([.year], from: .now)) ?? .distantPast
+        return try await stats(userName: userName, range: .thisYear, since: startOfYear)
+    }
+
+    /// One range's top songs, artists and albums, and its listens over time (by day for a week
+    /// or month, by month for a year, by year for all time) from `since` up to `until`.
+    public func stats(userName: String, range: StatsRange, since: Date = .distantPast,
+                      until: Date = .distantFuture) async throws -> ListenBrainzYear {
         func stats(_ kind: String, count: Int = 25) async throws -> Data? {
             var comps = URLComponents(url: baseURL.appendingPathComponent("1/stats/user/\(userName)/\(kind)"),
                                       resolvingAgainstBaseURL: false)
-            comps?.queryItems = [.init(name: "range", value: "this_year"), .init(name: "count", value: String(count))]
+            comps?.queryItems = [.init(name: "range", value: range.rawValue), .init(name: "count", value: String(count))]
             guard let url = comps?.url else { throw URLError(.badURL) }
             let data = try await send(URLRequest(url: url))
             return data.isEmpty ? nil : data
@@ -259,15 +275,14 @@ extension ListenBrainzClient {
         async let artists = stats("artists")
         async let albums = stats("releases")
         async let activity = stats("listening-activity")
-        let startOfYear = Calendar.current.date(from: Calendar.current.dateComponents([.year], from: .now)) ?? .distantPast
         return try Self.year(songs: await songs, artists: await artists, albums: await albums, activity: await activity,
-                             since: startOfYear)
+                             since: since, until: until)
     }
 
     /// `since` leaves out earlier months: ListenBrainz works out the previous period too, and
     /// its docs don't say whether this year's activity comes with last year's.
     static func year(songs: Data?, artists: Data?, albums: Data?, activity: Data?,
-                     since: Date = .distantPast) throws -> ListenBrainzYear {
+                     since: Date = .distantPast, until: Date = .distantFuture) throws -> ListenBrainzYear {
         func entries(_ data: Data?, list: String, name: String) throws -> [ListenBrainzYear.Entry] {
             guard let data, let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                   let payload = object["payload"] as? [String: Any], let items = payload[list] as? [[String: Any]]
@@ -286,8 +301,10 @@ extension ListenBrainzClient {
            let payload = object["payload"] as? [String: Any],
            let items = payload["listening_activity"] as? [[String: Any]] {
             year.months = items.compactMap { item in
-                guard let from = item["from_ts"] as? Int, Date(timeIntervalSince1970: TimeInterval(from)) >= since else { return nil }
-                return .init(start: Date(timeIntervalSince1970: TimeInterval(from)), listens: item["listen_count"] as? Int ?? 0)
+                guard let from = item["from_ts"] as? Int else { return nil }
+                let start = Date(timeIntervalSince1970: TimeInterval(from))
+                guard start >= since, start < until else { return nil }
+                return .init(start: start, listens: item["listen_count"] as? Int ?? 0)
             }
         }
         return year

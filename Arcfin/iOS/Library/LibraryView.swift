@@ -2,13 +2,15 @@
 
 import SwiftUI
 import JellyfinAPI
+import AuthCore
 
 struct LibraryView: View {
     @Environment(MediaRepository.self) private var mediaRepo
-    @Environment(SeerrRepository.self) private var seerrRepo
+    @Environment(AuthManager.self) private var authManager
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
     @State private var model = LibraryModel()
+    @State private var isSearchPresented = false
 
     private var isWide: Bool { horizontalSizeClass == .regular }
 
@@ -27,7 +29,9 @@ struct LibraryView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if model.searchQuery.isEmpty {
+                // Kept on screen while the field is active, so Recent Searches can show before
+                // anything is typed.
+                if model.searchQuery.isEmpty && !isSearchPresented {
                     browseContent
                 } else {
                     SearchView(query: $model.searchQuery)
@@ -40,7 +44,8 @@ struct LibraryView: View {
                 MusicDestination(route: route)
             }
             .navigationTitle("Browse")
-            .searchable(text: $model.searchQuery, prompt: "Movies, shows, music, live TV, people…")
+            .toolbar { browseFilesButton }
+            .searchable(text: $model.searchQuery, isPresented: $isSearchPresented, prompt: "Movies, shows, music, live TV, people…")
             .navigationBarTitleDisplayMode(.large)
             .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: JellyfinLibrary.self) { library in
@@ -69,7 +74,8 @@ struct LibraryView: View {
             }
             .navigationDestination(isPresented: $model.navigateToLocalPlayer) {
                 if let url = model.pickedURL {
-                    LocalPlayerView(url: url)
+                    PlayerView(fileURL: url)
+                        .toolbar(.hidden, for: .navigationBar)
                         .toolbar(.hidden, for: .tabBar)
                 }
             }
@@ -106,31 +112,21 @@ struct LibraryView: View {
                 // ── Your Libraries ──────────────────────────────────────
                 if !supportedLibraries.isEmpty {
                     librariesSection
-                }
-
-                // ── Your Requests ───────────────────────────────────────
-                if seerrRepo.isConfigured {
-                    requestsSection
+                } else {
+                    BrowseLibrariesStatus()
                 }
 
                 // ── Downloads ───────────────────────────────────────────
-                jellyfinDownloadsSection
-                if !MusicDownloads.shared.isEmpty {
-                    NavigationLink {
-                        MusicDownloadsView()
-                    } label: {
-                        LibraryLinkRow(systemImage: "music.note", title: "Downloaded Music",
-                                       subtitle: "Albums and songs saved for offline listening")
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                // ── On This Device ──────────────────────────────────────
-                onDeviceSection
+                downloadsSection
             }
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.top, 8)
             .padding(.bottom, 32)
+        }
+        // Libraries added or removed on the server since Home last loaded.
+        .refreshable {
+            guard case .authenticated(let cred) = authManager.state else { return }
+            await mediaRepo.load(credential: cred, authClient: authManager.authClient, force: true)
         }
     }
 
@@ -156,45 +152,39 @@ struct LibraryView: View {
         NavigationLink(value: library) { label() }
     }
 
-    // MARK: - Your Requests section
+    // MARK: - Downloads section
 
-    private var requestsSection: some View {
+    private var downloadsSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            LibrarySectionHeader(title: "Your Requests")
-            NavigationLink {
-                SeerrRequestsListView(filter: nil, title: "Requests")
-            } label: {
-                RequestsCard()
+            LibrarySectionHeader(title: "Downloads")
+            LazyVGrid(columns: gridColumns, spacing: 12) {
+                NavigationLink {
+                    DownloadsView()
+                } label: {
+                    BrowseIconTile(systemImage: "arrow.down.circle.fill", title: "Movies & Shows")
+                }
+                .buttonStyle(.plain)
+                if !MusicDownloads.shared.isEmpty {
+                    NavigationLink {
+                        MusicDownloadsView()
+                    } label: {
+                        BrowseIconTile(systemImage: "music.note", title: "Music")
+                    }
+                    .buttonStyle(.plain)
+                }
             }
-            .buttonStyle(.plain)
-            .frame(maxWidth: 220)
         }
     }
 
-    // MARK: - Jellyfin downloads section
-
-    private var jellyfinDownloadsSection: some View {
-        NavigationLink {
-            DownloadsView()
-        } label: {
-            LibraryLinkRow(systemImage: "arrow.down.circle.fill", title: "Downloads",
-                           subtitle: "Movies and episodes saved for offline playback")
-        }
-        .buttonStyle(.plain)
-    }
-
-    // MARK: - On this device section
-
-    private var onDeviceSection: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            LibrarySectionHeader(title: "On This Device")
-
+    // A video file on this device, played without the server.
+    private var browseFilesButton: some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
             Button {
                 model.showDocPicker = true
             } label: {
-                LibraryLinkRow(systemImage: "folder.fill", title: "Browse Files",
-                               subtitle: "Pick a video file from Files app")
+                Label("Browse Files", systemImage: "folder")
             }
+            .help("Play a video file from this device")
         }
     }
 }

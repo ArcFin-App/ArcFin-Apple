@@ -19,6 +19,20 @@ final class DownloadedItemDetailModel {
         if let url = Self.heroURL(for: item) { heroTint = await AverageColor.load(from: url) }
     }
 
+    enum DeleteOnClose { case delete, deleteAndIgnore }
+    /// Picked in the delete confirmation, and done once the page has gone: until then it still
+    /// reads the record, and reading a deleted SwiftData model is unsafe.
+    var deleteOnClose: DeleteOnClose?
+
+    func pageClosed(_ item: DownloadedItem, downloadManager: DownloadManager) {
+        switch deleteOnClose {
+        case .delete: downloadManager.deleteDownload(item)
+        case .deleteAndIgnore: downloadManager.deleteAndIgnore(itemIds: [item.itemId])
+        case nil: break
+        }
+        deleteOnClose = nil
+    }
+
     /// Plays from the saved position, or from `startOverride` (0 for Start Over).
     func play(_ item: DownloadedItem, startOverride: Int64?) {
         self.startOverride = startOverride
@@ -27,7 +41,7 @@ final class DownloadedItemDetailModel {
 
     static func fileURL(_ name: String?, of item: DownloadedItem) -> URL? {
         guard let name, !name.isEmpty else { return nil }
-        return DownloadStore.directory(for: item.itemId).appendingPathComponent(name)
+        return DownloadStore.directory(for: item).appendingPathComponent(name)
     }
 
     /// An episode rarely has its own backdrop: the show's, saved with its first download, is
@@ -82,7 +96,7 @@ struct DownloadedItemDetailPage: View {
                                 .frame(maxWidth: .infinity, minHeight: 44)
                         }
                         .buttonStyle(.bordered)
-                        .tint(.red)
+                        .tint(DT.Color.palette("F43F5E"))
                     }
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.top, DT.Spacing.md)
@@ -148,7 +162,7 @@ struct DownloadedItemDetailPage: View {
         if let year = item.productionYear { parts.append(String(year)) }
         if item.runtimeTicks > 0 { parts.append("\(Int(item.runtimeTicks / 10_000_000 / 60)) min") }
         if let rating = item.officialRating, !rating.isEmpty { parts.append(rating) }
-        if let score = item.communityRating, score > 0 { parts.append("★ \(String(format: "%.1f", score))") }
+        if let score = item.communityRating, score > 0 { parts.append("★ \(score.formatted(.number.precision(.fractionLength(1))))") }
         return parts.joined(separator: " · ")
     }
 
@@ -271,7 +285,7 @@ struct DownloadedItemDetailPage: View {
         }
     }
 
-    private func detailRow(_ label: String, _ value: String) -> some View {
+    private func detailRow(_ label: LocalizedStringKey, _ value: String) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(label)
                 .font(.system(.footnote, weight: .semibold))

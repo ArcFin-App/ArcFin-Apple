@@ -70,10 +70,11 @@ final class HomeModel {
         guard seerrRepo.hasCatalog && enabled else { return }
         await seerrRepo.loadDiscover()
         await seerrRepo.loadWatchlist()
-        let seerrQuickLookURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist).flatMap { item in
-            [item.backdropURL, item.posterURL].compactMap { $0 }
-        }
-        mediaRepo.prefetch(urls: seerrQuickLookURLs)
+        // Only the posters the rows show; a full-size backdrop for every title was mostly for
+        // pages nobody opened.
+        let seerrPosterURLs = (seerrRepo.trending + seerrRepo.popularMovies + seerrRepo.popularTV + seerrRepo.watchlist)
+            .compactMap(\.posterURL)
+        mediaRepo.prefetch(urls: seerrPosterURLs)
     }
 
     func saveTopShelf(mediaRepo: MediaRepository, title: (MediaItem) -> String, subtitle: (MediaItem) -> String?) {
@@ -91,7 +92,8 @@ final class HomeModel {
                     .compactMap { $0 }.joined(separator: " · "),
                 logoURL: mediaRepo.logoURL(itemID: item.type == .episode ? item.seriesId ?? item.id : item.id, fillWidth: 800),
                 ratingTitle: String(localized: "Rating"),
-                ratingValue: item.communityRating.flatMap { $0 > 0 ? String(format: "★ %.1f", $0) : nil }
+                ratingValue: item.communityRating.flatMap { $0 > 0 ? "★ \($0.ratingText)" : nil },
+                trailerItemID: item.type == .episode ? item.seriesId : item.id
             )
         }
         let resumeContext = String(localized: "Continue Watching")
@@ -169,6 +171,13 @@ final class HomeModel {
 
     // MARK: - Opening titles
 
+    /// What Play on a series starts: its next episode, else its first.
+    static func seriesPlayback(_ series: MediaItem, authManager: AuthManager) async -> PlaybackRequest? {
+        guard let cred = authManager.state.credential else { return nil }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        return await WatchRoute.resolve(id: series.id, credential: cred, authHeader: header)
+    }
+
     /// Opens a title from a widget, Spotlight, Siri or the Top Shelf. Titles that aren't on
     /// one of Home's shelves (an Up Next episode, a Spotlight result) are fetched by id.
     func openDeepLinkItem(id: String, authManager: AuthManager, mediaRepo: MediaRepository) {
@@ -227,13 +236,13 @@ final class HomeModel {
     }
 
     /// The library's own copy when the server has the title, even where Seerr hasn't caught up
-    /// yet; the title's page when it's already requested, or there's no Seerr to request from;
-    /// otherwise the request sheet.
+    /// yet; the title's page when it's already requested, there's no Seerr to request from, or
+    /// this Seerr account can't request it; otherwise the request sheet.
     func openSeerrShelfItem(_ item: SeerrItem, authManager: AuthManager, seerrRepo: SeerrRepository) {
         Task {
             if let local = await libraryCopy(of: item, authManager: authManager) {
                 detailItem = local
-            } else if seerrRepo.isConfigured, !seerrRepo.isRequested(item) {
+            } else if seerrRepo.isConfigured, !seerrRepo.isRequested(item), seerrRepo.mayRequest(item.mediaType) {
                 seerrRequestItem = item
             } else {
                 seerrDetailItem = item
@@ -256,24 +265,28 @@ final class HomeModel {
     /// hand-building a stream URL, since it already handles direct-play vs transcode
     /// negotiation correctly. Nil when there's none or the task was cancelled.
     static func heroTrailerURL(for item: MediaItem, credential: ServerCredential, authHeader: String) async -> URL? {
+        await trailerURL(itemID: item.id, credential: credential, authHeader: authHeader)
+    }
+
+    static func trailerURL(itemID: String, credential: ServerCredential, authHeader: String) async -> URL? {
         let log = Telemetry.logger(category: "HeroVideoBackdrop")
         let client = JellyfinMediaClient()
         let trailer: MediaItem?
         do {
-            trailer = try await client.getTrailers(credential: credential, authHeader: authHeader, itemId: item.id, limit: 1).first
+            trailer = try await client.getTrailers(credential: credential, authHeader: authHeader, itemId: itemID, limit: 1).first
         } catch {
-            log.error("getTrailers failed for \(item.id, privacy: .public): \(error, privacy: .public)")
+            log.error("getTrailers failed for \(itemID, privacy: .public): \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             return nil
         }
         guard let trailer, !Task.isCancelled else {
-            log.debug("no local trailer indexed for \(item.id, privacy: .public)")
+            log.debug("no local trailer indexed for \(itemID, privacy: .public)")
             return nil
         }
         let info: JellyfinPlaybackInfo
         do {
             info = try await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: trailer.id)
         } catch {
-            log.error("getPlaybackInfo failed for trailer \(trailer.id, privacy: .public): \(error, privacy: .public)")
+            log.error("getPlaybackInfo failed for trailer \(trailer.id, privacy: .public): \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             return nil
         }
         return info.playURL

@@ -7,6 +7,7 @@ import CoreImage
 import CoreSpotlight
 import Foundation
 import JellyfinAPI
+import Security
 import Vision
 // Not in the simulator SDK.
 #if canImport(VisualIntelligence)
@@ -25,8 +26,13 @@ nonisolated enum IntentSession {
         guard let all = try? store.allServers(), !all.isEmpty else { return nil }
         let storedID = UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap { UUID(uuidString: $0) }
         guard let credential = all.first(where: { $0.id == storedID }) ?? all.first else { return nil }
-        let pin = (try? store.loadPin(for: credential.id)) ?? nil
-        return pin == nil ? credential : nil
+        // While the device is locked the PIN can't be read yet, and that counts as one.
+        do {
+            guard try store.loadPin(for: credential.id) == nil else { return nil }
+        } catch KeychainError.unexpectedStatus(let status) where status == errSecInteractionNotAllowed {
+            return nil
+        } catch {}
+        return credential
     }
 
     static func authHeader(for credential: ServerCredential) -> String {
@@ -446,13 +452,12 @@ enum ArcfinRouting {
         }
     }
 
+    /// Buffered like the arcfin://downloads link: the Browse tab that shows Downloads may not
+    /// be mounted yet, and reads the flag when it appears.
     @MainActor
     static func showDownloads() {
-        // Views listening for this aren't mounted yet on a cold launch.
-        Task {
-            try? await Task.sleep(for: .seconds(1.5))
-            NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
-        }
+        UserDefaults.standard.set(true, forKey: "arcfin.pendingShowDownloads")
+        NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
     }
 }
 

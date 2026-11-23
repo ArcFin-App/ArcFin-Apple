@@ -179,7 +179,7 @@ struct ProfileAccessView: View {
             HStack(spacing: 6) {
                 if let detail { Text(detail).foregroundStyle(DT.Color.textSecondary) }
                 Image(systemName: allowed ? "checkmark.circle.fill" : "xmark.circle")
-                    .foregroundStyle(allowed ? Color.green : DT.Color.textSecondary)
+                    .foregroundStyle(allowed ? DT.Color.palette("10B981") : DT.Color.textSecondary)
             }
         }
         .accessibilityElement(children: .combine)

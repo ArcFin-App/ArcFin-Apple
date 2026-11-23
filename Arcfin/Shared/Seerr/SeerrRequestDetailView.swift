@@ -29,7 +29,9 @@ struct SeerrRequestDetailView: View {
                 SeerrRequestReviewButtons(request: current, review: review)
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.sm)
-                removeRequestButton
+                if seerrRepo.canRemove(current) {
+                    removeRequestButton
+                }
                 if let key = detail?.trailerYouTubeKey {
                     SeerrTrailerButton(videoID: key, title: request.mediaTitle)
                 }
@@ -282,7 +284,7 @@ struct SeerrRequestDetailView: View {
                             .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
                         HStack(spacing: 2) {
                             Image(systemName: "star.fill").font(.system(.caption2))
-                            Text(String(format: "%.1f", rating))
+                            Text(rating.formatted(.number.precision(.fractionLength(1))))
                         }
                         .font(.system(.caption2))
                         .foregroundStyle(DT.Color.palette("f59e0b"))
@@ -337,17 +339,17 @@ struct SeerrRequestDetailView: View {
 
     private var requestStatusPill: some View {
         let (label, hex): (String, String) = switch current.status {
-        case .approved:  ("Approved", "10b981")
-        case .declined:  ("Declined", "F43F5E")
-        case .failed:  ("Failed", "F43F5E")
-        case .completed: ("Completed", "10b981")
-        case .pending:   ("Pending", "f59e0b")
+        case .approved:  (String(localized: "Approved"), "10b981")
+        case .declined:  (String(localized: "Declined"), "F43F5E")
+        case .failed:  (String(localized: "Failed"), "F43F5E")
+        case .completed: (String(localized: "Completed"), "10b981")
+        case .pending:   (String(localized: "Pending"), "f59e0b")
         }
         return statusPillView(label: label, hex: hex)
     }
 
     private func mediaStatusPill(_ status: SeerrAvailabilityStatus) -> some View {
-        statusPillView(label: status.label, hex: status.colorHex)
+        statusPillView(label: status.localizedLabel, hex: status.colorHex)
     }
 
     private func statusPillView(label: String, hex: String) -> some View {
@@ -368,7 +370,7 @@ struct SeerrRequestDetailView: View {
                 try await seerrRepo.cancelRequest(id: request.id)
                 dismiss()
             } catch {
-                errorMessage = "Couldn't remove request: \(error.localizedDescription)"
+                errorMessage = String(localized: "Seerr didn't remove “\(request.mediaTitle)”. Check your connection and try again.")
                 isCancelling = false
             }
         }

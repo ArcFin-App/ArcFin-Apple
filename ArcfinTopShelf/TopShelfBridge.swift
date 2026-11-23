@@ -21,6 +21,8 @@ struct TopShelfMediaItem: Codable {
     let ratingValue: String?
     let artworkFileName: String?
     let artworkHasLogo: Bool?
+    let trailerItemID: String?
+    let previewVideoURL: URL?
 }
 
 enum TopShelfBridge {

@@ -13,24 +13,26 @@ struct DownloadedItemDetailView: View {
     var body: some View {
         DownloadedItemDetailPage(item: item, model: model)
             .task(id: item.itemId) { await model.load(item, downloadManager: downloadManager) }
-            // fullScreenCover is unavailable on macOS — OfflinePlayerView has its own in-window
-            // fullscreen (F key) now that it has a real macOS video surface, so a sheet is enough.
-            .sheet(item: $model.playingItem) { item in
-                OfflinePlayerView(downloadedItem: item, startPositionOverride: model.startOverride)
+            // fullScreenCover is unavailable on macOS; the player has its own full screen (F).
+            .sheet(item: $model.playingItem.playerCover) { playback in
+                let item = playback.item
+                PlayerView(download: item, startPositionOverride: model.startOverride) { model.play($0, startOverride: nil) }
+                    .id(item.itemId)
                     .frame(minWidth: 900, minHeight: 560)
             }
             .alert("Delete this download?", isPresented: $model.showDeleteConfirm) {
                 Button("Delete", role: .destructive) {
-                    downloadManager.deleteDownload(item)
+                    model.deleteOnClose = .delete
                     dismiss()
                 }
                 if downloadManager.smartIgnoreTarget(itemId: item.itemId) != nil {
                     Button("Delete & Ignore in Smart Downloads", role: .destructive) {
-                        downloadManager.deleteAndIgnore(itemIds: [item.itemId])
+                        model.deleteOnClose = .deleteAndIgnore
                         dismiss()
                     }
                 }
                 Button("Cancel", role: .cancel) {}
             }
+            .onDisappear { model.pageClosed(item, downloadManager: downloadManager) }
     }
 }

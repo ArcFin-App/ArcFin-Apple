@@ -16,6 +16,7 @@ struct CollectionContent: View {
     let zoomNamespace: Namespace.ID?
 
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(AuthManager.self) private var authManager
 
     private var items: [MediaItem] { model.items }
     private var sortedItems: [MediaItem] { model.sortedItems(by: sort) }
@@ -93,9 +94,11 @@ struct CollectionContent: View {
 
     private var metaLine: String {
         var parts: [String] = []
-        if !items.isEmpty { parts.append("\(items.count) title\(items.count == 1 ? "" : "s")") }
+        if !items.isEmpty {
+            parts.append(items.count == 1 ? String(localized: "1 title") : String(localized: "\(items.count) titles"))
+        }
         if let yearSpan = model.yearSpan { parts.append(yearSpan) }
-        if let rating = collection.communityRating { parts.append("★ \(String(format: "%.1f", rating))") }
+        if let rating = collection.communityRating { parts.append("★ \(rating.ratingText)") }
         return parts.joined(separator: " · ")
     }
 
@@ -172,6 +175,7 @@ struct CollectionContent: View {
                         .foregroundStyle(DT.Color.accent)
                         .frame(minHeight: 44)
                 }
+                .syncLocked("collectionSort", authManager)
                 .accessibilityLabel("Sort by \(sort.label)")
                 Button {
                     withAnimation(DT.Animation.fast) { showsGrid.toggle() }
@@ -182,6 +186,7 @@ struct CollectionContent: View {
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
+                .syncLocked("collectionShowsGrid", authManager)
                 .accessibilityLabel(showsGrid ? "Show as list" : "Show as grid")
             }
             .padding(.horizontal, DT.Spacing.pagePad)
@@ -252,7 +257,7 @@ struct CollectionContent: View {
                 HStack(spacing: 6) {
                     if let year = item.productionYear { Text(String(year)) }
                     if let rating = item.communityRating {
-                        Text("★ \(String(format: "%.1f", rating))").foregroundStyle(DT.Color.accent)
+                        Text(verbatim: "★ \(rating.ratingText)").foregroundStyle(DT.Color.accent)
                     }
                 }
                 .font(.system(.caption))

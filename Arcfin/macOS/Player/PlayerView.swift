@@ -7,6 +7,7 @@ import AVKit
 import AuthCore
 import JellyfinAPI
 import MediaEngine
+import Persistence
 import SwiftVLC
 import CastKit
 import GroupActivities
@@ -37,6 +38,10 @@ struct PlayerView: View {
     func closePlayer() {
         if isPlayerWindow {
             dismissWindow()
+            return
+        }
+        if model.source.isLocal {
+            dismiss()
             return
         }
         playbackPresenter.dismiss()
@@ -73,11 +78,29 @@ struct PlayerView: View {
     @FocusState var isPlayerFocused: Bool
     @State var lastMacHoverLocation: CGPoint?
 
-    init(item: MediaItem, startPositionTicks: Int64 = 0, onPlayNext: @escaping (MediaItem) -> Void = { _ in }) {
+    init(item: MediaItem, startPositionTicks: Int64 = 0, source: (any PlaybackSource)? = nil,
+         onPlayNext: @escaping (MediaItem) -> Void = { _ in }) {
         self.item = item
         self.startPositionTicks = startPositionTicks
         self.onPlayNext = onPlayNext
-        _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext))
+        _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext,
+                                                 source: source))
+        _macVolume = State(initialValue: Double(PlayerModel.carriedVolume))
+    }
+
+    /// A download, played from its file with the details saved beside it. Up Next and
+    /// Previous move between the show's downloaded episodes.
+    init(download: DownloadedItem, startPositionOverride: Int64? = nil, onPlayNext: @escaping (DownloadedItem) -> Void = { _ in }) {
+        let source = DownloadPlaybackSource(downloadedItem: download, startPositionOverride: startPositionOverride)
+        self.init(item: source.item, source: source) { next in
+            if let nextDownload = source.download(for: next.id) { onPlayNext(nextDownload) }
+        }
+    }
+
+    /// A video picked from Files.
+    init(fileURL: URL) {
+        let source = FilePlaybackSource(url: fileURL)
+        self.init(item: source.item, source: source)
     }
 
     var body: some View {
@@ -88,6 +111,7 @@ struct PlayerView: View {
     private var bodyContent: some View {
         ZStack {
             Color.black.ignoresSafeArea()
+            PlaybackPositionObserver(player: model.player) { model.positionChanged(from: $0, to: $1) }
 
             videoSurfaceLayer
 
@@ -122,10 +146,10 @@ struct PlayerView: View {
                 PlayerNetworkToast(text: networkToast)
             }
 
-            if let currentSubtitleText = model.currentSubtitleText, !CastManager.shared.isConnected {
+            if let currentSubtitleText = model.currentSubtitleText, !model.isCasting {
                 PlayerSubtitleOverlay(text: currentSubtitleText, isControlsVisible: model.isControlsVisible)
             }
-            if let currentBitmapCue = model.currentBitmapCue, !CastManager.shared.isConnected {
+            if let currentBitmapCue = model.currentBitmapCue, !model.isCasting {
                 PlayerBitmapSubtitleOverlay(cue: currentBitmapCue, isControlsVisible: model.isControlsVisible)
             }
 
@@ -140,10 +164,10 @@ struct PlayerView: View {
             // screen on every tap. Keeping the view always mounted means there's nothing to
             // insert/remove, so there's no layout pass to get wrong.
             controlsOverlay
-                .opacity(model.isControlsVisible && !CastManager.shared.isConnected ? 1 : 0)
-                .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected)
+                .opacity(model.isControlsVisible && !model.isCasting ? 1 : 0)
+                .allowsHitTesting(model.isControlsVisible && !model.isCasting)
 
-            SkipSegmentButton(model: model)
+            SkipSegmentButton(model: model, controlsShown: model.isControlsVisible && !model.isCasting)
             SpeedBoostBadge(model: model)
 
             if model.showUpNext, let nextEpisode = model.nextEpisode {
@@ -151,7 +175,9 @@ struct PlayerView: View {
             }
 
             MoreLikeThisPanel(model: model, suggestionsAreHorizontal: true)
-            CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel) { openCastPanelPerson($0) }
+            CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel,
+                      photoURL: model.localCastPhotoURL,
+                      onSelect: model.capabilities.personPages ? { openCastPanelPerson($0) } : nil)
             PlayerChannelListLayer(model: model)
 
             if model.showStillWatchingPrompt {
@@ -174,14 +200,19 @@ struct PlayerView: View {
             }
         }
         .keepsScreenAwake(status: model.player.status)
-        .onAppear { connectModel() }
+        .onAppear {
+            model.viewAppeared()
+            connectModel()
+        }
         .task {
             if model.handOffToDefaultPlayer() { closePlayer(); return }
-            if !model.isAskingToResume { await model.setup() }
+            await model.resolveStartPosition()
+            guard !Task.isCancelled else { return }
+            if !model.isAskingToResume { await model.startSetup() }
         }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
-            Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
-                model.resumeFrom = startPositionTicks
+            Button("Resume from \(model.timeLabel(ticks: model.startPositionTicks))") {
+                model.resumeFrom = model.startPositionTicks
                 model.resumeAnswered = true
             }
             Button("Start from Beginning") {
@@ -191,18 +222,18 @@ struct PlayerView: View {
             Button("Cancel", role: .cancel) { closePlayer() }
         }
         .onChange(of: model.isAskingToResume) { _, asking in
-            if !asking, model.resumeAnswered { Task { await model.setup() } }
+            if !asking, model.resumeAnswered { Task { await model.startSetup() } }
         }
         .onDisappear {
-            Task { await teardown() }
+            model.viewDisappeared { await teardown() }
             macVolumeHUDTask?.cancel()
         }
         .onChange(of: model.subtitleDelay) { _, _ in model.updateSubtitleText(forTicks: model.player.positionTicks) }
-        .onChange(of: model.player.positionTicks) { oldValue, newValue in
-            model.positionChanged(from: oldValue, to: newValue)
-        }
         .onChange(of: model.player.status) { _, newStatus in
             model.statusChanged(to: newStatus)
+        }
+        .onChange(of: model.player.isBuffering) { _, isBuffering in
+            model.bufferingChanged(isBuffering)
         }
         .onChange(of: scenePhase) { _, phase in
             model.scenePhaseChanged(to: phase)
@@ -260,7 +291,7 @@ struct PlayerView: View {
             showInfo: { showInfoSheet = true },
             stepSpeed: { model.stepPlaybackRate($0) },
             resetSpeed: { model.choosePlaybackRate(1) },
-            skipSegmentLabel: model.currentSkippable?.label,
+            skipSegmentLabel: model.skipButtonLabel,
             skipSegment: { model.skipToSegmentEnd() },
             next: model.nextEpisode == nil ? nil : { model.playNextEpisode() },
             previous: model.previousItem == nil ? nil : { model.playPrevious() }
@@ -441,6 +472,9 @@ struct PlayerView: View {
 
     private func teardown() async {
         model.stopTasks()
+        // Closed with the right arrow still held: the key-up monitor would outlive the player.
+        if let arrowReleaseMonitor { NSEvent.removeMonitor(arrowReleaseMonitor) }
+        arrowReleaseMonitor = nil
         // The window's toolbar is real window chrome, not part of this view — left hidden,
         // it would stay hidden on whatever screen is underneath once the player closes.
         setMacWindowToolbarVisible(macWindow, true)

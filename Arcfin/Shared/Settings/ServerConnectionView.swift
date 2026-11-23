@@ -21,11 +21,16 @@ final class ServerConnectionModel {
     private(set) var info: JellyfinPublicServerInfo?
     private(set) var local = Reach.notSet
     private(set) var remote = Reach.notSet
+    /// Until the first checks are back, "Check" would report nothing wrong.
+    private(set) var isLoading = true
 
     private let client = JellyfinMediaClient()
 
     func load(_ auth: AuthManager, localURL: URL?, remoteURL: URL?) async {
+        defer { isLoading = false }
         guard let credential = auth.state.credential else { return }
+        if localURL != nil { local = .checking }
+        if remoteURL != nil { remote = .checking }
         let header = auth.authClient.authHeader(token: credential.accessToken)
         async let profile = try? client.getUserProfile(credential: credential, authHeader: header)
         async let publicInfo = try? client.getPublicInfo(baseURL: credential.baseURL)
@@ -116,6 +121,7 @@ final class ServerConnectionModel {
 struct ServerConnectionView: View {
     @Environment(AuthManager.self) private var authManager
     @State private var model = ServerConnectionModel()
+    @State private var speedTest: Task<Void, Never>?
     var localURL: String = ""
     var remoteURL: String = ""
     /// Local, Remote or Custom; the Mac has only the one address.
@@ -127,7 +133,7 @@ struct ServerConnectionView: View {
             connectionSection
             if let policy = model.policy { accountSection(policy) }
             deviceSection
-            checkSection
+            if !model.isLoading { checkSection }
         }
         .arcfinListStyle()
         .screenBackground()
@@ -136,6 +142,7 @@ struct ServerConnectionView: View {
             await model.load(authManager, localURL: URL(string: localURL).flatMap { $0.host == nil ? nil : $0 },
                              remoteURL: URL(string: remoteURL).flatMap { $0.host == nil ? nil : $0 })
         }
+        .onDisappear { speedTest?.cancel() }
     }
 
     private var speedSection: some View {
@@ -160,7 +167,7 @@ struct ServerConnectionView: View {
                     .tvReadOnlyRow()
             }
             Button {
-                Task { await model.runSpeedTest(authManager) }
+                speedTest = Task { await model.runSpeedTest(authManager) }
             } label: {
                 HStack {
                     Spacer()

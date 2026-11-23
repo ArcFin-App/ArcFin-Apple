@@ -26,6 +26,8 @@ final class LibraryDetailModel {
     private(set) var entryIds: [String: String] = [:]
     var playlistPlayback: MediaDetailView.PlaybackRequest?
     var showAddTitles = false
+    /// A whole show's episodes waiting for the person to confirm removing them.
+    var pendingGroupRemoval: [MediaItem]?
     var showRename = false
     var renameText = ""
     var confirmDeletePlaylist = false
@@ -35,9 +37,19 @@ final class LibraryDetailModel {
     var createdPlaylist: MediaPlaylist?
     private(set) var playlistTint: Color?
 
-    private(set) var items: [MediaItem] = []
+    private(set) var items: [MediaItem] = [] {
+        didSet { gridEntries = makeGridEntries() }
+    }
+    /// The grid's cells, rebuilt when the titles or the sort change rather than on every
+    /// render of a grid that can hold the whole library.
+    private(set) var gridEntries: [GridEntry] = []
     private(set) var isLoading = true
     private(set) var isLoadingMore = false
+    /// The last next-page request failed; the grid offers to try it again, since the cell
+    /// that triggered it has already appeared.
+    private(set) var loadMoreFailed = false
+    /// The first page couldn't be fetched, as opposed to the library or filters having no titles.
+    private(set) var loadFailed = false
     private(set) var totalItems = 0
     /// Where the next server page starts. Equals `items.count` unless genres are matched
     /// with "all", where the client drops titles from each server page.
@@ -46,6 +58,9 @@ final class LibraryDetailModel {
     /// Set by the letter index; the grid scrolls (on Apple TV, moves focus) to this title.
     var jumpTarget: MediaItem.ID?
     private var isJumping = false
+    /// The newest letter asked for while a jump or page load was still running; dragging
+    /// along the index asks for every letter it passes.
+    private var pendingJumpLetter: String?
     private let pageSize = 100
     /// Every filter/sort change spawns its own uncancelled fetchFirstPage() Task (see the
     /// onChange handlers in each LibraryDetailView) — nothing stopped an older, still-in-flight
@@ -54,6 +69,7 @@ final class LibraryDetailModel {
     /// stale response for an earlier, narrower selection last, silently blanking out the
     /// correct one.
     private var fetchGeneration = 0
+    private var filterReloadTask: Task<Void, Never>?
 
     // Filters
     private(set) var availableGenres: [String] = []
@@ -65,7 +81,9 @@ final class LibraryDetailModel {
     var selectedYears: Set<Int> = []
     var watchedFilter: LibraryWatchedFilter
     var favoritesOnly = false
-    var sortOption: LibrarySortOption = .nameAsc
+    var sortOption: LibrarySortOption = .nameAsc {
+        didSet { gridEntries = makeGridEntries() }
+    }
     var randomPick: MediaItem?
     private(set) var isPickingRandom = false
     /// Set while load() restores the saved sort, so the resulting onChange doesn't fire a
@@ -94,10 +112,36 @@ final class LibraryDetailModel {
             || extraFilters.isActive
     }
 
+    func clearFilters() {
+        selectedGenres.removeAll()
+        selectedYears.removeAll()
+        extraFilters = LibraryExtraFilters()
+        watchedFilter = .all
+        favoritesOnly = false
+    }
+
+    /// The search field above the grid; the server matches it against the titles' names.
+    var searchText = ""
+    private var searchTerm: String? {
+        let term = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return term.isEmpty ? nil : term
+    }
+    var isSearching: Bool { searchTerm != nil }
+    var searchPrompt: LocalizedStringResource {
+        if playlist != nil { return "Search This Playlist" }
+        switch library.collectionType {
+        case .movies:    return "Search Movies"
+        case .tvshows:   return "Search Shows"
+        case .boxsets:   return "Search Collections"
+        case .playlists: return "Search Playlists"
+        default:         return "Search This Library"
+        }
+    }
+
     private var matchesAllGenres: Bool { extraFilters.matchAllGenres && selectedGenres.count > 1 }
     private var hasMore: Bool { serverOffset < totalItems }
     var showsLetterIndex: Bool {
-        sortOption == .nameAsc && playlist == nil && !matchesAllGenres && totalItems >= 50
+        sortOption == .nameAsc && playlist == nil && !matchesAllGenres && !isSearching && totalItems >= 50
     }
     var isCollections: Bool { library.collectionType == .boxsets }
 
@@ -128,7 +172,7 @@ final class LibraryDetailModel {
     /// A playlist holds a show as all of its episodes. In playlist order, three or more in a
     /// row from one show become a single card, so a whole series doesn't fill the page;
     /// one or two stay as they are, since those were most likely added one by one.
-    var gridEntries: [GridEntry] {
+    private func makeGridEntries() -> [GridEntry] {
         guard playlist != nil, sortOption == .playlistOrder else { return items.map { GridEntry(items: [$0]) } }
         var entries: [GridEntry] = []
         var run: [MediaItem] = []
@@ -154,6 +198,12 @@ final class LibraryDetailModel {
         }
         flush()
         return entries
+    }
+
+    /// A title changed from its long-press menu, so its card shows the new state.
+    func replace(_ item: MediaItem) {
+        guard let index = items.firstIndex(where: { $0.id == item.id }) else { return }
+        items[index] = item
     }
 
     func navTarget(for item: MediaItem) -> LibraryNavTarget {
@@ -301,6 +351,17 @@ final class LibraryDetailModel {
         await fetchFirstPage(authManager: authManager, mediaRepo: mediaRepo)
     }
 
+    /// Filter changes come in bursts (a slider dragged across its range, Clear All resetting
+    /// five filters): only the last of a burst fetches.
+    func filtersChanged(authManager: AuthManager, mediaRepo: MediaRepository) {
+        filterReloadTask?.cancel()
+        filterReloadTask = Task {
+            try? await Task.sleep(for: .milliseconds(350))
+            guard !Task.isCancelled else { return }
+            await reload(authManager: authManager, mediaRepo: mediaRepo)
+        }
+    }
+
     /// Remembers the sort for this library, and reloads unless load() just restored it.
     func sortChanged(authManager: AuthManager, mediaRepo: MediaRepository) {
         UserDefaults.standard.set(sortOption.rawValue, forKey: sortDefaultsKey)
@@ -312,6 +373,7 @@ final class LibraryDetailModel {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoading = true
+        loadMoreFailed = false
         fetchGeneration += 1
         let generation = fetchGeneration
         // try? previously swallowed whatever went wrong here outright — a filter/sort
@@ -323,8 +385,9 @@ final class LibraryDetailModel {
            let entries = try? await client.getPlaylistEntries(credential: cred, authHeader: header, playlistId: playlist.id) {
             entryIds = Dictionary(entries.map { ($0.item.id, $0.entryId) }, uniquingKeysWith: { first, _ in first })
             // Playlist order with no filters is the playlist itself, as it was put together.
-            if sortOption == .playlistOrder, !filtersActive {
+            if sortOption == .playlistOrder, !filtersActive, !isSearching {
                 guard generation == fetchGeneration else { return }
+                loadFailed = false
                 items = entries.map(\.item)
                 serverOffset = items.count
                 totalItems = items.count
@@ -344,6 +407,7 @@ final class LibraryDetailModel {
         // in flight — applying this now-stale response would overwrite that newer request's
         // correct result with whatever this older, possibly narrower selection matched.
         guard generation == fetchGeneration else { return }
+        loadFailed = fetched == nil
         items = fetched?.items ?? []
         serverOffset = fetched?.nextOffset ?? 0
         totalItems = fetched?.total ?? 0
@@ -379,6 +443,7 @@ final class LibraryDetailModel {
                 isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
                 isFavorite: favoritesOnly ? true : nil,
                 nameLessThan: nameLessThan,
+                searchTerm: searchTerm,
                 sortBy: sortBy ?? sortOption.sortBy, sortOrder: sortOrder ?? sortOption.sortOrder
             )
             total = page.total
@@ -395,21 +460,44 @@ final class LibraryDetailModel {
         guard let cred = authManager.state.credential else { return }
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         isLoadingMore = true
+        loadMoreFailed = false
+        let generation = fetchGeneration
         let fetched = try? await fetchPage(credential: cred, header: header, startIndex: serverOffset)
-        items.append(contentsOf: fetched?.items ?? [])
-        if let fetched {
-            serverOffset = fetched.nextOffset
-            totalItems = fetched.total
-        }
         isLoadingMore = false
+        // The filters or sort changed while this page loaded: it belongs to the old query.
+        if generation == fetchGeneration {
+            if let fetched {
+                items.append(contentsOf: fetched.items)
+                serverOffset = fetched.nextOffset
+                totalItems = fetched.total
+            } else {
+                loadMoreFailed = true
+            }
+        }
+        await runPendingJump(authManager: authManager)
     }
 
     /// The server counts the titles that sort before the letter, which is where it starts in
     /// the grid; the grid loads through that point if it hasn't yet, then jumps there.
     func jump(to letter: String, authManager: AuthManager) async {
-        guard let cred = authManager.state.credential, !isJumping, !isLoadingMore else { return }
+        guard let cred = authManager.state.credential else { return }
+        guard !isJumping, !isLoadingMore else {
+            pendingJumpLetter = letter
+            return
+        }
         isJumping = true
-        defer { isJumping = false }
+        await performJump(to: letter, credential: cred, authManager: authManager)
+        isJumping = false
+        await runPendingJump(authManager: authManager)
+    }
+
+    private func runPendingJump(authManager: AuthManager) async {
+        guard let next = pendingJumpLetter, !isJumping, !isLoadingMore else { return }
+        pendingJumpLetter = nil
+        await jump(to: next, authManager: authManager)
+    }
+
+    private func performJump(to letter: String, credential cred: ServerCredential, authManager: AuthManager) async {
         let header = authManager.authClient.authHeader(token: cred.accessToken)
         let generation = fetchGeneration
         var index = 0
@@ -496,7 +584,7 @@ enum LibraryItemText {
     static func showGroupSubtitle(_ episodes: [MediaItem]) -> String {
         let seasons = Set(episodes.compactMap(\.parentIndexNumber)).sorted()
         let seasonText = seasons.count > 1 ? "S\(seasons[0])–S\(seasons[seasons.count - 1])"
-            : seasons.first.map { "Season \($0)" }
-        return (["\(episodes.count) episodes"] + [seasonText].compactMap { $0 }).joined(separator: " · ")
+            : seasons.first.map { String(localized: "Season \($0)") }
+        return ([String(localized: "\(episodes.count) episodes")] + [seasonText].compactMap { $0 }).joined(separator: " · ")
     }
 }

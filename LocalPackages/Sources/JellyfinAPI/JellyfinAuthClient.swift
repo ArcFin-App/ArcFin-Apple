@@ -80,23 +80,24 @@ public enum JellyfinAuthError: Error, LocalizedError, Sendable, Equatable {
     case timedOut
     case offline
 
+    // Looked up in the app's String Catalog (the main bundle); this package has none.
     public var errorDescription: String? {
         switch self {
-        case .invalidServerURL:       return "Invalid server URL."
-        case .unsupportedScheme(let scheme): return "Server addresses start with http:// or https://, not \(scheme)://."
-        case .serverUnreachable:      return "Cannot reach server — check the address and try again."
+        case .invalidServerURL:       return String(localized: "Invalid server URL.")
+        case .unsupportedScheme(let scheme): return String(localized: "Server addresses start with http:// or https://, not \(scheme)://.")
+        case .serverUnreachable:      return String(localized: "Cannot reach server — check the address and try again.")
         case .authFailed(let msg):    return msg
-        case .invalidResponse:        return "Unexpected server response."
-        case .quickConnectDisabled:   return "Quick Connect is not enabled on this server."
+        case .invalidResponse:        return String(localized: "Unexpected server response.")
+        case .quickConnectDisabled:   return String(localized: "Quick Connect is not enabled on this server.")
         case .quickConnectFailed(let statusCode):
-            return "Quick Connect request failed (server returned HTTP \(statusCode)). If Quick Connect is enabled in Dashboard > General, check the server URL and try again."
-        case .notJellyfin:            return "The address answered, but not as a Jellyfin server."
-        case .serverError(let statusCode): return "The server answered with HTTP \(statusCode)."
-        case .certificateProblem:     return "The server's certificate isn't trusted."
-        case .hostNotFound:           return "No server found with that name."
-        case .connectionRefused:      return "Nothing answered at that address and port."
-        case .timedOut:               return "The server didn't answer in time."
-        case .offline:                return "Not connected to the internet."
+            return String(localized: "Quick Connect request failed (server returned HTTP \(statusCode)). If Quick Connect is enabled in Dashboard > General, check the server URL and try again.")
+        case .notJellyfin:            return String(localized: "The address answered, but not as a Jellyfin server.")
+        case .serverError(let statusCode): return String(localized: "The server answered with HTTP \(statusCode).")
+        case .certificateProblem:     return String(localized: "The server's certificate isn't trusted.")
+        case .hostNotFound:           return String(localized: "No server found with that name.")
+        case .connectionRefused:      return String(localized: "Nothing answered at that address and port.")
+        case .timedOut:               return String(localized: "The server didn't answer in time.")
+        case .offline:                return String(localized: "Not connected to the internet.")
         }
     }
 }
@@ -149,6 +150,10 @@ public struct JellyfinAuthClient: Sendable {
 
     private let deviceId: String
     private let deviceName: String
+
+    /// What this device tells Jellyfin it is, in every request's auth header.
+    public var currentDeviceID: String { deviceId }
+    public var currentDeviceName: String { deviceName }
 
     /// Keeps the MediaBrowser auth header's Device="..." field to plain, printable ASCII
     /// with no double quotes or backslashes — those would break the quoted-string field
@@ -320,7 +325,8 @@ public struct JellyfinAuthClient: Sendable {
         let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse else { throw JellyfinAuthError.invalidResponse }
         guard http.statusCode == 200 else {
-            let msg = http.statusCode == 401 ? "Invalid username or password." : "Sign-in failed (HTTP \(http.statusCode))."
+            let msg = http.statusCode == 401 ? String(localized: "Invalid username or password.")
+                : String(localized: "Sign-in failed (HTTP \(http.statusCode)).")
             throw JellyfinAuthError.authFailed(msg)
         }
         let result = try JSONDecoder().decode(AuthResponse.self, from: data)
@@ -370,7 +376,7 @@ public struct JellyfinAuthClient: Sendable {
 
         let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse else { throw JellyfinAuthError.invalidResponse }
-        guard http.statusCode == 200 else { throw JellyfinAuthError.authFailed("Quick Connect auth failed.") }
+        guard http.statusCode == 200 else { throw JellyfinAuthError.authFailed(String(localized: "Quick Connect sign-in failed.")) }
         let result = try JSONDecoder().decode(AuthResponse.self, from: data)
         return ServerCredential(baseURL: baseURL, userID: result.user.id,
                                 accessToken: result.accessToken, displayName: result.user.name,
@@ -390,7 +396,7 @@ public struct JellyfinAuthClient: Sendable {
         req.timeoutInterval = 10
         let (data, resp) = try await URLSession.arcfin.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
-            throw JellyfinAuthError.authFailed("Couldn't authorize that code.")
+            throw JellyfinAuthError.authFailed(String(localized: "Couldn't authorize that code."))
         }
         return (try? JSONDecoder().decode(Bool.self, from: data)) ?? true
     }

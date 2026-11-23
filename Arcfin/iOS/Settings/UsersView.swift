@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
-import LocalAuthentication
 import AuthCore
 
 struct UsersView: View {
@@ -14,7 +13,6 @@ struct UsersView: View {
     @State private var switchTarget: ServerCredential? = nil
     @State private var switchPINResetToken = 0
     @State private var switchPINError: String? = nil
-    @State private var switchStoredPIN: String? = nil
     @State private var showAddProfile = false
     @State private var removeTarget: ServerCredential?
     @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
@@ -74,24 +72,28 @@ struct UsersView: View {
                     onExpand?()
                     showAddProfile = true
                 }
-                .navigationDestination(isPresented: $showAddProfile) {
-                    AddProfileFlowView()
-                }
             }
 
             // ── App Lock ─────────────────────────────────────────────────
-            Section {
-                Toggle(isOn: $appLockUseFaceID) {
-                    TVRowLabelText(title: "Use \(biometricLabel)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
+            if let biometricLabel = Biometrics.label {
+                Section {
+                    Toggle(isOn: $appLockUseFaceID) {
+                        TVRowLabelText(title: "Use \(biometricLabel)", detail: "A faster unlock for a profile with a PIN, which Arcfin asks for on launch and when you come back. The PIN always works too.")
+                    }
+                    .syncLocked("appLockUseFaceID", authManager)
+                } header: {
+                    Text("App Lock")
                 }
-            } header: {
-                Text("App Lock")
             }
         }
         .arcfinListStyle()
         .screenBackground()
         .tint(DT.Color.accent)
         .navigationTitle("Profiles")
+        // Not in the List: in a lazy container it's registered again as rows reload (#689).
+        .navigationDestination(isPresented: $showAddProfile) {
+            AddProfileFlowView()
+        }
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -100,15 +102,15 @@ struct UsersView: View {
         }
         .task { await pins.load(authManager: authManager) }
         .onChange(of: authManager.profiles) { _, _ in Task { await pins.load(authManager: authManager) } }
-        .confirmingProfileRemoval($removeTarget, signingOut: false, isLastProfile: false) { target in
+        .confirmingProfileRemoval($removeTarget, signingOut: false, isLastProfile: false,
+                                  confirmOwner: appLockUseFaceID ? { await Biometrics.confirm(reason: $0) } : nil) { target in
             authManager.removeProfile(id: target.id)
         }
         // PIN entry sheet for switching to a protected profile
         .sheet(item: $switchTarget) { target in
             PINEntrySheet(
-                title: "Switch to \(target.displayName)",
+                title: String(localized: "Switch to \(target.displayName)"),
                 subtitle: target.baseURL.host,
-                storedPIN: switchStoredPIN,
                 resetToken: switchPINResetToken,
                 errorMessage: switchPINError,
                 onCancel: {
@@ -116,14 +118,18 @@ struct UsersView: View {
                     switchPINError = nil
                 },
                 onComplete: { entered in
-                    if entered == switchStoredPIN {
-                        authManager.switchTo(target)
-                        switchTarget = nil
-                        switchPINError = nil
-                        Task { await pins.load(authManager: authManager) }
-                    } else {
-                        switchPINError = "Incorrect PIN"
-                        switchPINResetToken += 1
+                    Task {
+                        let result = await authManager.checkPIN(entered, for: target.id)
+                        guard switchTarget?.id == target.id else { return }
+                        if result == .correct {
+                            authManager.switchTo(target)
+                            switchTarget = nil
+                            switchPINError = nil
+                            await pins.load(authManager: authManager)
+                        } else {
+                            switchPINError = result.message
+                            switchPINResetToken += 1
+                        }
                     }
                 }
             )
@@ -132,42 +138,29 @@ struct UsersView: View {
 
     // MARK: - Actions
 
+    /// Decided from the PIN as read now; `pins` only draws the locks and may not have loaded.
     private func handleTapOtherProfile(_ profile: ServerCredential) {
-        guard pins.hasPIN(profile.id) else {
-            authManager.switchTo(profile)
-            Task { await pins.load(authManager: authManager) }
-            return
-        }
-        switchPINError = nil
-        switchPINResetToken = 0
         Task {
-            switchStoredPIN = await authManager.pin(for: profile.id)
+            let stored = await authManager.storedPIN(for: profile.id)
+            guard stored != .none else {
+                authManager.switchTo(profile)
+                await pins.load(authManager: authManager)
+                return
+            }
             // Explicitly switching to a specific profile from Settings (unlike the boot-time
             // lock screen) is a deliberate "become this person" action already gated behind
             // having the device unlocked — Face ID here just confirms the device owner again,
             // same as the PIN would, so it's offered first with the PIN as fallback instead
             // of skipping straight to the PIN pad.
-            if appLockUseFaceID, await attemptBiometrics(for: profile) {
+            if appLockUseFaceID, await Biometrics.confirm(reason: String(localized: "Switch to \(profile.displayName)")) {
+                PINAttempts.reset(for: profile.id)
                 authManager.switchTo(profile)
                 await pins.load(authManager: authManager)
             } else {
+                switchPINError = AuthManager.PINCheck.message(opening: stored, for: profile.id)
+                switchPINResetToken = 0
                 switchTarget = profile
             }
         }
-    }
-
-    // Face ID is the only biometry iOS/iPadOS devices in this fleet ship with.
-    private var biometricLabel: String {
-        return "Face ID"
-    }
-
-    private func attemptBiometrics(for profile: ServerCredential) async -> Bool {
-        let context = LAContext()
-        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return false }
-        guard let success = try? await context.evaluatePolicy(
-            .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: "Switch to \(profile.displayName)"
-        ), success else { return false }
-        return true
     }
 }

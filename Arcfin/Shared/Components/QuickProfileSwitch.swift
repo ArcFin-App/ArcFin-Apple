@@ -4,8 +4,8 @@ import SwiftUI
 import AuthCore
 
 /// A button whose tap runs `action` and whose long press lists the other profiles to switch
-/// to; a PIN-locked one asks for its PIN first, as Switch Server does. With only one profile
-/// it's a plain button.
+/// to; a PIN-locked one asks for Face ID or Touch ID when that's on, then its PIN, as Settings ›
+/// Profiles does. With only one profile it's a plain button.
 struct QuickProfileSwitchButton<Content: View>: View {
     let action: () -> Void
     @ViewBuilder let label: () -> Content
@@ -13,9 +13,9 @@ struct QuickProfileSwitchButton<Content: View>: View {
     @Environment(AuthManager.self) private var authManager
     @State private var pins = ProfilePINStates()
     @State private var switchTarget: ServerCredential?
-    @State private var storedPIN: String?
     @State private var resetToken = 0
     @State private var pinError: String?
+    @AppStorage("appLockUseFaceID") private var appLockUseFaceID = true
 
     private var others: [ServerCredential] {
         authManager.profiles.filter { $0.id != authManager.state.credential?.id }
@@ -52,9 +52,8 @@ struct QuickProfileSwitchButton<Content: View>: View {
                 .task { await pins.load(authManager: authManager) }
                 .appSheet(item: $switchTarget) { target in
                     PINEntrySheet(
-                        title: "Switch to \(target.displayName)",
+                        title: String(localized: "Switch to \(target.displayName)"),
                         subtitle: target.baseURL.host,
-                        storedPIN: storedPIN,
                         resetToken: resetToken,
                         errorMessage: pinError,
                         onCancel: {
@@ -62,13 +61,17 @@ struct QuickProfileSwitchButton<Content: View>: View {
                             pinError = nil
                         },
                         onComplete: { entered in
-                            if entered == storedPIN {
-                                authManager.switchTo(target)
-                                switchTarget = nil
-                                pinError = nil
-                            } else {
-                                pinError = String(localized: "Incorrect PIN")
-                                resetToken += 1
+                            Task {
+                                let result = await authManager.checkPIN(entered, for: target.id)
+                                guard switchTarget?.id == target.id else { return }
+                                if result == .correct {
+                                    authManager.switchTo(target)
+                                    switchTarget = nil
+                                    pinError = nil
+                                } else {
+                                    pinError = result.message
+                                    resetToken += 1
+                                }
                             }
                         }
                     )
@@ -76,17 +79,24 @@ struct QuickProfileSwitchButton<Content: View>: View {
         }
     }
 
+    /// Decided from the PIN as read now; `pins` only draws the locks and may not have loaded.
     private func choose(_ profile: ServerCredential) {
         HapticManager.impact(.light)
-        if pins.hasPIN(profile.id) {
-            pinError = nil
-            resetToken = 0
-            Task {
-                storedPIN = await authManager.pin(for: profile.id)
-                switchTarget = profile
+        Task {
+            let stored = await authManager.storedPIN(for: profile.id)
+            guard stored != .none else {
+                authManager.switchTo(profile)
+                return
             }
-        } else {
-            authManager.switchTo(profile)
+            // As in Settings › Profiles: Face ID or Touch ID first, the PIN pad if it fails.
+            if appLockUseFaceID, await Biometrics.confirm(reason: String(localized: "Switch to \(profile.displayName)")) {
+                PINAttempts.reset(for: profile.id)
+                authManager.switchTo(profile)
+                return
+            }
+            pinError = AuthManager.PINCheck.message(opening: stored, for: profile.id)
+            resetToken = 0
+            switchTarget = profile
         }
     }
 }

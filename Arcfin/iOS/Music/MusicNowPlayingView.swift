@@ -107,12 +107,10 @@ struct MusicNowPlayingView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var panel = Panel.artwork
-    @State private var scrubbing: Double?
-    /// A held drag seeks when it's let go. A flick doesn't always say it's finished, so a
-    /// value that stops changing seeks too: at once off a drag, after a pause in one.
-    @State private var isDragging = false
-    @State private var scrubSettle: Task<Void, Never>?
     @State private var lyrics: Lyrics?
+    /// The lyrics request has come back, with or without them.
+    @State private var lyricsLoaded = false
+    @State private var lyricsAttempt = 0
     private var player: MusicQueuePlayer { AppServices.music.player }
     private var music: MusicPlayback { AppServices.music }
 
@@ -124,7 +122,7 @@ struct MusicNowPlayingView: View {
                     if panel != .artwork { grabber }
                     switch panel {
                     case .artwork: bigArtwork(song)
-                    case .lyrics: MusicLyricsPanel(lyrics: lyrics)
+                    case .lyrics: MusicLyricsPanel(lyrics: lyrics, isLoaded: lyricsLoaded) { lyricsAttempt += 1 }
                     case .queue: MusicQueuePanel()
                     }
                     if panel == .artwork {
@@ -132,7 +130,7 @@ struct MusicNowPlayingView: View {
                     } else {
                         compactTitleRow(song)
                     }
-                    scrubber
+                    MusicNowPlayingScrubber()
                     transport
                     volume
                     bottomBar(song)
@@ -140,7 +138,7 @@ struct MusicNowPlayingView: View {
                 .padding(.horizontal, DT.Spacing.lg)
                 .padding(.bottom, DT.Spacing.sm)
                 .background { MusicArtworkBackdrop(url: MusicAPI.artworkURL(song, width: 600)) }
-                .task(id: song.id) { await loadLyrics(song) }
+                .task(id: "\(song.id) \(lyricsAttempt)") { await loadLyrics(song) }
             } else {
                 Color.black.onAppear { dismiss() }
             }
@@ -294,47 +292,6 @@ struct MusicNowPlayingView: View {
         MusicNavigator.shared.open(route)
     }
 
-    private func finishScrub() {
-        scrubSettle?.cancel()
-        scrubSettle = nil
-        guard let scrubbing else { return }
-        music.seek(to: scrubbing)
-        self.scrubbing = nil
-    }
-
-    private var scrubber: some View {
-        let duration = max(player.duration, 1)
-        let position = scrubbing ?? music.position
-        return VStack(spacing: DT.Spacing.xxs) {
-            Slider(value: Binding(get: { position }, set: { value in
-                scrubbing = value
-                scrubSettle?.cancel()
-                scrubSettle = Task {
-                    try? await Task.sleep(for: .milliseconds(isDragging ? 700 : 150))
-                    guard !Task.isCancelled else { return }
-                    finishScrub()
-                }
-            }), in: 0...duration) { editing in
-                isDragging = editing
-                if !editing { finishScrub() }
-            }
-            .tint(.white)
-            .accessibilityLabel("Position")
-            .accessibilityValue(Text(verbatim: position.musicTime))
-            ZStack {
-                HStack {
-                    Text(verbatim: position.musicTime)
-                    Spacer()
-                    Text(verbatim: "-" + max(duration - position, 0).musicTime)
-                }
-                .font(.caption.monospacedDigit())
-                .foregroundStyle(.white.opacity(0.6))
-                .accessibilityHidden(true)
-                if let song = player.current { MusicQualityBadge(song: song) }
-            }
-        }
-    }
-
     private var transport: some View {
         HStack {
             Spacer()
@@ -430,8 +387,63 @@ struct MusicNowPlayingView: View {
 
     private func loadLyrics(_ song: MusicSong) async {
         lyrics = nil
+        lyricsLoaded = false
         lyrics = await MusicLyricsSource.shared.lyrics(for: song)
-        if lyrics == nil, panel == .lyrics { panel = .artwork }
+        lyricsLoaded = true
+        if lyrics == nil, panel == .lyrics, !MusicLyricsSource.shared.isAvailable(song) { panel = .artwork }
+    }
+}
+
+/// Where the song is, and the times either side. Its own view, so the position ticking twice
+/// a second redraws only this, not the whole of Now Playing.
+private struct MusicNowPlayingScrubber: View {
+    @State private var scrubbing: Double?
+    /// A held drag seeks when it's let go. A flick doesn't always say it's finished, so a
+    /// value that stops changing seeks too: at once off a drag, after a pause in one.
+    @State private var isDragging = false
+    @State private var scrubSettle: Task<Void, Never>?
+    private var player: MusicQueuePlayer { AppServices.music.player }
+    private var music: MusicPlayback { AppServices.music }
+
+    private func finishScrub() {
+        scrubSettle?.cancel()
+        scrubSettle = nil
+        guard let scrubbing else { return }
+        music.seek(to: scrubbing)
+        self.scrubbing = nil
+    }
+
+    var body: some View {
+        let duration = max(player.duration, 1)
+        let position = scrubbing ?? music.position
+        VStack(spacing: DT.Spacing.xxs) {
+            Slider(value: Binding(get: { position }, set: { value in
+                scrubbing = value
+                scrubSettle?.cancel()
+                scrubSettle = Task {
+                    try? await Task.sleep(for: .milliseconds(isDragging ? 700 : 150))
+                    guard !Task.isCancelled else { return }
+                    finishScrub()
+                }
+            }), in: 0...duration) { editing in
+                isDragging = editing
+                if !editing { finishScrub() }
+            }
+            .tint(.white)
+            .accessibilityLabel("Position")
+            .accessibilityValue(Text(verbatim: position.musicTime))
+            ZStack {
+                HStack {
+                    Text(verbatim: position.musicTime)
+                    Spacer()
+                    Text(verbatim: "-" + max(duration - position, 0).musicTime)
+                }
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.white.opacity(0.6))
+                .accessibilityHidden(true)
+                if let song = player.current { MusicQualityBadge(song: song) }
+            }
+        }
     }
 }
 
@@ -440,11 +452,14 @@ private struct MusicArtworkBackdrop: View {
     let url: URL?
     @State private var palette: [Color] = []
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var scenePhase
+    /// Still while paused or out of sight: a full-screen mesh at 30 frames a second isn't free.
+    private var isStill: Bool { reduceMotion || !AppServices.music.isPlaying || scenePhase != .active }
 
     var body: some View {
         Group {
             if palette.count == 9 {
-                TimelineView(.animation(minimumInterval: 1 / 30, paused: reduceMotion)) { context in
+                TimelineView(.animation(minimumInterval: 1 / 30, paused: isStill)) { context in
                     MeshGradient(width: 3, height: 3, points: Self.points(at: reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate),
                                  colors: palette, smoothsColors: true)
                 }
@@ -504,6 +519,8 @@ private struct MusicArtworkBackdrop: View {
 /// The words, following the song when the server has times for them; tap a line to go there.
 private struct MusicLyricsPanel: View {
     let lyrics: Lyrics?
+    let isLoaded: Bool
+    let retry: () -> Void
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     private var player: MusicQueuePlayer { AppServices.music.player }
     private var music: MusicPlayback { AppServices.music }
@@ -582,8 +599,18 @@ private struct MusicLyricsPanel: View {
                             .tint(.white)
                     }
                 }
-            } else {
+            } else if !isLoaded {
                 ProgressView().tint(.white).frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                // The song has lyrics, but they didn't come.
+                ContentUnavailableView {
+                    Label("Lyrics Unavailable", systemImage: "quote.bubble")
+                } actions: {
+                    Button("Try Again", action: retry)
+                        .buttonStyle(.bordered)
+                        .tint(.white)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .frame(maxHeight: .infinity)
@@ -604,11 +631,7 @@ private struct MusicQueuePanel: View {
                 }
                 toggle("Repeat", systemImage: player.repeatMode == .one ? "repeat.1" : "repeat",
                        isOn: player.repeatMode != .off) {
-                    player.repeatMode = switch player.repeatMode {
-                    case .off: .all
-                    case .all: .one
-                    case .one: .off
-                    }
+                    AppServices.music.cycleRepeatMode()
                 }
                 toggle("Autoplay", systemImage: "infinity", isOn: autoplay) { autoplay.toggle() }
             }
@@ -616,7 +639,7 @@ private struct MusicQueuePanel: View {
                 Text("Playing Next").font(.headline)
                 Spacer()
                 if !player.queue.upNext.isEmpty {
-                    Button("Clear") { player.clearUpNext() }
+                    Button("Clear") { music.clearUpNext() }
                         .font(.subheadline.weight(.semibold))
                 }
             }
@@ -667,11 +690,11 @@ private struct MusicQueuePanel: View {
                 }
                 .onMove { from, to in
                     guard let source = from.first else { return }
-                    player.moveUpNext(from: source, to: to > source ? to - 1 : to)
+                    music.moveUpNext(from: source, to: to > source ? to - 1 : to)
                 }
                 .onDelete { offsets in
                     let entries = Array(player.queue.upNext)
-                    offsets.map { entries[$0].id }.forEach(player.remove)
+                    offsets.map { entries[$0].id }.forEach(music.remove)
                 }
             }
             .listStyle(.plain)

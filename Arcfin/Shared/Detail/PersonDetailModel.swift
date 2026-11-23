@@ -23,16 +23,28 @@ final class PersonDetailModel {
     }
 
     /// Titles Seerr knows this person appears in that aren't already in the Jellyfin library,
-    /// already available/processing there, or already requested — tmdbId-matched throughout
-    /// (see SeerrRepository.matchingRequest), never by title string.
-    func missingCredits(seerrRepo: SeerrRepository) -> [SeerrPersonCredit] {
-        let libraryTmdbIds = Set(items.compactMap(\.tmdbId))
-        return seerrCredits.filter { credit in
+    /// already available/processing there, or already requested — matched as
+    /// SeerrRepository.matchingRequest does. Worked out after loading
+    /// and when the requests change, not on every redraw.
+    private(set) var missingCredits: [SeerrPersonCredit] = []
+
+    func refreshMissingCredits(requests: [SeerrRequestItem]) {
+        missingCredits = Self.missingCredits(seerrCredits, library: items, requests: requests)
+    }
+
+    static func missingCredits(_ credits: [SeerrPersonCredit], library: [MediaItem],
+                               requests: [SeerrRequestItem]) -> [SeerrPersonCredit] {
+        struct Key: Hashable { let type: RequestMediaType; let tmdbId: Int?; let title: String? }
+        let libraryTmdbIds = Set(library.compactMap(\.tmdbId))
+        // By tmdbId, or by title for a request without one.
+        let requested = Set(requests.map { Key(type: $0.mediaType, tmdbId: $0.tmdbId, title: $0.tmdbId == nil ? $0.mediaTitle : nil) })
+        return credits.filter { credit in
             !libraryTmdbIds.contains(credit.id)
                 && credit.mediaStatus != .available
                 && credit.mediaStatus != .processing
                 && credit.mediaStatus != .partiallyAvailable
-                && seerrRepo.matchingRequest(for: credit.asSeerrItem) == nil
+                && !requested.contains(Key(type: credit.mediaType, tmdbId: credit.id, title: nil))
+                && !requested.contains(Key(type: credit.mediaType, tmdbId: nil, title: credit.title))
         }
     }
 
@@ -48,5 +60,6 @@ final class PersonDetailModel {
         if let tmdbId = detail?.tmdbId, seerrRepo.isConfigured {
             seerrCredits = await seerrRepo.personCredits(tmdbId: tmdbId) ?? []
         }
+        refreshMissingCredits(requests: seerrRepo.requests)
     }
 }

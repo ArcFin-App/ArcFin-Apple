@@ -6,13 +6,7 @@
 	<array>
 		<string>applinks:arcfin.psmattas.com</string>
 	</array>
-	<key>com.apple.developer.carplay-audio</key>
-	<true/>
 	<key>com.apple.developer.group-session</key>
-	<true/>
-	<key>com.apple.developer.networking.multicast</key>
-	<true/>
-	<key>com.apple.developer.networking.wifi-info</key>
 	<true/>
 	<key>com.apple.developer.siri</key>
 	<true/>

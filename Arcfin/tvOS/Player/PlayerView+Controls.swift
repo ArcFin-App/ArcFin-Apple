@@ -99,7 +99,7 @@ extension PlayerView {
     private var subtitleTimingEntry: TVMenuEntry {
         let title = model.subtitleDelay == 0
             ? String(localized: "Subtitle Timing")
-            : String(localized: "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)")
+            : String(localized: "Subtitle Timing (\(model.subtitleDelay.formatted(.number.precision(.fractionLength(1)).sign(strategy: .always()))) s)")
         return TVMenuEntry(title: title, systemImage: "clock.arrow.2.circlepath", children: [
             TVMenuEntry(title: String(localized: "Later by 0.5 s")) { model.subtitleDelay += 0.5 },
             TVMenuEntry(title: String(localized: "Earlier by 0.5 s")) { model.subtitleDelay -= 0.5 },
@@ -135,6 +135,7 @@ extension PlayerView {
 
     private var bottomBar: some View {
         VStack(spacing: 10) {
+            skipControl
             if model.isLive {
                 // Nothing to scrub on a channel, so nothing here to focus either.
                 HStack(spacing: 16) {
@@ -148,17 +149,13 @@ extension PlayerView {
                 // leftSecondaryActions/rightSecondaryActions — they belong at the scrubber's own
                 // two ends regardless of what's in the row below it.
                 HStack {
-                    Text(model.timeLabel(ticks: model.elapsedTicks))
+                    PlayerTimeLabel(model: model, remaining: false)
                         .scaledFont(size: 12, weight: .medium, design: .monospaced)
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
                     Spacer()
-                    Text(model.remainingLabel)
+                    PlayerTimeLabel(model: model, remaining: true)
                         .scaledFont(size: 12, weight: .medium, design: .monospaced)
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(.default, value: model.remainingTicks)
                 }
             }
 
@@ -278,13 +275,13 @@ extension PlayerView {
     /// With the controls hidden, an invisible catcher holds focus, so a click never presses a
     /// button nobody can see.
     var tvCatcherActive: Bool {
-        model.tvControlsHidden && !tvOverlayHasFocusTarget && model.skipButtonLabel == nil && model.errorMessage == nil
+        model.tvControlsHidden && !tvOverlayHasFocusTarget && !model.showsFloatingSkip && model.errorMessage == nil
             && !model.showChannelList
     }
 
     /// Changes whenever a different control should hold focus.
     var tvFocusContext: String {
-        "\(model.tvControlsHidden)-\(tvCatcherActive)-\(model.skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)-\(model.errorMessage != nil)-\(model.showChannelList)"
+        "\(model.tvControlsHidden)-\(tvCatcherActive)-\(model.showsFloatingSkip)-\(model.skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)-\(model.errorMessage != nil)-\(model.showChannelList)"
     }
 
     /// The remote while the controls are hidden, as in the system player: a click or a swipe
@@ -385,69 +382,37 @@ extension PlayerView {
         // tvOS has no drag-to-scrub (see the remote handling below) so the bar
         // itself is the only feedback a remote-driven seek gets — thicker here than the
         // touch/mouse platforms, where the gesture itself is the primary feedback.
-        let trackHeight: CGFloat = 8
-        return GeometryReader { proxy in
-            let duration = max(model.player.durationTicks, 1)
-            let fraction = Double(model.isScrubbing ? Int64(model.scrubTicks) : (model.pendingSeekTargetTicks ?? model.player.positionTicks)) / Double(duration)
-            let thumbX = proxy.size.width * min(max(fraction, 0), 1)
-
-            ZStack(alignment: .leading) {
-                Capsule().fill(.white.opacity(0.25)).frame(height: trackHeight)
-                Capsule().fill(DT.Color.accent)
-                    .frame(width: thumbX, height: trackHeight)
-
-                // Some sources report duplicate chapter start times — id'd by array offset
-                // rather than startPositionTicks so SwiftUI never sees a colliding identity.
-                ForEach(Array(model.chapters.dropFirst().enumerated()), id: \.offset) { _, chapter in
-                    let x = proxy.size.width * min(max(Double(chapter.startPositionTicks) / Double(duration), 0), 1)
-                    Rectangle()
-                        .fill(.black.opacity(0.5))
-                        .frame(width: 2, height: trackHeight)
-                        .offset(x: x - 1)
+        GeometryReader { proxy in
+            TVScrubberTrack(model: model, width: proxy.size.width)
+                .frame(maxHeight: .infinity, alignment: .center)
+                .contentShape(Rectangle())
+                // No drag surface on tvOS — focus the bar and swipe the remote's touch surface
+                // left/right to nudge the pending position (with the same trickplay preview),
+                // then click to commit. Matches how Apple's own tvOS video player scrubber works.
+                .focusable(true)
+                .focused($isScrubberFocused)
+                .onChange(of: isScrubberFocused) { _, focused in
+                    if focused { startRemoteScrub() } else { remoteScrub.stop() }
                 }
-
-                Circle().fill(.white)
-                    .frame(width: model.isScrubbing ? 16 : 10, height: model.isScrubbing ? 16 : 10)
-                    .offset(x: thumbX - (model.isScrubbing ? 8 : 5))
-            }
-            // An overlay, so the preview floats above the track. Inside the stack its height
-            // made the stack taller and pushed the centred track down the screen.
-            .overlay(alignment: .leading) {
-                if model.isScrubbing, model.trickplayLoader != nil {
-                    TrickplayPreview(image: model.scrubThumbnail, size: Self.trickplaySize)
-                        .offset(x: min(max(thumbX - Self.trickplaySize.width / 2, 0), proxy.size.width - Self.trickplaySize.width),
-                                y: -(Self.trickplaySize.height / 2 + 21))
+                .onDisappear { remoteScrub.stop() }
+                .onMoveCommand { direction in
+                    guard direction == .left || direction == .right, !remoteScrub.suppressesMoveCommands else { return }
+                    beginTVScrub()
+                    let stepTicks: Double = 10 * 10_000_000
+                    model.scrubTicks = direction == .right
+                        ? min(model.scrubTicks + stepTicks, Double(model.player.durationTicks))
+                        : max(model.scrubTicks - stepTicks, 0)
+                    model.updateScrubThumbnail()
                 }
-            }
-            .frame(maxHeight: .infinity, alignment: .center)
-            .contentShape(Rectangle())
-            // No drag surface on tvOS — focus the bar and swipe the remote's touch surface
-            // left/right to nudge the pending position (with the same trickplay preview),
-            // then click to commit. Matches how Apple's own tvOS video player scrubber works.
-            .focusable(true)
-            .focused($isScrubberFocused)
-            .onChange(of: isScrubberFocused) { _, focused in
-                if focused { startRemoteScrub() } else { remoteScrub.stop() }
-            }
-            .onDisappear { remoteScrub.stop() }
-            .onMoveCommand { direction in
-                guard direction == .left || direction == .right, !remoteScrub.suppressesMoveCommands else { return }
-                beginTVScrub()
-                let stepTicks: Double = 10 * 10_000_000
-                model.scrubTicks = direction == .right
-                    ? min(model.scrubTicks + stepTicks, Double(model.player.durationTicks))
-                    : max(model.scrubTicks - stepTicks, 0)
-                model.updateScrubThumbnail()
-            }
-            .onTapGesture {
-                guard model.isScrubbing else { return }
-                commitTVScrub()
-            }
+                .onTapGesture {
+                    guard model.isScrubbing else { return }
+                    commitTVScrub()
+                }
         }
         .frame(height: 20)
-        .accessibilityElement()
+        // The value comes from the track, which reads the position in a view of its own.
+        .accessibilityElement(children: .combine)
         .accessibilityLabel("Playback position")
-        .accessibilityValue("\(model.timeLabel(ticks: model.elapsedTicks)) of \(model.timeLabel(ticks: model.player.durationTicks))")
         .accessibilityAdjustableAction { direction in
             model.seek(by: direction == .increment ? skipForwardSeconds : -skipBackwardSeconds)
         }
@@ -460,10 +425,7 @@ extension PlayerView {
         model.isScrubbing = false
         model.scrubThumbnail = nil
         model.performSeek(to: ticks)
-        if model.player.status != .playing {
-            if sharePlay.isActive { sharePlay.send(.play, itemId: item.id, positionTicks: ticks) }
-            Task { await model.player.play() }
-        }
+        model.playAfterScrub(at: ticks)
         model.scheduleAutoHide()
     }
 
@@ -506,10 +468,14 @@ extension PlayerView {
 
     // MARK: - Cast & Characters
 
+    /// Hides the controls the Apple TV way, by fading: isControlsVisible drives their hit
+    /// testing, and left false it kept them unfocusable after the panel closed, so nothing on
+    /// screen could take focus. Faded, the remote catcher takes it once the panel closes.
     func openCastPanel() {
+        model.hideControlsTask?.cancel()
         withAnimation(DT.Animation.fast) {
             showCastPanel = true
-            model.isControlsVisible = false
+            model.tvControlsHidden = true
         }
     }
 
@@ -531,5 +497,50 @@ extension PlayerView {
             return TVMenuEntry(title: String(localized: "SharePlay"), systemImage: "shareplay") { sharePlay.start(item) }
         }
         return nil
+    }
+}
+
+/// The scrubber's bar, thumb and preview: the parts that move with the position, in a view of
+/// their own so the player screen isn't rebuilt on every tick.
+private struct TVScrubberTrack: View {
+    let model: PlayerModel
+    let width: CGFloat
+    private let trackHeight: CGFloat = 8
+
+    var body: some View {
+        let duration = max(model.player.durationTicks, 1)
+        let fraction = Double(model.isScrubbing ? Int64(model.scrubTicks) : (model.pendingSeekTargetTicks ?? model.player.positionTicks)) / Double(duration)
+        let thumbX = width * min(max(fraction, 0), 1)
+        let previewSize = PlayerView.trickplaySize
+
+        ZStack(alignment: .leading) {
+            Capsule().fill(.white.opacity(0.25)).frame(height: trackHeight)
+            Capsule().fill(DT.Color.accent)
+                .frame(width: thumbX, height: trackHeight)
+
+            // Some sources report duplicate chapter start times — id'd by array offset
+            // rather than startPositionTicks so SwiftUI never sees a colliding identity.
+            ForEach(Array(model.chapters.dropFirst().enumerated()), id: \.offset) { _, chapter in
+                let x = width * min(max(Double(chapter.startPositionTicks) / Double(duration), 0), 1)
+                Rectangle()
+                    .fill(.black.opacity(0.5))
+                    .frame(width: 2, height: trackHeight)
+                    .offset(x: x - 1)
+            }
+
+            Circle().fill(.white)
+                .frame(width: model.isScrubbing ? 16 : 10, height: model.isScrubbing ? 16 : 10)
+                .offset(x: thumbX - (model.isScrubbing ? 8 : 5))
+        }
+        // An overlay, so the preview floats above the track. Inside the stack its height
+        // made the stack taller and pushed the centred track down the screen.
+        .overlay(alignment: .leading) {
+            if model.isScrubbing, model.trickplayLoader != nil {
+                TrickplayPreview(image: model.scrubThumbnail, size: previewSize)
+                    .offset(x: min(max(thumbX - previewSize.width / 2, 0), width - previewSize.width),
+                            y: -(previewSize.height / 2 + 21))
+            }
+        }
+        .accessibilityValue("\(model.timeLabel(ticks: model.elapsedTicks)) of \(model.timeLabel(ticks: model.player.durationTicks))")
     }
 }

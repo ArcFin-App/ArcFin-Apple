@@ -15,7 +15,11 @@ final class AdminActivityModel {
     private let pageSize = 50
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         do {
             entries = try await admin.activity(limit: pageSize, credential: access.credential, authHeader: access.header)
             reachedEnd = entries.count < pageSize
@@ -68,7 +72,7 @@ private struct AdminActivityRow: View {
     private var icon: (name: String, color: Color) {
         switch entry.severity {
         case "Error": ("xmark.octagon.fill", DT.Color.palette("F43F5E"))
-        case "Warning": ("exclamationmark.triangle.fill", .orange)
+        case "Warning": ("exclamationmark.triangle.fill", DT.Color.palette("f59e0b"))
         default:
             switch entry.type {
             case let type where type.contains("Session") || type.contains("Authentication"): ("person.crop.circle", DT.Color.palette("60A5FA"))

@@ -3,6 +3,7 @@
 import SwiftUI
 import JellyfinAPI
 import Persistence
+import SwiftData
 
 struct MediaDetailHero: View {
     @Environment(MediaRepository.self) private var mediaRepo
@@ -82,12 +83,22 @@ private struct DetailFallbackHero: View {
 
 /// Artwork kept with a download, for when the server's can't be reached.
 private struct SavedDownloadArtwork: View {
+    @Environment(DownloadManager.self) private var downloadManager
+    @Environment(\.modelContext) private var modelContext
     let item: MediaItem
     let fileName: String
 
+    /// This profile's copy of the title, then the show's folder if this profile has an episode of it.
+    private var folders: [URL] {
+        var folders = downloadManager.ownDownload(itemId: item.id).map { [DownloadStore.directory(for: $0)] } ?? []
+        let seriesId = item.seriesId ?? item.id
+        let episodes = (try? modelContext.fetch(FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.seriesId == seriesId }))) ?? []
+        if !downloadManager.ownDownloads(episodes).isEmpty { folders.append(DownloadStore.directory(for: seriesId)) }
+        return folders
+    }
+
     var body: some View {
-        let url = [item.id, item.seriesId].compactMap { $0 }
-            .map { DownloadStore.directory(for: $0).appendingPathComponent(fileName) }
+        let url = folders.map { $0.appendingPathComponent(fileName) }
             .first { FileManager.default.fileExists(atPath: $0.path) }
         if let url {
             CachedAsyncImage(url: url) { phase in
@@ -177,7 +188,7 @@ private struct DetailMetaRow: View {
             }
             if let mins = detail?.runtimeMinutes {
                 Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2)).contentFont(.caption, design: .default)
-                Text("\(mins)m")
+                Text(DurationText.minutes(mins))
                     .contentFont(.caption, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
             }
@@ -187,7 +198,7 @@ private struct DetailMetaRow: View {
                     Image(systemName: "star.fill")
                         .contentFont(.caption2)
                         .foregroundStyle(DT.Color.accent)
-                    Text(String(format: "%.1f", rating))
+                    Text(rating.ratingText)
                         .contentFont(.caption2, design: .default, weight: .bold)
                         .foregroundStyle(DT.Color.accent)
                 }
@@ -234,12 +245,10 @@ private struct DetailAwardsRow: View {
     var body: some View {
         let names = Array(Set(awards.map(\.name))).sorted()
         let label: String
-        if names.count == 1 {
-            label = "Won \(names[0])"
-        } else if names.count <= 3 {
-            label = "Won \(names.joined(separator: ", "))"
+        if names.count <= 3 {
+            label = String(localized: "Won \(names.formatted(.list(type: .and)))")
         } else {
-            label = "Won \(names.count) Awards"
+            label = String(localized: "Won \(names.count) Awards")
         }
         return HStack(alignment: .firstTextBaseline, spacing: 4) {
             Image(systemName: "trophy.fill")

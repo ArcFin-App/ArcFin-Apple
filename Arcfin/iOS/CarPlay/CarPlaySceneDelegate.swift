@@ -33,6 +33,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private lazy var voice = CarPlayVoiceSearch { [weak self] term in await self?.search.pushResults(for: term) }
     /// Whether the car has the keyboard off (most do while driving).
     private var session: CPSessionConfiguration?
+    private var lockObserver: NSObjectProtocol?
 
     private var music: MusicPlayback { AppServices.music }
     private var player: MusicQueuePlayer { music.player }
@@ -52,12 +53,15 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         setUpNowPlaying()
         watchProfile()
         watchSong()
+        watchLock()
         tabs.forEach(load)
     }
 
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
                                   didDisconnectInterfaceController interfaceController: CPInterfaceController) {
         CPNowPlayingTemplate.shared.remove(self)
+        if let lockObserver { NotificationCenter.default.removeObserver(lockObserver) }
+        lockObserver = nil
         interface = nil
     }
 
@@ -79,6 +83,17 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                 guard let self, interface != nil else { return }
                 tabs.forEach(load)
                 watchProfile()
+            }
+        }
+    }
+
+    /// Entering the PIN on the phone replaces "Unlock Arcfin on your iPhone" with the music.
+    private func watchLock() {
+        guard lockObserver == nil else { return }
+        lockObserver = NotificationCenter.default.addObserver(forName: .arcfinPassedLock, object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self, self.interface != nil else { return }
+                self.tabs.forEach(self.load)
             }
         }
     }
@@ -108,7 +123,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                 return
             }
             // A profile with a PIN stays locked until it's entered on the phone.
-            if !AppServices.hasPassedLock, await auth.pin(for: credential.id) != nil {
+            if !AppServices.hasPassedLock, await auth.storedPIN(for: credential.id) != .none {
                 show(String(localized: "Unlock Arcfin on your iPhone"), in: list)
                 return
             }
@@ -573,14 +588,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             guard let self else { return }
             AppServices.music.setShuffled(!player.queue.isShuffled)
         }
-        let repeatButton = CPNowPlayingRepeatButton { [weak self] _ in
-            guard let self else { return }
-            player.repeatMode = switch player.repeatMode {
-            case .off: .all
-            case .all: .one
-            case .one: .off
-            }
-        }
+        let repeatButton = CPNowPlayingRepeatButton { _ in AppServices.music.cycleRepeatMode() }
         CPNowPlayingTemplate.shared.updateNowPlayingButtons([shuffle, repeatButton, favorite])
     }
 

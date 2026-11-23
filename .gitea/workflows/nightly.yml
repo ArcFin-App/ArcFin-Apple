@@ -1,0 +1,97 @@
+name: Nightly
+
+# Every night at midnight Irish time, main goes to the internal testers' TestFlight group on all
+# three platforms.
+# - When a version or build bump has reached main (no <Platform>-X.Y.Z-build-N tag for the
+#   project's version yet), it uploads that build and tags it <Platform>-X.Y.Z-build-N, with a
+#   draft release for each platform.
+# - Otherwise, when main has commits since the last nightly or release, it uploads a nightly.
+#   Its build number is the project's with the Unix time after it (2.1764028800), so nothing
+#   is committed, it never takes a number a release needs, and a second run the same day (a
+#   hotfix) still works. It gets an unsigned nightly-<date>-<unix time> tag and a
+#   pre-release; the last 14 are kept.
+on:
+  schedule:
+    # 23:00 and 00:00 UTC: one of them is midnight in Dublin, winter or summer.
+    - cron: '0 0,23 * * *'
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Build even if main hasn't changed since the last nightly
+        type: boolean
+        default: false
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    runs-on: macos
+    defaults:
+      run:
+        shell: bash
+    env:
+      GROUP: Arcfin Nightly Builds
+      KEEP: '14'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Plan
+        env:
+          EVENT: ${{ github.event_name }}
+          FORCE: ${{ github.event.inputs.force }}
+        run: |
+          git fetch --force --tags origin
+          .gitea/scripts/nightly-plan.sh
+
+      - name: App Store Connect key
+        if: env.RUN == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          key="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$key"
+          chmod 600 "$key"
+          echo "ASC_KEY_PATH=$key" >> "$GITHUB_ENV"
+
+      - name: Archive and upload
+        if: env.RUN == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          DEVELOPMENT_TEAM: ${{ vars.DEVELOPMENT_TEAM }}
+        run: .gitea/scripts/nightly-upload.sh
+
+      # The uploads that made it still get their tag and release if this step fails.
+      - name: Send to the nightly group
+        id: distribute
+        if: always() && env.RUN == 'true' && env.UPLOADED != ''
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: python3 -I .gitea/scripts/testflight-nightly.py
+
+      - name: Tag and release
+        if: always() && env.RUN == 'true' && env.UPLOADED != ''
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+        run: SHA=$(git rev-parse HEAD) python3 -I .gitea/scripts/nightly-release.py
+
+      - name: The group step failed
+        if: always() && steps.distribute.outcome == 'failure'
+        run: |
+          echo "::error::The builds uploaded, but sending them to $GROUP failed; see that step. Add them by hand in App Store Connect."
+          exit 1
+
+      - name: Remove the key
+        if: always()
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8

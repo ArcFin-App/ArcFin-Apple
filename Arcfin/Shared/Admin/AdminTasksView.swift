@@ -26,7 +26,11 @@ final class AdminTasksModel {
     }
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         do {
             tasks = try await admin.scheduledTasks(credential: access.credential, authHeader: access.header)
             errorMessage = nil
@@ -135,7 +139,7 @@ private struct AdminTaskRow: View {
                 if task.state == .running {
                     ProgressView(value: (task.progress ?? 0) / 100)
                         .tint(DT.Color.accent)
-                    Text("\(Int(task.progress ?? 0))%")
+                    Text(((task.progress ?? 0) / 100).formatted(.percent.precision(.fractionLength(0))))
                         .font(.system(.caption2, weight: .medium))
                         .monospacedDigit()
                         .foregroundStyle(DT.Color.textSecondary)

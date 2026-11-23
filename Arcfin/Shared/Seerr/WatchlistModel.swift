@@ -7,6 +7,7 @@ import SeerrAPI
 @MainActor @Observable
 final class WatchlistModel {
     private(set) var isLoading = false
+    var error: String?
 
     func load(seerrRepo: SeerrRepository) async {
         isLoading = true
@@ -16,6 +17,13 @@ final class WatchlistModel {
 
     func remove(_ item: SeerrItem, seerrRepo: SeerrRepository) {
         HapticManager.impact(.light)
-        Task { try? await seerrRepo.removeFromWatchlist(item) }
+        Task {
+            do {
+                try await seerrRepo.removeFromWatchlist(item)
+            } catch where SeerrRepository.isCancellation(error) {
+            } catch {
+                self.error = String(localized: "Couldn't remove this from your watchlist. Check your connection and try again.")
+            }
+        }
     }
 }

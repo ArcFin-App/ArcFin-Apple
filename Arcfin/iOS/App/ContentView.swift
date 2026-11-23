@@ -83,7 +83,8 @@ struct ContentView: View {
                     }
                     .navigationDestination(isPresented: $navigateToOfflineLocalPlayer) {
                         if let url = offlinePickedURL {
-                            LocalPlayerView(url: url)
+                            PlayerView(fileURL: url)
+                                .toolbar(.hidden, for: .navigationBar)
                                 .toolbar(.hidden, for: .tabBar)
                         }
                     }
@@ -94,7 +95,9 @@ struct ContentView: View {
                                                         set: { AppServices.music.isNowPlayingOpen = $0 }))
                         .padding(.horizontal, DT.Spacing.md)
                         .padding(.vertical, DT.Spacing.sm)
-                        .glassEffect(.regular.interactive(), in: .capsule)
+                        // On a capsule behind it rather than on the row itself, whose buttons
+                        // change their symbols: glass over them updated more than once a frame.
+                        .background { Color.clear.glassEffect(.regular.interactive(), in: .capsule) }
                         .padding(.horizontal, DT.Spacing.md)
                 }
             }
@@ -110,7 +113,11 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
-            phaseContent
+            if model.showsContent(phase) {
+                phaseContent
+            } else {
+                DT.Color.backgroundPrimary.ignoresSafeArea()
+            }
 
             if model.isShowing(.onboarding, phase: phase) {
                 OnboardingView(isSignedIn: phase == .main) { model.introduction.finishOnboarding() }
@@ -121,6 +128,7 @@ struct ContentView: View {
 
             if model.isAppLocked {
                 AppLockView(useFaceID: appLockUseFaceID) { model.unlock() }
+                    .accessibilityAddTraits(.isModal)
                     .transition(.opacity)
                     .zIndex(10)
             }
@@ -131,6 +139,7 @@ struct ContentView: View {
         .sheet(isPresented: model.introductionBinding(.whatsNew, phase: phase)) {
             WhatsNewView { model.introduction.finishWhatsNew() }
         }
+        .modifier(RemoteSettingsPrompt(canAsk: model.canAskAboutRemoteSettings(phase: phase)))
         .modifier(AppRootLifecycle(model: model) { model.refreshOnForeground($0, modelContext: modelContext) })
     }
 }

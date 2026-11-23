@@ -12,6 +12,9 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
     let model: PersonDetailModel
     let columns: [GridItem]
     let creditScale: CGFloat
+    /// The artwork for a library title's card, where the platform's card isn't a portrait
+    /// poster; the primary image otherwise.
+    var cardImageURL: ((MediaItem) -> URL?)? = nil
     /// Each platform's button around a library title's poster.
     @ViewBuilder let itemLink: (MediaItem, PosterCard) -> ItemLink
     /// Each platform's button around a credit Seerr can request.
@@ -20,7 +23,6 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
     @ViewBuilder let header: (PersonDetailHeader) -> Header
 
     var body: some View {
-        let missingCredits = model.missingCredits(seerrRepo: seerrRepo)
         ScrollView(showsIndicators: false) {
             VStack(spacing: DT.Spacing.md) {
                 header(PersonDetailHeader(person: model.person))
@@ -51,32 +53,48 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
                                 itemLink(item, PosterCard(
                                     title: item.name,
                                     subtitle: item.productionYear.map { String($0) },
-                                    imageURL: mediaRepo.imageURL(for: item)
+                                    imageURL: cardImageURL.map { $0(item) } ?? mediaRepo.imageURL(for: item)
                                 ))
                             }
                         }
                         .padding(.horizontal, DT.Spacing.pagePad)
                     }
 
-                    if !missingCredits.isEmpty {
+                    if let first = model.missingCredits.first {
                         PersonSectionHeader(title: "Also Appears In")
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(alignment: .top, spacing: 12) {
-                                ForEach(missingCredits) { credit in
-                                    creditLink(credit, PersonCreditCard(credit: credit, scale: creditScale))
-                                }
-                            }
-                            .padding(.horizontal, DT.Spacing.pagePad)
+                        // A prolific actor has hundreds of credits, so only the cards on screen
+                        // are built. A lazy row in a shelf has come out with no height on Apple
+                        // TV and shown nothing; a hidden card, without its poster, gives it one.
+                        PersonCreditCard(credit: Self.sizingCredit(first), scale: creditScale)
                             .padding(.vertical, 12)
-                        }
-                        .shelfScrollButtons()
-                        .scrollClipDisabled()
+                            .hidden()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .overlay {
+                                ScrollView(.horizontal, showsIndicators: false) {
+                                    LazyHStack(alignment: .top, spacing: 12) {
+                                        ForEach(model.missingCredits) { credit in
+                                            creditLink(credit, PersonCreditCard(credit: credit, scale: creditScale))
+                                        }
+                                    }
+                                    .padding(.horizontal, DT.Spacing.pagePad)
+                                    .padding(.vertical, 12)
+                                }
+                                .shelfScrollButtons()
+                                .scrollClipDisabled()
+                            }
                     }
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.bottom, DT.Spacing.md)
         }
+        .onChange(of: seerrRepo.requests) { _, requests in model.refreshMissingCredits(requests: requests) }
+    }
+
+    private static func sizingCredit(_ credit: SeerrPersonCredit) -> SeerrPersonCredit {
+        var sizing = credit
+        sizing.posterPath = nil
+        return sizing
     }
 }
 
@@ -142,7 +160,7 @@ private struct PersonPhotoPlaceholder: View {
 }
 
 private struct PersonSectionHeader: View {
-    let title: String
+    let title: LocalizedStringKey
 
     var body: some View {
         Text(title)

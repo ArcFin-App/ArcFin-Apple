@@ -12,7 +12,8 @@ struct DownloadsView: View {
 
     @Environment(DownloadManager.self) private var downloadManager
     @Environment(AuthManager.self) private var authManager
-    @Query(sort: [SortDescriptor(\DownloadedItem.downloadedAt, order: .reverse)]) private var items: [DownloadedItem]
+    @Query(sort: [SortDescriptor(\DownloadedItem.downloadedAt, order: .reverse)]) private var allItems: [DownloadedItem]
+    private var items: [DownloadedItem] { downloadManager.ownDownloads(allItems) }
 
     @State private var model = DownloadsModel()
 
@@ -54,8 +55,10 @@ struct DownloadsView: View {
         .navigationDestination(item: $model.selectedMedia) { item in
             MediaDetailView(item: item)
         }
-        .sheet(item: $model.playingItem) { item in
-            OfflinePlayerView(downloadedItem: item)
+        .sheet(item: $model.playingItem.playerCover) { playback in
+            let item = playback.item
+            PlayerView(download: item) { model.playingItem = $0 }
+                .id(item.itemId)
                 .frame(minWidth: 900, minHeight: 560)
         }
         .modifier(DownloadsAlerts(items: items, model: model))

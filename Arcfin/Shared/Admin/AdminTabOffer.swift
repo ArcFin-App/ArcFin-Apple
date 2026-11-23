@@ -87,6 +87,7 @@ private struct AdminTabOffer: ViewModifier {
 
     private func offerIfNeeded() {
         guard authManager.isAdmin, !UserDefaults.standard.bool(forKey: Self.offeredKey),
+              !authManager.arcfinSyncLockedKeys.contains(BottomNavPrefs.activeKey),
               !BottomNavPrefs.active(from: activeString).contains(.admin) else { return }
         UserDefaults.standard.set(true, forKey: Self.offeredKey)
         isOffering = true

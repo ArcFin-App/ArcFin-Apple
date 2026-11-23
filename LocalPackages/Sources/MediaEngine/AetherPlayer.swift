@@ -27,6 +27,15 @@ public struct NativeBitmapCue: Identifiable, Sendable {
     public let canvasSize: CGSize
 }
 
+/// A decoded text cue from a subtitle track inside the file, for a host that draws the words
+/// itself (a played-as-is file has no server to convert the track).
+public struct NativeTextCue: Identifiable, Sendable {
+    public let id: Int
+    public let startTime: Double
+    public let endTime: Double
+    public let text: String
+}
+
 @MainActor
 @Observable
 public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable {
@@ -71,6 +80,10 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
     /// module as PlayerView.swift); the app target never needs to import AetherEngine's own
     /// subtitle types at all this way, so there's no name collision to manage at every call site.
     public private(set) var nativeBitmapCues: [NativeBitmapCue] = []
+    /// Text cues of the embedded track selected on this engine, plain (styling dropped). Online
+    /// these come from the server as WebVTT instead, so only a host that selected the track
+    /// itself reads them.
+    public private(set) var nativeTextCues: [NativeTextCue] = []
 
     @ObservationIgnored private var cancellables: [AnyCancellable] = []
 
@@ -151,6 +164,10 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
                     cgImage: image.cgImage, position: image.position, canvasSize: image.canvasSize
                 )
             }
+            self?.nativeTextCues = cues.compactMap { cue in
+                guard let text = cue.text, !text.isEmpty else { return nil }
+                return NativeTextCue(id: cue.id, startTime: cue.startTime, endTime: cue.endTime, text: text)
+            }
         }.store(in: &cancellables)
     }
 
@@ -227,6 +244,12 @@ public final class AetherEnginePlayer: MediaPlayerProtocol, @unchecked Sendable 
     /// Another item follows straight after, so the TV stays in this one's mode instead of
     /// switching back to its default and out again in between.
     public var keepsDisplayModeOnStop = false
+    /// Another player takes over the shared audio session, which stopping this one would
+    /// otherwise deactivate under it, cutting its sound.
+    public var keepsAudioSessionOnStop: Bool {
+        get { !engine.deactivatesAudioSessionOnStop }
+        set { engine.deactivatesAudioSessionOnStop = !newValue }
+    }
     public func stop() async { engine.stop(resetDisplayCriteria: !keepsDisplayModeOnStop) }
 
     /// Whether this load has put a frame on screen, read from the presenting layer or renderer

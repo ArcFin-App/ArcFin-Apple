@@ -4,6 +4,7 @@
 import UIKit
 import CarPlay
 import Intents
+import SwiftData
 import UserNotifications
 import CastKit
 import Telemetry
@@ -35,18 +36,6 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         intent is INPlayMediaIntent ? MusicSiriHandler() : nil
     }
 
-    func applicationDidEnterBackground(_ application: UIApplication) {
-        BackgroundRefresh.schedule()
-    }
-
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        BackgroundRefresh.startWhileOpen()
-    }
-
-    func applicationWillResignActive(_ application: UIApplication) {
-        BackgroundRefresh.stopWhileOpen()
-    }
-
     func application(
         _ application: UIApplication,
         handleEventsForBackgroundURLSession identifier: String,
@@ -63,6 +52,11 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
             return
         }
         DownloadManager.pendingBackgroundCompletionHandler = completionHandler
+        // A background relaunch usually connects no window, and the session that hands over
+        // the finished videos is only created when the manager is set up. A window's own
+        // configure call later does nothing.
+        AppServices.downloadManager.configure(modelContext: AppServices.modelContainer.mainContext,
+                                              authManager: AppServices.authManager)
     }
 
     /// A shortcut item can arrive in the launch options of a cold start or through the scene
@@ -84,13 +78,9 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
 @MainActor
 final class QuickActionSceneDelegate: NSObject, UIWindowSceneDelegate {
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        // Both routes are buffered for views that aren't mounted yet on a cold launch.
         guard let item = connectionOptions.shortcutItem else { return }
-        // The views listening for the Downloads route aren't mounted yet on a cold launch
-        // (the play route survives via its UserDefaults buffer), so give them a moment.
-        Task { @MainActor in
-            try? await Task.sleep(for: .seconds(1.5))
-            QuickActions.handle(item)
-        }
+        QuickActions.handle(item)
     }
 
     func windowScene(
@@ -104,7 +94,7 @@ final class QuickActionSceneDelegate: NSObject, UIWindowSceneDelegate {
 
 /// Home Screen long-press actions: a static Downloads entry plus a dynamic "Resume <title>"
 /// for the most recent Continue Watching item. Both reuse the arcfin:// routes' plumbing
-/// (the pending-play buffer and the Downloads notification) rather than a second path.
+/// (the pending-play and pending-Downloads buffers) rather than a second path.
 enum QuickActions {
     private static let resumeType = "com.psmattas.arcfin.resume"
     private static let downloadsType = "com.psmattas.arcfin.downloads"
@@ -113,13 +103,14 @@ enum QuickActions {
     static func update(resumeItemID: String?, title: String?) {
         var items = [
             UIApplicationShortcutItem(
-                type: downloadsType, localizedTitle: "Downloads", localizedSubtitle: nil,
+                type: downloadsType, localizedTitle: String(localized: "Downloads"), localizedSubtitle: nil,
                 icon: UIApplicationShortcutIcon(systemImageName: "arrow.down.circle"), userInfo: nil)
         ]
-        if let resumeItemID, let title {
+        // Like the widgets and Siri, nothing from a profile with an app-lock PIN.
+        if let resumeItemID, let title, IntentSession.credential() != nil {
             items.insert(
                 UIApplicationShortcutItem(
-                    type: resumeType, localizedTitle: "Continue Watching", localizedSubtitle: title,
+                    type: resumeType, localizedTitle: String(localized: "Continue Watching"), localizedSubtitle: title,
                     icon: UIApplicationShortcutIcon(systemImageName: "play.fill"),
                     userInfo: ["itemID": resumeItemID as NSString]),
                 at: 0)
@@ -137,7 +128,7 @@ enum QuickActions {
             NotificationCenter.default.post(name: .arcfinPlayItem, object: nil, userInfo: ["itemID": itemID])
             return true
         case downloadsType:
-            NotificationCenter.default.post(name: .arcfinShowDownloads, object: nil)
+            ArcfinRouting.showDownloads()
             return true
         default:
             return false

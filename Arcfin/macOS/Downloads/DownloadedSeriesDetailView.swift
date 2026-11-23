@@ -19,7 +19,7 @@ struct DownloadedSeriesDetailView: View {
     @State private var isSelectingMac = false
 
     private var series: DownloadedSeries? { DownloadedSeriesDetailModel.series(seriesId, in: allSeries) }
-    private var episodes: [DownloadedItem] { DownloadedSeriesDetailModel.episodes(of: seriesId, in: allItems) }
+    private var episodes: [DownloadedItem] { DownloadedSeriesDetailModel.episodes(of: seriesId, in: downloadManager.ownDownloads(allItems)) }
 
     var body: some View {
         List {
@@ -60,10 +60,11 @@ struct DownloadedSeriesDetailView: View {
         .onAppear {
             if model.selectedSeason == nil { model.selectedSeason = DownloadedSeriesDetailModel.seasonNumbers(of: episodes).first }
         }
-        // fullScreenCover is unavailable on macOS — OfflinePlayerView has its own in-window
-        // fullscreen (F key) now that it has a real macOS video surface, so a sheet is enough.
-        .sheet(item: $model.playingItem) { item in
-            OfflinePlayerView(downloadedItem: item, startPositionOverride: model.playStartOverride)
+        // fullScreenCover is unavailable on macOS; the player has its own full screen (F).
+        .sheet(item: $model.playingItem.playerCover) { playback in
+            let item = playback.item
+            PlayerView(download: item, startPositionOverride: model.playStartOverride) { model.play($0, startOverride: nil) }
+                .id(item.itemId)
                 .frame(minWidth: 900, minHeight: 560)
         }
         .alert("Delete this episode?", isPresented: Binding(
@@ -81,7 +82,8 @@ struct DownloadedSeriesDetailView: View {
             }
             Button("Cancel", role: .cancel) { model.pendingDelete = nil }
         }
-        .alert("Delete \(model.selection.count) selected episode\(model.selection.count == 1 ? "" : "s")?", isPresented: $model.showBulkDeleteConfirm) {
+        .alert(model.selection.count == 1 ? "Delete 1 selected episode?" : "Delete \(model.selection.count) selected episodes?",
+               isPresented: $model.showBulkDeleteConfirm) {
             Button("Delete", role: .destructive) {
                 model.deleteSelection(of: episodes, downloadManager: downloadManager)
                 isSelectingMac = false

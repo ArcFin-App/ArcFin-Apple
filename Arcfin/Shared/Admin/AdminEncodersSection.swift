@@ -13,7 +13,11 @@ final class AdminEncodersModel {
     private(set) var unavailable = false
 
     func load(authManager: AuthManager, refresh: Bool = false) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            isLoading = false
+            isTesting = false
+            return
+        }
         if refresh { isTesting = true }
         defer { isLoading = false; isTesting = false }
         guard let encoders = await ArcfinSyncClient().fetchEncoders(credential: access.credential, authHeader: access.header, refresh: refresh) else {

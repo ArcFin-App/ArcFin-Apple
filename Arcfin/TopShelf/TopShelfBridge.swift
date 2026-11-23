@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import AuthCore
 import Foundation
+import Security
 
 // Shared between the main app target and ArcfinTopShelf extension target.
 // Add this file to BOTH targets in Xcode's file inspector.
@@ -22,12 +24,14 @@ public struct TopShelfMediaItem: Codable, Sendable {
     public let ratingValue: String?
     public var artworkFileName: String? // image with the logo and progress bar drawn in
     public var artworkHasLogo: Bool?
+    public let trailerItemID: String?   // the movie or show whose server trailer the shelf plays
+    public var previewVideoURL: URL?
 
     public init(
         id: String, title: String, subtitle: String?, imageURL: URL?, progress: Double,
         summary: String? = nil, genre: String? = nil, duration: TimeInterval? = nil,
         year: Int? = nil, backdropURL: URL? = nil, contextTitle: String? = nil,
-        logoURL: URL? = nil, ratingTitle: String? = nil, ratingValue: String? = nil
+        logoURL: URL? = nil, ratingTitle: String? = nil, ratingValue: String? = nil, trailerItemID: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -43,6 +47,7 @@ public struct TopShelfMediaItem: Codable, Sendable {
         self.logoURL = logoURL
         self.ratingTitle = ratingTitle
         self.ratingValue = ratingValue
+        self.trailerItemID = trailerItemID
     }
 }
 
@@ -64,6 +69,8 @@ public enum TopShelfBridge {
         recentlyAdded: some Collection<TopShelfMediaItem>,
         liveChannels: [TopShelfMediaItem] = []
     ) {
+        // Like Siri and Spotlight, the shelf never shows a library an app-lock PIN protects.
+        guard !activeProfileHasPIN else { return clear() }
         guard let defaults = UserDefaults(suiteName: suiteName) else { return }
         if let data = try? JSONEncoder().encode(Array(continueWatching.prefix(5))) {
             defaults.set(data, forKey: continueWatchingKey)
@@ -78,6 +85,19 @@ public enum TopShelfBridge {
             defaults.set(data, forKey: liveChannelsKey)
         }
         defaults.synchronize()
+    }
+
+    private static var activeProfileHasPIN: Bool {
+        guard let id = UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap(UUID.init(uuidString:))
+        else { return false }
+        // While the device is locked the PIN can't be read yet, and that counts as one.
+        do {
+            return try KeychainStore().loadPin(for: id) != nil
+        } catch KeychainError.unexpectedStatus(let status) where status == errSecInteractionNotAllowed {
+            return true
+        } catch {
+            return false
+        }
     }
 
     /// Nobody signed in, or another profile now: the shelf shouldn't show the last one's titles.

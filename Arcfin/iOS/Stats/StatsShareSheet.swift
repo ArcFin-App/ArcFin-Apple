@@ -6,7 +6,7 @@ import JellyfinAPI
 
 /// A picture of the period's stats to post: rendered here, shared as an image.
 struct StatsShareSheet: View {
-    let stats: WatchStats
+    let content: StatsShareContent
     let name: String?
 
     @Environment(MediaRepository.self) private var mediaRepo
@@ -30,7 +30,7 @@ struct StatsShareSheet: View {
                             .scaledToFit()
                             .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg, style: .continuous))
                             .shadow(color: .black.opacity(0.35), radius: 20, y: 10)
-                            .accessibilityLabel("Your stats card for \(stats.name)")
+                            .accessibilityLabel("Your stats card for \(content.periodName)")
                     } else {
                         ProgressView()
                     }
@@ -39,7 +39,7 @@ struct StatsShareSheet: View {
 
                 if let rendered {
                     let image = Image(decorative: rendered, scale: 1)
-                    ShareLink(item: image, preview: SharePreview("My \(stats.period == .allTime ? "Stats" : stats.name) on Arcfin", image: image)) {
+                    ShareLink(item: image, preview: SharePreview(content.period == .allTime ? String(localized: "My Stats on Arcfin") : String(localized: "My \(content.periodName) on Arcfin"), image: image)) {
                         Label("Share", systemImage: "square.and.arrow.up")
                             .font(.system(.headline))
                             .frame(maxWidth: .infinity)
@@ -67,7 +67,7 @@ struct StatsShareSheet: View {
     }
 
     private func render() {
-        let card = StatsShareCard(stats: stats, name: name, format: format, artwork: artwork ?? .init())
+        let card = StatsShareCard(content: content, name: name, format: format, artwork: artwork ?? .init())
         let renderer = ImageRenderer(content: card.environment(\.colorScheme, .dark))
         renderer.scale = 3
         rendered = renderer.cgImage
@@ -75,14 +75,25 @@ struct StatsShareSheet: View {
 
     /// ImageRenderer draws only what's already in memory, so the artwork is fetched first.
     private func loadArtwork() async -> StatsShareCard.Artwork {
-        let backdropItem = stats.topShows.first?.item ?? stats.topMovies.first?.item
-        let backdropURL = backdropItem.flatMap { mediaRepo.imageURL(for: $0, type: .backdrop, fillWidth: 1200) }
-        let showURL = stats.topShows.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) }
-        let movieURL = stats.topMovies.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) }
-        async let backdrop = image(backdropURL)
-        async let show = image(showURL)
-        async let movie = image(movieURL)
-        return await .init(backdrop: backdrop, topShow: show, topMovie: movie)
+        let urls: (backdrop: URL?, first: URL?, second: URL?) = switch content {
+        case .video(let stats): (
+            (stats.topShows.first?.item ?? stats.topMovies.first?.item).flatMap { mediaRepo.imageURL(for: $0, type: .backdrop, fillWidth: 1200) },
+            stats.topShows.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) },
+            stats.topMovies.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) })
+        case .music(let stats): (
+            cover((stats.topAlbums + stats.topSongs + stats.topArtists).first { $0.albumImageTag != nil }, width: 1200),
+            cover(stats.topSongs.first, width: 400),
+            cover(stats.topArtists.first, width: 400))
+        }
+        async let backdrop = image(urls.backdrop)
+        async let first = image(urls.first)
+        async let second = image(urls.second)
+        return await .init(backdrop: backdrop, first: first, second: second)
+    }
+
+    private func cover(_ entry: MusicStats.Entry?, width: Int) -> URL? {
+        guard let entry, let albumId = entry.albumId else { return nil }
+        return mediaRepo.primaryImageURL(itemID: albumId, tag: entry.albumImageTag, fillWidth: width)
     }
 
     private func image(_ url: URL?) async -> CGImage? {

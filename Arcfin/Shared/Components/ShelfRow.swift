@@ -3,22 +3,38 @@
 import SwiftUI
 
 struct ShelfRow<Content: View>: View {
-    var title: String
-    var badge: String? = nil
+    let title: Text
+    var badge: Text? = nil
     var onSeeAll: (() -> Void)? = nil
     @ViewBuilder var content: () -> Content
+
+    /// A literal title is looked up in the String Catalog, as `Text` does.
+    init(title: LocalizedStringKey, badge: LocalizedStringKey? = nil, onSeeAll: (() -> Void)? = nil,
+         @ViewBuilder content: @escaping () -> Content) {
+        self.title = Text(title)
+        self.badge = badge.map { Text($0) }
+        self.onSeeAll = onSeeAll
+        self.content = content
+    }
+
+    /// A name, or text that's already localized, shown as it is.
+    init<S: StringProtocol>(title: S, onSeeAll: (() -> Void)? = nil, @ViewBuilder content: @escaping () -> Content) {
+        self.title = Text(title)
+        self.onSeeAll = onSeeAll
+        self.content = content
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             HStack(alignment: .center, spacing: 8) {
-                Text(title)
+                title
                     .font(DT.Font.cardTitle)
                     .foregroundStyle(DT.Color.textPrimary)
                     .tracking(-0.2)
                     .accessibilityAddTraits(.isHeader)
 
                 if let badge {
-                    Text(badge)
+                    badge
                         .contentFont(.caption2, design: .default, weight: .bold)
                         .tracking(0.5)
                         .foregroundStyle(DT.Color.textPrimary)
@@ -58,7 +74,7 @@ struct ShelfRow<Content: View>: View {
 #Preview {
     ZStack {
         DT.Color.backgroundPrimary.ignoresSafeArea()
-        ShelfRow(title: "Continue Watching", badge: "5", onSeeAll: {}) {
+        ShelfRow(title: "Continue Watching", badge: "NEW", onSeeAll: {}) {
             ForEach(0..<4) { _ in
                 PosterCard(title: "Severance", subtitle: "S2 E7", progress: 0.6)
             }

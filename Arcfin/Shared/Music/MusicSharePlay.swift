@@ -46,6 +46,8 @@ final class MusicSharePlay {
     /// This device started the session, so its music is what the group hears first.
     @ObservationIgnored private var startedHere = false
     @ObservationIgnored private var isObserving = false
+    /// Joined from the call while the app lock was up; it starts once the lock opens.
+    @ObservationIgnored private var heldSession: GroupSession<ListenTogetherActivity>?
 
     private var music: MusicPlayback { AppServices.music }
 
@@ -56,8 +58,15 @@ final class MusicSharePlay {
         isObserving = true
         defer { isObserving = false }
         for await session in ListenTogetherActivity.sessions() {
-            configure(session)
+            if AppServices.hasPassedLock { configure(session) } else { heldSession = session }
         }
+    }
+
+    func runHeld() {
+        guard let session = heldSession else { return }
+        heldSession = nil
+        if case .invalidated = session.state { return }
+        configure(session)
     }
 
     func start() {
@@ -168,14 +177,15 @@ final class MusicSharePlay {
         let local = local()
         let state = ListenTogether.State(songIDs: [current.id] + local.upcomingIDs.prefix(ListenTogether.upcomingLimit),
                                          position: local.position, isPlaying: local.isPlaying,
-                                         version: newest?.version ?? 0, sender: me)
+                                         repeatMode: local.repeatMode, version: newest?.version ?? 0, sender: me)
         Task { try? await messenger.send(ListenTogether.Message.state(state)) }
     }
 
     private func local() -> ListenTogether.Local {
         ListenTogether.Local(currentID: music.player.current?.id,
                              upcomingIDs: music.player.queue.upNext.map(\.track.id),
-                             position: music.position, isPlaying: music.isPlaying)
+                             position: music.position, isPlaying: music.isPlaying,
+                             repeatMode: music.player.repeatMode)
     }
 
     // MARK: Receiving
@@ -207,6 +217,8 @@ final class MusicSharePlay {
                 music.player.addToQueue(songs)
             case .seek(let seconds):
                 music.seek(to: seconds)
+            case .setRepeat(let mode):
+                music.player.repeatMode = mode
             case .play:
                 music.resume()
             case .pause:

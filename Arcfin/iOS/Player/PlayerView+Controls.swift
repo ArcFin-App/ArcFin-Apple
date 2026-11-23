@@ -57,6 +57,7 @@ extension PlayerView {
                     .foregroundStyle(.white)
                     .frame(width: 44, height: 44)
             }
+            .accessibilityLabel("Close player")
 
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 6) {
@@ -169,7 +170,7 @@ extension PlayerView {
     private var routeButtonHost: some View {
         ZStack {
             AirPlayButton(bridge: routeBridge)
-            if castEnabled, CastManager.shared.isCastAvailable {
+            if castEnabled, model.capabilities.casting, CastManager.shared.isCastAvailable {
                 CastButton(bridge: routeBridge)
             }
         }
@@ -184,10 +185,10 @@ extension PlayerView {
         PlayerMoreMenu(
             model: model, item: item, routeBridge: routeBridge, groupState: groupState,
             canPictureInPicture: canPictureInPicture,
-            canOpenInNewWindow: supportsMultipleWindows && !isPlayerWindow,
-            canCast: castEnabled && CastManager.shared.isCastAvailable,
+            canOpenInNewWindow: supportsMultipleWindows && !isPlayerWindow && model.capabilities.newWindow,
+            canCast: castEnabled && model.capabilities.casting && CastManager.shared.isCastAvailable,
             // SyncPlay keeps everyone at the same position; a channel has none to share.
-            canSyncPlay: syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive,
+            canSyncPlay: syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive && model.capabilities.syncPlay,
             isAudioOnly: audioOnly,
             togglePiP: togglePiP,
             openInNewWindow: openInNewWindow,
@@ -212,6 +213,7 @@ extension PlayerView {
 
     private var bottomBar: some View {
         VStack(spacing: 10) {
+            SkipSegmentControl(model: model)
             if model.isLive {
                 LiveProgramBar(program: model.liveProgram)
             } else {
@@ -222,11 +224,9 @@ extension PlayerView {
                 if model.isLive {
                     LivePositionBadge(behindSeconds: model.secondsBehindLive) { model.jumpToLive() }
                 } else {
-                    Text(model.timeLabel(ticks: model.elapsedTicks))
+                    PlayerTimeLabel(model: model, remaining: false)
                         .font(.system(.caption, design: .monospaced, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(model.isScrubbing ? nil : .default, value: model.elapsedTicks)
                 }
 
                 Spacer()
@@ -248,6 +248,7 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                     }
                     Button { model.togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
@@ -256,6 +257,7 @@ extension PlayerView {
                             .frame(width: 56, height: 56)
                             .contentShape(Rectangle())
                     }
+                    .accessibilityLabel(playPauseIconIsPlaying ? "Pause" : "Play")
                     if !model.isLive || model.canRewindLive {
                         Button { model.seek(by: skipForwardSeconds) } label: {
                             Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
@@ -263,6 +265,7 @@ extension PlayerView {
                                 .frame(width: 44, height: 44)
                                 .contentShape(Rectangle())
                         }
+                        .accessibilityLabel("Skip forward \(skipForwardSeconds) seconds")
                     }
                     if let nextEpisode = model.nextEpisode {
                         Button { model.playNextEpisode() } label: {
@@ -281,11 +284,9 @@ extension PlayerView {
                     // Balances the badge so the transport stays centred.
                     LiveBadge().hidden()
                 } else {
-                    Text(model.remainingLabel)
+                    PlayerTimeLabel(model: model, remaining: true)
                         .font(.system(.caption, design: .monospaced, weight: .medium))
                         .foregroundStyle(.white.opacity(0.8))
-                        .contentTransition(.numericText())
-                        .animation(.default, value: model.remainingTicks)
                 }
             }
         }
@@ -395,7 +396,7 @@ extension PlayerView {
         .background {
             ZStack {
                 Color.black
-                if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
+                if let url = model.source.isLocal ? model.source.localImageURL(for: item.id) : mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
                     CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
@@ -463,7 +464,7 @@ extension PlayerView {
         .background {
             ZStack {
                 Color.black
-                if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
+                if let url = model.source.isLocal ? model.source.localImageURL(for: item.id) : mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
                     CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
@@ -571,7 +572,7 @@ extension PlayerView {
                             get: { model.selectedAudioIndex ?? model.playbackInfo?.defaultAudioStreamIndex ?? audio[0].index },
                             set: { model.changeTrack(audioIndex: $0) }
                         )) {
-                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Audio", systemImage: "speaker.wave.2")
@@ -584,7 +585,7 @@ extension PlayerView {
                             set: { model.changeTrack(subtitleIndex: .some($0 < 0 ? nil : $0)) }
                         )) {
                             Text("Off").tag(-1)
-                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Subtitles", systemImage: "captions.bubble")
@@ -749,7 +750,7 @@ extension PlayerView {
                             get: { model.selectedAudioIndex ?? model.playbackInfo?.defaultAudioStreamIndex ?? audio[0].index },
                             set: { model.selectCastAudio(index: $0) }
                         )) {
-                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(audio, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Audio", systemImage: "speaker.wave.2")
@@ -762,7 +763,7 @@ extension PlayerView {
                             set: { model.selectCastSubtitle(index: $0 < 0 ? nil : $0) }
                         )) {
                             Text("Off").tag(-1)
-                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? "Track \($0.index)").tag($0.index) }
+                            ForEach(subs, id: \.index) { Text($0.displayTitle ?? $0.language ?? String(localized: "Track \($0.index)")).tag($0.index) }
                         }
                     } label: {
                         castTrackLabel("Subtitles", systemImage: "captions.bubble")
@@ -858,7 +859,7 @@ extension PlayerView {
                     showTrackMenu = false
                     model.changeTrack(subtitleIndex: .some(index))
                 },
-                subtitleSearchItemId: ProfileRules.shared.canManageSubtitles ? item.id : nil,
+                subtitleSearchItemId: model.capabilities.subtitleSearch && ProfileRules.shared.canManageSubtitles ? item.id : nil,
                 onSubtitleDownloaded: {
                     showTrackMenu = false
                     model.adoptDownloadedSubtitle()
@@ -984,7 +985,7 @@ struct PlayerMoreMenu: View, Equatable {
                     Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
                 }
             }
-            if !model.isLive { sharePlayMenuItem }
+            if !model.isLive, model.capabilities.sharePlay { sharePlayMenuItem }
 
             if !model.castMembers.isEmpty {
                 Button { openCastPanel() } label: {
@@ -998,7 +999,7 @@ struct PlayerMoreMenu: View, Equatable {
             Button { showTrackMenu = true } label: {
                 Label("Subtitles & Audio", systemImage: "captions.bubble")
             }
-            if let info = model.playbackInfo, info.versions.count > 1 {
+            if model.capabilities.versions, let info = model.playbackInfo, info.versions.count > 1 {
                 Picker(selection: Binding(get: { info.mediaSourceId }, set: { model.changeVersion($0) })) {
                     ForEach(info.versions) { Text($0.name).tag($0.id) }
                 } label: {
@@ -1012,8 +1013,10 @@ struct PlayerMoreMenu: View, Equatable {
                 }
             }
             subtitleTimingMenu
-            Button { showQualityMenu = true } label: {
-                Label("Quality", systemImage: "slider.horizontal.3")
+            if model.capabilities.quality {
+                Button { showQualityMenu = true } label: {
+                    Label("Quality", systemImage: "slider.horizontal.3")
+                }
             }
             sleepTimerMenu
             Button { showInfoSheet = true } label: {
@@ -1030,7 +1033,7 @@ struct PlayerMoreMenu: View, Equatable {
 
     @ViewBuilder
     private var subtitleTimingMenu: some View {
-        if !model.subtitleCues.isEmpty {
+        if model.hasTimedSubtitles {
             Menu {
                 Button("Later by 0.5 s") { model.subtitleDelay += 0.5 }
                 Button("Earlier by 0.5 s") { model.subtitleDelay -= 0.5 }
@@ -1040,7 +1043,7 @@ struct PlayerMoreMenu: View, Equatable {
                     .disabled(model.subtitleDelay == 0)
             } label: {
                 Label(
-                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(String(format: "%+.1f", model.subtitleDelay)) s)",
+                    model.subtitleDelay == 0 ? "Subtitle Timing" : "Subtitle Timing (\(model.subtitleDelay.formatted(.number.precision(.fractionLength(1)).sign(strategy: .always()))) s)",
                     systemImage: "clock.arrow.2.circlepath")
             }
         }

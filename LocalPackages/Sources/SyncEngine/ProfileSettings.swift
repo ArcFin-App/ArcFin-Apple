@@ -10,16 +10,9 @@ import Foundation
 public enum ProfileSettings {
     /// Each profile's, but not synced.
     public static let localKeys: [String] = [
-        "hiddenLibraryIDs",
-        "homeShelfOrder", "homeShelfActive", "homeShelfKnown",
-        "seerrRegionOverride",
+        "homeShelfKnown",
         "defaultExternalPlayer",
-        "defaultPlaybackSpeed", "holdSpeedRate", "lastPlaybackRate",
-        "dialogueBoost",
-        "libraryGridDensity", "libraryScreensaverEnabled", "libraryScreensaverMinutes",
-        "statsPeriod",
-        "collectionSort", "collectionShowsGrid",
-        "music.songSort", "music.albumSort",
+        "lastPlaybackRate",
         "smartDownloadsIgnored", "smartDownloadsKeptShows",
         "arcfin.showTrackMemory",
         "recentSearches",
@@ -71,12 +64,9 @@ public enum ProfileSettings {
         for profile in profiles where defaults.object(forKey: storeKey(profile)) == nil {
             var values = live
             for (key, value) in SettingsSyncEngine.lastSynced(profile: profile, defaults: defaults) ?? [:] {
-                guard let type = types[key], !swappedWithSeerr.contains(key) else { continue }
-                switch type {
-                case .bool: values[key] = value == "true"
-                case .int: if let number = Int(value) { values[key] = number }
-                case .string: values[key] = value
-                }
+                guard let type = types[key], !swappedWithSeerr.contains(key),
+                      let stored = type.stored(value) else { continue }
+                values[key] = stored
             }
             defaults.set(values, forKey: storeKey(profile))
         }

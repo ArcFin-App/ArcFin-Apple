@@ -14,10 +14,59 @@ extension URLSession {
     /// waiting for it — so the existing 8-20s per-request timeouts stay meaningful instead of
     /// racing the same startup window they're meant to bound.
     ///
-    /// Carries the user's custom headers (see CustomHTTPHeaders), rebuilt when they change.
-    public static var arcfin: URLSession {
-        ArcfinSessionBox.session(for: CustomHTTPHeaders.current)
+    /// Adds a server's custom headers (see CustomHTTPHeaders) to requests for that server only.
+    public static let arcfin = ArcfinSession(resourceTimeout: 30)
+
+    /// The same as `arcfin`, for the few calls the server only answers once a long job is
+    /// done (a backup) or that return a lot (a server log): `arcfin` caps a whole transfer at
+    /// 30 s.
+    public static let arcfinLongRunning = ArcfinSession(resourceTimeout: 600)
+}
+
+/// Wraps a URLSession to add the custom headers per request, since each server has its own
+/// and a session's httpAdditionalHeaders can't depend on the host.
+public struct ArcfinSession: Sendable {
+    private let session: URLSession
+    private let resourceTimeout: TimeInterval
+
+    init(resourceTimeout: TimeInterval) {
+        self.resourceTimeout = resourceTimeout
+        session = URLSession(configuration: Self.configuration(resourceTimeout: resourceTimeout, headers: [:]))
     }
+
+    private static func configuration(resourceTimeout: TimeInterval, headers: [String: String]) -> URLSessionConfiguration {
+        let config = URLSessionConfiguration.default
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForResource = resourceTimeout
+        config.httpAdditionalHeaders = headers.isEmpty ? nil : headers
+        return config
+    }
+
+    /// For a session of its own (one with a delegate) whose requests all go to `url`'s server.
+    public func configuration(for url: URL?) -> URLSessionConfiguration {
+        Self.configuration(resourceTimeout: resourceTimeout, headers: CustomHTTPHeaders.headers(for: url))
+    }
+
+    public func data(for request: URLRequest) async throws -> (Data, URLResponse) {
+        await Self.firstPath.wait()
+        return try await session.data(for: Self.withHeaders(request))
+    }
+
+    public func data(from url: URL) async throws -> (Data, URLResponse) {
+        await Self.firstPath.wait()
+        return try await session.data(for: Self.withHeaders(URLRequest(url: url)))
+    }
+
+    public func download(for request: URLRequest) async throws -> (URL, URLResponse) {
+        await Self.firstPath.wait()
+        return try await session.download(for: Self.withHeaders(request))
+    }
+
+    /// waitsForConnectivity alone doesn't cover a path that reads as unsatisfied for a moment
+    /// at cold launch (Local Network permission settling), so the first requests wait for a
+    /// satisfied one, bounded. Siri, widgets and background refresh start with a request
+    /// straight away, before MediaRepository's own wait.
+    private static let firstPath = FirstPathWait()
 
     /// An image's bytes, or nil. Jellyfin's resize cache can answer one size of an image
     /// with an empty 200 forever, so a failed or empty resized request retries the original.
@@ -33,23 +82,24 @@ extension URLSession {
         else { return nil }
         return data
     }
+
+    /// A header the caller set itself (Authorization above all) wins.
+    private static func withHeaders(_ request: URLRequest) -> URLRequest {
+        var request = request
+        for (name, value) in CustomHTTPHeaders.headers(for: request.url) where request.value(forHTTPHeaderField: name) == nil {
+            request.setValue(value, forHTTPHeaderField: name)
+        }
+        return request
+    }
 }
 
-private enum ArcfinSessionBox {
-    private static let lock = NSLock()
-    nonisolated(unsafe) private static var cached: (headers: [String: String], session: URLSession)?
+private final class FirstPathWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var done = false
 
-    static func session(for headers: [String: String]) -> URLSession {
-        lock.lock()
-        defer { lock.unlock() }
-        if let cached, cached.headers == headers { return cached.session }
-        let config = URLSessionConfiguration.default
-        config.waitsForConnectivity = true
-        config.timeoutIntervalForResource = 30
-        config.httpAdditionalHeaders = headers.isEmpty ? nil : headers
-        let session = URLSession(configuration: config)
-        cached?.session.finishTasksAndInvalidate()
-        cached = (headers, session)
-        return session
+    func wait() async {
+        guard !lock.withLock({ done }) else { return }
+        await withCheckedContinuation { PathWait(continuation: $0).start(timeoutSeconds: 6) }
+        lock.withLock { done = true }
     }
 }

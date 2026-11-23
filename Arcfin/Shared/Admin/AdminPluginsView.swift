@@ -30,7 +30,11 @@ final class AdminPluginsModel {
     }
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            errorMessage = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         async let installed = admin.plugins(credential: access.credential, authHeader: access.header)
         async let catalogue = admin.catalogue(credential: access.credential, authHeader: access.header)
         do {

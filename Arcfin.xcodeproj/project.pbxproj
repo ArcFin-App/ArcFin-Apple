@@ -166,7 +166,6 @@
 				iOS/Downloads/DownloadedItemDetailView.swift = (ios, );
 				iOS/Downloads/DownloadedSeriesDetailView.swift = (ios, );
 				iOS/Downloads/DownloadsView.swift = (ios, );
-				iOS/Downloads/OfflinePlayerView.swift = (ios, );
 				iOS/Downloads/StorageManagementView.swift = (ios, );
 				iOS/Home/HeroVideoBackdrop.swift = (ios, );
 				iOS/Home/HomeView.swift = (ios, );
@@ -180,7 +179,6 @@
 				iOS/Library/LibraryDetailView.swift = (ios, );
 				iOS/Library/LibraryFilterControls.swift = (ios, );
 				iOS/Library/LibraryView.swift = (ios, );
-				iOS/Library/LocalPlayerView.swift = (ios, );
 				iOS/LiveTV/LiveTVProgramSheet.swift = (ios, );
 				iOS/LiveTV/LiveTVView.swift = (ios, );
 				iOS/Lock/AppLockView.swift = (ios, );
@@ -197,6 +195,7 @@
 				iOS/Platform/AdminPlatform.swift = (ios, );
 				iOS/Platform/AlwaysDarkPlayer.swift = (ios, );
 				iOS/Platform/AppSheet.swift = (ios, );
+				iOS/Platform/Biometrics.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
 				iOS/Platform/ExternalApps.swift = (ios, );
@@ -214,6 +213,7 @@
 				iOS/Platform/PlayerOverlayButton.swift = (ios, );
 				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Platform/PressableHover.swift = (ios, );
+				iOS/Platform/RootPresentation.swift = (ios, );
 				iOS/Platform/RowLabelText.swift = (ios, );
 				iOS/Platform/ScrubGesture.swift = (ios, );
 				iOS/Platform/ShelfScrollButtons.swift = (ios, );
@@ -274,7 +274,6 @@
 				macOS/Downloads/DownloadedItemDetailView.swift = (macos, );
 				macOS/Downloads/DownloadedSeriesDetailView.swift = (macos, );
 				macOS/Downloads/DownloadsView.swift = (macos, );
-				macOS/Downloads/OfflinePlayerView.swift = (macos, );
 				macOS/Downloads/StorageManagementView.swift = (macos, );
 				macOS/Home/HeroVideoBackdrop.swift = (macos, );
 				macOS/Home/HomeView.swift = (macos, );
@@ -287,7 +286,6 @@
 				macOS/Library/LibraryDetailView.swift = (macos, );
 				macOS/Library/LibraryFilterControls.swift = (macos, );
 				macOS/Library/LibraryView.swift = (macos, );
-				macOS/Library/LocalPlayerView.swift = (macos, );
 				macOS/Library/PlayableVideo.swift = (macos, );
 				macOS/LiveTV/LiveTVView.swift = (macos, );
 				macOS/Lock/AppLockView.swift = (macos, );
@@ -304,6 +302,7 @@
 				macOS/Platform/AdminPlatform.swift = (macos, );
 				macOS/Platform/AlwaysDarkPlayer.swift = (macos, );
 				macOS/Platform/AppSheet.swift = (macos, );
+				macOS/Platform/Biometrics.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
 				macOS/Platform/ExternalApps.swift = (macos, );
@@ -321,6 +320,7 @@
 				macOS/Platform/PlayerOverlayButton.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/PressableHover.swift = (macos, );
+				macOS/Platform/RootPresentation.swift = (macos, );
 				macOS/Platform/RowLabelText.swift = (macos, );
 				macOS/Platform/ScrubGesture.swift = (macos, );
 				macOS/Platform/ShelfScrollButtons.swift = (macos, );
@@ -408,6 +408,7 @@
 				tvOS/Platform/AdminPlatform.swift = (tvos, );
 				tvOS/Platform/AlwaysDarkPlayer.swift = (tvos, );
 				tvOS/Platform/AppSheet.swift = (tvos, );
+				tvOS/Platform/Biometrics.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
 				tvOS/Platform/ExternalApps.swift = (tvos, );
@@ -425,6 +426,7 @@
 				tvOS/Platform/PlayerOverlayButton.swift = (tvos, );
 				tvOS/Platform/PointerHover.swift = (tvos, );
 				tvOS/Platform/PressableHover.swift = (tvos, );
+				tvOS/Platform/RootPresentation.swift = (tvos, );
 				tvOS/Platform/RowLabelText.swift = (tvos, );
 				tvOS/Platform/ScrubGesture.swift = (tvos, );
 				tvOS/Platform/ShelfScrollButtons.swift = (tvos, );
@@ -1013,7 +1015,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ArcfinWidgets/ArcfinWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1033,7 +1035,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.ArcfinWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -1057,7 +1059,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ArcfinWidgets/ArcfinWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1077,7 +1079,7 @@
 					"@executable_path/../../../../Frameworks",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.ArcfinWidgets;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -1228,7 +1230,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
@@ -1255,7 +1257,7 @@
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to find and connect to your Jellyfin server, to cast to nearby devices, and to set up an Apple TV, iPad or Mac nearby from an iPhone or iPad.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you.";
 				INFOPLIST_KEY_NSSiriUsageDescription = "Siri plays your movies, shows and music in Arcfin when you ask, on your iPhone or iPad or in the car.";
@@ -1277,7 +1279,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -1308,7 +1310,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
@@ -1337,7 +1339,7 @@
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to discover and connect to your Jellyfin server and to cast media to nearby devices.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to find and connect to your Jellyfin server, to cast to nearby devices, and to set up an Apple TV, iPad or Mac nearby from an iPhone or iPad.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Arcfin listens when you search by voice in the car, or ask it to name a song playing near you.";
 				INFOPLIST_KEY_NSSiriUsageDescription = "Siri plays your movies, shows and music in Arcfin when you ask, on your iPhone or iPad or in the car.";
@@ -1359,7 +1361,7 @@
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -1383,7 +1385,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1410,7 +1412,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1436,7 +1438,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1463,7 +1465,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1492,7 +1494,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinTopShelf/ArcfinTopShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;
@@ -1503,7 +1505,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.ArcfinTopShelf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1525,7 +1527,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinTopShelf/ArcfinTopShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;
@@ -1536,7 +1538,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.ArcfinTopShelf;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1559,7 +1561,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1571,7 +1573,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -1593,7 +1595,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 25;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1605,7 +1607,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 0.4.0;
+				MARKETING_VERSION = 0.5.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.psmattas.Arcfin.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;

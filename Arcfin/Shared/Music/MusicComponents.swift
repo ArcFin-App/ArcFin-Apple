@@ -197,6 +197,8 @@ struct MusicPlayingIndicator: View {
 struct MusicListState<Item: Identifiable & Sendable>: View {
     let list: MusicPagedList<Item>
     let empty: LocalizedStringKey
+    /// What the section's search is narrowed to, for its own "No Results" when nothing matches.
+    var searchTerm: String?
 
     var body: some View {
         Group {
@@ -208,6 +210,8 @@ struct MusicListState<Item: Identifiable & Sendable>: View {
                 } actions: {
                     Button("Try Again") { Task { await list.reload() } }
                 }
+            } else if list.items.isEmpty, let searchTerm {
+                ContentUnavailableView.search(text: searchTerm)
             } else if list.items.isEmpty {
                 ContentUnavailableView(empty, systemImage: "music.note")
             }

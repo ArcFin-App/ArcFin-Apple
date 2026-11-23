@@ -8,10 +8,32 @@ import AuthCore
 public struct ArcfinSyncStatus: Sendable, Decodable, Equatable {
     public let installed: Bool
     public let version: String
+    /// 1 for a plugin from before devices and admin policy, which doesn't say.
+    public let apiVersion: Int
+    public let features: [String]
+
+    public var hasDevicesAndPolicy: Bool { apiVersion >= 2 }
 
     enum CodingKeys: String, CodingKey {
         case installed = "Installed"
         case version = "Version"
+        case apiVersion = "ApiVersion"
+        case features = "Features"
+    }
+
+    public init(installed: Bool, version: String, apiVersion: Int = 1, features: [String] = []) {
+        self.installed = installed
+        self.version = version
+        self.apiVersion = apiVersion
+        self.features = features
+    }
+
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        installed = try container.decode(Bool.self, forKey: .installed)
+        version = try container.decode(String.self, forKey: .version)
+        apiVersion = try container.decodeIfPresent(Int.self, forKey: .apiVersion) ?? 1
+        features = try container.decodeIfPresent([String].self, forKey: .features) ?? []
     }
 }
 
@@ -49,6 +71,15 @@ public struct ArcfinSyncEncoders: Sendable, Decodable, Equatable {
     }
 }
 
+/// What the server says about the plugin.
+public enum ArcfinSyncPresence: Sendable, Equatable {
+    case installed(ArcfinSyncStatus)
+    /// The server answered without it: a 404, as after it's removed, or a status saying so.
+    case notInstalled
+    /// No answer, or one that says nothing either way (a proxy's 502 while Jellyfin is down).
+    case unknown
+}
+
 public enum ArcfinSyncError: Error, Sendable {
     case requestFailed
 }
@@ -56,19 +87,21 @@ public enum ArcfinSyncError: Error, Sendable {
 // MARK: - Client
 
 /// Talks to the companion "Arcfin Sync" Jellyfin server plugin (git.psmattas.com/ArcFin/Arcfin-Sync),
-/// not part of Jellyfin core. `fetchStatus` is deliberately non-throwing — a server that doesn't
-/// have the plugin installed, or isn't reachable, should look identical to "not installed" rather
-/// than surfacing an error to the caller (see AuthManager.refreshArcfinSync).
+/// not part of Jellyfin core. `fetchStatus` is deliberately non-throwing: a server without the
+/// plugin, or one that can't be reached, isn't an error to show (see AuthManager.refreshArcfinSync).
 public struct ArcfinSyncClient: Sendable {
     public init() {}
 
-    public func fetchStatus(baseURL: URL) async -> ArcfinSyncStatus? {
+    public func fetchStatus(baseURL: URL) async -> ArcfinSyncPresence {
         var req = URLRequest(url: baseURL.appendingPathComponent("ArcfinSync/Status"))
         req.timeoutInterval = 6
         guard let (data, resp) = try? await URLSession.arcfin.data(for: req),
-              (resp as? HTTPURLResponse)?.statusCode == 200
-        else { return nil }
-        return try? JSONDecoder().decode(ArcfinSyncStatus.self, from: data)
+              let status = (resp as? HTTPURLResponse)?.statusCode
+        else { return .unknown }
+        if status == 404 { return .notInstalled }
+        guard status == 200, let decoded = try? JSONDecoder().decode(ArcfinSyncStatus.self, from: data)
+        else { return .unknown }
+        return decoded.installed ? .installed(decoded) : .notInstalled
     }
 
     /// Nil on a plugin from before the encoder check, or when it can't be reached.

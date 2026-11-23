@@ -11,7 +11,7 @@ struct PlayerFeaturesSettingsView: View {
 
     var body: some View {
         SettingsForm {
-            PlayerFeatureToggleSections(showsFrameRateMatch: false)
+            PlayerFeatureToggleSections(showsFrameRateMatch: false, showsCast: false)
 
             Section {
                 Toggle(isOn: $doubleTapToSkip) {

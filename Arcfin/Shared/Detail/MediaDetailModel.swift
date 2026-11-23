@@ -15,6 +15,9 @@ final class MediaDetailModel {
     private(set) var detail: MediaItemDetail?
     private(set) var awards: [WikidataAward] = []
     private(set) var isLoading = true
+    private var hasLoaded = false
+    /// The title's own details couldn't be fetched (and there's no downloaded copy of them).
+    private(set) var detailFailed = false
     private(set) var isFavorite = false
     private(set) var likes: Bool?
     private(set) var isWatched = false
@@ -28,6 +31,8 @@ final class MediaDetailModel {
     /// whichever returned category (if any) names this movie as its baseline.
     private(set) var jellyfinRecommended: MovieRecommendationCategory?
     private(set) var seriesItem: MediaItem?
+    /// The show's "Continuing" or "Ended", from its own details.
+    private var seriesStatus: String?
     /// Collections and playlists this title (or an episode's show) is in.
     private(set) var containingCollections: [MediaItem] = []
     private(set) var containingPlaylists: [MediaItem] = []
@@ -42,6 +47,9 @@ final class MediaDetailModel {
     private(set) var trailers: [MediaItem] = []
     private(set) var remoteTrailer: RemoteTrailer?
     private var loadedSeasonId: String?
+    private var seasonTask: Task<Void, Never>?
+    /// The picked season's episodes couldn't be fetched; the list offers to try again.
+    private(set) var episodesLoadFailed = false
 
     var playbackRequest: MediaDetailView.PlaybackRequest?
     /// The title the player ended up on after handing over to a suggestion or next episode.
@@ -100,23 +108,80 @@ final class MediaDetailModel {
 
     func load(authManager: AuthManager, seerrRepo: SeerrRepository, downloadManager: DownloadManager?,
               trailers trailerLoading: TrailerLoading, seriesOpensOnSeasonInProgress: Bool) async {
+        // Coming back to the page (from a cast member, a title below) re-runs the view's task;
+        // the page is already there, so only what can have changed meanwhile is re-read.
+        if hasLoaded {
+            await refreshAfterPlayback(waitForReport: false, authManager: authManager)
+            return
+        }
+        guard case let (cred, header)? = session(authManager) else {
+            isLoading = false
+            return
+        }
         isLoading = true
-        defer { isLoading = false }
-        guard case let (cred, header)? = session(authManager) else { return }
-
-        async let detailTask = client.getItemDetail(credential: cred, authHeader: header, itemId: item.id)
         if case .withPage = trailerLoading {} else { trailers = [] }
 
         // Without a connection, a downloaded title still has its full page from when it was saved.
-        let fetchedDetail = (try? await detailTask) ?? downloadManager?.savedDetail(itemId: item.id)
+        let fetchedDetail = (try? await client.getItemDetail(credential: cred, authHeader: header, itemId: item.id))
+            ?? downloadManager?.savedDetail(itemId: item.id)
         detail = fetchedDetail
+        detailFailed = fetchedDetail == nil && !Task.isCancelled
         isFavorite = fetchedDetail?.item.userData?.isFavorite ?? item.userData?.isFavorite ?? false
         likes = fetchedDetail?.item.userData?.likes ?? item.userData?.likes
         isWatched = fetchedDetail?.item.userData?.played ?? item.userData?.played ?? false
-        if item.type == .episode, let seriesId = item.seriesId {
-            seriesItem = (try? await client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId))?.item
+        if item.type == .series { seriesStatus = fetchedDetail?.status }
+        // Play, the overview and the cast only need the item itself; every other section fills
+        // in as its own requests land.
+        isLoading = false
+
+        remoteTrailer = nil
+        if case .alongside(let youTubeFallback) = trailerLoading {
+            Task {
+                let fetchedTrailers = (try? await client.getTrailers(
+                    credential: cred,
+                    authHeader: header,
+                    itemId: item.id,
+                    limit: 6
+                )) ?? []
+                trailers = fetchedTrailers
+                // Only fall back to a remote (YouTube) trailer once we know there's
+                // genuinely no local one — a local file always streams better than an
+                // embedded web player.
+                if fetchedTrailers.isEmpty, youTubeFallback {
+                    remoteTrailer = fetchedDetail?.remoteTrailers.first { $0.youTubeVideoID != nil }
+                }
+            }
         }
 
+        // Seasons and episodes don't wait on Seerr, which is another server that can be slow.
+        await withDiscardingTaskGroup { group in
+            group.addTask { @MainActor in
+                guard self.item.type == .episode, let seriesId = self.item.seriesId else { return }
+                let series = try? await self.client.getItemDetail(credential: cred, authHeader: header, itemId: seriesId)
+                self.seriesItem = series?.item
+                self.seriesStatus = series?.status
+            }
+            group.addTask { @MainActor in
+                if case .withPage = trailerLoading {
+                    // Awaited ahead of the rows below it — a trailer row popping in after them
+                    // shoved Cast/Recommended down into an already-settled, already-focused
+                    // layout, reading as an unexplained gap.
+                    self.trailers = (try? await self.client.getTrailers(
+                        credential: cred, authHeader: header, itemId: self.item.id, limit: 6)) ?? []
+                }
+                await self.loadRelated(detail: fetchedDetail, credential: cred, header: header, seerrRepo: seerrRepo)
+            }
+            group.addTask { @MainActor in
+                await self.loadSeasons(credential: cred, header: header, preferringProgress: seriesOpensOnSeasonInProgress)
+            }
+        }
+        // A page that couldn't reach the server loads in full the next time it's shown.
+        if !Task.isCancelled, fetchedDetail != nil { hasLoaded = true }
+    }
+
+    /// Seerr's recommendations, or the server's own similar titles and recommendations.
+    private func loadRelated(detail fetchedDetail: MediaItemDetail?, credential cred: ServerCredential,
+                             header: String, seerrRepo: SeerrRepository) async {
         if let fetchedDetail, let mediaType = Self.seerrMediaType(for: fetchedDetail.item),
            let tmdbId = fetchedDetail.item.tmdbId {
             seerrRelatedItems = await seerrRepo.relatedMedia(mediaType: mediaType, mediaId: tmdbId)
@@ -145,40 +210,13 @@ final class MediaDetailModel {
             }
         }
         jellyfinRecommended = recommended
+    }
 
-        remoteTrailer = nil
-        switch trailerLoading {
-        case .skipped:
-            break
-        case .alongside(let youTubeFallback):
-            Task {
-                let fetchedTrailers = (try? await client.getTrailers(
-                    credential: cred,
-                    authHeader: header,
-                    itemId: item.id,
-                    limit: 6
-                )) ?? []
-                trailers = fetchedTrailers
-                // Only fall back to a remote (YouTube) trailer once we know there's
-                // genuinely no local one — a local file always streams better than an
-                // embedded web player.
-                if fetchedTrailers.isEmpty, youTubeFallback {
-                    remoteTrailer = fetchedDetail?.remoteTrailers.first { $0.youTubeVideoID != nil }
-                }
-            }
-        case .withPage:
-            // Awaited like every other section's fetch above — a detached Task here let the
-            // page finish loading and render (isLoading already false) before trailers arrived,
-            // so trailersSection popped in late and shoved Cast/Recommended down into an
-            // already-settled, already-focused layout, reading as an unexplained gap.
-            trailers = (try? await client.getTrailers(
-                credential: cred, authHeader: header, itemId: item.id, limit: 6)) ?? []
-        }
-
+    private func loadSeasons(credential cred: ServerCredential, header: String, preferringProgress: Bool) async {
         guard let seriesId = seasonSeriesId else { return }
         seasons = (try? await client.getSeasons(credential: cred, authHeader: header, seriesId: seriesId)) ?? []
         guard let first = seasons.first else { return }
-        var target = season(for: item, in: seasons, preferringProgress: seriesOpensOnSeasonInProgress) ?? first
+        var target = season(for: item, in: seasons, preferringProgress: preferringProgress) ?? first
         if item.type == .series,
            let nextEp = try? await client.getNextEpisode(credential: cred, authHeader: header, seriesId: seriesId) {
             // Ask the server which episode is next — use its season and scroll to it.
@@ -193,8 +231,11 @@ final class MediaDetailModel {
         }
         selectedSeason = target
         loadedSeasonId = target.id
-        episodes = (try? await client.getEpisodes(credential: cred, authHeader: header,
-                                                  seriesId: seriesId, seasonId: target.id)) ?? []
+        let fetched = try? await client.getEpisodes(credential: cred, authHeader: header,
+                                                    seriesId: seriesId, seasonId: target.id)
+        guard loadedSeasonId == target.id else { return }
+        episodes = fetched ?? []
+        episodesLoadFailed = fetched == nil
     }
 
     private func season(for item: MediaItem, in seasons: [MediaItem], preferringProgress: Bool) -> MediaItem? {
@@ -220,13 +261,28 @@ final class MediaDetailModel {
 
     /// Loads the episodes of a season picked from the season menu.
     func showSeason(_ season: MediaItem?, authManager: AuthManager) {
-        guard let season, season.id != loadedSeasonId,
-              let seriesId = seasonSeriesId,
-              case let (cred, header)? = session(authManager) else { return }
-        Task {
-            loadedSeasonId = season.id
-            episodes = (try? await client.getEpisodes(credential: cred, authHeader: header,
-                                                      seriesId: seriesId, seasonId: season.id)) ?? []
+        guard let season, season.id != loadedSeasonId else { return }
+        loadEpisodes(seasonId: season.id, authManager: authManager)
+    }
+
+    func retryEpisodes(authManager: AuthManager) {
+        guard let seasonId = selectedSeason?.id else { return }
+        loadEpisodes(seasonId: seasonId, authManager: authManager)
+    }
+
+    /// Only the newest pick lands: an earlier season's response arriving late would otherwise
+    /// fill the list under the later season's name.
+    private func loadEpisodes(seasonId: String, authManager: AuthManager) {
+        guard let seriesId = seasonSeriesId, case let (cred, header)? = session(authManager) else { return }
+        seasonTask?.cancel()
+        loadedSeasonId = seasonId
+        episodesLoadFailed = false
+        seasonTask = Task {
+            let fetched = try? await client.getEpisodes(credential: cred, authHeader: header,
+                                                        seriesId: seriesId, seasonId: seasonId)
+            guard !Task.isCancelled, loadedSeasonId == seasonId else { return }
+            episodes = fetched ?? []
+            episodesLoadFailed = fetched == nil
         }
     }
 
@@ -247,7 +303,8 @@ final class MediaDetailModel {
             nextEpisode = nextEp
         }
         if let seasonId = loadedSeasonId,
-           let fresh = try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: seasonId) {
+           let fresh = try? await client.getEpisodes(credential: cred, authHeader: header, seriesId: seriesId, seasonId: seasonId),
+           loadedSeasonId == seasonId {
             episodes = fresh
         }
     }
@@ -308,8 +365,22 @@ final class MediaDetailModel {
         return Date().addingTimeInterval(remainingSeconds)
     }
 
-    func requestPlayback(startTicks: Int64, isExplicitStartOver: Bool = false, downloadManager: DownloadManager) {
+    func requestPlayback(startTicks: Int64, isExplicitStartOver: Bool = false, downloadManager: DownloadManager,
+                         authManager: AuthManager) {
         let target = playTarget
+        guard target.type != .series else {
+            // Play shows before the next episode has loaded; the series itself can't play.
+            Task {
+                guard let resolved = await HomeModel.seriesPlayback(target, authManager: authManager) else { return }
+                startPlayback(of: resolved.item, startTicks: isExplicitStartOver ? 0 : resolved.startTicks,
+                              isExplicitStartOver: isExplicitStartOver, downloadManager: downloadManager)
+            }
+            return
+        }
+        startPlayback(of: target, startTicks: startTicks, isExplicitStartOver: isExplicitStartOver, downloadManager: downloadManager)
+    }
+
+    private func startPlayback(of target: MediaItem, startTicks: Int64, isExplicitStartOver: Bool, downloadManager: DownloadManager) {
         if downloadManager.isDownloaded(target.id) {
             pendingPlaybackChoice = PlaybackChoice(item: target, startTicks: startTicks, isExplicitStartOver: isExplicitStartOver)
         } else {
@@ -317,12 +388,18 @@ final class MediaDetailModel {
         }
     }
 
-    func playDownloadedCopy(modelContext: ModelContext) {
-        if let choice = pendingPlaybackChoice, let downloaded = downloadedItem(itemId: choice.item.id, in: modelContext) {
+    func playDownloadedCopy(downloadManager: DownloadManager) {
+        if let choice = pendingPlaybackChoice, let downloaded = downloadManager.ownDownload(itemId: choice.item.id) {
             offlineStartOverride = choice.isExplicitStartOver ? 0 : nil
             offlinePlaybackTarget = downloaded
         }
         pendingPlaybackChoice = nil
+    }
+
+    /// The next downloaded episode, from where it was left.
+    func playDownloaded(_ next: DownloadedItem) {
+        offlineStartOverride = nil
+        offlinePlaybackTarget = next
     }
 
     func streamInstead() {
@@ -330,11 +407,6 @@ final class MediaDetailModel {
             playbackRequest = MediaDetailView.PlaybackRequest(item: choice.item, startTicks: choice.startTicks)
         }
         pendingPlaybackChoice = nil
-    }
-
-    private func downloadedItem(itemId: String, in modelContext: ModelContext) -> DownloadedItem? {
-        let descriptor = FetchDescriptor<DownloadedItem>(predicate: #Predicate { $0.itemId == itemId })
-        return try? modelContext.fetch(descriptor).first
     }
 
     func play(_ item: MediaItem) {
@@ -369,11 +441,16 @@ final class MediaDetailModel {
     /// Tapping the current rating again clears it.
     func setRating(_ value: Bool, authManager: AuthManager) {
         guard case let (cred, header)? = session(authManager) else { return }
+        let oldValue = likes
         let newValue: Bool? = likes == value ? nil : value
         likes = newValue
         HapticManager.impact(.light)
         Task {
-            try? await client.setRating(credential: cred, authHeader: header, itemId: item.id, likes: newValue)
+            do {
+                try await client.setRating(credential: cred, authHeader: header, itemId: item.id, likes: newValue)
+            } catch {
+                likes = oldValue
+            }
         }
     }
 
@@ -383,7 +460,11 @@ final class MediaDetailModel {
         isFavorite = newValue
         HapticManager.impact(.light)
         Task {
-            try? await client.markFavorite(credential: cred, authHeader: header, itemId: item.id, favorite: newValue)
+            do {
+                try await client.markFavorite(credential: cred, authHeader: header, itemId: item.id, favorite: newValue)
+            } catch {
+                isFavorite = !newValue
+            }
         }
     }
 
@@ -391,7 +472,11 @@ final class MediaDetailModel {
         guard case let (cred, header)? = session(authManager) else { return }
         isWatched = watched
         Task {
-            try? await client.markWatched(credential: cred, authHeader: header, itemId: item.id, watched: watched)
+            do {
+                try await client.markWatched(credential: cred, authHeader: header, itemId: item.id, watched: watched)
+            } catch {
+                isWatched = !watched
+            }
             await refreshAfterPlayback(waitForReport: false, authManager: authManager)
         }
     }
@@ -425,51 +510,68 @@ final class MediaDetailModel {
         return updated
     }
 
-    /// Marks a whole season or series watched/unwatched by looping markWatched over the
-    /// episode ids already available (current season) or fetched per-season (whole series).
-    /// In place, the visible `episodes` array is updated optimistically so watched indicators
-    /// refresh without a manual pull-to-refresh, matching markEpisodeWatched's single-item approach.
+    /// Marks a whole season or series watched/unwatched with one request for the season or
+    /// series item: the server applies it to every episode inside. In place, the visible
+    /// `episodes` array is updated straight away, matching markEpisodeWatched.
     func markScopeWatched(_ scope: WatchScope, watched: Bool, update: WatchedUpdate, authManager: AuthManager) {
-        guard case let (cred, header)? = session(authManager), let seriesId = seasonSeriesId else { return }
+        guard case let (cred, header)? = session(authManager), let seriesId = seasonSeriesId,
+              let targetId = scope == .series ? seriesId : loadedSeasonId else { return }
         HapticManager.impact(.light)
         if update == .inPlace {
             episodes = episodes.map { withWatchedUserData($0, watched: watched) }
         }
-        let currentEpisodes = episodes
-        let allSeasons = seasons
         Task {
-            switch scope {
-            case .season:
-                for ep in currentEpisodes {
-                    try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
-                }
-            case .series:
-                for season in allSeasons {
-                    let seasonEpisodes = (try? await client.getEpisodes(
-                        credential: cred, authHeader: header, seriesId: seriesId, seasonId: season.id
-                    )) ?? []
-                    for ep in seasonEpisodes {
-                        try? await client.markWatched(credential: cred, authHeader: header, itemId: ep.id, watched: watched)
-                    }
-                }
-            }
+            try? await client.markWatched(credential: cred, authHeader: header, itemId: targetId, watched: watched)
             if update == .reload {
                 await refreshAfterPlayback(waitForReport: false, authManager: authManager)
             }
         }
     }
 
+    /// A season or series watched-state change waiting for the person to confirm it.
+    struct WatchScopeChange {
+        let scope: WatchScope
+        let watched: Bool
+
+        /// Marking a season watched is easy to undo; clearing history or changing a whole show isn't.
+        var needsConfirmation: Bool { scope == .series || !watched }
+
+        var question: LocalizedStringKey {
+            switch (scope, watched) {
+            case (.series, true): "Mark every episode of this series as watched?"
+            case (.series, false): "Mark every episode of this series as unwatched?"
+            case (.season, true): "Mark Season Watched"
+            case (.season, false): "Mark every episode of this season as unwatched?"
+            }
+        }
+
+        var actionLabel: LocalizedStringKey {
+            switch (scope, watched) {
+            case (.series, true): "Mark Series Watched"
+            case (.series, false): "Mark Series Unwatched"
+            case (.season, true): "Mark Season Watched"
+            case (.season, false): "Mark Season Unwatched"
+            }
+        }
+    }
+
     /// "NEW" for an unwatched episode that premiered in the last two weeks; "FINALE" for the
-    /// last episode of the season being shown. With `marksUnavailable`, an episode listed
+    /// last episode of a season that's over: an earlier season, or the latest one of a show
+    /// that has ended (a season still airing only lists the episodes out so far). With `marksUnavailable`, an episode listed
     /// before it's out or missing from the server says so instead.
     func episodeBadge(_ ep: MediaItem, marksUnavailable: Bool) -> String? {
         if marksUnavailable, ep.isVirtual { return MediaDetailView.unavailableText(ep).uppercased() }
         if ep.userData?.played != true, let premiere = ep.premiereDate,
            premiere <= Date(), Date().timeIntervalSince(premiere) < 14 * 86_400 {
-            return "NEW"
+            return String(localized: "NEW")
         }
-        if episodes.count > 1, ep.id == episodes.last?.id { return "FINALE" }
+        if episodes.count > 1, ep.id == episodes.last?.id, shownSeasonHasEnded { return String(localized: "FINALE") }
         return nil
+    }
+
+    private var shownSeasonHasEnded: Bool {
+        guard let loadedSeasonId, let latest = seasons.last else { return false }
+        return loadedSeasonId != latest.id || seriesStatus == "Ended"
     }
 
     // MARK: - Downloads
@@ -543,12 +645,12 @@ final class MediaDetailModel {
     /// error -1017.)") — translated into something a user can actually act on.
     private func friendlyDownloadError(_ raw: String) -> String {
         if raw.contains("-1017") {
-            return "One of the episodes couldn't be downloaded because of a network hiccup mid-transfer. Try downloading it again — if it keeps happening, check your connection and available storage."
+            return String(localized: "One of the episodes couldn't be downloaded because of a network hiccup mid-transfer. Try downloading it again — if it keeps happening, check your connection and available storage.")
         }
         if raw.localizedCaseInsensitiveContains("permission") {
-            return "One of the episodes couldn't be downloaded — this account doesn't have permission to download media. Ask your Jellyfin admin to enable it."
+            return String(localized: "One of the episodes couldn't be downloaded — this account doesn't have permission to download media. Ask your Jellyfin admin to enable it.")
         }
-        return "One of the episodes in this season failed to download: \(raw)"
+        return String(localized: "One of the episodes in this season failed to download: \(raw)")
     }
 
     // MARK: - Seerr
@@ -560,14 +662,14 @@ final class MediaDetailModel {
     }
 
     /// The library's copy when the server has it, the title's Seerr page when it's already
-    /// requested, and only otherwise the request sheet.
+    /// requested or this Seerr account can't request it, and only otherwise the request sheet.
     func destination(forRelated item: SeerrItem, authManager: AuthManager, seerrRepo: SeerrRepository) async -> RelatedDestination {
         if case let (cred, header)? = session(authManager),
            let local = try? await client.findItem(
                credential: cred, authHeader: header, tmdbId: item.id, isSeries: item.mediaType == .tv,
                title: item.title, year: item.year.flatMap { Int($0.prefix(4)) }) {
             return .library(local)
-        } else if seerrRepo.isRequested(item) {
+        } else if seerrRepo.isRequested(item) || !seerrRepo.mayRequest(item.mediaType) {
             return .seerrPage(item)
         } else {
             return .request(item)
@@ -624,8 +726,8 @@ extension MediaDetailView {
     /// "Airs 30 Oct" for an episode listed before it's out; "Not on Your Server" for one missing.
     static func unavailableText(_ item: MediaItem) -> String {
         if let premiere = item.premiereDate, premiere > Date() {
-            return "Airs \(premiere.formatted(.dateTime.day().month(.abbreviated)))"
+            return String(localized: "Airs \(premiere.formatted(.dateTime.day().month(.abbreviated)))")
         }
-        return "Not on Your Server"
+        return String(localized: "Not on Your Server")
     }
 }

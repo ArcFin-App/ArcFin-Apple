@@ -32,7 +32,7 @@ struct ServerURLView: View {
         .appSheet(isPresented: $showSetupGuide) { SetupGuideSheet() }
         .appSheet(isPresented: $showCustomHeaders, title: "Custom Headers", systemImage: "key.horizontal") {
             NavigationStack {
-                CustomHeadersView()
+                CustomHeadersView(serverAddress: serverURL)
                     .toolbar {
                         ToolbarItem(placement: .confirmationAction) { Button("Done") { showCustomHeaders = false } }
                     }
@@ -142,6 +142,7 @@ struct ServerURLView: View {
 
     /// A found or recent server: fill it in and connect straight away.
     private func connect(to address: String) {
+        guard !connecting else { return }
         serverURL = address
         showError = false
         connected = false
@@ -182,6 +183,8 @@ struct ServerURLView: View {
     }
 
     private func handleConnect() async {
+        // Return, a found server and a recent one can each start this; one at a time.
+        guard !connecting else { return }
         let trimmed = serverURL.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             showError = true; errorMessage = String(localized: "Enter a server address."); return

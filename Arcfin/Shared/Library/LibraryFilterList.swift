@@ -83,7 +83,7 @@ struct LibraryFilterList: View {
             if !availableRatings.isEmpty {
                 let ordered = LibraryExtraFilters.ordered(availableRatings)
                 let step = LibraryExtraFilters.ratingStep(extraFilters.officialRatings, in: ordered)
-                let label = step >= ordered.count ? "Any" : "Up to \(ordered[step])"
+                let label = step >= ordered.count ? String(localized: "Any") : String(localized: "Up to \(ordered[step])")
                 Section("Content Rating") {
                     contentRatingControls(ordered: ordered, step: step, label: label)
                 }
@@ -129,9 +129,9 @@ struct LibraryFilterList: View {
 
     private static func summary(_ selected: Set<String>) -> String {
         switch selected.count {
-        case 0: "Any"
-        case 1: selected.first ?? "Any"
-        default: "\(selected.count) selected"
+        case 0: String(localized: "Any")
+        case 1: selected.first ?? String(localized: "Any")
+        default: String(localized: "\(selected.count) selected")
         }
     }
 
@@ -142,9 +142,11 @@ struct LibraryFilterList: View {
                 Spacer()
                 if isSelected {
                     Image(systemName: "checkmark").foregroundStyle(DT.Color.accent)
+                        .accessibilityHidden(true)
                 }
             }
         }
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private func toggle<T: Hashable>(_ value: T, in set: inout Set<T>) {

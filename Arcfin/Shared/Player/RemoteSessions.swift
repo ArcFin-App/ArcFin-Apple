@@ -24,6 +24,7 @@ final class RemoteSessions {
     @ObservationIgnored private var pollTask: Task<Void, Never>?
     @ObservationIgnored private var tickTask: Task<Void, Never>?
     @ObservationIgnored private let client = JellyfinMediaClient()
+    @ObservationIgnored private var hasRefreshed = false
 
     /// The ones playing something.
     var playing: [JellyfinSession] { sessions.filter { $0.nowPlayingItemId != nil } }
@@ -47,7 +48,8 @@ final class RemoteSessions {
         tickTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(for: .milliseconds(500))
-                guard let self, let session = self.selected, !session.isPaused else { continue }
+                // Only the remote screen shows it, so nothing changes twice a second otherwise.
+                guard let self, self.isShowingRemote, let session = self.selected, !session.isPaused else { continue }
                 self.estimatedTicks = min(self.estimatedTicks + 5_000_000, session.runTimeTicks ?? .max)
             }
         }
@@ -64,6 +66,7 @@ final class RemoteSessions {
         tickTask?.cancel()
         tickTask = nil
         sessions = []
+        hasRefreshed = false
         isShowingRemote = false
     }
 
@@ -72,10 +75,15 @@ final class RemoteSessions {
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         let ownDevice = UserDefaults.standard.string(forKey: "arcfin.deviceId")
         guard let found = try? await client.controllableSessions(credential: credential, authHeader: header) else { return }
-        sessions = found.filter { $0.supportsRemoteControl && $0.deviceId != ownDevice }
-        if let ticks = selected?.positionTicks { estimatedTicks = ticks }
+        let controllable = found.filter { $0.supportsRemoteControl && $0.deviceId != ownDevice }
+        // Set only on a change (and counted then, or on the first answer after stop()): the tab
+        // view reads both, and an unchanged list every poll redrew it for nothing.
+        let changed = controllable != sessions
+        if changed { sessions = controllable }
+        if let ticks = selected?.positionTicks, ticks != estimatedTicks { estimatedTicks = ticks }
         if isShowingRemote, selected == nil { isShowingRemote = false }
-        refreshCount += 1
+        if changed || !hasRefreshed { refreshCount += 1 }
+        hasRefreshed = true
     }
 
     func open(_ session: JellyfinSession? = nil) {

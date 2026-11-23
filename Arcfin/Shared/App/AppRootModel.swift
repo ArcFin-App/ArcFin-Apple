@@ -23,6 +23,13 @@ final class AppRootModel {
     let introduction = AppServices.introduction
     var splashDone = false
     var isAppLocked = false
+    /// The lock came up over screens already open, which stay underneath, hidden and out of
+    /// reach, so they're as they were once it opens. At launch nothing is built behind it.
+    var keepsContentUnderLock = false
+    /// Bumped when another profile is picked over kept screens, which then start afresh rather
+    /// than show where the last one was.
+    private(set) var contentGeneration = 0
+    @ObservationIgnored private var lockedProfileID: UUID?
     var activeProfileHasPIN = false
     /// The stored sign-in and the PIN lock have been checked this launch.
     var launchChecked = false
@@ -30,15 +37,25 @@ final class AppRootModel {
     /// Why connecting Seerr by itself didn't work, for the prompt that asks for the password.
     var seerrSetupError: String?
     @ObservationIgnored private var isConnectingSeerr = false
-    @ObservationIgnored private var heartbeatTask: Task<Void, Never>?
-    @ObservationIgnored private var arcfinSyncTask: Task<Void, Never>?
-    @ObservationIgnored private var seerrPollTask: Task<Void, Never>?
+    @ObservationIgnored private var handledSignOuts = AppServices.authManager.signOutsToNextProfile
+    /// Links that came while the lock was up or not yet decided, run once it opens.
+    @ObservationIgnored private var heldLinks: [URL] = []
+    // Shared by every window's model, so a second window doesn't start a second set and one
+    // going to the background doesn't stop the other's.
+    private static var heartbeatTask: Task<Void, Never>?
+    private static var arcfinSyncTask: Task<Void, Never>?
+    private static var seerrPollTask: Task<Void, Never>?
+    private static var lastForegroundRefresh: Date?
 
     /// Routes an arcfin:// link from a widget, Live Activity, the Top Shelf or a control, and
     /// the Apple TV's Quick Connect QR code.
     func handleDeepLink(_ url: URL) {
         if QuickConnectApproval.shared.open(url) { return }
         guard url.scheme == "arcfin" else { return }
+        guard isPastLock else {
+            heldLinks.append(url)
+            return
+        }
         switch url.host {
         case "play":
             // arcfin://play/<itemId>. Buffered for a cold launch: Home reads it after loading.
@@ -66,9 +83,57 @@ final class AppRootModel {
         isAppLocked = true
     }
 
+    /// Raises the lock over what's open. Covered by a screen of the signed-in tree, which
+    /// would stay above the lock, the tree is closed instead.
+    func lockKeepingContent(_ keepsContent: Bool) {
+        keepsContentUnderLock = keepsContent && isPastLock
+        lockedProfileID = authManager.state.credential?.id
+        isAppLocked = true
+        AppServices.hasPassedLock = false
+    }
+
     func unlock() {
+        if keepsContentUnderLock, lockedProfileID != authManager.state.credential?.id { contentGeneration += 1 }
         isAppLocked = false
+        keepsContentUnderLock = false
         AppServices.hasPassedLock = true
+        runHeldRoutes()
+    }
+
+    /// The lock is decided and open in this window. Until then the signed-in screens aren't
+    /// built, so nothing of the profile's can be reached, or open above the lock.
+    var isPastLock: Bool { launchChecked && !isAppLocked }
+
+    /// Whether the phase's screens are built: the signed-in ones once the lock is decided and
+    /// open, or kept under a lock raised over them; offline Downloads while it isn't up.
+    func showsContent(_ phase: AppPhase) -> Bool {
+        switch phase {
+        case .main: isPastLock || keepsContentUnderLock
+        case .offline: !isAppLocked
+        default: true
+        }
+    }
+
+    /// Links, Siri and controls that waited for the lock, and Play On sent meanwhile.
+    private func runHeldRoutes() {
+        let links = heldLinks
+        heldLinks = []
+        links.forEach(handleDeepLink)
+        runPendingRoutes()
+        RemoteControl.shared.runHeld()
+        MusicSharePlay.shared.runHeld()
+    }
+
+    /// Apple TV's Who's Watching on a return: asked then or not at all, over the screens as
+    /// they were.
+    func askWhoIsWatchingOnReturn(secondsAway: TimeInterval, keepsContent: Bool) {
+        guard isPastLock, authManager.state.credential != nil,
+              WhoIsWatching.shouldAsk(isOn: WhoIsWatching.isOn, profileCount: authManager.profiles.count,
+                                      isColdLaunch: false, secondsAway: secondsAway,
+                                      isPlayerOpen: PlayerActivity.shared.isPlayerOpen,
+                                      isMusicPlaying: AppServices.music.isPlaying)
+        else { return }
+        lockKeepingContent(keepsContent)
     }
 
     func loadProfileRules() async {
@@ -78,7 +143,7 @@ final class AppRootModel {
 
     /// Siri's Download Next Episode, once there's a signed-in profile to download with.
     func startPendingDownload() {
-        guard let credential = authManager.state.credential,
+        guard isPastLock, let credential = authManager.state.credential,
               let id = UserDefaults.standard.string(forKey: DownloadRoute.pendingKey) else { return }
         UserDefaults.standard.removeObject(forKey: DownloadRoute.pendingKey)
         let header = authManager.authClient.authHeader(token: credential.accessToken)
@@ -93,9 +158,11 @@ final class AppRootModel {
     func checkLaunch() async {
         await authManager.checkStoredAuthOnce()
         await refreshLockRequirement()
-        if activeProfileHasPIN { isAppLocked = true } else { AppServices.hasPassedLock = true }
+        let asksWhoIsWatching = authManager.state.credential != nil
+            && WhoIsWatching.asksAtLaunch(profileCount: authManager.profiles.count)
+        if activeProfileHasPIN || asksWhoIsWatching { isAppLocked = true } else { AppServices.hasPassedLock = true }
         launchChecked = true
-        runPendingRoutes()
+        if !isAppLocked { runHeldRoutes() }
     }
 
     /// The tour and What's New wait for the splash, the sign-in check and the PIN lock, and
@@ -105,6 +172,13 @@ final class AppRootModel {
         else { return false }
         if playerCoversWindow { return false }
         return phase == .login || phase == .main || phase == .offline
+    }
+
+    /// Whether Ask First can ask about settings changed on another device. Like What's New it
+    /// waits for the splash and the lock, and never comes up over a player or the tour.
+    func canAskAboutRemoteSettings(phase: AppPhase) -> Bool {
+        authManager.pendingRemoteSettings != nil && phase == .main && splashDone && isPastLock
+            && introduction.presentation == nil && !playerCoversWindow && !PlayerActivity.shared.isPlayerOpen
     }
 
     /// Any way the presentation closes counts as seen, a swipe down or Menu included.
@@ -159,11 +233,23 @@ final class AppRootModel {
     }
 
     func refreshLockRequirement() async {
+        if authManager.signOutsToNextProfile != handledSignOuts {
+            handledSignOuts = authManager.signOutsToNextProfile
+            isAppLocked = true
+            keepsContentUnderLock = false
+        }
         guard case .authenticated(let cred) = authManager.state else {
             activeProfileHasPIN = false
+            // The last profile signed out from the lock screen: the sign-in screen comes next,
+            // and links meant for that profile go with it.
+            if authManager.profiles.isEmpty, isAppLocked {
+                isAppLocked = false
+                keepsContentUnderLock = false
+                heldLinks = []
+            }
             return
         }
-        activeProfileHasPIN = await authManager.pin(for: cred.id) != nil
+        activeProfileHasPIN = await authManager.storedPIN(for: cred.id) != .none
     }
 
     func syncOfflineProgress(modelContext: ModelContext) {
@@ -178,18 +264,26 @@ final class AppRootModel {
         }
     }
 
-    /// Back in the app: the heartbeat, Arcfin Sync and Seerr loops start; leaving stops them.
+    /// Back in the app: the heartbeat, Arcfin Sync and Seerr loops start; once no window is
+    /// in front they stop.
     func scenePhaseChanged(to newPhase: ScenePhase) {
         if newPhase == .active {
             Task { await authManager.checkSignInStillValid() }
             startHeartbeat()
             startArcfinSyncLoop()
-            authManager.syncArcfinNow()
             startSeerrPollLoop()
-        } else {
-            heartbeatTask?.cancel()
-            arcfinSyncTask?.cancel()
-            seerrPollTask?.cancel()
+            // Control Center, Notification Center and Picture in Picture each pass through the
+            // background too, so the heavier refreshes wait a few minutes between returns.
+            if Self.lastForegroundRefresh.map({ Date().timeIntervalSince($0) > 5 * 60 }) ?? true {
+                Self.lastForegroundRefresh = Date()
+                authManager.syncArcfinNow()
+                Task { await loadProfileRules() }
+                Task { await MusicDownloads.shared.refreshSmartDownloads() }
+            }
+        } else if !AppServices.scenes.anyActive {
+            Self.heartbeatTask?.cancel()
+            Self.arcfinSyncTask?.cancel()
+            Self.seerrPollTask?.cancel()
         }
     }
 
@@ -198,13 +292,15 @@ final class AppRootModel {
     /// periodic ping covers idle stretches (paused on a detail screen, backgrounded briefly)
     /// so the server's Active Devices view doesn't show a stale/offline session.
     private func startHeartbeat() {
-        heartbeatTask?.cancel()
-        heartbeatTask = Task {
+        Self.heartbeatTask?.cancel()
+        // Sleeps first: becoming active already checks the sign-in.
+        Self.heartbeatTask = Task {
             while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(60))
+                guard !Task.isCancelled else { return }
                 if case .authenticated(let cred) = authManager.state {
                     _ = await authManager.authClient.validateToken(credential: cred)
                 }
-                try? await Task.sleep(for: .seconds(60))
             }
         }
     }
@@ -215,8 +311,8 @@ final class AppRootModel {
     /// effect. 15 minutes, not 60 seconds like the heartbeat — this hits a real endpoint that
     /// reads/writes a file per user, no need for it to be as cheap/frequent as a token check.
     private func startArcfinSyncLoop() {
-        arcfinSyncTask?.cancel()
-        arcfinSyncTask = Task {
+        Self.arcfinSyncTask?.cancel()
+        Self.arcfinSyncTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(900))
                 guard !Task.isCancelled else { return }
@@ -232,9 +328,9 @@ final class AppRootModel {
     /// sensitive than the Arcfin Sync loop above (a user actually wants to know promptly),
     /// but still a real per-user Seerr request, not worth a sub-minute cadence.
     private func startSeerrPollLoop() {
-        seerrPollTask?.cancel()
+        Self.seerrPollTask?.cancel()
         guard seerrRepo.isConfigured else { return }
-        seerrPollTask = Task {
+        Self.seerrPollTask = Task {
             while !Task.isCancelled {
                 try? await Task.sleep(for: .seconds(300))
                 guard !Task.isCancelled else { return }
@@ -257,4 +353,9 @@ final class AppRootModel {
             await seerrRepo.loadRequests()
         }
     }
+}
+
+extension EnvironmentValues {
+    /// The screens are kept, hidden, under the lock: nothing in them may play or open.
+    @Entry var isBehindLock = false
 }

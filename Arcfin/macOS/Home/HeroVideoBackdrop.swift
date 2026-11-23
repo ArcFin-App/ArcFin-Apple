@@ -48,12 +48,14 @@ final class LoopingPlayerNSView: NSView {
     init(url: URL) {
         super.init(frame: .zero)
         wantsLayer = true
-        let headers = CustomHTTPHeaders.current
+        let headers = CustomHTTPHeaders.headers(for: url)
         let asset = AVURLAsset(url: url, options: headers.isEmpty ? nil : ["AVURLAssetHTTPHeaderFieldsKey": headers])
         let item = AVPlayerItem(asset: asset)
         item.add(videoOutput)
         let player = AVPlayer(playerItem: item)
         player.isMuted = true
+        // A backdrop: never sent to AirPlay, where it would take over from music or a video.
+        player.allowsExternalPlayback = false
         player.actionAtItemEnd = .none
         player.automaticallyWaitsToMinimizeStalling = false
         playerLayer.player = player

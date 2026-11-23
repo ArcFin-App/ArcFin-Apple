@@ -39,7 +39,8 @@ nonisolated enum BackgroundRefresh {
     /// instead of announcing its whole library.
     static func resetState() {
         let defaults = UserDefaults.standard
-        for key in [seenFilmsKey, seenEpisodesKey, lastActivityKey, seerrStatusKey, announcedWatchlistKey] {
+        for key in [seenFilmsKey, seenEpisodesKey, lastActivityKey, seerrStatusKey, announcedWatchlistKey,
+                    NotificationManager.sentRequestNoticesKey] {
             defaults.removeObject(forKey: key)
         }
     }
@@ -88,8 +89,10 @@ nonisolated enum BackgroundRefresh {
     @MainActor private static var whileOpen: Task<Void, Never>?
     private static let lastOpenCheckKey = "arcfin.notify.lastOpenCheck"
 
+    /// Each window calls this as it becomes active; one already running carries on, so a
+    /// check in progress isn't cut short after it has recorded what it saw.
     @MainActor static func startWhileOpen() {
-        whileOpen?.cancel()
+        guard whileOpen == nil else { return }
         whileOpen = Task {
             let last = UserDefaults.standard.object(forKey: lastOpenCheckKey) as? Date ?? .distantPast
             if Date().timeIntervalSince(last) > 5 * 60 {
@@ -135,6 +138,10 @@ nonisolated enum BackgroundRefresh {
         if defaults.bool(forKey: "notifyServerEvents") { await checkServerEvents() }
         guard !Task.isCancelled else { return }
         if defaults.bool(forKey: StreamBadge.key) { await StreamBadge.refresh() }
+        guard !Task.isCancelled else { return }
+        if let credential = IntentSession.credential() {
+            await WidgetSnapshotUpdater.refreshProgress(credential: credential, authHeader: IntentSession.authHeader(for: credential))
+        }
         guard !Task.isCancelled else { return }
         await checkSeerr(
             requestUpdates: defaults.object(forKey: "notifyRequestUpdates") as? Bool ?? true,
@@ -210,7 +217,8 @@ nonisolated enum BackgroundRefresh {
     // MARK: - Seerr
 
     private static func checkSeerr(requestUpdates: Bool, watchlist: Bool) async {
-        guard requestUpdates || watchlist else { return }
+        // Like the other checks, nothing for a profile with an app-lock PIN.
+        guard requestUpdates || watchlist, IntentSession.credential() != nil else { return }
         let defaults = UserDefaults.standard
         // Nobody signed in: the Seerr sign-in left behind isn't anyone's to check.
         guard defaults.string(forKey: "arcfin.activeProfileID") != nil,
@@ -226,7 +234,7 @@ nonisolated enum BackgroundRefresh {
                                      authorizeQuickConnect: authorizer,
                                      onSavedPasswordRejected: { try? KeychainStore().deleteSeerrPassword() })
 
-        if requestUpdates, let requests = try? await client.getRequests() {
+        if requestUpdates, let requests = try? await client.getRequests(limit: 100) {
             await announceRequestChanges(requests)
         }
         guard !Task.isCancelled else { return }
@@ -250,11 +258,11 @@ nonisolated enum BackgroundRefresh {
             let oldStatus = Int(old.split(separator: "-").first ?? "") ?? 0
             let oldMedia = Int(old.split(separator: "-").last ?? "") ?? 0
             if item.mediaStatus == .available, oldMedia != SeerrAvailabilityStatus.available.rawValue {
-                await NotificationManager.notifyRequestAvailable(title: item.mediaTitle)
+                await NotificationManager.notifyRequestAvailable(title: item.mediaTitle, requestID: item.id)
             } else if item.status == .approved, oldStatus != RequestStatus.approved.rawValue {
-                await NotificationManager.notifyRequestApproved(title: item.mediaTitle)
+                await NotificationManager.notifyRequestApproved(title: item.mediaTitle, requestID: item.id)
             } else if item.status == .declined, oldStatus != RequestStatus.declined.rawValue {
-                await NotificationManager.notifyRequestDeclined(title: item.mediaTitle)
+                await NotificationManager.notifyRequestDeclined(title: item.mediaTitle, requestID: item.id)
             }
         }
     }

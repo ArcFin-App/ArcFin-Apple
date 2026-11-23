@@ -40,7 +40,7 @@ struct SignOutSection: View {
                 signOutTarget = authManager.state.credential
             } label: {
                 Text("Sign Out")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(DT.Color.palette("F43F5E"))
                     .frame(maxWidth: .infinity, alignment: .center)
             }
             .formRowButton()

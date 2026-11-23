@@ -8,7 +8,10 @@ import SwiftUI
 struct PlayerFeaturesSettingsView: View {
     var body: some View {
         List {
-            PlayerFeatureToggleSections()
+            PlayerFeatureToggleSections(
+                frameRateDetail: "Switches the display to the video's frame rate so motion doesn't judder. Aether only; some TVs flash black when it switches.",
+                showsCast: false
+            )
         }
         .arcfinListStyle()
         .screenBackground()

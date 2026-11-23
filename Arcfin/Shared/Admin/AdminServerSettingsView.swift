@@ -22,6 +22,14 @@ final class AdminConfigModel {
     init(section: String?) { self.section = section }
 
     var hasChanges: Bool { !ServerEditGuard.changedKeys(from: original, to: values).isEmpty }
+
+    func isChanged(_ key: String) -> Bool {
+        ServerEditGuard.changedKeys(from: original, to: values).contains(key)
+    }
+
+    func originalInt(_ key: String) -> Int? {
+        (original[key] as? NSNumber)?.intValue
+    }
     var compatibility: ServerCompatibility.Status { ServerCompatibility.status(version) }
 
     /// Shown only when the server sends the setting and its version has it.
@@ -35,7 +43,11 @@ final class AdminConfigModel {
     }
 
     func load(authManager: AuthManager) async {
-        guard let access = AdminAccess.session(authManager) else { return }
+        guard let access = AdminAccess.session(authManager) else {
+            error = AdminAccess.unavailableMessage
+            isLoading = false
+            return
+        }
         version = await ServerVersions.version(for: access.credential)
         do {
             let data = try await JellyfinAdminClient().configuration(section, credential: access.credential, authHeader: access.header)
@@ -121,6 +133,8 @@ private struct AdminConfigPage<Content: View>: View {
     let title: String
     let model: AdminConfigModel
     let restartNote: Bool
+    /// False while something on the page can't be sent as it is.
+    var isValid = true
     @ViewBuilder let content: () -> Content
 
     @Environment(AuthManager.self) private var authManager
@@ -151,9 +165,10 @@ private struct AdminConfigPage<Content: View>: View {
                 Button("Save") {
                     if model.compatibility.needsConfirmation { confirmUntested = true } else { model.save(authManager: authManager) }
                 }
-                .disabled(!model.hasChanges || model.isSaving || !model.compatibility.canSave)
+                .disabled(!model.hasChanges || model.isSaving || !model.compatibility.canSave || !isValid)
             }
         }
+        .adminDiscardChangesGuard(model.hasChanges)
         .task { await model.load(authManager: authManager) }
         .untestedServerConfirmation(isPresented: $confirmUntested, status: model.compatibility) {
             model.save(authManager: authManager)
@@ -174,6 +189,38 @@ private struct AdminConfigPage<Content: View>: View {
             Text(restartNote ? String(localized: "The server has the new settings. Restart it for all of them to take effect.")
                  : String(localized: "The server has the new settings."))
         }
+    }
+}
+
+extension View {
+    /// With unsaved changes, going back asks before throwing them away.
+    func adminDiscardChangesGuard(_ hasChanges: Bool) -> some View {
+        modifier(AdminDiscardChangesGuard(hasChanges: hasChanges))
+    }
+}
+
+private struct AdminDiscardChangesGuard: ViewModifier {
+    let hasChanges: Bool
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var confirming = false
+
+    func body(content: Content) -> some View {
+        content
+            .navigationBarBackButtonHidden(hasChanges)
+            .toolbar {
+                if hasChanges {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Back") { confirming = true }
+                    }
+                }
+            }
+            .alert("Discard Changes?", isPresented: $confirming) {
+                Button("Discard Changes", role: .destructive) { dismiss() }
+                Button("Keep Editing", role: .cancel) {}
+            } message: {
+                Text("What you changed on this page hasn't been saved to the server.")
+            }
     }
 }
 
@@ -355,10 +402,31 @@ struct AdminEncodingSettingsView: View {
 
 /// Server › Networking: remote access, ports, HTTPS, and which addresses count as local.
 struct AdminNetworkSettingsView: View {
+    @Environment(AuthManager.self) private var authManager
     @State private var model = AdminConfigModel(section: "network")
 
+    private static let portKeys = ["InternalHttpPort", "InternalHttpsPort", "PublicHttpPort", "PublicHttpsPort"]
+
+    private var portsValid: Bool {
+        Self.portKeys.allSatisfy { !model.has($0) || (1...65535).contains(model.int($0).wrappedValue) }
+    }
+
+    /// The address this device reaches the server at, when the changes would stop that
+    /// working once the server restarts: its port moved, or HTTPS switched on or off under it.
+    private var cutOffAddress: String? {
+        guard let url = authManager.state.credential?.baseURL else { return nil }
+        let isHTTPS = url.scheme == "https"
+        let port = url.port ?? (isHTTPS ? 443 : 80)
+        let keys = isHTTPS ? ["InternalHttpsPort", "PublicHttpsPort"] : ["InternalHttpPort", "PublicHttpPort"]
+        let portMoved = keys.contains { model.isChanged($0) && model.originalInt($0) == port }
+        let schemeLost = isHTTPS
+            ? model.isChanged("EnableHttps") && !model.bool("EnableHttps").wrappedValue
+            : model.isChanged("RequireHttps") && model.bool("RequireHttps").wrappedValue
+        return portMoved || schemeLost ? url.absoluteString : nil
+    }
+
     var body: some View {
-        AdminConfigPage(title: String(localized: "Networking"), model: model, restartNote: true) {
+        AdminConfigPage(title: String(localized: "Networking"), model: model, restartNote: true, isValid: portsValid) {
             Section {
                 if model.has("EnableRemoteAccess") {
                     Toggle("Allow Remote Connections", isOn: model.bool("EnableRemoteAccess"))
@@ -373,7 +441,7 @@ struct AdminNetworkSettingsView: View {
             } footer: {
                 Text("Turning remote connections off signs out everyone outside your network, which may include this device.")
             }
-            Section("Ports") {
+            Section {
                 if model.has("InternalHttpPort") {
                     AdminNumberField(title: "HTTP Port", value: model.int("InternalHttpPort"))
                 }
@@ -385,6 +453,21 @@ struct AdminNetworkSettingsView: View {
                 }
                 if model.has("PublicHttpsPort") {
                     AdminNumberField(title: "Public HTTPS Port", value: model.int("PublicHttpsPort"))
+                }
+            } header: {
+                Text("Ports")
+            } footer: {
+                if !portsValid {
+                    Text("Port numbers go from 1 to 65535.")
+                        .foregroundStyle(DT.Color.palette("F43F5E"))
+                }
+            }
+            if let address = cutOffAddress {
+                Section {
+                    Label("After the restart, this device may not reach the server: Arcfin connects to it at \(address).",
+                          systemImage: "exclamationmark.triangle.fill")
+                        .font(.system(.footnote))
+                        .foregroundStyle(DT.Color.palette("f59e0b"))
                 }
             }
             Section {

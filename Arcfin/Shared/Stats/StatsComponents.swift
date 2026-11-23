@@ -14,22 +14,35 @@ enum StatsFormat {
         return formatter.string(from: max(seconds, 60)) ?? ""
     }
 
-    /// The big number: hours, or minutes under an hour.
-    static func headline(_ seconds: Double) -> (value: String, unit: String) {
-        if seconds >= 3600 {
-            let hours = seconds / 3600
-            return (hours.formatted(.number.precision(.fractionLength(hours < 10 ? 1 : 0))), hours < 1.05 ? "hour" : "hours")
+    /// The big number with its unit, hours or minutes under an hour, in the app's language:
+    /// the formatter picks the unit's word and plural form.
+    static func headline(_ seconds: Double) -> AttributedString {
+        let hours = seconds / 3600
+        let measurement = hours >= 1
+            ? Measurement(value: hours, unit: UnitDuration.hours)
+            : Measurement(value: (seconds / 60).rounded(.down), unit: UnitDuration.minutes)
+        let digits = hours >= 1 && hours < 10 ? 1 : 0
+        return measurement.formatted(.measurement(width: .wide, usage: .asProvided,
+                                                  numberFormatStyle: .number.precision(.fractionLength(digits))).attributed)
+    }
+
+    /// The headline with its number and its unit in their own fonts and colours.
+    static func styled(_ headline: AttributedString, value: Font, valueColor: Color, unit: Font, unitColor: Color) -> AttributedString {
+        var result = headline
+        for run in result.runs {
+            let isValue = run.measurement == .value
+            result[run.range].swiftUI.font = isValue ? value : unit
+            result[run.range].swiftUI.foregroundColor = isValue ? valueColor : unitColor
         }
-        let minutes = Int(seconds / 60)
-        return ("\(minutes)", minutes == 1 ? "minute" : "minutes")
+        return result
     }
 
     static func equivalent(_ seconds: Double) -> String {
         let days = seconds / 86_400
-        if days >= 2 { return "\(days.formatted(.number.precision(.fractionLength(1)))) days back to back" }
+        if days >= 2 { return String(localized: "\(days.formatted(.number.precision(.fractionLength(1)))) days back to back") }
         let films = seconds / (110 * 60)
-        if films >= 1.5 { return "\(Int(films.rounded())) feature films" }
-        return "\(Int((seconds / (22 * 60)).rounded())) sitcom episodes"
+        if films >= 1.5 { return String(localized: "\(Int(films.rounded())) feature films") }
+        return String(localized: "\(Int((seconds / (22 * 60)).rounded())) sitcom episodes")
     }
 
     static func series(of episode: MediaItem) -> MediaItem {
@@ -41,6 +54,67 @@ enum StatsFormat {
     static func episodeName(_ item: MediaItem) -> String {
         guard let season = item.parentIndexNumber, let number = item.indexNumber else { return item.name }
         return "S\(season) E\(number) · \(item.name)"
+    }
+}
+
+extension StatsPeriod {
+    /// The package names periods in English; these follow the app's language.
+    var label: String {
+        switch self {
+        case .week: String(localized: "Week")
+        case .month: String(localized: "Month")
+        case .year: String(localized: "Year")
+        case .allTime: String(localized: "All Time")
+        }
+    }
+
+    /// "This Week", "Last Month", "Year", "All Time".
+    func heading(at offset: Int) -> String {
+        switch (self, offset) {
+        case (.allTime, _): String(localized: "All Time")
+        case (.week, 0): String(localized: "This Week")
+        case (.week, -1): String(localized: "Last Week")
+        case (.month, 0): String(localized: "This Month")
+        case (.month, -1): String(localized: "Last Month")
+        case (.year, 0): String(localized: "This Year")
+        case (.year, -1): String(localized: "Last Year")
+        default: label
+        }
+    }
+
+    var previousLabel: String {
+        switch self {
+        case .week: String(localized: "Previous Week")
+        case .month: String(localized: "Previous Month")
+        case .year, .allTime: String(localized: "Previous Year")
+        }
+    }
+
+    var nextLabel: String {
+        switch self {
+        case .week: String(localized: "Next Week")
+        case .month: String(localized: "Next Month")
+        case .year, .allTime: String(localized: "Next Year")
+        }
+    }
+
+    /// Nothing was finished in an earlier period.
+    var nothingThen: String {
+        switch self {
+        case .week: String(localized: "Nothing you finished was last played then. Try another week.")
+        case .month: String(localized: "Nothing you finished was last played then. Try another month.")
+        case .year, .allTime: String(localized: "Nothing you finished was last played then. Try another year.")
+        }
+    }
+}
+
+extension WatchStats {
+    var periodHeading: String { period.heading(at: offset) }
+
+    /// The period's dates, or for All Time when it started.
+    var periodName: String {
+        guard period == .allTime else { return name }
+        return firstPlayed.map { String(localized: "Since \($0.formatted(.dateTime.month(.wide).year()))") } ?? ""
     }
 }
 
@@ -67,10 +141,10 @@ enum DayPart: CaseIterable {
 
     var phrase: String {
         switch self {
-        case .morning: "usually in the morning"
-        case .afternoon: "usually in the afternoon"
-        case .evening: "usually in the evening"
-        case .night: "usually late at night"
+        case .morning: String(localized: "Usually in the morning")
+        case .afternoon: String(localized: "Usually in the afternoon")
+        case .evening: String(localized: "Usually in the evening")
+        case .night: String(localized: "Usually late at night")
         }
     }
 
@@ -151,34 +225,34 @@ struct StatsHero: View {
     }
 
     var body: some View {
-        let headline = StatsFormat.headline(stats.seconds)
+        let headline = StatsFormat.styled(
+            StatsFormat.headline(stats.seconds),
+            value: .system(size: (compact ? 48 : 64) * StatsMetrics.scale, weight: .heavy, design: .rounded), valueColor: .white,
+            unit: .system(.title3, weight: .semibold), unitColor: .white.opacity(0.8))
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(stats.heading.uppercased())
+                Text(stats.periodHeading.uppercased())
                     .font(.system(.caption, weight: .bold))
                     .tracking(1.2)
                     .foregroundStyle(DT.Color.palette("FF6A4D"))
-                if !stats.name.isEmpty {
-                    Text(stats.name)
+                if !stats.periodName.isEmpty {
+                    Text(stats.periodName)
                         .font(.system(.headline))
                         .foregroundStyle(.white.opacity(0.9))
                 }
             }
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text(headline.value)
-                    .font(.system(size: (compact ? 48 : 64) * StatsMetrics.scale, weight: .heavy, design: .rounded))
-                    .contentTransition(.numericText())
-                Text("\(headline.unit) watched")
-                    .font(.system(.title3, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.8))
-            }
-            .foregroundStyle(.white)
-            .minimumScaleFactor(0.6)
-            .lineLimit(1)
+            Text(AttributedString(localized: "\(headline) watched"))
+                .font(.system(.title3, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.8))
+                .contentTransition(.numericText())
+                .minimumScaleFactor(0.6)
+                .lineLimit(1)
+            // Headings under the counts, singular for one ("1 Movie"); no other plural form has to
+            // agree with the number.
             HStack(spacing: 10) {
-                HeroCount(value: stats.movies, label: stats.movies == 1 ? "Movie" : "Movies")
-                HeroCount(value: stats.episodes, label: stats.episodes == 1 ? "Episode" : "Episodes")
-                HeroCount(value: stats.shows, label: stats.shows == 1 ? "Show" : "Shows")
+                HeroCount(value: stats.movies, label: stats.movies == 1 ? String(localized: "Movie") : String(localized: "Movies"))
+                HeroCount(value: stats.episodes, label: stats.episodes == 1 ? String(localized: "Episode") : String(localized: "Episodes"))
+                HeroCount(value: stats.shows, label: stats.shows == 1 ? String(localized: "Show") : String(localized: "Shows"))
             }
         }
         .padding(22)
@@ -335,7 +409,7 @@ struct ShowRow: View {
                     .font(.system(.headline))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
-                Text("\(show.episodes) \(show.episodes == 1 ? "episode" : "episodes") · \(StatsFormat.duration(show.seconds))")
+                Text(verbatim: "\(String(localized: "\(show.episodes) episodes")) · \(StatsFormat.duration(show.seconds))")
                     .font(.system(.subheadline))
                     .foregroundStyle(DT.Color.textSecondary)
                 if let progress = show.watchedOfTotal, progress.total > 0 {
@@ -431,7 +505,7 @@ struct PersonTile: View {
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2, reservesSpace: true)
                 .multilineTextAlignment(.center)
-            Text("\(entry.titles) \(entry.titles == 1 ? "title" : "titles")")
+            Text(String(localized: "\(entry.titles) titles"))
                 .font(.system(.caption))
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineLimit(1)
@@ -586,7 +660,7 @@ struct RecentRow: View {
                     .font(.system(.subheadline, weight: .semibold))
                     .foregroundStyle(DT.Color.textPrimary)
                     .lineLimit(1)
-                Text(title.item.type == .episode ? StatsFormat.episodeName(title.item) : (title.item.productionYear.map(String.init) ?? "Movie"))
+                Text(title.item.type == .episode ? StatsFormat.episodeName(title.item) : (title.item.productionYear.map(String.init) ?? String(localized: "Movie")))
                     .font(.system(.caption))
                     .foregroundStyle(DT.Color.textSecondary)
                     .lineLimit(1)

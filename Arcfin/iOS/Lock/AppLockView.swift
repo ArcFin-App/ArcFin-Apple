@@ -16,6 +16,7 @@ struct AppLockView: View {
     let onUnlock: () -> Void
 
     @State private var model = AppLockModel()
+    @State private var signingOut: ServerCredential?
     @State private var didAttemptBiometricsFor: UUID?
 
     private var activeID: UUID? { authManager.state.credential?.id }
@@ -45,11 +46,12 @@ struct AppLockView: View {
 
             if let target = model.pinTarget {
                 PINPadView(
-                    title: "Enter PIN",
+                    title: String(localized: "Enter PIN"),
                     subtitle: target.displayName,
                     errorMessage: model.errorMessage,
                     resetToken: model.resetToken,
-                    onCancel: { model.cancelPIN() }
+                    onCancel: { model.cancelPIN() },
+                    onSignOut: model.isPINUnreadable ? { signingOut = target } : nil
                 ) { entered in
                     model.enter(entered, for: target, authManager: authManager, onUnlock: onUnlock)
                 }
@@ -59,6 +61,14 @@ struct AppLockView: View {
             }
         }
         .task { await model.loadPINStates(authManager: authManager) }
+        .confirmationPrompt(Text("Sign Out of \(signingOut?.displayName ?? "")?"),
+                            isPresented: Binding(get: { signingOut != nil }, set: { if !$0 { signingOut = nil } }),
+                            presenting: signingOut) { target in
+            Button("Sign Out", role: .destructive) { model.signOut(target, authManager: authManager) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("You'll need this profile's password to sign in again.")
+        }
     }
 
     // MARK: - Profile picker
@@ -100,7 +110,7 @@ struct AppLockView: View {
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return }
         guard let success = try? await context.evaluatePolicy(
             .deviceOwnerAuthenticationWithBiometrics,
-            localizedReason: "Unlock Arcfin"
+            localizedReason: String(localized: "Unlock Arcfin")
         ), success else { return }
         model.unlock(as: profile, authManager: authManager, onUnlock: onUnlock)
     }

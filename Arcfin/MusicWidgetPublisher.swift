@@ -16,23 +16,33 @@ enum MusicWidgetPublisher {
     private static var writeTask: Task<Void, Never>?
     private static var recentTask: Task<Void, Never>?
     private static var recentlyPlayed: [MusicSong] = []
+    private static var recentProfile: UUID?
     private static let maxUpNext = 4
     private static let maxRecent = 8
 
     static func start() {
         guard !isStarted else { return }
         isStarted = true
-        MusicIntentPerformer.handle = { await perform($0) }
+        MusicIntentPerformer.handle = { try await perform($0) }
         follow()
         refreshRecentlyPlayed()
     }
 
     // MARK: Buttons
 
-    private static func perform(_ command: MusicIntentCommand) async {
+    private static func perform(_ command: MusicIntentCommand) async throws {
         // Started by the widget, the app hasn't signed in or brought the queue back yet.
         await AppServices.authManager.checkStoredAuthOnce()
         let music = AppServices.music
+        // While the app lock is up music can only be paused, not started.
+        if await AppServices.isLocked() {
+            switch command {
+            case .setPlaying(false): music.pause()
+            case .togglePlayPause where music.isPlaying: music.pause()
+            default: throw MusicLockedError()
+            }
+            return
+        }
         music.restoreQueue()
         switch command {
         case .togglePlayPause:
@@ -53,6 +63,10 @@ enum MusicWidgetPublisher {
         }), !songs.isEmpty else { return }
         let index = songID.flatMap { id in songs.firstIndex { $0.id == id } } ?? 0
         MusicActions.play(songs, from: index)
+    }
+
+    nonisolated struct MusicLockedError: Error, CustomLocalizedStringResourceConvertible {
+        var localizedStringResource: LocalizedStringResource { "Unlock Arcfin to play music." }
     }
 
     // MARK: Snapshot
@@ -85,10 +99,16 @@ enum MusicWidgetPublisher {
 
     private static func write() async {
         let music = AppServices.music
-        guard AppServices.authManager.state.credential != nil else {
+        // Like Siri and Spotlight, nothing from a profile with an app-lock PIN.
+        guard let profile = AppServices.authManager.state.credential?.id, IntentSession.credential() != nil else {
             MusicWidgetStore.clear()
             reload()
             return
+        }
+        if profile != recentProfile {
+            recentProfile = profile
+            recentlyPlayed = []
+            refreshRecentlyPlayed()
         }
         let current = music.player.current
         var keep = Set<String>()
@@ -103,6 +123,7 @@ enum MusicWidgetPublisher {
         for item in music.player.queue.upNext.prefix(maxUpNext) { next.append(await entry(item.track)) }
         var recent: [MusicWidgetSnapshot.Song] = []
         for song in recentlyPlayed.prefix(maxRecent) { recent.append(await entry(song)) }
+        guard AppServices.authManager.state.credential?.id == profile else { return }
         let snapshot = MusicWidgetSnapshot(nowPlaying: playing, isPlaying: music.isPlaying, position: music.position,
                                            duration: music.player.duration, upNext: next, recentlyPlayed: recent)
         MusicWidgetStore.save(snapshot)
@@ -118,11 +139,13 @@ enum MusicWidgetPublisher {
             try? await Task.sleep(for: delay)
             guard !Task.isCancelled else { return }
             await AppServices.authManager.checkStoredAuthOnce()
+            let profile = AppServices.authManager.state.credential?.id
             let songs = (try? await MusicAPI.call {
                 try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: nil, sort: .datePlayed,
                                             ascending: false, filter: .init(playedOnly: true), limit: maxRecent)
             })?.tracks ?? []
-            guard !Task.isCancelled, songs.map(\.id) != recentlyPlayed.map(\.id) else { return }
+            guard !Task.isCancelled, AppServices.authManager.state.credential?.id == profile,
+                  songs.map(\.id) != recentlyPlayed.map(\.id) else { return }
             recentlyPlayed = songs
             scheduleWrite()
         }
