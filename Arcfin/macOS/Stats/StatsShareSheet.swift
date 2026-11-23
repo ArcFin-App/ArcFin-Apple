@@ -81,7 +81,7 @@ struct StatsShareSheet: View {
             stats.topShows.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) },
             stats.topMovies.first.flatMap { mediaRepo.imageURL(for: $0.item, fillWidth: 400) })
         case .music(let stats): (
-            cover(stats.topAlbums.first ?? stats.topSongs.first, width: 1200),
+            cover((stats.topAlbums + stats.topSongs + stats.topArtists).first { $0.albumImageTag != nil }, width: 1200),
             cover(stats.topSongs.first, width: 400),
             cover(stats.topArtists.first, width: 400))
         }

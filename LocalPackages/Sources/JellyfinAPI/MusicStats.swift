@@ -187,13 +187,18 @@ public struct MusicStats: Sendable {
         buckets = starts.map { WatchStats.Bucket(start: $0, seconds: Double(byBucket[$0] ?? 0)) }
 
         func lowered(_ text: String?) -> String { text?.lowercased() ?? "" }
-        let songCovers = Dictionary(all.map { (lowered($0.name) + "\u{1F}" + lowered($0.artist), $0) }, uniquingKeysWith: { first, _ in first })
-        let albumCovers = Dictionary(all.compactMap { track in track.album.map { (lowered($0), track) } }, uniquingKeysWith: { first, _ in first })
+        let withCover = { (first: ListenedTrack, other: ListenedTrack) in first.albumImageTag == nil ? other : first }
+        let songCovers = Dictionary(all.map { (lowered($0.name) + "\u{1F}" + lowered($0.artist), $0) }, uniquingKeysWith: withCover)
+        let albumCovers = Dictionary(all.compactMap { track in track.album.map { (lowered($0), track) } }, uniquingKeysWith: withCover)
+        let artistCovers = Dictionary(all.compactMap { track in track.artist.map { (lowered($0), track) } }, uniquingKeysWith: withCover)
         topSongs = stats.songs.prefix(10).map { song in
             let match = songCovers[lowered(song.name) + "\u{1F}" + lowered(song.artist)]
             return Entry(name: song.name, detail: song.artist, plays: song.listens, albumId: match?.albumId, albumImageTag: match?.albumImageTag)
         }
-        topArtists = stats.artists.prefix(8).map { Entry(name: $0.name, detail: nil, plays: $0.listens, albumId: nil, albumImageTag: nil) }
+        topArtists = stats.artists.prefix(8).map { artist in
+            let match = artistCovers[lowered(artist.name)]
+            return Entry(name: artist.name, detail: nil, plays: artist.listens, albumId: match?.albumId, albumImageTag: match?.albumImageTag)
+        }
         topAlbums = stats.albums.prefix(8).map { album in
             let match = albumCovers[lowered(album.name)]
             return Entry(name: album.name, detail: album.artist, plays: album.listens, albumId: match?.albumId, albumImageTag: match?.albumImageTag)

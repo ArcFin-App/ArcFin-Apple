@@ -72,6 +72,7 @@ struct MusicStatsTests {
         var year = ListenBrainzYear()
         year.songs = [.init(name: "a", artist: "one", listens: 12)]
         year.albums = [.init(name: "First", artist: "One", listens: 12)]
+        year.artists = [.init(name: "one", listens: 12)]
         year.months = [.init(start: daysAgo(0), listens: 7), .init(start: daysAgo(1), listens: 5)]
         let week = MusicStats(listenBrainz: year, jellyfin: library, period: .month, now: now, calendar: calendar)
         #expect(week.source == .listenBrainz)
@@ -80,6 +81,7 @@ struct MusicStatsTests {
         #expect(week.buckets.reduce(0) { $0 + $1.seconds } == 12)
         #expect(week.topSongs.first?.albumId == "First")
         #expect(week.topAlbums.first?.albumId == "First")
+        #expect(week.topArtists.first?.albumId == "First")
         #expect(week.hasEarlier)
     }
 }
