@@ -433,6 +433,8 @@ struct PlayerView: View {
         // API needs iOS 27 (min target here is 26), so instead this just runs the same
         // synchronous calls off the main actor via a detached task.
         await activateAudioSession()
+        // Closed meanwhile: the teardown has already run, so nothing would remove the observer.
+        guard !Task.isCancelled, !model.isClosed else { return }
         // The hidden MPVolumeView used to set volume programmatically also silently
         // suppresses the system's own volume HUD — observe outputVolume so physical
         // button presses still get a visible indicator via our own overlay. The gesture in

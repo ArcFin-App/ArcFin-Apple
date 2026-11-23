@@ -55,7 +55,7 @@ final class PlayerModel {
         }
     }
     /// Set once the screen closes: a load that finishes after that stops instead of playing.
-    @ObservationIgnored private var isClosed = false
+    @ObservationIgnored private(set) var isClosed = false
     /// Another title has taken this player's place; it owns the audio session now.
     @ObservationIgnored private(set) var handedOver = false
     var playbackInfo: JellyfinPlaybackInfo? {
@@ -1258,6 +1258,7 @@ final class PlayerModel {
         stillWatchingTimeoutTask?.cancel()
         liveProgramTask?.cancel()
         av1Watchdog?.cancel()
+        castLoadTask?.cancel()
         cancelUpNextCountdown()
         setupTask?.cancel()
         reloadTask?.cancel()
