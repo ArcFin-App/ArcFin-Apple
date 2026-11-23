@@ -962,37 +962,62 @@ struct TVMusicArtistView: View {
 
 // MARK: - Search
 
-/// Searching the music on its own, from the music library.
+/// Searching the music on its own, from the music library: laid out as Browse's search is,
+/// with the same recent searches.
 struct TVMusicSearchView: View {
     @State private var query = ""
     @State private var search = MusicSearchModel()
+    @AppStorage(RecentSearches.key) private var recentSearchesData = Data()
+    @AppStorage("saveSearchHistory") private var saveSearchHistory = true
+
+    private var recentSearches: [String] { RecentSearches.decode(recentSearchesData) }
+    private var hasTerm: Bool { query.trimmingCharacters(in: .whitespaces).count >= 2 }
 
     var body: some View {
-        ScrollView {
-            if search.isSearching {
-                ProgressView().frame(maxWidth: .infinity).padding(.vertical, 120)
-            } else if search.results.isEmpty, query.trimmingCharacters(in: .whitespaces).count >= 2 {
-                ContentUnavailableView.search(text: query).padding(.vertical, 80)
+        Group {
+            if query.isEmpty, !recentSearches.isEmpty {
+                RecentSearchesList(terms: recentSearches, clear: { recentSearchesData = Data() }) { term, label in
+                    Button { query = term } label: { label }
+                        .buttonStyle(TVCardButtonStyle())
+                        .focusEffectDisabled()
+                        .tvFocusRing(cornerRadius: DT.Radius.md)
+                }
+            } else if !hasTerm || (!search.isSearching && search.results.isEmpty) {
+                SearchEmptyState(query: hasTerm ? query : "", finds: "Find artists, albums and songs.")
             } else {
-                TVMusicSearchSection(results: search.results)
-                    .padding(.horizontal, 80)
-                    .padding(.vertical, 48)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: DT.Spacing.xl) {
+                        if search.isSearching, search.results.isEmpty {
+                            SearchingRow(text: "Searching your music…")
+                        }
+                        TVMusicSearchSection(results: search.results) { saveRecentSearch() }
+                    }
+                    .padding(.top, 12)
+                    .padding(.bottom, 32)
+                }
             }
         }
-        .screenBackground()
         .searchable(text: $query, prompt: "Artists, albums and songs")
+        .screenBackground()
         .onChange(of: query) { _, term in search.search(term) }
+    }
+
+    private func saveRecentSearch() {
+        guard saveSearchHistory else { return }
+        recentSearchesData = RecentSearches.adding(query, to: recentSearchesData)
     }
 }
 
 /// Music in search on Apple TV: rows of artists and albums, then songs.
 struct TVMusicSearchSection: View {
     let results: MusicSearchResults
+    /// Something in the results was chosen: for keeping the search in Recent.
+    var onOpen: () -> Void = {}
 
     var body: some View {
         VStack(alignment: .leading, spacing: 48) {
             if !results.artists.isEmpty {
-                row("Artists") {
+                row(String(localized: "Artists"), count: results.artists.count) {
                     ForEach(results.artists) { artist in
                         NavigationLink(value: MusicRoute.artist(artist, libraryID: nil)) {
                             TVMusicTile(url: MusicAPI.artworkURL(artist, width: 400), title: artist.name, isCircle: true)
@@ -1000,11 +1025,12 @@ struct TVMusicSearchSection: View {
                         }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
+                        .simultaneousGesture(TapGesture().onEnded { onOpen() })
                     }
                 }
             }
             if !results.albums.isEmpty {
-                row("Albums") {
+                row(String(localized: "Albums"), count: results.albums.count) {
                     ForEach(results.albums) { album in
                         NavigationLink(value: MusicRoute.album(album)) {
                             TVMusicTile(url: MusicAPI.artworkURL(album, width: 480), title: album.name, subtitle: album.albumArtist)
@@ -1012,15 +1038,19 @@ struct TVMusicSearchSection: View {
                         }
                         .buttonStyle(TVCardButtonStyle())
                         .focusEffectDisabled()
+                        .simultaneousGesture(TapGesture().onEnded { onOpen() })
                     }
                 }
             }
             if !results.songs.isEmpty {
-                VStack(alignment: .leading, spacing: 16) {
-                    Text("Songs").font(.title3.weight(.semibold)).padding(.horizontal, DT.Spacing.pagePad)
+                VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+                    SearchSectionHeader(title: String(localized: "Songs"), count: results.songs.count)
                     VStack(spacing: 4) {
                         ForEach(Array(results.songs.prefix(8).enumerated()), id: \.element.id) { index, song in
-                            TVMusicSongRow(song: song, showsArtwork: true) { TVMusicPresenter.shared.play(results.songs, from: index) }
+                            TVMusicSongRow(song: song, showsArtwork: true) {
+                                onOpen()
+                                TVMusicPresenter.shared.play(results.songs, from: index)
+                            }
                         }
                     }
                     .padding(.horizontal, DT.Spacing.pagePad)
@@ -1030,14 +1060,16 @@ struct TVMusicSearchSection: View {
         }
     }
 
-    private func row<Content: View>(_ title: LocalizedStringKey, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(title).font(.title3.weight(.semibold)).padding(.horizontal, DT.Spacing.pagePad)
+    private func row<Content: View>(_ title: String, count: Int, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: DT.Spacing.sm) {
+            SearchSectionHeader(title: title, count: count)
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: 40) { content() }
                     .padding(.horizontal, DT.Spacing.pagePad)
-                    .padding(.vertical, 24)
+                    .padding(.vertical, 30)
             }
+            // A focused tile grows and glows past the row; clipped, its glow ended in a hard box.
+            .scrollClipDisabled()
         }
         .focusSection()
     }

@@ -57,6 +57,8 @@ struct SearchEmptyState: View {
     let query: String
     var failed = false
     var retry: () -> Void = {}
+    /// What there is to find, under "Search" before anything's typed.
+    var finds: LocalizedStringKey = "Find movies, shows, and more."
 
     var body: some View {
         if failed, !query.isEmpty {
@@ -71,7 +73,7 @@ struct SearchEmptyState: View {
             ContentUnavailableView(
                 "Search",
                 systemImage: "magnifyingglass",
-                description: Text("Find movies, shows, and more.")
+                description: Text(finds)
             )
         } else {
             ContentUnavailableView.search(text: query)
