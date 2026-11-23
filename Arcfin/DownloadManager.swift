@@ -2372,10 +2372,12 @@ final class DownloadManager: NSObject {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for (index, range) in ranges.enumerated() {
                     group.addTask { @MainActor in
-                        try await self.downloadPart(url: url, authHeader: authHeader, range: range, to: partURLs[index], itemId: itemId)
+                        try await self.downloadPart(url: url, authHeader: authHeader, range: range, to: partURLs[index], itemId: itemId, run: run)
                     }
                 }
-                try await group.waitForAll()
+                // Not waitForAll, which waits out every range before rethrowing: the first
+                // failure leaves the group, and that cancels the other ranges' transfers.
+                while try await group.next() != nil {}
             }
         } catch {
             transfers(for: itemId).forEach { $0.cancel() }
@@ -2394,19 +2396,57 @@ final class DownloadManager: NSObject {
         return true
     }
 
-    private func downloadPart(url: URL, authHeader: String, range: ClosedRange<Int64>, to partURL: URL, itemId: String) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            var req = URLRequest(url: url)
-            for (name, value) in CustomHTTPHeaders.headers(for: req.url) { req.setValue(value, forHTTPHeaderField: name) }
-            req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-            req.setValue("bytes=\(range.lowerBound)-\(range.upperBound)", forHTTPHeaderField: "Range")
-            req.timeoutInterval = 60 * 60
-            let task = session.downloadTask(with: req)
-            task.taskDescription = partURL.path
-            taskItemIds[task.taskIdentifier] = itemId
-            partTasks[itemId, default: []].append(task)
-            continuations[task.taskIdentifier] = continuation
-            task.resume()
+    /// One range, tried again a few times when the connection drops: a dropped range would
+    /// otherwise fail the whole title, with nothing to resume it from.
+    private func downloadPart(url: URL, authHeader: String, range: ClosedRange<Int64>, to partURL: URL, itemId: String, run: UUID) async throws {
+        var attempt = 0
+        while true {
+            do {
+                return try await transferPart(url: url, authHeader: authHeader, range: range, to: partURL, itemId: itemId)
+            } catch {
+                attempt += 1
+                try checkStillWanted(itemId, run: run)
+                guard !Task.isCancelled, Self.retriesPart(after: error, attempt: attempt) else { throw error }
+                try await Task.sleep(for: .seconds(Double(attempt) * 2))
+                try checkStillWanted(itemId, run: run)
+            }
+        }
+    }
+
+    /// Whether a range that failed this way, `attempt` times so far, is worth another go: only
+    /// a dropped or failed connection, never a cancel, a refusal or an error page.
+    nonisolated static func retriesPart(after error: Error, attempt: Int) -> Bool {
+        guard attempt < 3, let code = (error as? URLError)?.code else { return false }
+        return code != .cancelled && code != .badServerResponse && code != .userAuthenticationRequired
+    }
+
+    private func transferPart(url: URL, authHeader: String, range: ClosedRange<Int64>, to partURL: URL, itemId: String) async throws {
+        try Task.checkCancellation()
+        var req = URLRequest(url: url)
+        for (name, value) in CustomHTTPHeaders.headers(for: req.url) { req.setValue(value, forHTTPHeaderField: name) }
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("bytes=\(range.lowerBound)-\(range.upperBound)", forHTTPHeaderField: "Range")
+        req.timeoutInterval = 60 * 60
+        let task = session.downloadTask(with: req)
+        task.taskDescription = partURL.path
+        taskItemIds[task.taskIdentifier] = itemId
+        partTasks[itemId, default: []].append(task)
+        do {
+            // A continuation ignores cancellation: without this, a failed range waited for the
+            // others to download in full before the title failed.
+            try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    continuations[task.taskIdentifier] = continuation
+                    task.resume()
+                }
+            } onCancel: {
+                task.cancel()
+            }
+        } catch {
+            // A retry starts a new transfer; this one's bytes no longer count toward progress.
+            partTasks[itemId]?.removeAll { $0 === task }
+            partBytes[task.taskIdentifier] = nil
+            throw error
         }
     }
 
