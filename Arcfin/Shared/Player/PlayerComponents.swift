@@ -629,7 +629,7 @@ struct TrackSelectionSheet: View {
                     if let dialogueBoost {
                         Toggle(isOn: dialogueBoost) {
                             Label("Dialogue Boost", systemImage: "waveform.badge.plus")
-                                .labelStyle(ToggleRowLabelStyle(spacesIcon: followsFocus))
+                                .labelStyle(ToggleRowLabelStyle())
                                 .foregroundStyle(DT.Color.textPrimary)
                         }
                         .tint(DT.Color.accent)
@@ -638,7 +638,7 @@ struct TrackSelectionSheet: View {
                     if let raiseQuietAudio {
                         Toggle(isOn: raiseQuietAudio) {
                             Label("Raise Quiet Audio", systemImage: "speaker.wave.3")
-                                .labelStyle(ToggleRowLabelStyle(spacesIcon: followsFocus))
+                                .labelStyle(ToggleRowLabelStyle())
                                 .foregroundStyle(DT.Color.textPrimary)
                         }
                         .tint(DT.Color.accent)
@@ -656,7 +656,7 @@ struct TrackSelectionSheet: View {
                 Section {
                     Toggle(isOn: lineArt) {
                         Label("Animation Upscaling", systemImage: "sparkles.tv")
-                            .labelStyle(ToggleRowLabelStyle(spacesIcon: followsFocus))
+                            .labelStyle(ToggleRowLabelStyle())
                             .foregroundStyle(DT.Color.textPrimary)
                     }
                     .tint(DT.Color.accent)
@@ -711,21 +711,16 @@ struct TrackSelectionSheet: View {
     }
 }
 
-/// On Apple TV, a toggle row's icon and title side by side: the default style drew the wider
-/// symbols over the start of the title.
+/// A toggle row's icon and title side by side, with room between them: the default style
+/// drew the wider symbols over the start of the title.
 struct ToggleRowLabelStyle: LabelStyle {
-    let spacesIcon: Bool
+    @ScaledMetric(relativeTo: .body) private var iconWidth: CGFloat = 28
 
-    @ViewBuilder
     func makeBody(configuration: Configuration) -> some View {
-        if spacesIcon {
-            HStack(spacing: 20) {
-                configuration.icon
-                    .frame(minWidth: 44)
-                configuration.title
-            }
-        } else {
-            Label(configuration)
+        HStack(spacing: iconWidth / 2) {
+            configuration.icon
+                .frame(minWidth: iconWidth)
+            configuration.title
         }
     }
 }
