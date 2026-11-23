@@ -337,12 +337,8 @@ struct PlayerView: View {
                 lineArt: model.supportsLineArt
                     ? Binding(get: { model.upscalesLineArt }, set: { model.setLineArt($0) }) : nil
             )
-            .navigationTitle("Subtitles & Audio")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { showTrackMenu = false }
-                }
-            }
+            // The sheet's left column has the title; Menu closes it, as in the other player sheets.
+            .sheetTitle("Audio & Subtitles")
         }
         // presentationDetents is an iPhone/iPad card-sheet concept sized for a portrait
         // screen — tvOS has no drag-to-dismiss and forcing .medium onto its differently
