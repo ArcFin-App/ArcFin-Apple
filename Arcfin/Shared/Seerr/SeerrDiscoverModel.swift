@@ -15,6 +15,7 @@ final class SeerrDiscoverModel {
     private(set) var searchResults: [SeerrItem] = []
     private(set) var isSearching = false
     private var searchTask: Task<Void, Never>?
+    private var genreTask: Task<Void, Never>?
     /// Popular titles first made in this device's language, when it isn't English.
     private(set) var languageItems: [SeerrItem] = []
     /// Popular on each service picked in Popular Elsewhere, in that order.
@@ -150,16 +151,23 @@ final class SeerrDiscoverModel {
 
     /// A new choice of movies or series starts again from All.
     func mediaTypeChanged() {
+        genreTask?.cancel()
+        isLoadingGenre = false
         selectedGenre = nil
         genreResults = []
     }
 
+    /// A response for a genre or media type no longer picked never replaces the current one's.
     func loadGenreResults(_ genre: SeerrGenre?, seerrRepo: SeerrRepository) {
-        guard let genre else { genreResults = []; return }
-        isLoadingGenre = true
+        genreTask?.cancel()
         genreResults = []
-        Task {
-            genreResults = await seerrRepo.discoverByGenre(genre.id, mediaType: mediaType)
+        guard let genre else { isLoadingGenre = false; return }
+        isLoadingGenre = true
+        let type = mediaType
+        genreTask = Task {
+            let results = await seerrRepo.discoverByGenre(genre.id, mediaType: type)
+            guard !Task.isCancelled, selectedGenre?.id == genre.id, mediaType == type else { return }
+            genreResults = results
             isLoadingGenre = false
         }
     }
