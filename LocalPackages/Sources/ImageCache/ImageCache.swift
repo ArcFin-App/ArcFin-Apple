@@ -75,7 +75,8 @@ public enum ImageCache: Sendable {
     }
 
     /// Loads through the shared pipeline: memory cache, then disk cache, then network, with
-    /// decoding off the main thread and duplicate in-flight requests coalesced.
+    /// decoding off the main thread and duplicate in-flight requests coalesced. The only place
+    /// a failed image is tried again, at most once: two requests at most, one for a 4xx.
     public static func load(_ url: URL) async throws -> PlatformImage {
         let pipeline = shared
         if !pipeline.cache.containsCachedImage(for: ImageRequest(url: url)) {
@@ -84,13 +85,48 @@ public enum ImageCache: Sendable {
         do {
             return try await shared.image(for: url)
         } catch {
-            // Jellyfin's resize cache can answer one size of an image with an empty 200
-            // forever; the original size still loads.
-            guard !Task.isCancelled, let original = JellyfinMediaClient.unresizedImageURL(url) else { throw error }
-            let image = try await shared.image(for: original)
-            shared.cache[ImageRequest(url: url)] = ImageContainer(image: image)
-            return image
+            guard !Task.isCancelled else { throw error }
+            switch retry(after: error) {
+            case .giveUp:
+                throw error
+            case .sameURL:
+                try await Task.sleep(for: .seconds(1))
+                return try await shared.image(for: url)
+            case .originalSize:
+                // Jellyfin's resize cache can answer one size of an image with an empty 200
+                // forever; the original size still loads.
+                guard let original = JellyfinMediaClient.unresizedImageURL(url) else { throw error }
+                let image = try await shared.image(for: original)
+                shared.cache[ImageRequest(url: url)] = ImageContainer(image: image)
+                return image
+            }
         }
+    }
+
+    /// What to do after a failed image load.
+    public enum Retry: Sendable, Equatable {
+        /// The server answered that there's no image (a title with no logo), or the load was
+        /// cancelled: trying again can't help.
+        case giveUp
+        /// The connection failed: the same image a moment later can work.
+        case sameURL
+        /// Anything else, an empty or broken image or a server error: the unresized original.
+        case originalSize
+    }
+
+    public static func retry(after error: Error) -> Retry {
+        if error is CancellationError || (error as? URLError)?.code == .cancelled { return .giveUp }
+        var statusCode: Int?
+        if case ImagePipeline.Error.dataLoadingFailed(let inner) = error,
+           case DataLoader.Error.statusCodeUnacceptable(let code)? = inner as? DataLoader.Error {
+            statusCode = code
+        }
+        return retry(statusCode: statusCode, isConnectivityError: isConnectivityError(error))
+    }
+
+    public static func retry(statusCode: Int?, isConnectivityError: Bool) -> Retry {
+        if let statusCode, (400..<500).contains(statusCode) { return .giveUp }
+        return isConnectivityError ? .sameURL : .originalSize
     }
 
     /// The connection failed (as opposed to the server answering with an error, such as a
