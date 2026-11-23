@@ -9098,6 +9098,70 @@
         }
       }
     },
+    "Seerr couldn't start a Quick Connect sign-in. Check that Seerr can reach your Jellyfin server, or enter your password instead." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr konnte keine Anmeldung mit Quick Connect starten. Prüfe, ob Seerr deinen Jellyfin-Server erreicht, oder gib stattdessen dein Passwort ein."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr no pudo iniciar un inicio de sesión con Quick Connect. Comprueba que Seerr pueda acceder a tu servidor Jellyfin o introduce tu contraseña."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr n’a pas pu lancer une connexion Quick Connect. Vérifiez que Seerr peut joindre votre serveur Jellyfin, ou saisissez plutôt votre mot de passe."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr non è riuscito ad avviare un accesso con Quick Connect. Controlla che Seerr raggiunga il tuo server Jellyfin, oppure inserisci la password."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "SeerrはQuick Connectでのサインインを開始できませんでした。SeerrがJellyfinサーバに接続できるか確認するか、代わりにパスワードを入力してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr에서 Quick Connect 로그인을 시작하지 못했습니다. Seerr가 Jellyfin 서버에 연결할 수 있는지 확인하거나 대신 암호를 입력하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr kon geen aanmelding met Quick Connect starten. Controleer of Seerr je Jellyfin-server kan bereiken, of voer in plaats daarvan je wachtwoord in."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Seerr não conseguiu iniciar um login com o Quick Connect. Verifique se o Seerr consegue acessar seu servidor Jellyfin ou digite sua senha."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr не удалось начать вход через Quick Connect. Проверьте, что Seerr может подключиться к вашему серверу Jellyfin, или введите пароль."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr 无法开始 Quick Connect 登录。请检查 Seerr 能否连接到你的 Jellyfin 服务器，或改为输入密码。"
+          }
+        }
+      }
+    },
     "Seerr Server URL" : {
       "extractionState" : "manual",
       "localizations" : {

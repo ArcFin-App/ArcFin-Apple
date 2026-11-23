@@ -77,8 +77,9 @@ final class SeerrRepository {
         resetRetry()
     }
 
-    /// After Seerr won't sign in, or a load from Seerr or TMDB fails, tries again by itself:
-    /// 15 s, 30 s, 1, 2 and 5 min, then every 10 min. One wait at a time.
+    /// After a load from Seerr or TMDB fails, tries again by itself: 15 s, 30 s, 1, 2 and 5 min,
+    /// then every 10 min. One wait at a time. A sign-in Seerr refused isn't retried: it waits
+    /// for Try Again, new details, a profile switch or the next launch (#684).
     private func scheduleRetry() {
         guard retryTask == nil, hasCatalog else { return }
         let delay = Self.retryDelays[min(retryAttempt, Self.retryDelays.count - 1)]
@@ -210,7 +211,7 @@ final class SeerrRepository {
         for error in errors {
             Telemetry.logger(category: "SeerrRepository").error("loadDiscover failed: \(error, privacy: .public)")
         }
-        if errors.isEmpty { resetRetry() } else { scheduleRetry() }
+        if errors.isEmpty { resetRetry() } else if !authFailed { scheduleRetry() }
         if firstLoad { isLoadingDiscover = false }
     }
 
@@ -259,7 +260,6 @@ final class SeerrRepository {
         } catch let error as SeerrError where error.isSignInFailure {
             authFailed = true
             Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
-            scheduleRetry()
             return
         } catch {
             Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
@@ -329,7 +329,6 @@ final class SeerrRepository {
             indexForSpotlight()
         } catch let error as SeerrError where error.isSignInFailure {
             authFailed = true
-            scheduleRetry()
         } catch where Self.isCancellation(error) {
         } catch {
             let nsError = error as NSError
