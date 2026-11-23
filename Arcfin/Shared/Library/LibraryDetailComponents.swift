@@ -95,6 +95,19 @@ struct PlaylistEmptyState: View {
 
 /// A library grid with nothing in it: a load that failed (with Try Again), filters that match
 /// nothing (with Clear Filters), or a library that really is empty.
+/// The search field over a library's grid. Typing refetches like a filter change.
+struct LibrarySearchModifier: ViewModifier {
+    @Bindable var model: LibraryDetailModel
+    let authManager: AuthManager
+    let mediaRepo: MediaRepository
+
+    func body(content: Content) -> some View {
+        content
+            .searchable(text: $model.searchText, prompt: Text(model.searchPrompt))
+            .onChange(of: model.searchText) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+    }
+}
+
 struct LibraryEmptyResults: View {
     let model: LibraryDetailModel
     let retry: () -> Void
@@ -108,6 +121,8 @@ struct LibraryEmptyResults: View {
             } actions: {
                 Button("Try Again", action: retry)
             }
+        } else if model.isSearching {
+            ContentUnavailableView.search(text: model.searchText)
         } else if model.filtersActive {
             ContentUnavailableView {
                 Label("Nothing Found", systemImage: "line.3.horizontal.decrease.circle")

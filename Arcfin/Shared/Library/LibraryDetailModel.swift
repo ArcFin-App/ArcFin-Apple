@@ -120,10 +120,28 @@ final class LibraryDetailModel {
         favoritesOnly = false
     }
 
+    /// The search field above the grid; the server matches it against the titles' names.
+    var searchText = ""
+    private var searchTerm: String? {
+        let term = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return term.isEmpty ? nil : term
+    }
+    var isSearching: Bool { searchTerm != nil }
+    var searchPrompt: LocalizedStringResource {
+        if playlist != nil { return "Search This Playlist" }
+        switch library.collectionType {
+        case .movies:    return "Search Movies"
+        case .tvshows:   return "Search Shows"
+        case .boxsets:   return "Search Collections"
+        case .playlists: return "Search Playlists"
+        default:         return "Search This Library"
+        }
+    }
+
     private var matchesAllGenres: Bool { extraFilters.matchAllGenres && selectedGenres.count > 1 }
     private var hasMore: Bool { serverOffset < totalItems }
     var showsLetterIndex: Bool {
-        sortOption == .nameAsc && playlist == nil && !matchesAllGenres && totalItems >= 50
+        sortOption == .nameAsc && playlist == nil && !matchesAllGenres && !isSearching && totalItems >= 50
     }
     var isCollections: Bool { library.collectionType == .boxsets }
 
@@ -367,7 +385,7 @@ final class LibraryDetailModel {
            let entries = try? await client.getPlaylistEntries(credential: cred, authHeader: header, playlistId: playlist.id) {
             entryIds = Dictionary(entries.map { ($0.item.id, $0.entryId) }, uniquingKeysWith: { first, _ in first })
             // Playlist order with no filters is the playlist itself, as it was put together.
-            if sortOption == .playlistOrder, !filtersActive {
+            if sortOption == .playlistOrder, !filtersActive, !isSearching {
                 guard generation == fetchGeneration else { return }
                 loadFailed = false
                 items = entries.map(\.item)
@@ -425,6 +443,7 @@ final class LibraryDetailModel {
                 isPlayed: watchedFilter == .all ? nil : watchedFilter == .watched,
                 isFavorite: favoritesOnly ? true : nil,
                 nameLessThan: nameLessThan,
+                searchTerm: searchTerm,
                 sortBy: sortBy ?? sortOption.sortBy, sortOrder: sortOrder ?? sortOption.sortOrder
             )
             total = page.total

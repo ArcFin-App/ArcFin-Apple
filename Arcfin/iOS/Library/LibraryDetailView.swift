@@ -44,13 +44,13 @@ struct LibraryDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .screenBackground()
-            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive, !model.loadFailed {
+            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive, !model.isSearching, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "Empty Playlist",
                     description: "Add movies, shows and episodes, or long-press any title and choose Add to Playlist.",
                     buttonTitle: "Add Titles"
                 ) { model.showAddTitles = true }
-            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive, !model.loadFailed {
+            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive, !model.isSearching, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "No Playlists",
                     description: "Make a playlist, then add movies, shows and episodes to it.",
@@ -150,6 +150,7 @@ struct LibraryDetailView: View {
         .onChange(of: model.extraFilters) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
         .onChange(of: model.watchedFilter) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
         .onChange(of: model.favoritesOnly) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .modifier(LibrarySearchModifier(model: model, authManager: authManager, mediaRepo: mediaRepo))
         .quickPlayback($quickPlayRequest, trailer: $trailerLaunchItem)
         .fullScreenCover(item: $model.playlistPlayback, onDismiss: {
             PlayQueue.clear()
