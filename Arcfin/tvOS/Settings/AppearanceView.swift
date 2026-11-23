@@ -6,6 +6,7 @@ struct AppearanceView: View {
     @AppStorage("mergeContinueWatchingAndUpNext") private var mergeContinueWatchingAndUpNext = false
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
     @AppStorage("heroTrailerSound") private var heroTrailerSound = false
+    @AppStorage("topShelfTrailers") private var topShelfTrailers = true
     @AppStorage("modernHome") private var modernHome = false
     @AppStorage("libraryScreensaverEnabled") private var screensaverEnabled = true
     @AppStorage("libraryScreensaverMinutes") private var screensaverMinutes = 3
@@ -36,6 +37,11 @@ struct AppearanceView: View {
                 .tvListRow()
                 .disabled(!heroVideoBackdropsEnabled)
                 .syncLocked("heroTrailerSound", authManager)
+                Toggle(isOn: $topShelfTrailers) {
+                    TVRowLabelText(title: "Top Shelf Trailers", detail: "Plays a title's trailer in the Top Shelf when you rest on it there, if the server has one. Apple TV decides when it has sound.")
+                }
+                .tvListRow()
+                .syncLocked("topShelfTrailers", authManager)
                 NavigationLink {
                     HomeShelfSettingsView().tvSettingsPage()
                 } label: {

@@ -26211,6 +26211,70 @@
         }
       }
     },
+    "Top Shelf Trailers" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trailer im Top Shelf"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tráileres en la fila superior"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bandes-annonces dans le Top Shelf"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trailer nella Top Shelf"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "トップシェルフの予告編"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "상단 선반 예고편"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trailers in de bovenste rij"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Trailers na Estante Superior"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Трейлеры на верхней полке"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "顶部栏预告片"
+          }
+        }
+      }
+    },
     "Top show" : {
       "localizations" : {
         "de" : {
@@ -110059,6 +110123,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "当服务器有预告片时，在精选作品背后静音播放。"
+          }
+        }
+      }
+    },
+    "Plays a title's trailer in the Top Shelf when you rest on it there, if the server has one. Apple TV decides when it has sound." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Spielt den Trailer eines Titels im Top Shelf ab, wenn du dort darauf verweilst und der Server einen hat. Apple TV entscheidet, wann er Ton hat."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduce el tráiler de un título en la fila superior cuando te detienes en él, si el servidor tiene uno. El Apple TV decide cuándo tiene sonido."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lit la bande-annonce d’un titre dans le Top Shelf quand vous vous y arrêtez, si le serveur en a une. L’Apple TV décide quand elle a du son."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riproduce il trailer di un titolo nella Top Shelf quando ti soffermi su di esso, se il server ne ha uno. È Apple TV a decidere quando ha l’audio."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "トップシェルフでタイトルにとどまると、サーバに予告編があれば再生します。音声を出すタイミングはApple TVが決めます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "상단 선반에서 항목에 머무르면 서버에 예고편이 있을 경우 재생합니다. 소리가 나는 시점은 Apple TV가 결정합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Speelt de trailer van een titel in de bovenste rij af als je er blijft staan en de server er een heeft. Apple TV bepaalt wanneer er geluid bij is."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Reproduz o trailer de um título na Estante Superior quando você para nele, se o servidor tiver um. A Apple TV decide quando ele tem som."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Воспроизводит трейлер на верхней полке, когда вы задерживаетесь на нём, если он есть на сервере. Когда включать звук, решает Apple TV."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在顶部栏停留在某个项目上时，如果服务器有预告片就会播放。何时有声音由 Apple TV 决定。"
           }
         }
       }

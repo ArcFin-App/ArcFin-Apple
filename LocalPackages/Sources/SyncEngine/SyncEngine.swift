@@ -406,6 +406,7 @@ public enum SettingsSyncRegistry {
         .init("subtitleReachEarlier", .int),
         .init("heroVideoBackdropsEnabled", .bool),
         .init("heroTrailerSound", .bool),
+        .init("topShelfTrailers", .bool),
         .init("modernHome", .bool),
         .init("shuffleHomeShelves", .bool),
         .init("spoilerProtection", .bool),

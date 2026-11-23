@@ -92,7 +92,8 @@ final class HomeModel {
                     .compactMap { $0 }.joined(separator: " · "),
                 logoURL: mediaRepo.logoURL(itemID: item.type == .episode ? item.seriesId ?? item.id : item.id, fillWidth: 800),
                 ratingTitle: String(localized: "Rating"),
-                ratingValue: item.communityRating.flatMap { $0 > 0 ? "★ \($0.ratingText)" : nil }
+                ratingValue: item.communityRating.flatMap { $0 > 0 ? "★ \($0.ratingText)" : nil },
+                trailerItemID: item.type == .episode ? item.seriesId : item.id
             )
         }
         let resumeContext = String(localized: "Continue Watching")
@@ -264,17 +265,21 @@ final class HomeModel {
     /// hand-building a stream URL, since it already handles direct-play vs transcode
     /// negotiation correctly. Nil when there's none or the task was cancelled.
     static func heroTrailerURL(for item: MediaItem, credential: ServerCredential, authHeader: String) async -> URL? {
+        await trailerURL(itemID: item.id, credential: credential, authHeader: authHeader)
+    }
+
+    static func trailerURL(itemID: String, credential: ServerCredential, authHeader: String) async -> URL? {
         let log = Telemetry.logger(category: "HeroVideoBackdrop")
         let client = JellyfinMediaClient()
         let trailer: MediaItem?
         do {
-            trailer = try await client.getTrailers(credential: credential, authHeader: authHeader, itemId: item.id, limit: 1).first
+            trailer = try await client.getTrailers(credential: credential, authHeader: authHeader, itemId: itemID, limit: 1).first
         } catch {
-            log.error("getTrailers failed for \(item.id, privacy: .public): \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
+            log.error("getTrailers failed for \(itemID, privacy: .public): \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             return nil
         }
         guard let trailer, !Task.isCancelled else {
-            log.debug("no local trailer indexed for \(item.id, privacy: .public)")
+            log.debug("no local trailer indexed for \(itemID, privacy: .public)")
             return nil
         }
         let info: JellyfinPlaybackInfo

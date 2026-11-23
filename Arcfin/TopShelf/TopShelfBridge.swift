@@ -24,12 +24,14 @@ public struct TopShelfMediaItem: Codable, Sendable {
     public let ratingValue: String?
     public var artworkFileName: String? // image with the logo and progress bar drawn in
     public var artworkHasLogo: Bool?
+    public let trailerItemID: String?   // the movie or show whose server trailer the shelf plays
+    public var previewVideoURL: URL?
 
     public init(
         id: String, title: String, subtitle: String?, imageURL: URL?, progress: Double,
         summary: String? = nil, genre: String? = nil, duration: TimeInterval? = nil,
         year: Int? = nil, backdropURL: URL? = nil, contextTitle: String? = nil,
-        logoURL: URL? = nil, ratingTitle: String? = nil, ratingValue: String? = nil
+        logoURL: URL? = nil, ratingTitle: String? = nil, ratingValue: String? = nil, trailerItemID: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -45,6 +47,7 @@ public struct TopShelfMediaItem: Codable, Sendable {
         self.logoURL = logoURL
         self.ratingTitle = ratingTitle
         self.ratingValue = ratingValue
+        self.trailerItemID = trailerItemID
     }
 }
 

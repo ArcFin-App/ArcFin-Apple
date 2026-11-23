@@ -31,6 +31,7 @@ class ContentProvider: TVTopShelfContentProvider {
             ci.setImageURL(url, for: .screenScale1x)
             ci.setImageURL(url, for: .screenScale2x)
         }
+        ci.previewVideoURL = item.previewVideoURL
         let deepLink = TopShelfBridge.playURL(for: item.id)
         ci.playAction    = TVTopShelfAction(url: deepLink)
         ci.displayAction = TVTopShelfAction(url: deepLink)

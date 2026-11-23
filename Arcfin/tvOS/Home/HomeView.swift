@@ -36,6 +36,7 @@ struct HomeView: View {
     @State private var heroVideoBackdropTask: Task<Void, Never>?
     @AppStorage("heroVideoBackdropsEnabled") private var heroVideoBackdropsEnabled = true
     @AppStorage("heroTrailerSound") private var heroTrailerSound = false
+    @AppStorage("topShelfTrailers") private var topShelfTrailers = true
     @State private var isHomeShowing = false
     @State private var homePath = NavigationPath()
     @State private var isHeroScrolledAway = false
@@ -181,7 +182,7 @@ struct HomeView: View {
                 await model.liveTV.load(.liveFavoriteChannels, authManager: authManager)
             }
             model.saveTopShelf(mediaRepo: mediaRepo, title: topShelfTitle, subtitle: itemSubtitle)
-            await TopShelfArtwork.refresh()
+            await TopShelfArtwork.refresh(trailer: topShelfTrailer)
         }
         // The hero already shows the first Continue Watching item until something's focused.
         // Assigning focus to it here pulled the page down to that row once Home loaded.
@@ -1076,8 +1077,15 @@ struct HomeView: View {
 
     // Changes when the shelf's items or their progress do, so it follows what was just watched.
     private var topShelfSignature: [String] {
-        (mediaRepo.continueWatching.prefix(5) + mediaRepo.nextUp.prefix(3) + mediaRepo.recentlyAdded.prefix(3))
+        let items = (mediaRepo.continueWatching.prefix(5) + mediaRepo.nextUp.prefix(3) + mediaRepo.recentlyAdded.prefix(3))
             .map { "\($0.id)-\(Int($0.userData?.playedPercentage ?? 0))" }
+        return items.isEmpty ? [] : items + ["trailers-\(topShelfTrailers)"]
+    }
+
+    private var topShelfTrailer: ((String) async -> URL?)? {
+        guard topShelfTrailers, case .authenticated(let credential) = authManager.state else { return nil }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        return { await HomeModel.trailerURL(itemID: $0, credential: credential, authHeader: authHeader) }
     }
 
     // Top Shelf title includes S/E so users see context without needing a subtitle row
