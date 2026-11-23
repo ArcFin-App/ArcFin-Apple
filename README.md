@@ -129,6 +129,7 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 - **Siri and Shortcuts:** play a title, play a random movie, download the next episode of a show, open Discover.
 - **Widgets** for Continue Watching and Recently Added, Control Center controls, Spotlight, Handoff, and notifications for new episodes with Quiet Hours.
 - **Apple TV:** Top Shelf with trailers from the server, Spotlight Home with the title you're on full screen and its trailer, Always Ask Who's Watching, and a library screensaver made from your artwork.
+- **CarPlay:** your music in the car, laid out like the system's music app, with Home, New, Radio and Library, rows of covers, A–Z artists and album pages. Search has its own tab, with voice search and quick buttons, and Now Playing shows whether Shuffle and Repeat are on. It starts signed in from the car, keeps your profile's PIN, and has a widget on the CarPlay dashboard.
 - **Apple Watch:** your music on the watch, with playlists kept on it to play without the phone, and a remote for Arcfin playing on another device, with the Digital Crown for volume.
 - **Mac:** every player control in the menu bar, with a keyboard shortcut.
 
