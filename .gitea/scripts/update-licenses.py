@@ -11,6 +11,10 @@ bump:
     python3 .gitea/scripts/update-licenses.py --check         fail if the file is missing a component,
                                                               lists one Arcfin no longer ships, or is out of date
 
+ARCFIN_LEGAL_SITE=http://localhost:8000 reads the legal pages from there instead of the live
+site, so a site branch that isn't deployed yet can be copied into the app in the same release.
+The stored links still point at the live site.
+
 --check is what CI runs. It needs only git, Python and the network, so it runs on Linux. A
 change on the website's legal pages is reported as a warning, since the website, not the app,
 holds their binding text.
@@ -25,6 +29,7 @@ The texts are never translated.
 
 import html
 import json
+import os
 import plistlib
 import re
 import subprocess
@@ -165,7 +170,8 @@ class ProseText(HTMLParser):
 
 def legal_page(path):
     """The page's text and its effective date, from the live site."""
-    req = urllib.request.Request(f"{SITE}/{path}/", headers={"User-Agent": "arcfin-licenses-script"})
+    base = os.environ.get("ARCFIN_LEGAL_SITE", SITE).rstrip("/")
+    req = urllib.request.Request(f"{base}/{path}/", headers={"User-Agent": "arcfin-licenses-script"})
     page = urllib.request.urlopen(req, timeout=30).read().decode("utf-8")
     parser = ProseText()
     parser.feed(page)
