@@ -258,11 +258,11 @@ final class SeerrRepository {
             return
         } catch let error as SeerrError where error.isSignInFailure {
             authFailed = true
-            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             scheduleRetry()
             return
         } catch {
-            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(error, privacy: .public)")
+            Telemetry.logger(category: "SeerrRepository").error("loadWatchlist failed: \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             scheduleRetry()
             return
         }

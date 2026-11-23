@@ -909,7 +909,7 @@ final class PlayerModel {
             return
         } catch {
             guard generation == setupGeneration else { return }
-            log.error("Couldn't start \(self.item.id, privacy: .public): \(error, privacy: .public)")
+            log.error("Couldn't start \(self.item.id, privacy: .public): \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
             if retryWithoutAV1() { return }
             errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
         }
@@ -2091,7 +2091,7 @@ final class PlayerModel {
                 // A load cut short by a newer reload or by closing isn't a failure to show.
                 guard reloadIsCurrent(generation), !(error is CancellationError),
                       (error as? URLError)?.code != .cancelled else { return }
-                log.error("Couldn't \(errorContext, privacy: .public): \(error, privacy: .public)")
+                log.error("Couldn't \(errorContext, privacy: .public): \(Telemetry.summary(error), privacy: .public) \(error, privacy: .private)")
                 errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
             }
         }
