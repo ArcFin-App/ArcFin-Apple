@@ -23,7 +23,8 @@ REPO = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 SCHEMA = os.path.join(REPO, "LocalPackages", "Sources", "SyncEngine", "Resources", "settings-schema.json")
 SOURCES = ["Arcfin", "LocalPackages/Sources", "ArcfinWidgets", "ArcfinTopShelf", "ArcfinWatch Watch App"]
 
-# Stored by the app but deliberately not in the schema.
+# Stored by the app but deliberately not in the schema: secrets, state and history, and what
+# would break another device. Every setting a screen lets someone choose is in the schema.
 EXCLUDED = {
     # Secrets and sign-in state
     "arcfin.deviceId": "this device's Jellyfin device id",
@@ -31,41 +32,17 @@ EXCLUDED = {
     "arcfin.activeProfileID": "which profile is signed in",
     "arcfin.keychainAfterFirstUnlock": "Keychain migration flag",
     "arcfin.seerrAccountOwner": "which profile the Seerr sign-in belongs to",
-    # Each profile's own, not synced (ProfileSettings.localKeys) and per-profile layout
-    "hiddenLibraryIDs": "ProfileSettings.localKeys",
-    "homeShelfOrder": "ProfileSettings.localKeys (layout)",
-    "homeShelfActive": "ProfileSettings.localKeys (layout)",
-    "homeShelfKnown": "ProfileSettings.localKeys (layout)",
-    "seerrRegionOverride": "ProfileSettings.localKeys",
-    "defaultExternalPlayer": "ProfileSettings.localKeys; the apps installed differ per device",
-    "defaultPlaybackSpeed": "ProfileSettings.localKeys",
-    "holdSpeedRate": "ProfileSettings.localKeys",
-    "lastPlaybackRate": "ProfileSettings.localKeys (state)",
-    "dialogueBoost": "ProfileSettings.localKeys",
-    "libraryGridDensity": "ProfileSettings.localKeys (layout)",
-    "libraryScreensaverEnabled": "ProfileSettings.localKeys",
-    "libraryScreensaverMinutes": "ProfileSettings.localKeys",
-    "statsPeriod": "ProfileSettings.localKeys (state)",
-    "collectionSort": "ProfileSettings.localKeys (layout)",
-    "collectionShowsGrid": "ProfileSettings.localKeys (layout)",
-    "music.songSort": "ProfileSettings.localKeys (layout)",
-    "music.albumSort": "ProfileSettings.localKeys (layout)",
-    "smartDownloadsIgnored": "ProfileSettings.localKeys (state)",
-    "smartDownloadsKeptShows": "ProfileSettings.localKeys (state)",
-    "arcfin.showTrackMemory": "ProfileSettings.localKeys (state)",
-    "recentSearches": "ProfileSettings.localKeys; private search history",
+    # State and history, not choices
+    "homeShelfKnown": "the shelves there were at the last save, to spot new ones (bookkeeping)",
+    "lastPlaybackRate": "the speed last used, not a choice (Remember Playback Speed reads it)",
+    "arcfin.showTrackMemory": "the tracks last picked in each show (history)",
+    "recentSearches": "private search history",
     "carplay.recentSearches": "private search history",
-    "bottomNavActive": "tab layout",
-    "bottomNavOrder": "tab layout",
-    "bottomNavProfile": "which profile the tab layout belongs to",
-    "launchTab": "tab layout",
-    "streamingServices": "Home's streaming service rows (layout)",
-    "music.libraryRowOrder": "layout",
-    "music.libraryRowsHidden": "layout",
+    "bottomNavProfile": "which profile the tab layout in place belongs to (bookkeeping)",
     "tvMusicNowPlayingPanel": "which panel is open (state)",
     # What this device is doing right now
-    "offlineModeEnabled": "says what this device is doing right now",
-    "AppleLanguages": "the system's per-app language",
+    "offlineModeEnabled": "what this device is doing right now; on another device it would cut it off from the server",
+    "AppleLanguages": "owned by the system (Settings › Arcfin › Language) and read only at launch",
     # Onboarding and prompts
     "arcfin.introduction.onboardingSeen": "onboarding",
     "arcfin.introduction.whatsNewSeen": "onboarding",

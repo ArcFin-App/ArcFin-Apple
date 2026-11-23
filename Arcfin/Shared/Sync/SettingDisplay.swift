@@ -19,7 +19,9 @@ enum SettingDisplay {
         switch setting.type {
         case .bool:
             return value == "true" ? String(localized: "On") : String(localized: "Off")
-        case .int, .string:
+        case .json:
+            return value
+        case .int, .string, .double:
             if let option = setting.optionTitle(for: value) { return localized(option) }
             return value.isEmpty ? String(localized: "None") : value
         }

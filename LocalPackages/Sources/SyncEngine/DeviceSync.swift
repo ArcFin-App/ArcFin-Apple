@@ -90,12 +90,7 @@ extension SettingsSyncEngine {
                                 defaults: UserDefaults = .standard) -> [String: String] {
         var values: [String: String] = [:]
         for setting in schema.settings where scope == nil || setting.scope == scope {
-            guard defaults.object(forKey: setting.key) != nil else { continue }
-            switch setting.type {
-            case .bool: values[setting.key] = defaults.bool(forKey: setting.key) ? "true" : "false"
-            case .int: values[setting.key] = String(defaults.integer(forKey: setting.key))
-            case .string: if let value = defaults.string(forKey: setting.key) { values[setting.key] = value }
-            }
+            if let value = setting.type.read(setting.key, from: defaults) { values[setting.key] = value }
         }
         return values
     }
@@ -104,12 +99,8 @@ extension SettingsSyncEngine {
     static func write(_ values: [String: String], clearing: Set<String> = [], schema: SettingsSchema,
                       defaults: UserDefaults) {
         for (key, value) in values {
-            guard let type = schema.setting(key)?.type else { continue }
-            switch type {
-            case .bool: defaults.set(value == "true", forKey: key)
-            case .int: if let number = Int(value) { defaults.set(number, forKey: key) }
-            case .string: defaults.set(value, forKey: key)
-            }
+            guard let stored = schema.setting(key)?.type.stored(value, key: key) else { continue }
+            defaults.set(stored, forKey: key)
         }
         for key in clearing where schema.setting(key) != nil { defaults.removeObject(forKey: key) }
     }

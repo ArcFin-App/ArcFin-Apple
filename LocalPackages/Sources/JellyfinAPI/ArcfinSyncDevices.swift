@@ -251,54 +251,6 @@ public struct ArcfinSyncAdminUser: Sendable, Decodable, Equatable, Identifiable 
     }
 }
 
-public struct ArcfinSyncAdminConfig: Sendable, Decodable, Equatable {
-    public var notificationsEnabled: Bool
-    public var seerrWebhookEnabled: Bool
-    public var seerrWebhookSecretSet: Bool
-    public var advancedYamlConfig: String
-
-    enum CodingKeys: String, CodingKey {
-        case notificationsEnabled = "NotificationsEnabled", seerrWebhookEnabled = "SeerrWebhookEnabled"
-        case seerrWebhookSecretSet = "SeerrWebhookSecretSet", advancedYamlConfig = "AdvancedYamlConfig"
-    }
-
-    public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        notificationsEnabled = try container.decodeIfPresent(Bool.self, forKey: .notificationsEnabled) ?? true
-        seerrWebhookEnabled = try container.decodeIfPresent(Bool.self, forKey: .seerrWebhookEnabled) ?? false
-        seerrWebhookSecretSet = try container.decodeIfPresent(Bool.self, forKey: .seerrWebhookSecretSet) ?? false
-        advancedYamlConfig = try container.decodeIfPresent(String.self, forKey: .advancedYamlConfig) ?? ""
-    }
-}
-
-/// PUT Admin/Config. The webhook secret is write-only: nil keeps the one the server has.
-public struct ArcfinSyncAdminConfigUpdate: Sendable, Encodable, Equatable {
-    public var notificationsEnabled: Bool
-    public var seerrWebhookEnabled: Bool
-    public var seerrWebhookSecret: String?
-    public var advancedYamlConfig: String
-
-    enum CodingKeys: String, CodingKey {
-        case notificationsEnabled = "NotificationsEnabled", seerrWebhookEnabled = "SeerrWebhookEnabled"
-        case seerrWebhookSecret = "SeerrWebhookSecret", advancedYamlConfig = "AdvancedYamlConfig"
-    }
-
-    public init(notificationsEnabled: Bool, seerrWebhookEnabled: Bool, seerrWebhookSecret: String?, advancedYamlConfig: String) {
-        self.notificationsEnabled = notificationsEnabled
-        self.seerrWebhookEnabled = seerrWebhookEnabled
-        self.seerrWebhookSecret = seerrWebhookSecret
-        self.advancedYamlConfig = advancedYamlConfig
-    }
-
-    public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
-        try container.encode(notificationsEnabled, forKey: .notificationsEnabled)
-        try container.encode(seerrWebhookEnabled, forKey: .seerrWebhookEnabled)
-        try container.encodeIfPresent(seerrWebhookSecret, forKey: .seerrWebhookSecret)
-        try container.encode(advancedYamlConfig, forKey: .advancedYamlConfig)
-    }
-}
-
 // MARK: - Plugin v2 endpoints
 
 private struct SyncBody: Encodable {
@@ -363,15 +315,6 @@ extension ArcfinSyncClient {
 
     public func fetchAdminUsers(credential: ServerCredential, authHeader: String) async throws -> [ArcfinSyncAdminUser] {
         try decode(await send("GET", "Admin/Users", credential: credential, authHeader: authHeader))
-    }
-
-    public func fetchAdminConfig(credential: ServerCredential, authHeader: String) async throws -> ArcfinSyncAdminConfig {
-        try decode(await send("GET", "Admin/Config", credential: credential, authHeader: authHeader))
-    }
-
-    public func updateAdminConfig(credential: ServerCredential, authHeader: String,
-                                  _ update: ArcfinSyncAdminConfigUpdate) async throws -> ArcfinSyncAdminConfig? {
-        try? decode(await send("PUT", "Admin/Config", body: update, credential: credential, authHeader: authHeader))
     }
 
     public func adminRenameDevice(credential: ServerCredential, authHeader: String, userID: String, deviceID: String,

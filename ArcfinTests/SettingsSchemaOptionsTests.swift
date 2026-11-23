@@ -4,6 +4,7 @@ import Foundation
 import Testing
 import MediaEngine
 import SeerrAPI
+import JellyfinAPI
 import SyncEngine
 @testable import Arcfin
 
@@ -31,6 +32,12 @@ struct SettingsSchemaOptionsTests {
         #expect(values("playbackEngine") == PlaybackEngineKind.allCases.map(\.rawValue))
         #expect(values("seerrAuthMethod") == SeerrAuthMethod.allCases.map(\.rawValue))
         #expect(values("settingsSyncMode") == SettingsSyncMode.allCases.map(\.rawValue))
+        #expect(values("libraryGridDensity") == LibraryGridDensity.allCases.map(\.rawValue))
+        #expect(values("collectionSort") == CollectionSort.allCases.map(\.rawValue))
+        #expect(values("statsPeriod") == StatsPeriod.allCases.map(\.rawValue))
+        #expect(values("music.songSort") == MusicSort.allCases.map(\.rawValue))
+        #expect(values("music.albumSort") == MusicSort.allCases.map(\.rawValue))
+        #expect(values("launchTab") == BottomNavItem.allCases.map(\.rawValue))
     }
 
     @Test func numberPickersMatchTheirLists() {
@@ -41,5 +48,6 @@ struct SettingsSchemaOptionsTests {
         #expect(values("musicStorageLimitGB") == MusicSettings.storageLimitOptions.map(String.init))
         #expect(values("subtitleReachLater") == PlayerModel.subtitleReachOptions.map(String.init))
         #expect(values("subtitleReachEarlier") == PlayerModel.subtitleReachOptions.map(String.init))
+        #expect(values("holdSpeedRate") == PlayerModel.holdSpeedOptions.map { String(Double($0)) })
     }
 }

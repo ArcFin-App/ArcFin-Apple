@@ -27,6 +27,8 @@ public struct SettingsSchema: Sendable, Decodable, Equatable {
         public let group: String
         public let title: String
         public let detail: String?
+        /// For a string or JSON setting: "csv" (a comma-separated list) or "json".
+        public let format: String?
         public let `default`: String?
         public let options: [Option]?
         public let min: Int?

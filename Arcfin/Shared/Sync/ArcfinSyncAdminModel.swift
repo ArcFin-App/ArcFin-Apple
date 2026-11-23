@@ -11,15 +11,14 @@ enum PolicyLockChoice: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
-/// Arcfin for Everyone: the administrator's defaults and locks, everyone's devices, and the
-/// plugin's own settings, all on the server's Arcfin Sync.
+/// Arcfin for Everyone: the administrator's defaults and locks, and everyone's devices, all on
+/// the server's Arcfin Sync.
 @MainActor @Observable
 final class ArcfinSyncAdminModel {
     private(set) var schema = SettingsSchema.bundled
     var policy = ArcfinSyncPolicy()
     private(set) var savedPolicy = ArcfinSyncPolicy()
     private(set) var users: [ArcfinSyncAdminUser] = []
-    private(set) var config: ArcfinSyncAdminConfig?
     private(set) var isLoading = true
     private(set) var errorMessage: String?
     private(set) var isSaving = false
@@ -47,7 +46,6 @@ final class ArcfinSyncAdminModel {
         }
         async let policy = client.fetchPolicy(credential: access.credential, authHeader: access.header)
         async let users = client.fetchAdminUsers(credential: access.credential, authHeader: access.header)
-        async let config = client.fetchAdminConfig(credential: access.credential, authHeader: access.header)
         do {
             let loaded = try await policy
             if !hasChanges { self.policy = loaded }
@@ -57,7 +55,6 @@ final class ArcfinSyncAdminModel {
             errorMessage = String(localized: "Couldn't load Arcfin Sync's settings. Check your connection, and that this profile is still an admin.")
         }
         if let users = try? await users { self.users = users.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending } }
-        if let config = try? await config { self.config = config }
         isLoading = false
     }
 
@@ -77,21 +74,6 @@ final class ArcfinSyncAdminModel {
     }
 
     func discardChanges() { policy = savedPolicy }
-
-    func saveConfig(_ update: ArcfinSyncAdminConfigUpdate, authManager: AuthManager) async -> Bool {
-        guard let access = session(authManager) else { return false }
-        do {
-            if let saved = try await client.updateAdminConfig(credential: access.credential, authHeader: access.header, update) {
-                config = saved
-            } else {
-                config = try await client.fetchAdminConfig(credential: access.credential, authHeader: access.header)
-            }
-            return true
-        } catch {
-            actionError = String(localized: "The changes weren't saved. Check your connection and try again.")
-            return false
-        }
-    }
 
     func renameDevice(_ device: ArcfinSyncDevice, of user: ArcfinSyncAdminUser, to name: String, authManager: AuthManager) async {
         guard let access = session(authManager) else { return }

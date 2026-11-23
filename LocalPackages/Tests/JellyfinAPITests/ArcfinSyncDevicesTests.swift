@@ -51,14 +51,6 @@ struct ArcfinSyncDevicesTests {
         #expect(device.isCurrent)
     }
 
-    @Test("The webhook secret is only sent when there's a new one")
-    func configUpdate() throws {
-        let keep = ArcfinSyncAdminConfigUpdate(notificationsEnabled: true, seerrWebhookEnabled: true,
-                                               seerrWebhookSecret: nil, advancedYamlConfig: "")
-        let json = String(decoding: try JSONEncoder().encode(keep), as: UTF8.self)
-        #expect(!json.contains("SeerrWebhookSecret"))
-    }
-
     @Test("Device ids in a path can't add path segments")
     func pathComponent() {
         #expect(ArcfinSyncClient.component("a/../b") == "a%2F..%2Fb")

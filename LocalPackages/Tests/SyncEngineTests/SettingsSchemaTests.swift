@@ -20,9 +20,19 @@ struct SettingsSchemaTests {
         #expect(Set(schema.settings.map(\.key)).count == schema.settings.count)
     }
 
-    @Test("No setting kept on each profile alone is in the schema")
-    func localKeysAreLeftOut() {
-        #expect(schema.allKeys.isDisjoint(with: ProfileSettings.localKeys))
+    @Test("A setting kept on each profile alone on this device never syncs")
+    func localKeysDontSync() {
+        #expect(schema.syncedKeys.isDisjoint(with: ProfileSettings.localKeys))
+    }
+
+    @Test("Formats are ones the plugin knows, on types they fit")
+    func formats() {
+        for setting in schema.settings {
+            guard let format = setting.format else { continue }
+            #expect(["csv", "json"].contains(format), "\(setting.key)")
+            #expect(format == "json" ? setting.type == .json : setting.type == .string, "\(setting.key)")
+        }
+        #expect(schema.settings.filter { $0.type == .json }.allSatisfy { $0.format == "json" })
     }
 
     @Test("Every setting has a title, a known group and somewhere it's shown")
@@ -44,6 +54,7 @@ struct SettingsSchemaTests {
             #expect(options.allSatisfy { !$0.title.isEmpty }, "\(setting.key)")
             if let value = setting.default { #expect(options.contains { $0.value == value }, "\(setting.key)") }
             if setting.type == .int { #expect(options.allSatisfy { Int($0.value) != nil }, "\(setting.key)") }
+            if setting.type == .double { #expect(options.allSatisfy { Double($0.value).map(String.init) == $0.value }, "\(setting.key)") }
             #expect(setting.type != .bool, "\(setting.key)")
         }
     }
@@ -55,7 +66,9 @@ struct SettingsSchemaTests {
             switch setting.type {
             case .bool: #expect(value == "true" || value == "false", "\(setting.key)")
             case .int: #expect(Int(value) != nil, "\(setting.key)")
+            case .double: #expect(Double(value) != nil && !value.contains(","), "\(setting.key)")
             case .string: break
+            case .json: #expect((try? JSONSerialization.jsonObject(with: Data(value.utf8))) != nil, "\(setting.key)")
             }
         }
     }

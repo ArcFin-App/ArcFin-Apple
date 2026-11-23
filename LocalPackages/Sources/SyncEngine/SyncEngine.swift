@@ -283,6 +283,44 @@ public enum SettingsSyncValueType: String, Sendable, Codable {
     case bool
     case int
     case string
+    /// On the wire with a "." whatever the language, as Swift writes a Double.
+    case double
+    /// A list or record, as JSON text on the wire. Stored as Data, or as a property list for the
+    /// keys in `SettingsSyncRegistry.propertyListKeys`.
+    case json
+}
+
+extension SettingsSyncValueType {
+    /// The wire form of `key`'s value, nil when it isn't set.
+    func read(_ key: String, from defaults: UserDefaults) -> String? {
+        guard let object = defaults.object(forKey: key) else { return nil }
+        switch self {
+        case .bool: return defaults.bool(forKey: key) ? "true" : "false"
+        case .int: return String(defaults.integer(forKey: key))
+        case .string: return defaults.string(forKey: key)
+        case .double: return String(defaults.double(forKey: key))
+        case .json:
+            if let data = object as? Data { return String(data: data, encoding: .utf8) }
+            guard JSONSerialization.isValidJSONObject(object),
+                  let data = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
+            else { return nil }
+            return String(data: data, encoding: .utf8)
+        }
+    }
+
+    /// What `value` is stored as in UserDefaults, nil when it doesn't parse.
+    func stored(_ value: String, key: String) -> Any? {
+        switch self {
+        case .bool: return value == "true"
+        case .int: return Int(value)
+        case .string: return value
+        case .double: return Double(value)
+        case .json:
+            let data = Data(value.utf8)
+            guard let object = try? JSONSerialization.jsonObject(with: data) else { return nil }
+            return SettingsSyncRegistry.propertyListKeys.contains(key) ? object : data
+        }
+    }
 }
 
 public struct SettingsSyncEntry: Sendable {
@@ -406,6 +444,22 @@ public enum SettingsSyncRegistry {
         // they describe this device's decode/output hardware, not a preference. Syncing them
         // would carry a receiver-connected Apple TV's surround setting onto a phone with no
         // receiver and produce silent audio, exactly what that screen's footer text warns about.
+        // Kept for each profile on this device before 0.5.1; synced since.
+        .init("hiddenLibraryIDs", .string),
+        .init("homeShelfOrder", .string),
+        .init("homeShelfActive", .string),
+        .init("seerrRegionOverride", .string),
+        .init("defaultPlaybackSpeed", .double),
+        .init("holdSpeedRate", .double),
+        .init("dialogueBoost", .bool),
+        .init("libraryGridDensity", .string),
+        .init("libraryScreensaverEnabled", .bool),
+        .init("libraryScreensaverMinutes", .int),
+        .init("statsPeriod", .string),
+        .init("collectionSort", .string),
+        .init("collectionShowsGrid", .bool),
+        .init("music.songSort", .string),
+        .init("music.albumSort", .string),
         // Integrations
         .init("seerrDiscoverEnabled", .bool),
         .init("seerrURL", .string),
@@ -414,6 +468,9 @@ public enum SettingsSyncRegistry {
     ]
 
     public static let allKeys: Set<String> = Set(entries.map { $0.key })
+
+    /// JSON settings the app keeps as a property list rather than as Data.
+    public static let propertyListKeys: Set<String> = ["smartDownloadsIgnored"]
 }
 
 // MARK: - Settings sync engine
@@ -426,20 +483,7 @@ public enum SettingsSyncEngine {
     public static func collectLocalPayload(defaults: UserDefaults = .standard) -> SyncPayload {
         var values: [String: String] = [:]
         for entry in SettingsSyncRegistry.entries {
-            switch entry.type {
-            case .bool:
-                if defaults.object(forKey: entry.key) != nil {
-                    values[entry.key] = defaults.bool(forKey: entry.key) ? "true" : "false"
-                }
-            case .int:
-                if defaults.object(forKey: entry.key) != nil {
-                    values[entry.key] = String(defaults.integer(forKey: entry.key))
-                }
-            case .string:
-                if let value = defaults.string(forKey: entry.key) {
-                    values[entry.key] = value
-                }
-            }
+            if let value = entry.type.read(entry.key, from: defaults) { values[entry.key] = value }
         }
         return SyncPayload(settings: values)
     }
@@ -448,17 +492,8 @@ public enum SettingsSyncEngine {
     public static func apply(_ payload: SyncPayload, defaults: UserDefaults = .standard) {
         let byKey = Dictionary(uniqueKeysWithValues: SettingsSyncRegistry.entries.map { ($0.key, $0.type) })
         for (key, value) in payload.settings {
-            guard let type = byKey[key] else { continue }
-            switch type {
-            case .bool:
-                defaults.set(value == "true", forKey: key)
-            case .int:
-                if let intValue = Int(value) {
-                    defaults.set(intValue, forKey: key)
-                }
-            case .string:
-                defaults.set(value, forKey: key)
-            }
+            guard let stored = byKey[key]?.stored(value, key: key) else { continue }
+            defaults.set(stored, forKey: key)
         }
     }
 

@@ -124,8 +124,8 @@ struct DeviceSyncTests {
         defaults.set(true, forKey: "skipIntro")
         defaults.set(false, forKey: "codecAllowHEVCDirectPlay")
         defaults.set("automatic", forKey: SettingsSyncMode.key)
-        for key in ["arcfin.deviceId", "seerrPassword", "recentSearches", "homeShelfOrder", "offlineModeEnabled",
-                    "arcfin.activeProfileID", "hiddenLibraryIDs", "arcfin.introduction.onboardingSeen"] {
+        for key in ["arcfin.deviceId", "seerrPassword", "recentSearches", "homeShelfKnown", "offlineModeEnabled", "lastPlaybackRate",
+                    "arcfin.activeProfileID", "bottomNavProfile", "arcfin.introduction.onboardingSeen"] {
             defaults.set("x", forKey: key)
         }
         let snapshot = SettingsSyncEngine.snapshot(defaults: defaults)
@@ -156,6 +156,34 @@ struct DeviceSyncTests {
         #expect(defaults.object(forKey: "codecAllowHEVCDirectPlay") as? Bool == false)
         #expect(defaults.string(forKey: "videoQuality") == "auto")
         #expect(defaults.object(forKey: "arcfin.deviceId") == nil)
+    }
+
+    @Test("Doubles and JSON settings go over the wire and back as they're stored")
+    func doublesAndJSON() {
+        defaults.set(1.25, forKey: "defaultPlaybackSpeed")
+        defaults.set(Data(#"[{"id":8}]"#.utf8), forKey: "streamingServices")
+        defaults.set(["s1": "Show"], forKey: "smartDownloadsIgnored")
+        let snapshot = SettingsSyncEngine.snapshot(defaults: defaults)
+        #expect(snapshot["defaultPlaybackSpeed"] == "1.25")
+        #expect(snapshot["streamingServices"] == #"[{"id":8}]"#)
+        #expect(snapshot["smartDownloadsIgnored"] == #"{"s1":"Show"}"#)
+
+        SettingsSyncEngine.write(["defaultPlaybackSpeed": "1.5", "smartDownloadsIgnored": #"{"s2":"Other"}"#,
+                                  "streamingServices": #"[]"#, "holdSpeedRate": "fast"], schema: .bundled, defaults: defaults)
+        #expect(defaults.double(forKey: "defaultPlaybackSpeed") == 1.5)
+        #expect(defaults.dictionary(forKey: "smartDownloadsIgnored") as? [String: String] == ["s2": "Other"])
+        #expect(defaults.data(forKey: "streamingServices") == Data("[]".utf8))
+        #expect(defaults.object(forKey: "holdSpeedRate") == nil)
+    }
+
+    @Test("A setting that newly syncs keeps this device's value at the first sync, even against a server default")
+    func newlySyncedKeepsLocal() {
+        let result = SettingsSyncEngine.merge(
+            local: ["statsPeriod": "year", "skipIntro": "true"],
+            remote: ["statsPeriod": "month", "skipIntro": "true", "libraryGridDensity": "compact"],
+            base: ["skipIntro": "true"], locked: [])
+        #expect(result.push == ["statsPeriod": "year"])
+        #expect(result.apply == ["libraryGridDensity": "compact"])
     }
 
     @Test("Sync mode defaults to automatic, exactly as before")

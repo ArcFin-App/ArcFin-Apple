@@ -5,7 +5,7 @@ import JellyfinAPI
 import SyncEngine
 
 /// Settings › Server › Arcfin for Everyone, and Admin › Arcfin for Everyone: what every Arcfin
-/// app on this server starts with, what it can't change, and the plugin's own settings.
+/// app on this server starts with, what it can't change, and everyone's devices.
 struct ArcfinSyncAdminView: View {
     @Environment(AuthManager.self) private var authManager
     @State private var model = ArcfinSyncAdminModel()
@@ -58,14 +58,6 @@ struct ArcfinSyncAdminView: View {
                     Text("Each user's own defaults and locks, and the devices they use Arcfin on.")
                 }
 
-                Section {
-                    NavigationLink {
-                        AdminSyncConfigView(model: model).tvSettingsPage()
-                    } label: {
-                        TVRowLabelText(title: "Plugin Settings", detail: "Notifications, the Seerr webhook and advanced options.")
-                    }
-                    .tvListRow()
-                }
             }
         }
         .arcfinListStyle()
@@ -152,7 +144,8 @@ private struct AdminPolicySettingRows: View {
     private var choices: [String?]? {
         switch setting.type {
         case .bool: [nil, "true", "false"]
-        case .int, .string: setting.options.map { [nil] + $0.map(\.value) }
+        case .int, .string, .double: setting.options.map { [nil] + $0.map(\.value) }
+        case .json: nil
         }
     }
 
@@ -163,6 +156,15 @@ private struct AdminPolicySettingRows: View {
                 if let userID { model.setUserDefault(value, for: setting.key, user: userID) }
                 else { model.setDefault(value, for: setting.key) }
             })
+    }
+
+    private func valid(_ text: String) -> Bool {
+        switch setting.type {
+        case .int: Int(text) != nil
+        case .double: Double(text) != nil
+        case .json: (try? JSONSerialization.jsonObject(with: Data(text.utf8))) != nil
+        case .bool, .string: true
+        }
     }
 
     private var noDefault: String {
@@ -180,7 +182,7 @@ private struct AdminPolicySettingRows: View {
                 set: { text in
                     let trimmed = text.trimmingCharacters(in: .whitespaces)
                     defaultBinding.wrappedValue = trimmed.isEmpty ? nil
-                        : setting.type == .int ? (Int(trimmed).map(String.init) ?? defaultBinding.wrappedValue) : trimmed
+                        : valid(trimmed) ? trimmed : defaultBinding.wrappedValue
                 }))
                 .autocorrectionDisabled()
                 .tvListRow()
@@ -388,102 +390,5 @@ struct AdminSettingsListView: View {
         .arcfinListStyle()
         .screenBackground()
         .arcfinNavTitleLarge(title)
-    }
-}
-
-/// The plugin's own settings: notifications, the Seerr webhook and the advanced YAML.
-struct AdminSyncConfigView: View {
-    @Environment(AuthManager.self) private var authManager
-    let model: ArcfinSyncAdminModel
-    @State private var notifications = true
-    @State private var webhook = false
-    @State private var newSecret = ""
-    @State private var yaml = ""
-    @State private var loaded = false
-    @State private var isSaving = false
-    @State private var saved = false
-
-    var body: some View {
-        SettingsForm {
-            if let config = model.config {
-                Section {
-                    Toggle(isOn: $notifications) {
-                        TVRowLabelText(title: "Notifications", detail: "Lets Arcfin Sync tell Arcfin apps about new episodes, films and server events.")
-                    }
-                    .tvListRow()
-                }
-
-                Section {
-                    Toggle(isOn: $webhook) {
-                        TVRowLabelText(title: "Seerr Webhook", detail: "Seerr tells Arcfin Sync when a request is approved or available.")
-                    }
-                    .tvListRow()
-                    SecureField(config.seerrWebhookSecretSet ? String(localized: "New Secret (one is set)")
-                                                              : String(localized: "Secret (none set)"), text: $newSecret)
-                        .autocorrectionDisabled()
-                        .tvListRow()
-                } footer: {
-                    Text("The secret is never shown. Leave it empty to keep the one the server has.")
-                }
-
-                Section {
-                    TextField("YAML", text: $yaml, axis: .vertical)
-                        .font(.system(.footnote, design: .monospaced))
-                        .lineLimit(4...16)
-                        .autocorrectionDisabled()
-                        .tvListRow()
-                } header: {
-                    Text("Advanced")
-                } footer: {
-                    Text("Extra options for Arcfin Sync, in YAML.")
-                }
-
-                Section {
-                    Button {
-                        save()
-                    } label: {
-                        Text(isSaving ? "Saving…" : "Save Changes")
-                            .frame(maxWidth: .infinity, alignment: .center)
-                    }
-                    .formRowButton()
-                    .disabled(isSaving)
-                }
-            } else {
-                Section {
-                    Text("Couldn't load Arcfin Sync's settings. Check your connection, and that this profile is still an admin.")
-                        .foregroundStyle(DT.Color.textSecondary)
-                        .tvReadOnlyRow()
-                }
-            }
-        }
-        .arcfinListStyle()
-        .screenBackground()
-        .arcfinNavTitleLarge("Plugin Settings")
-        .onAppear(perform: fill)
-        .alert("Saved", isPresented: $saved) {
-            Button("OK", role: .cancel) {}
-        }
-    }
-
-    private func fill() {
-        guard !loaded, let config = model.config else { return }
-        loaded = true
-        notifications = config.notificationsEnabled
-        webhook = config.seerrWebhookEnabled
-        yaml = config.advancedYamlConfig
-    }
-
-    private func save() {
-        let secret = newSecret.trimmingCharacters(in: .whitespacesAndNewlines)
-        let update = ArcfinSyncAdminConfigUpdate(notificationsEnabled: notifications, seerrWebhookEnabled: webhook,
-                                                 seerrWebhookSecret: secret.isEmpty ? nil : secret, advancedYamlConfig: yaml)
-        isSaving = true
-        Task {
-            if await model.saveConfig(update, authManager: authManager) {
-                newSecret = ""
-                saved = true
-            }
-            isSaving = false
-        }
     }
 }

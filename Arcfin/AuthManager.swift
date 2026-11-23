@@ -579,6 +579,12 @@ final class AuthManager {
         guard let session = arcfinSyncDevicesSession else { return false }
         isSyncingArcfin = true
         defer { if isActive(session.credential) { isSyncingArcfin = false } }
+        // The server clears only what this device's platform shows, which it reads from this
+        // device's record, so that has to be there first.
+        if arcfinSyncCurrentDevice == nil {
+            await registerDevice(credential: session.credential, header: session.header)
+            guard arcfinSyncCurrentDevice != nil else { return false }
+        }
         do {
             try await SettingsSyncEngine.sendToAll(credential: session.credential, authHeader: session.header,
                                                    platform: ArcfinDeviceInfo.platform)
