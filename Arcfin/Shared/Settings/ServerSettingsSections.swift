@@ -89,6 +89,9 @@ struct ServerPublicInfoSection: View {
 
 /// Server Settings › Arcfin Sync.
 struct ArcfinSyncSection: View {
+    /// Apple TV has no Admin tab, so Arcfin for Everyone sits here for admins.
+    var showsAdminLink = false
+
     @Environment(AuthManager.self) private var authManager
 
     var body: some View {
@@ -138,7 +141,7 @@ struct ArcfinSyncSection: View {
                 NavigationLink { DevicesSyncView().tvSettingsPage() } label: {
                     TVRowLabelText(title: "Devices & Sync", detail: "Name this device, choose how it syncs, and see your other devices.")
                 }
-                if authManager.isAdmin {
+                if showsAdminLink && authManager.isAdmin {
                     NavigationLink { ArcfinSyncAdminView().tvSettingsPage() } label: {
                         TVRowLabelText(title: "Arcfin for Everyone", detail: "Defaults and locks for every Arcfin app on this server, and everyone's devices.")
                     }

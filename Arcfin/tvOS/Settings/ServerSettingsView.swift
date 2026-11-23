@@ -16,7 +16,7 @@ struct ServerSettingsView: View {
         List {
             ServerPublicInfoSection(model: model)
 
-            ArcfinSyncSection()
+            ArcfinSyncSection(showsAdminLink: true)
 
             Section {
                 NavigationLink { ServerConnectionView().tvSettingsPage() } label: {
