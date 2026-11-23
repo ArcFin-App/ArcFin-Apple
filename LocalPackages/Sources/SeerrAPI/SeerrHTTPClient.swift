@@ -386,6 +386,8 @@ public actor SeerrHTTPClient {
             page += 1
         }
 
+        // A failed lookup on a pull to refresh falls back to what was shown before.
+        let previous = titleDetails
         if refresh { titleDetails = [:] }
         let now = Date()
         var items = [SeerrItem?](repeating: nil, count: raw.count)
@@ -398,20 +400,42 @@ public actor SeerrHTTPClient {
                 missing.append((index, key, r))
             }
         }
-        var fetched: [(Int, String, SeerrItem?)] = []
+        // The same small window as getRequests: a watchlist runs to hundreds of titles, and
+        // firing every lookup at once made the tail of the burst time out.
+        let maxConcurrentDetailFetches = 4
         await withTaskGroup(of: (Int, String, SeerrItem?).self) { group in
-            for (index, key, r) in missing {
+            var next = 0
+            func addFetch() {
+                let (index, key, r) = missing[next]
+                next += 1
                 group.addTask {
-                    let detail = try? await self.mediaDetail(tmdbId: r.tmdbId, mediaType: r.mediaType)
-                    return (index, key, detail)
+                    do {
+                        return (index, key, try await self.mediaDetail(tmdbId: r.tmdbId, mediaType: r.mediaType))
+                    } catch {
+                        let nsError = error as NSError
+                        Telemetry.logger(category: "SeerrHTTPClient").error(
+                            "watchlist: detail fetch failed for tmdbId=\(r.tmdbId ?? -1, privacy: .public) mediaType=\(r.mediaType ?? "nil", privacy: .public): domain=\(nsError.domain, privacy: .public) code=\(nsError.code, privacy: .public)"
+                        )
+                        return (index, key, nil)
+                    }
                 }
             }
-            for await result in group { fetched.append(result) }
+            while next < min(maxConcurrentDetailFetches, missing.count) { addFetch() }
+            for await (index, key, detail) in group {
+                if let detail {
+                    titleDetails[key] = (detail, now)
+                    items[index] = detail
+                } else {
+                    // Kept in the list, so it doesn't vanish from the watchlist and its bookmarks
+                    // until the next load.
+                    let r = raw[index]
+                    items[index] = previous[key]?.item ?? SeerrItem.watchlistPlaceholder(tmdbId: r.tmdbId, mediaType: r.mediaType)
+                }
+                if next < missing.count { addFetch() }
+            }
         }
-        for (index, key, item) in fetched {
-            items[index] = item
-            if let item { titleDetails[key] = (item, now) }
-        }
+        // A cancelled load would otherwise come back as a list of placeholders.
+        try Task.checkCancellation()
         return items.compactMap { $0 }
     }
 

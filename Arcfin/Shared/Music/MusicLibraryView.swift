@@ -226,6 +226,8 @@ struct MusicAlbumsView: View {
     private var sort: MusicSort { fixedSort ?? savedSort }
     @State private var favoritesOnly = false
     @State private var list: MusicPagedList<MusicAlbum>?
+    /// The sort, filter and search `list` was made for.
+    @State private var listKey: String?
     @State private var query = ""
     @State private var term: String?
 
@@ -266,9 +268,13 @@ struct MusicAlbumsView: View {
             }
         }
         .task(id: "\(sort.rawValue)-\(favoritesOnly)-\(term ?? "")") {
-            let list = makeList()
-            self.list = list
-            await list.loadIfNeeded()
+            // The task runs again on coming back from an album; the list and its place stay.
+            let key = "\(sort.rawValue)-\(favoritesOnly)-\(term ?? "")"
+            if key != listKey {
+                list = makeList()
+                listKey = key
+            }
+            await list?.loadIfNeeded()
         }
     }
 

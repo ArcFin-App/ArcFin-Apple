@@ -38,7 +38,7 @@ struct PersonDetailView: View {
     /// The card focus lands on: the first library title, else the first credit.
     private var firstCard: FocusTarget? {
         if let item = model.items.first { return .card("item-\(item.id)") }
-        if let credit = model.missingCredits(seerrRepo: seerrRepo).first { return .card("credit-\(credit.id)") }
+        if let credit = model.missingCredits.first { return .card("credit-\(credit.id)") }
         return nil
     }
 

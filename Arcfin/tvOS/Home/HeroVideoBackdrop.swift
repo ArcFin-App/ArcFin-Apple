@@ -43,6 +43,8 @@ final class LoopingPlayerUIView: UIView {
     private var statusObservation: NSKeyValueObservation?
     private var timeControlObservation: NSKeyValueObservation?
     private var hasFadedIn = false
+    /// A silent backdrop's audio track is off, so playing it can't take the audio from another app.
+    private var audioIsSettled = false
     private let loops: Bool
     private let onStart: (() -> Void)?
     private let onEnd: (() -> Void)?
@@ -70,7 +72,6 @@ final class LoopingPlayerUIView: UIView {
         // timeControlStatus below confirms real playback.
         alpha = 0
         self.player = player
-        player.play()
 
         // AVPlayerLooper doesn't support HLS player items at all (an explicitly
         // documented AVFoundation limitation) — and Jellyfin serves this backdrop as an
@@ -90,19 +91,28 @@ final class LoopingPlayerUIView: UIView {
         // isMuted only zeroes the output — the player still opens a CoreAudio HAL slot
         // for the audio track. Deselecting it outright means there's no audio render
         // pipeline at all when the backdrop is silent.
+        // Played only after that: playing first, even muted, could make the audio session
+        // active for a moment and pause music playing in another app.
         if muted {
-            Task { @MainActor in
-                guard let group = try? await asset.loadMediaSelectionGroup(for: .audible) else { return }
-                item.select(nil, in: group)
+            Task { @MainActor [weak self] in
+                if let group = try? await asset.loadMediaSelectionGroup(for: .audible) {
+                    item.select(nil, in: group)
+                }
+                guard let self, self.player === player else { return }
+                self.audioIsSettled = true
+                player.play()
             }
+        } else {
+            audioIsSettled = true
+            player.play()
         }
 
         // readyToPlay only means the asset is minimally parsed, not that enough has
         // buffered to run smoothly — re-issuing play() here (on top of the init-time
         // call) is what actually got every rotated hero item playing reliably, instead
         // of just the one that happened to be ready by the time play() was first called.
-        statusObservation = item.observe(\.status, options: [.new]) { [weak player] item, _ in
-            if item.status == .readyToPlay {
+        statusObservation = item.observe(\.status, options: [.new]) { [weak self, weak player] item, _ in
+            if item.status == .readyToPlay, self?.audioIsSettled == true {
                 player?.play()
             }
         }

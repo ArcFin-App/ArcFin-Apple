@@ -110,7 +110,9 @@ final class MusicPagedList<Item: Identifiable & Sendable> {
             self.total = total
             hasFailed = false
         } catch {
-            guard started == generation, !(error is CancellationError) else { return }
+            // Left unloaded, so coming back to the list loads it again: a request cancelled by
+            // leaving the screen arrives as URLError.cancelled, not CancellationError.
+            guard started == generation, !Task.isCancelled, !SeerrRepository.isCancellation(error) else { return }
             hasFailed = true
         }
         hasLoaded = true

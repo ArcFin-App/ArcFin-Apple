@@ -838,8 +838,8 @@ final class DownloadManager: NSObject {
             isApproximate = true
         }
 
-        let subtitleLanguages = info.subtitleStreams.compactMap { $0.deliveryUrl != nil ? ($0.language ?? $0.displayTitle ?? "Unknown") : nil }
-        let audioLanguages = info.audioStreams.map { $0.language ?? $0.displayTitle ?? "Unknown" }
+        let subtitleLanguages = info.subtitleStreams.compactMap { $0.deliveryUrl != nil ? ($0.language ?? $0.displayTitle ?? String(localized: "Unknown")) : nil }
+        let audioLanguages = info.audioStreams.map { $0.language ?? $0.displayTitle ?? String(localized: "Unknown") }
         return DownloadPreview(
             subtitleLanguages: subtitleLanguages, audioLanguages: audioLanguages,
             estimatedSizeBytes: estimatedSize, estimatedSizeIsApproximate: isApproximate, willRemux: false,
@@ -1398,7 +1398,7 @@ final class DownloadManager: NSObject {
         return await withTaskGroup(of: (Int, String, String)?.self) { group in
             for (order, stream) in wanted.enumerated() {
                 guard let deliveryUrl = stream.deliveryUrl else { continue }
-                let fileName = "sub-\(stream.index).vtt", language = stream.language ?? stream.displayTitle ?? "Unknown"
+                let fileName = "sub-\(stream.index).vtt", language = stream.language ?? stream.displayTitle ?? String(localized: "Unknown")
                 group.addTask {
                     guard let data = await SubtitleLoader.fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential),
                           (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
@@ -2372,10 +2372,12 @@ final class DownloadManager: NSObject {
             try await withThrowingTaskGroup(of: Void.self) { group in
                 for (index, range) in ranges.enumerated() {
                     group.addTask { @MainActor in
-                        try await self.downloadPart(url: url, authHeader: authHeader, range: range, to: partURLs[index], itemId: itemId)
+                        try await self.downloadPart(url: url, authHeader: authHeader, range: range, to: partURLs[index], itemId: itemId, run: run)
                     }
                 }
-                try await group.waitForAll()
+                // Not waitForAll, which waits out every range before rethrowing: the first
+                // failure leaves the group, and that cancels the other ranges' transfers.
+                while try await group.next() != nil {}
             }
         } catch {
             transfers(for: itemId).forEach { $0.cancel() }
@@ -2394,19 +2396,61 @@ final class DownloadManager: NSObject {
         return true
     }
 
-    private func downloadPart(url: URL, authHeader: String, range: ClosedRange<Int64>, to partURL: URL, itemId: String) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            var req = URLRequest(url: url)
-            for (name, value) in CustomHTTPHeaders.headers(for: req.url) { req.setValue(value, forHTTPHeaderField: name) }
-            req.setValue(authHeader, forHTTPHeaderField: "Authorization")
-            req.setValue("bytes=\(range.lowerBound)-\(range.upperBound)", forHTTPHeaderField: "Range")
-            req.timeoutInterval = 60 * 60
-            let task = session.downloadTask(with: req)
-            task.taskDescription = partURL.path
-            taskItemIds[task.taskIdentifier] = itemId
-            partTasks[itemId, default: []].append(task)
-            continuations[task.taskIdentifier] = continuation
-            task.resume()
+    /// One range, tried again a few times when the connection drops: a dropped range would
+    /// otherwise fail the whole title, with nothing to resume it from.
+    private func downloadPart(url: URL, authHeader: String, range: ClosedRange<Int64>, to partURL: URL, itemId: String, run: UUID) async throws {
+        var attempt = 0
+        while true {
+            do {
+                return try await transferPart(url: url, authHeader: authHeader, range: range, to: partURL, itemId: itemId)
+            } catch {
+                attempt += 1
+                try checkStillWanted(itemId, run: run)
+                guard !Task.isCancelled, Self.retriesPart(after: error, attempt: attempt) else { throw error }
+                try await Task.sleep(for: .seconds(Double(attempt) * 2))
+                try checkStillWanted(itemId, run: run)
+            }
+        }
+    }
+
+    /// Whether a range that failed this way, `attempt` times so far, is worth another go: only
+    /// a dropped or failed connection, never a cancel, a refusal or an error page.
+    nonisolated static func retriesPart(after error: Error, attempt: Int) -> Bool {
+        guard attempt < 3, let code = (error as? URLError)?.code else { return false }
+        return code != .cancelled && code != .badServerResponse && code != .userAuthenticationRequired
+    }
+
+    private func transferPart(url: URL, authHeader: String, range: ClosedRange<Int64>, to partURL: URL, itemId: String) async throws {
+        try Task.checkCancellation()
+        var req = URLRequest(url: url)
+        for (name, value) in CustomHTTPHeaders.headers(for: req.url) { req.setValue(value, forHTTPHeaderField: name) }
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.setValue("bytes=\(range.lowerBound)-\(range.upperBound)", forHTTPHeaderField: "Range")
+        req.timeoutInterval = 60 * 60
+        let task = session.downloadTask(with: req)
+        task.taskDescription = partURL.path
+        taskItemIds[task.taskIdentifier] = itemId
+        partTasks[itemId, default: []].append(task)
+        do {
+            // A continuation ignores cancellation: without this, a failed range waited for the
+            // others to download in full before the title failed.
+            try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+                    continuations[task.taskIdentifier] = continuation
+                    // A retry while the title is paused waits, like its other ranges, for the
+                    // resume, which starts every transfer in partTasks.
+                    if !pausedItemIds.contains(itemId), !pausedForPlayer.contains(itemId) { task.resume() }
+                }
+            } onCancel: {
+                task.cancel()
+            }
+        } catch {
+            // A retry starts a new transfer; this one's bytes no longer count toward progress.
+            partTasks[itemId]?.removeAll { $0 === task }
+            partBytes[task.taskIdentifier] = nil
+            // The total just went down; a speed sampled across that would come out negative.
+            speedSamples[itemId] = nil
+            throw error
         }
     }
 
@@ -2554,13 +2598,15 @@ extension DownloadManager: URLSessionDownloadDelegate {
         let capturedMoveError = moveError
         let capturedPath = downloadTask.taskDescription
         Task { @MainActor in
+            // The transfer is over: its entry would otherwise stay for the whole session.
+            let finishedItemId = self.taskItemIds.removeValue(forKey: taskId)
             if let continuation = self.continuations[taskId] {
                 self.continuations[taskId] = nil
                 if let capturedMoveError { continuation.resume(throwing: capturedMoveError) } else { continuation.resume() }
                 return
             }
             // Handed off ahead of its turn and done before it came: the queue picks it up.
-            if let itemId = self.taskItemIds[taskId], self.handedOffItemIds.contains(itemId) {
+            if let itemId = finishedItemId, self.handedOffItemIds.contains(itemId) {
                 self.handedOffResults[itemId] = capturedMoveError.map { .failure($0) } ?? .success(())
                 return
             }
@@ -2597,12 +2643,13 @@ extension DownloadManager: URLSessionDownloadDelegate {
         let taskId = task.taskIdentifier
         let capturedPath = task.taskDescription
         Task { @MainActor in
+            let failedItemId = self.taskItemIds.removeValue(forKey: taskId)
             if let continuation = self.continuations[taskId] {
                 self.continuations[taskId] = nil
                 continuation.resume(throwing: error)
                 return
             }
-            if let itemId = self.taskItemIds[taskId], self.handedOffItemIds.contains(itemId) {
+            if let itemId = failedItemId, self.handedOffItemIds.contains(itemId) {
                 self.handedOffResults[itemId] = .failure(error)
                 return
             }

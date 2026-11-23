@@ -11,6 +11,8 @@ struct MusicSongsView: View {
     @AppStorage("music.songSort") private var sort: MusicSort = .name
     @Environment(AuthManager.self) private var authManager
     @State private var list: MusicPagedList<MusicSong>?
+    /// The sort and search `list` was made for.
+    @State private var listKey: String?
     @State private var query = ""
     @State private var term: String?
 
@@ -52,17 +54,21 @@ struct MusicSongsView: View {
             }
         }
         .task(id: "\(sort.rawValue)-\(term ?? "")") {
-            let libraryID = libraryID, sort = sort, filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
-            let list = MusicPagedList<MusicSong> { start in
-                let page = try await MusicAPI.call {
-                    try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
-                                                ascending: sort != .dateAdded && sort != .playCount, filter: filter,
-                                                startIndex: start)
+            // The task runs again on coming back from a pushed screen; the list and its place stay.
+            let key = "\(sort.rawValue)-\(term ?? "")"
+            if key != listKey {
+                let libraryID = libraryID, sort = sort, filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
+                list = MusicPagedList<MusicSong> { start in
+                    let page = try await MusicAPI.call {
+                        try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
+                                                    ascending: sort != .dateAdded && sort != .playCount, filter: filter,
+                                                    startIndex: start)
+                    }
+                    return (page.tracks, page.total)
                 }
-                return (page.tracks, page.total)
+                listKey = key
             }
-            self.list = list
-            await list.loadIfNeeded()
+            await list?.loadIfNeeded()
         }
     }
 
@@ -603,7 +609,9 @@ struct MusicPlaylistView: View {
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
             }
-            ForEach(Array(songs.enumerated()), id: \.offset) { index, song in
+            // By the playlist entry, not the position: after a removal the rows below kept the
+            // removed row's place and state.
+            ForEach(Array(songs.enumerated()), id: \.element.playlistRowID) { index, song in
                 MusicSongRow(song: song, onRemove: { Task { await MusicPlaylistEditor.shared.remove(song, from: playlist) } }) {
                     MusicActions.play(songs, from: index)
                 }
@@ -668,4 +676,9 @@ private struct MusicGenreTile: View {
                 cover = albums?.albums.first.flatMap { MusicAPI.artworkURL($0, width: 300) }
             }
     }
+}
+
+private extension MusicSong {
+    /// The same song can be in a playlist twice; each entry has its own id.
+    var playlistRowID: String { playlistEntryId ?? id }
 }

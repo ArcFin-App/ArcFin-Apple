@@ -41,24 +41,13 @@ struct CachedAsyncImage<Content: View>: View {
         }
         phase = .empty
         do {
-            let image = try await loadRetryingOnce(url)
+            let image = try await ImageCache.load(url)
             guard !Task.isCancelled else { return }
             phase = .success(Image(platformImage: image))
             loadedURL = url
         } catch {
             guard !Task.isCancelled else { return }
             phase = .failure(error)
-        }
-    }
-
-    /// A failed load is final for as long as the view keeps this URL, so one that failed
-    /// while the connection was still coming up gets a second go.
-    private func loadRetryingOnce(_ url: URL) async throws -> ImageCache.PlatformImage {
-        do {
-            return try await ImageCache.load(url)
-        } catch where ImageCache.isConnectivityError(error) {
-            try await Task.sleep(for: .seconds(1))
-            return try await ImageCache.load(url)
         }
     }
 }

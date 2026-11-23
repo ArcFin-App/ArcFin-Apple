@@ -538,8 +538,20 @@ struct MediaDetailView: View {
                     .focusSection()
             }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 16) {
+            // A long-running show can have hundreds of episodes in a season, so only the cards on
+            // screen are built. A lazy row in a shelf has come out with no height here; a
+            // hidden card gives it one.
+            Group {
+                if let first = model.episodes.first {
+                    TVEpisodeCard(ep: first).padding(.top, 20).hidden()
+                } else {
+                    Color.clear.frame(height: 0)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .overlay {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    LazyHStack(spacing: 16) {
                         ForEach(model.episodes) { ep in
                             let watched = ep.userData?.played == true
                             Button { selectedEpisode = ep } label: {
@@ -578,6 +590,7 @@ struct MediaDetailView: View {
                     episodeScrollID = target
                     model.initialEpisodeID = nil
                 }
+            }
         }
         .padding(.bottom, 56)
     }
