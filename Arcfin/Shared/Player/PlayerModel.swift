@@ -1292,6 +1292,22 @@ final class PlayerModel {
         await player.stop()
     }
 
+    @ObservationIgnored private var isOnScreen = false
+
+    func viewAppeared() { isOnScreen = true }
+
+    /// SwiftUI can take the player off screen and straight back on (handing over to the next
+    /// episode on Apple TV does), keeping this model. Closing waits a turn and stops only if
+    /// the player stayed gone; otherwise it cancelled the setup the reappearance started.
+    func viewDisappeared(close: @escaping @MainActor () async -> Void) {
+        isOnScreen = false
+        Task {
+            await Task.yield()
+            guard !isOnScreen else { return }
+            await close()
+        }
+    }
+
     /// Lets go of the view's own steps once it's closing, since they hold on to it.
     func detachViewSteps() {
         closePlayer = {}

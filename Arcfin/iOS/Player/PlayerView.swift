@@ -190,6 +190,7 @@ struct PlayerView: View {
         .defersSystemGestures(on: swipeGesturesEnabled && !ignoreEdgeSwipes ? .vertical : [])
         .keepsScreenAwake(status: model.player.status)
         .onAppear {
+            model.viewAppeared()
             connectModel()
             applyOpeningOrientation()
         }
@@ -212,7 +213,7 @@ struct PlayerView: View {
             if !asking, model.resumeAnswered { Task { await setup() } }
         }
         .onDisappear {
-            Task { await teardown() }
+            model.viewDisappeared { await teardown() }
             if Self.keepOrientationOnNextDisappear {
                 Self.keepOrientationOnNextDisappear = false
             } else {

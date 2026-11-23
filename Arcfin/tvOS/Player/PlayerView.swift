@@ -174,7 +174,10 @@ struct PlayerView: View {
             }
         }
         .keepsScreenAwake(status: model.player.status)
-        .onAppear { connectModel() }
+        .onAppear {
+            model.viewAppeared()
+            connectModel()
+        }
         .task { if !model.isAskingToResume { await model.startSetup() } }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
             Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
@@ -191,7 +194,7 @@ struct PlayerView: View {
             if !asking, model.resumeAnswered { Task { await model.startSetup() } }
         }
         .onDisappear {
-            Task { await teardown() }
+            model.viewDisappeared { await teardown() }
         }
         .onChange(of: model.subtitleDelay) { _, _ in model.updateSubtitleText(forTicks: model.player.positionTicks) }
         .onChange(of: model.player.status) { _, newStatus in

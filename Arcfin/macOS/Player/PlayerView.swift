@@ -175,7 +175,10 @@ struct PlayerView: View {
             }
         }
         .keepsScreenAwake(status: model.player.status)
-        .onAppear { connectModel() }
+        .onAppear {
+            model.viewAppeared()
+            connectModel()
+        }
         .task {
             if model.handOffToDefaultPlayer() { closePlayer(); return }
             if !model.isAskingToResume { await model.startSetup() }
@@ -195,7 +198,7 @@ struct PlayerView: View {
             if !asking, model.resumeAnswered { Task { await model.startSetup() } }
         }
         .onDisappear {
-            Task { await teardown() }
+            model.viewDisappeared { await teardown() }
             macVolumeHUDTask?.cancel()
         }
         .onChange(of: model.subtitleDelay) { _, _ in model.updateSubtitleText(forTicks: model.player.positionTicks) }
