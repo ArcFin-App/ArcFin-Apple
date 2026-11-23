@@ -279,7 +279,7 @@ public struct ArcfinPluginSyncClient: SyncClientProtocol {
 /// plugin, and how to read/write each one. Deliberately excludes two keys that exist in the app
 /// but shouldn't sync: `seerrPassword` (a secret, never belongs in a generic settings payload)
 /// and `appLockUseFaceID` (biometric availability is per-device, not something to carry across).
-public enum SettingsSyncValueType: Sendable {
+public enum SettingsSyncValueType: String, Sendable, Codable {
     case bool
     case int
     case string
@@ -465,8 +465,8 @@ public enum SettingsSyncEngine {
     /// The values this device and the server last agreed on, so a sync can tell which side
     /// changed a setting since.
     /// Before 0.5.0, one record for the whole device; now each profile keeps its own.
-    private static let lastSyncedKey = "arcfin.settingsSync.lastSynced"
-    private static func lastSyncedKey(profile: String) -> String { "\(lastSyncedKey).\(profile)" }
+    static let lastSyncedKey = "arcfin.settingsSync.lastSynced"
+    static func lastSyncedKey(profile: String) -> String { "\(lastSyncedKey).\(profile)" }
     /// The profile that synced last on this device.
     private static let lastProfileKey = "arcfin.settingsSync.lastProfile"
 
@@ -498,7 +498,7 @@ public enum SettingsSyncEngine {
         return (toApply, toPush)
     }
 
-    private static func lockedKey(profile: String) -> String { "arcfin.settingsSync.locked.\(profile)" }
+    static func lockedKey(profile: String) -> String { "arcfin.settingsSync.locked.\(profile)" }
 
     /// The keys the server last said were locked for this profile, kept so they stay locked at
     /// launch, offline and while a sync runs.

@@ -193,7 +193,8 @@ let package = Package(
                 "JellyfinAPI",
                 "Persistence",
                 "Telemetry",
-            ]
+            ],
+            resources: [.copy("Resources/settings-schema.json")]
         ),
 
         .target(
