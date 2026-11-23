@@ -387,6 +387,7 @@
 				tvOS/Home/LibraryScreensaverView.swift = (tvos, );
 				tvOS/Home/MainTabView.swift = (tvos, );
 				tvOS/Home/NoConnectionView.swift = (tvos, );
+				tvOS/Home/TVHomeShelves.swift = (tvos, );
 				tvOS/Home/TopShelfArtwork.swift = (tvos, );
 				tvOS/Library/CollectionCardButtonStyle.swift = (tvos, );
 				tvOS/Library/CollectionDetailView.swift = (tvos, );
