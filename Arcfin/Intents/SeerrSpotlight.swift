@@ -136,6 +136,8 @@ struct OpenSeerrTitleIntent: OpenIntent {
 enum SeerrSpotlightIndexer {
     /// Replaces what Spotlight holds for Seerr with the current watchlist and requests.
     static func index(watchlist: [SeerrItem], requests: [SeerrRequestItem]) async {
+        // Like the library's titles, nothing from a profile with an app-lock PIN.
+        guard IntentSession.credential() != nil else { return }
         var entries: [String: SeerrSpotlightEntry] = [:]
         for item in watchlist {
             let status = item.availabilityStatus == .available ? "Available" : "On your watchlist"

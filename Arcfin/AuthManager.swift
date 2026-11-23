@@ -19,6 +19,7 @@ import UIKit
 #endif
 #if !os(tvOS)
 import CoreSpotlight
+import LiveActivityKit
 #endif
 
 private final class TimeoutResult<Value: Sendable>: @unchecked Sendable {
@@ -654,18 +655,30 @@ final class AuthManager {
     /// Spotlight (pages it opened too) and the widgets, and what the background check had seen, so the next check
     /// only records the new profile's library instead of announcing it.
     private func forgetPreviousProfile() {
+        forgetOutsideTheApp()
+        #if !os(tvOS)
+        BackgroundRefresh.resetState()
+        #endif
+        SplashMosaicStore.clear()
+        PlaylistStore.shared.clear()
+    }
+
+    /// The active profile's titles wherever they show outside the app: Spotlight (pages it
+    /// opened too), the widgets, the Home Screen quick action, the Top Shelf and the watch.
+    private func forgetOutsideTheApp() {
         #if !os(tvOS)
         Task { await SpotlightIndexer.clear() }
         NSUserActivity.deleteAllSavedUserActivities {}
+        MusicWidgetStore.clear()
         WidgetSnapshotUpdater.clear()
         SeerrSpotlightStore.clear()
-        BackgroundRefresh.resetState()
+        #endif
+        #if os(iOS)
+        QuickActions.update(resumeItemID: nil, title: nil)
         #endif
         #if os(tvOS)
         TopShelfArtwork.clear()
         #endif
-        SplashMosaicStore.clear()
-        PlaylistStore.shared.clear()
     }
 
     func removeProfile(id: UUID) {
@@ -823,12 +836,27 @@ final class AuthManager {
         }
     }
 
+    /// A PIN for the profile in use takes its titles away from everywhere outside the app, once
+    /// it's saved: what's published next checks for it.
     func savePin(_ pin: String, for credentialID: UUID) {
-        keychainWrite { try $0.savePin(pin, for: credentialID) }
+        keychainWrite({ try $0.savePin(pin, for: credentialID) }) { [weak self] in
+            guard let self, self.state.credential?.id == credentialID else { return }
+            self.forgetOutsideTheApp()
+            #if os(iOS)
+            WatchLink.shared.send()
+            #endif
+        }
     }
 
     func removePin(for credentialID: UUID) {
+        #if os(iOS)
+        keychainWrite({ try $0.deletePin(for: credentialID) }) { [weak self] in
+            guard let self, self.state.credential?.id == credentialID else { return }
+            WatchLink.shared.send()
+        }
+        #else
         keychainWrite { try $0.deletePin(for: credentialID) }
+        #endif
     }
 
     // MARK: - Seerr account per profile
@@ -1046,12 +1074,14 @@ final class AuthManager {
     private nonisolated static let keychainQueue = DispatchQueue(label: "arcfin.keychain", qos: .userInitiated)
     private nonisolated static let keychainLog = Telemetry.logger(category: "Keychain")
 
-    private func keychainWrite(_ work: @escaping @Sendable (KeychainStore) throws -> Void) {
+    private func keychainWrite(_ work: @escaping @Sendable (KeychainStore) throws -> Void,
+                               then done: (@MainActor @Sendable () -> Void)? = nil) {
         let k = keychain
         Self.keychainQueue.async {
             do { try work(k) } catch {
                 Self.keychainLog.error("Keychain write failed: \(String(describing: error), privacy: .public)")
             }
+            if let done { Task { @MainActor in done() } }
         }
     }
 

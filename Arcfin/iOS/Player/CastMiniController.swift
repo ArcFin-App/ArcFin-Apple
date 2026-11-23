@@ -629,11 +629,24 @@ final class WatchLink: NSObject, WCSessionDelegate {
         }
     }
 
-    private func send() {
+    func send() {
+        Task { await sendContext() }
+    }
+
+    /// A profile with an app-lock PIN reads as signed out on the watch, as it does to Siri. The
+    /// PIN is read after any Keychain write still queued, so a PIN just set is seen.
+    private func sendContext() async {
         let session = WCSession.default
         guard session.activationState == .activated, session.isPaired, session.isWatchAppInstalled else { return }
+        let auth = AppServices.authManager
+        var unlocked: ServerCredential?
+        if let credential = auth.state.credential, await auth.storedPIN(for: credential.id) == .none {
+            // Another profile took over meanwhile: its own send follows.
+            guard auth.state.credential?.id == credential.id else { return }
+            unlocked = credential
+        }
         let context: [String: Any]
-        if let credential = AppServices.authManager.state.credential {
+        if let credential = unlocked {
             context = [
                 "serverURLs": Self.addresses(for: credential),
                 "authHeader": AppServices.authManager.authClient.authHeader(token: credential.accessToken),
