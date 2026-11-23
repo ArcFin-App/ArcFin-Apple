@@ -170,7 +170,7 @@ extension PlayerView {
     private var routeButtonHost: some View {
         ZStack {
             AirPlayButton(bridge: routeBridge)
-            if castEnabled, CastManager.shared.isCastAvailable {
+            if castEnabled, model.capabilities.casting, CastManager.shared.isCastAvailable {
                 CastButton(bridge: routeBridge)
             }
         }
@@ -185,10 +185,10 @@ extension PlayerView {
         PlayerMoreMenu(
             model: model, item: item, routeBridge: routeBridge, groupState: groupState,
             canPictureInPicture: canPictureInPicture,
-            canOpenInNewWindow: supportsMultipleWindows && !isPlayerWindow,
-            canCast: castEnabled && CastManager.shared.isCastAvailable,
+            canOpenInNewWindow: supportsMultipleWindows && !isPlayerWindow && model.capabilities.newWindow,
+            canCast: castEnabled && model.capabilities.casting && CastManager.shared.isCastAvailable,
             // SyncPlay keeps everyone at the same position; a channel has none to share.
-            canSyncPlay: syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive,
+            canSyncPlay: syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive && model.capabilities.syncPlay,
             isAudioOnly: audioOnly,
             togglePiP: togglePiP,
             openInNewWindow: openInNewWindow,
@@ -859,7 +859,7 @@ extension PlayerView {
                     showTrackMenu = false
                     model.changeTrack(subtitleIndex: .some(index))
                 },
-                subtitleSearchItemId: ProfileRules.shared.canManageSubtitles ? item.id : nil,
+                subtitleSearchItemId: model.capabilities.subtitleSearch && ProfileRules.shared.canManageSubtitles ? item.id : nil,
                 onSubtitleDownloaded: {
                     showTrackMenu = false
                     model.adoptDownloadedSubtitle()
@@ -985,7 +985,7 @@ struct PlayerMoreMenu: View, Equatable {
                     Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
                 }
             }
-            if !model.isLive { sharePlayMenuItem }
+            if !model.isLive, model.capabilities.sharePlay { sharePlayMenuItem }
 
             if !model.castMembers.isEmpty {
                 Button { openCastPanel() } label: {
@@ -999,7 +999,7 @@ struct PlayerMoreMenu: View, Equatable {
             Button { showTrackMenu = true } label: {
                 Label("Subtitles & Audio", systemImage: "captions.bubble")
             }
-            if let info = model.playbackInfo, info.versions.count > 1 {
+            if model.capabilities.versions, let info = model.playbackInfo, info.versions.count > 1 {
                 Picker(selection: Binding(get: { info.mediaSourceId }, set: { model.changeVersion($0) })) {
                     ForEach(info.versions) { Text($0.name).tag($0.id) }
                 } label: {
@@ -1013,8 +1013,10 @@ struct PlayerMoreMenu: View, Equatable {
                 }
             }
             subtitleTimingMenu
-            Button { showQualityMenu = true } label: {
-                Label("Quality", systemImage: "slider.horizontal.3")
+            if model.capabilities.quality {
+                Button { showQualityMenu = true } label: {
+                    Label("Quality", systemImage: "slider.horizontal.3")
+                }
             }
             sleepTimerMenu
             Button { showInfoSheet = true } label: {

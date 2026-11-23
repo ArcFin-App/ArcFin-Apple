@@ -73,11 +73,13 @@ struct PlayerView: View {
     @FocusState var isPlayerFocused: Bool
     @State var lastMacHoverLocation: CGPoint?
 
-    init(item: MediaItem, startPositionTicks: Int64 = 0, onPlayNext: @escaping (MediaItem) -> Void = { _ in }) {
+    init(item: MediaItem, startPositionTicks: Int64 = 0, source: (any PlaybackSource)? = nil,
+         onPlayNext: @escaping (MediaItem) -> Void = { _ in }) {
         self.item = item
         self.startPositionTicks = startPositionTicks
         self.onPlayNext = onPlayNext
-        _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext))
+        _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext,
+                                                 source: source))
     }
 
     var body: some View {
@@ -123,10 +125,10 @@ struct PlayerView: View {
                 PlayerNetworkToast(text: networkToast)
             }
 
-            if let currentSubtitleText = model.currentSubtitleText, !CastManager.shared.isConnected {
+            if let currentSubtitleText = model.currentSubtitleText, !model.isCasting {
                 PlayerSubtitleOverlay(text: currentSubtitleText, isControlsVisible: model.isControlsVisible)
             }
-            if let currentBitmapCue = model.currentBitmapCue, !CastManager.shared.isConnected {
+            if let currentBitmapCue = model.currentBitmapCue, !model.isCasting {
                 PlayerBitmapSubtitleOverlay(cue: currentBitmapCue, isControlsVisible: model.isControlsVisible)
             }
 
@@ -141,10 +143,10 @@ struct PlayerView: View {
             // screen on every tap. Keeping the view always mounted means there's nothing to
             // insert/remove, so there's no layout pass to get wrong.
             controlsOverlay
-                .opacity(model.isControlsVisible && !CastManager.shared.isConnected ? 1 : 0)
-                .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected)
+                .opacity(model.isControlsVisible && !model.isCasting ? 1 : 0)
+                .allowsHitTesting(model.isControlsVisible && !model.isCasting)
 
-            SkipSegmentButton(model: model, controlsShown: model.isControlsVisible && !CastManager.shared.isConnected)
+            SkipSegmentButton(model: model, controlsShown: model.isControlsVisible && !model.isCasting)
             SpeedBoostBadge(model: model)
 
             if model.showUpNext, let nextEpisode = model.nextEpisode {
@@ -181,11 +183,13 @@ struct PlayerView: View {
         }
         .task {
             if model.handOffToDefaultPlayer() { closePlayer(); return }
+            await model.resolveStartPosition()
+            guard !Task.isCancelled else { return }
             if !model.isAskingToResume { await model.startSetup() }
         }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
-            Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
-                model.resumeFrom = startPositionTicks
+            Button("Resume from \(model.timeLabel(ticks: model.startPositionTicks))") {
+                model.resumeFrom = model.startPositionTicks
                 model.resumeAnswered = true
             }
             Button("Start from Beginning") {
