@@ -26,7 +26,8 @@ final class HomeHeroCarousel {
     var playbackRequest: HeroPlaybackRequest?
 
     struct HeroPlaybackRequest: Identifiable, Equatable {
-        let id = UUID()
+        // Constant, so the next episode plays in the open cover (see PlaybackRequest).
+        var id: String { "player" }
         let item: MediaItem
         let startTicks: Int64
     }

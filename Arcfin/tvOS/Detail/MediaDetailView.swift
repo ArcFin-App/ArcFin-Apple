@@ -17,8 +17,6 @@ struct MediaDetailView: View {
     @State private var showFullDescription = false
     @State private var selectedEpisode: MediaItem?
     @State private var selectedPerson: MediaPerson?
-    // The app-wide request, not this page's own MediaDetailView.PlaybackRequest: a new
-    // identity per title re-presents the player for the next one.
     @State private var playbackRequest: Arcfin.PlaybackRequest?
     @State private var openSeerrItem: SeerrItem?
     @State private var sectionOffsets: [CGFloat] = []

@@ -141,8 +141,10 @@ struct HomeView: View {
                 }
                 .fullScreenCover(item: $hero.playbackRequest) { request in
                     PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                        PlayerView.keepOrientationOnNextDisappear = true
                         hero.playbackRequest = HomeHeroCarousel.HeroPlaybackRequest(item: next, startTicks: 0)
                     }
+                    .id(request.item.id)
                 }
             }
             .navigationTitle("")

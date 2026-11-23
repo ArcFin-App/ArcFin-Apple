@@ -7,7 +7,10 @@ import MediaEngine
 // MARK: - Shared playback request
 
 struct PlaybackRequest: Identifiable, Equatable {
-    let id = UUID()
+    // Constant, like MediaDetailView.PlaybackRequest: handing over to the next title updates
+    // the open player cover in place (each presenter gives the player `.id(item.id)`) instead
+    // of dismissing and presenting it again.
+    var id: String { "player" }
     let item: MediaItem
     let startTicks: Int64
 }
