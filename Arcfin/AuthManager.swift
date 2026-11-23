@@ -512,11 +512,12 @@ final class AuthManager {
             registration: { await self.deviceRegistration(settings: $0) },
             isCurrent: { await self.isActive(credential) })
         guard let result, isActive(credential) else { return nil }
-        if let device = result.device {
-            arcfinSyncCurrentDevice = device
-            registeredSnapshot = SettingsSyncEngine.snapshot()
-        }
-        pendingRemoteSettings = result.pending
+        if let device = result.device { arcfinSyncCurrentDevice = device }
+        // Also after a failed send, so a server that keeps refusing isn't asked after every change.
+        registeredSnapshot = SettingsSyncEngine.snapshot()
+        pendingRemoteSettings = SettingsSyncMode.current() == .ask
+            ? SettingsSyncEngine.stillPending(pendingRemoteSettings, found: result.pending, profile: credential.id.uuidString)
+            : nil
         return result.locked
     }
 
@@ -529,11 +530,11 @@ final class AuthManager {
     /// Updates this device's record without syncing settings.
     private func registerDevice(credential: ServerCredential, header: String, name: String? = nil) async {
         let snapshot = SettingsSyncEngine.snapshot()
+        registeredSnapshot = snapshot
         guard let device = try? await syncClient.registerDevice(
             credential: credential, authHeader: header, deviceRegistration(settings: snapshot, name: name)),
             isActive(credential) else { return }
         arcfinSyncCurrentDevice = device
-        registeredSnapshot = snapshot
     }
 
     /// The credential and header for the Devices & Sync screens, with plugin v2 only.

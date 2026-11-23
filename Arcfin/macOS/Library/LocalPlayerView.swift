@@ -41,7 +41,9 @@ struct LocalPlayerView: View {
         }
         .keepsScreenAwake(status: model.player.status)
         .task { await model.start(url) }
+        .onAppear { PlayerActivity.shared.localPlayerOpened() }
         .onDisappear {
+            PlayerActivity.shared.localPlayerClosed()
             model.stop(url)
         }
         .onChange(of: model.player.status) { _, status in

@@ -260,6 +260,15 @@ extension SettingsSyncEngine {
                                     updatedAt: updatedAt, values: held)
     }
 
+    /// A question still waiting keeps waiting through later syncs (one that changed settings here
+    /// finds nothing new to ask), until it's answered or a newer change replaces it.
+    public static func stillPending(_ current: RemoteSettingsChange?, found: RemoteSettingsChange?,
+                                    profile: String) -> RemoteSettingsChange? {
+        if let found { return found }
+        guard let current, current.profile == profile else { return nil }
+        return current
+    }
+
     static func markHandled(_ date: Date?, profile: String, defaults: UserDefaults) {
         guard let date else { return }
         defaults.set(date, forKey: handledKey(profile: profile))

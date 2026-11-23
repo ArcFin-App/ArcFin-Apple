@@ -58,7 +58,9 @@ struct LocalPlayerView: View {
         .persistentSystemOverlays(.hidden)
         .keepsScreenAwake(status: model.player.status)
         .task { await model.start(url) }
+        .onAppear { PlayerActivity.shared.localPlayerOpened() }
         .onDisappear {
+            PlayerActivity.shared.localPlayerClosed()
             model.stop(url)
             resetPlayerOrientation()
         }

@@ -122,7 +122,9 @@ struct OfflinePlayerView: View {
         .onChange(of: model.isAskingToResume) { _, asking in
             if !asking, let resumeAnswer = model.resumeAnswer { Task { await startPlayback(from: resumeAnswer) } }
         }
+        .onAppear { PlayerActivity.shared.localPlayerOpened() }
         .onDisappear {
+            PlayerActivity.shared.localPlayerClosed()
             // Dismissing (back chevron, Escape) previously left VLC playing in the
             // background with no way to stop it short of killing the app — the player
             // was never actually told to stop, just visually torn down.

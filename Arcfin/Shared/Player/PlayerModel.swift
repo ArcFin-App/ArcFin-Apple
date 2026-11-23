@@ -2383,4 +2383,15 @@ final class PlayerActivity {
         openPlayers -= 1
         if openPlayers == 0 { AppServices.downloadManager.playerClosed() }
     }
+
+    /// Players of downloads and files on this device. They don't hold up downloads, but count
+    /// for what shouldn't come up over a player.
+    private(set) var openLocalPlayers = 0
+    var isAnyPlayerOpen: Bool { openPlayers > 0 || openLocalPlayers > 0 }
+
+    func localPlayerOpened() { openLocalPlayers += 1 }
+
+    func localPlayerClosed() {
+        if openLocalPlayers > 0 { openLocalPlayers -= 1 }
+    }
 }

@@ -69,6 +69,15 @@ struct DeviceSyncTests {
         #expect(defaults.bool(forKey: "skipIntro") == false)
     }
 
+    @Test("A question still waiting isn't lost to a later sync, but a newer one replaces it")
+    func pendingSurvivesSyncs() {
+        let old = RemoteSettingsChange(profile: "a", deviceName: "TV", updatedAt: Date(timeIntervalSince1970: 1), values: ["skipIntro": "true"])
+        let newer = RemoteSettingsChange(profile: "a", deviceName: "Mac", updatedAt: Date(timeIntervalSince1970: 2), values: ["skipCredits": "true"])
+        #expect(SettingsSyncEngine.stillPending(old, found: nil, profile: "a") == old)
+        #expect(SettingsSyncEngine.stillPending(old, found: newer, profile: "a") == newer)
+        #expect(SettingsSyncEngine.stillPending(old, found: nil, profile: "b") == nil)
+    }
+
     // MARK: Using another device's settings
 
     @Test("Another device's settings replace this one's, but only what that device shows")

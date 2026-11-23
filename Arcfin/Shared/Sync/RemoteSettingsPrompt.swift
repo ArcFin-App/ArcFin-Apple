@@ -6,7 +6,11 @@ import SyncEngine
 /// Ask First: settings were changed on another device, and this one asks before using them.
 struct RemoteSettingsPrompt: ViewModifier {
     @Environment(AuthManager.self) private var authManager
-    let isPresented: Binding<Bool>
+    let canAsk: Bool
+    /// Something else is presented over the window. Read when the question is about to come up,
+    /// not while it's showing, since it then covers the window itself.
+    var isCovered: @MainActor () -> Bool = { false }
+    @State private var isPresented = false
 
     private var title: String {
         let name = authManager.pendingRemoteSettings?.deviceName ?? ""
@@ -15,11 +19,25 @@ struct RemoteSettingsPrompt: ViewModifier {
     }
 
     func body(content: Content) -> some View {
-        content.alert(title, isPresented: isPresented) {
-            Button("Use Them") { authManager.answerRemoteSettings(useThem: true) }
-            Button("Keep This Device's", role: .cancel) { authManager.answerRemoteSettings(useThem: false) }
-        } message: {
-            Text("Use them on this device?")
-        }
+        content
+            .alert(title, isPresented: $isPresented) {
+                Button("Use Them") { authManager.answerRemoteSettings(useThem: true) }
+                Button("Keep This Device's", role: .cancel) { authManager.answerRemoteSettings(useThem: false) }
+            } message: {
+                Text("Use them on this device?")
+            }
+            .task(id: canAsk) {
+                // Waits out a sheet or cover over the window, then asks once.
+                while canAsk, !isPresented, !Task.isCancelled {
+                    if !isCovered() {
+                        isPresented = true
+                        return
+                    }
+                    try? await Task.sleep(for: .seconds(1))
+                }
+            }
+            .onChange(of: authManager.pendingRemoteSettings == nil) { _, answered in
+                if answered { isPresented = false }
+            }
     }
 }
