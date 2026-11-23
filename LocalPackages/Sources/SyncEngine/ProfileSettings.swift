@@ -65,7 +65,7 @@ public enum ProfileSettings {
             var values = live
             for (key, value) in SettingsSyncEngine.lastSynced(profile: profile, defaults: defaults) ?? [:] {
                 guard let type = types[key], !swappedWithSeerr.contains(key),
-                      let stored = type.stored(value, key: key) else { continue }
+                      let stored = type.stored(value) else { continue }
                 values[key] = stored
             }
             defaults.set(values, forKey: storeKey(profile))

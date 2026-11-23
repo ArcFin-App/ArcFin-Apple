@@ -162,16 +162,12 @@ struct DeviceSyncTests {
     func doublesAndJSON() {
         defaults.set(1.25, forKey: "defaultPlaybackSpeed")
         defaults.set(Data(#"[{"id":8}]"#.utf8), forKey: "streamingServices")
-        defaults.set(["s1": "Show"], forKey: "smartDownloadsIgnored")
         let snapshot = SettingsSyncEngine.snapshot(defaults: defaults)
         #expect(snapshot["defaultPlaybackSpeed"] == "1.25")
         #expect(snapshot["streamingServices"] == #"[{"id":8}]"#)
-        #expect(snapshot["smartDownloadsIgnored"] == #"{"s1":"Show"}"#)
 
-        SettingsSyncEngine.write(["defaultPlaybackSpeed": "1.5", "smartDownloadsIgnored": #"{"s2":"Other"}"#,
-                                  "streamingServices": #"[]"#, "holdSpeedRate": "fast"], schema: .bundled, defaults: defaults)
+        SettingsSyncEngine.write(["defaultPlaybackSpeed": "1.5", "streamingServices": #"[]"#, "holdSpeedRate": "fast"], schema: .bundled, defaults: defaults)
         #expect(defaults.double(forKey: "defaultPlaybackSpeed") == 1.5)
-        #expect(defaults.dictionary(forKey: "smartDownloadsIgnored") as? [String: String] == ["s2": "Other"])
         #expect(defaults.data(forKey: "streamingServices") == Data("[]".utf8))
         #expect(defaults.object(forKey: "holdSpeedRate") == nil)
     }

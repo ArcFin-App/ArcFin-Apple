@@ -285,8 +285,7 @@ public enum SettingsSyncValueType: String, Sendable, Codable {
     case string
     /// On the wire with a "." whatever the language, as Swift writes a Double.
     case double
-    /// A list or record, as JSON text on the wire. Stored as Data, or as a property list for the
-    /// keys in `SettingsSyncRegistry.propertyListKeys`.
+    /// A list or record, as JSON text on the wire, stored as Data.
     case json
 }
 
@@ -300,16 +299,13 @@ extension SettingsSyncValueType {
         case .string: return defaults.string(forKey: key)
         case .double: return String(defaults.double(forKey: key))
         case .json:
-            if let data = object as? Data { return String(data: data, encoding: .utf8) }
-            guard JSONSerialization.isValidJSONObject(object),
-                  let data = try? JSONSerialization.data(withJSONObject: object, options: [.sortedKeys])
-            else { return nil }
+            guard let data = object as? Data else { return nil }
             return String(data: data, encoding: .utf8)
         }
     }
 
     /// What `value` is stored as in UserDefaults, nil when it doesn't parse.
-    func stored(_ value: String, key: String) -> Any? {
+    func stored(_ value: String) -> Any? {
         switch self {
         case .bool: return value == "true"
         case .int: return Int(value)
@@ -317,8 +313,8 @@ extension SettingsSyncValueType {
         case .double: return Double(value)
         case .json:
             let data = Data(value.utf8)
-            guard let object = try? JSONSerialization.jsonObject(with: data) else { return nil }
-            return SettingsSyncRegistry.propertyListKeys.contains(key) ? object : data
+            guard (try? JSONSerialization.jsonObject(with: data)) != nil else { return nil }
+            return data
         }
     }
 }
@@ -468,9 +464,6 @@ public enum SettingsSyncRegistry {
     ]
 
     public static let allKeys: Set<String> = Set(entries.map { $0.key })
-
-    /// JSON settings the app keeps as a property list rather than as Data.
-    public static let propertyListKeys: Set<String> = ["smartDownloadsIgnored"]
 }
 
 // MARK: - Settings sync engine
@@ -492,7 +485,7 @@ public enum SettingsSyncEngine {
     public static func apply(_ payload: SyncPayload, defaults: UserDefaults = .standard) {
         let byKey = Dictionary(uniqueKeysWithValues: SettingsSyncRegistry.entries.map { ($0.key, $0.type) })
         for (key, value) in payload.settings {
-            guard let stored = byKey[key]?.stored(value, key: key) else { continue }
+            guard let stored = byKey[key]?.stored(value) else { continue }
             defaults.set(stored, forKey: key)
         }
     }

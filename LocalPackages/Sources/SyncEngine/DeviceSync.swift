@@ -99,7 +99,7 @@ extension SettingsSyncEngine {
     static func write(_ values: [String: String], clearing: Set<String> = [], schema: SettingsSchema,
                       defaults: UserDefaults) {
         for (key, value) in values {
-            guard let stored = schema.setting(key)?.type.stored(value, key: key) else { continue }
+            guard let stored = schema.setting(key)?.type.stored(value) else { continue }
             defaults.set(stored, forKey: key)
         }
         for key in clearing where schema.setting(key) != nil { defaults.removeObject(forKey: key) }

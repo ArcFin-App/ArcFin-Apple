@@ -20,9 +20,9 @@ struct SettingsSchemaTests {
         #expect(Set(schema.settings.map(\.key)).count == schema.settings.count)
     }
 
-    @Test("A setting kept on each profile alone on this device never syncs")
-    func localKeysDontSync() {
-        #expect(schema.syncedKeys.isDisjoint(with: ProfileSettings.localKeys))
+    @Test("A setting kept on each profile alone on this device never leaves it, not even in its record")
+    func localKeysStayOut() {
+        #expect(Set(schema.settings.map(\.key)).isDisjoint(with: ProfileSettings.localKeys))
     }
 
     @Test("Formats are ones the plugin knows, on types they fit")
