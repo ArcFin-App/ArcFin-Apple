@@ -7,9 +7,6 @@ import SyncEngine
 struct RemoteSettingsPrompt: ViewModifier {
     @Environment(AuthManager.self) private var authManager
     let canAsk: Bool
-    /// Something else is presented over the window. Read when the question is about to come up,
-    /// not while it's showing, since it then covers the window itself.
-    var isCovered: @MainActor () -> Bool = { false }
     @State private var isPresented = false
 
     private var title: String {
@@ -27,13 +24,21 @@ struct RemoteSettingsPrompt: ViewModifier {
                 Text("Use them on this device?")
             }
             .task(id: canAsk) {
-                // Waits out a sheet or cover over the window, then asks once.
-                while canAsk, !isPresented, !Task.isCancelled {
-                    if !isCovered() {
-                        isPresented = true
-                        return
+                // Waits out a sheet or cover over the window, then asks. Whether something is
+                // presented is read before asking, not while asking: the question covers the
+                // window itself.
+                var tries = 0
+                while canAsk, !isPresented, tries < 3, !Task.isCancelled {
+                    if RootPresentation.isCovered {
+                        try? await Task.sleep(for: .seconds(1))
+                        continue
                     }
+                    isPresented = true
+                    tries += 1
                     try? await Task.sleep(for: .seconds(1))
+                    // Something else came up in the same moment, so it couldn't show: try again.
+                    guard isPresented, RootPresentation.keepsAlertAway else { return }
+                    isPresented = false
                 }
             }
             .onChange(of: authManager.pendingRemoteSettings == nil) { _, answered in

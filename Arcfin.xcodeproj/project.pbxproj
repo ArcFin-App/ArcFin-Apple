@@ -213,6 +213,7 @@
 				iOS/Platform/PlayerOverlayButton.swift = (ios, );
 				iOS/Platform/PointerHover.swift = (ios, );
 				iOS/Platform/PressableHover.swift = (ios, );
+				iOS/Platform/RootPresentation.swift = (ios, );
 				iOS/Platform/RowLabelText.swift = (ios, );
 				iOS/Platform/ScrubGesture.swift = (ios, );
 				iOS/Platform/ShelfScrollButtons.swift = (ios, );
@@ -319,6 +320,7 @@
 				macOS/Platform/PlayerOverlayButton.swift = (macos, );
 				macOS/Platform/PointerHover.swift = (macos, );
 				macOS/Platform/PressableHover.swift = (macos, );
+				macOS/Platform/RootPresentation.swift = (macos, );
 				macOS/Platform/RowLabelText.swift = (macos, );
 				macOS/Platform/ScrubGesture.swift = (macos, );
 				macOS/Platform/ShelfScrollButtons.swift = (macos, );
