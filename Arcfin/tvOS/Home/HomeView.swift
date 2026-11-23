@@ -599,15 +599,14 @@ struct HomeView: View {
             let sh = proxy.size.height
             let rowsTop = sh * 0.5
             let focusedRowTop = focus.modernRow.flatMap { modernRowTops[$0] } ?? 0
-            // Resting drops the focused row towards the bottom edge. Each row's height includes
-            // its 40 pt bottom padding. The next row's cards (about 60 pt below its top, after
-            // the row title) keep their top 40 pt on screen, masked: Apple TV only moves focus
-            // to cards on screen, so a deeper drop left Down with nowhere to go.
+            // Resting drops the focused row towards the bottom edge: half as far again as keeping
+            // the next row's cards on screen would allow, but never with the focused row's own
+            // cards (its height includes 40 pt of bottom padding) below the edge. The next row
+            // can end up off screen, so the first press only brings the rows back.
             let focusedRowHeight = modernRowHeights[focus.modernRow ?? Self.continueWatchingRow] ?? 0
-            let restingDrop = max(0, min(
-                sh - 60 - rowsTop - (focusedRowHeight - 40),
-                sh - 40 - rowsTop - focusedRowHeight - 60
-            ))
+            let rowOnScreen = sh - 30 - rowsTop - (focusedRowHeight - 40)
+            let nextRowOnScreen = sh - 10 - rowsTop - focusedRowHeight - 60
+            let restingDrop = max(0, min(rowOnScreen, nextRowOnScreen * 1.5))
             let rowsOffset = rowsTop - focusedRowTop + (modernRowsResting ? restingDrop : 0)
 
             ZStack(alignment: .topLeading) {
