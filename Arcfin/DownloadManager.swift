@@ -838,8 +838,8 @@ final class DownloadManager: NSObject {
             isApproximate = true
         }
 
-        let subtitleLanguages = info.subtitleStreams.compactMap { $0.deliveryUrl != nil ? ($0.language ?? $0.displayTitle ?? "Unknown") : nil }
-        let audioLanguages = info.audioStreams.map { $0.language ?? $0.displayTitle ?? "Unknown" }
+        let subtitleLanguages = info.subtitleStreams.compactMap { $0.deliveryUrl != nil ? ($0.language ?? $0.displayTitle ?? String(localized: "Unknown")) : nil }
+        let audioLanguages = info.audioStreams.map { $0.language ?? $0.displayTitle ?? String(localized: "Unknown") }
         return DownloadPreview(
             subtitleLanguages: subtitleLanguages, audioLanguages: audioLanguages,
             estimatedSizeBytes: estimatedSize, estimatedSizeIsApproximate: isApproximate, willRemux: false,
@@ -1398,7 +1398,7 @@ final class DownloadManager: NSObject {
         return await withTaskGroup(of: (Int, String, String)?.self) { group in
             for (order, stream) in wanted.enumerated() {
                 guard let deliveryUrl = stream.deliveryUrl else { continue }
-                let fileName = "sub-\(stream.index).vtt", language = stream.language ?? stream.displayTitle ?? "Unknown"
+                let fileName = "sub-\(stream.index).vtt", language = stream.language ?? stream.displayTitle ?? String(localized: "Unknown")
                 group.addTask {
                     guard let data = await SubtitleLoader.fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential),
                           (try? data.write(to: dir.appendingPathComponent(fileName))) != nil
