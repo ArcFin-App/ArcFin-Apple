@@ -164,17 +164,18 @@ public struct ArcfinSyncDeviceRegistration: Sendable, Encodable, Equatable {
     }
 }
 
-/// An administrator's default and lock for one setting, for everyone or one user.
+/// An administrator's default and lock for one setting, for everyone or one user. A user's
+/// entry with no lock of its own (nil) has everyone's lock; for everyone, nil is unlocked.
 public struct ArcfinSyncPolicySetting: Sendable, Codable, Equatable {
     public var key: String
     public var defaultValue: String?
-    public var locked: Bool
+    public var locked: Bool?
 
     enum CodingKeys: String, CodingKey {
         case key = "Key", defaultValue = "DefaultValue", locked = "Locked"
     }
 
-    public init(key: String, defaultValue: String?, locked: Bool) {
+    public init(key: String, defaultValue: String?, locked: Bool?) {
         self.key = key
         self.defaultValue = defaultValue
         self.locked = locked
@@ -184,7 +185,7 @@ public struct ArcfinSyncPolicySetting: Sendable, Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         key = try container.decode(String.self, forKey: .key)
         defaultValue = try container.decodeIfPresent(String.self, forKey: .defaultValue)
-        locked = try container.decodeIfPresent(Bool.self, forKey: .locked) ?? false
+        locked = try container.decodeIfPresent(Bool.self, forKey: .locked)
     }
 }
 

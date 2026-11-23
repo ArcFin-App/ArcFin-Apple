@@ -5,7 +5,8 @@ import AuthCore
 import JellyfinAPI
 import SyncEngine
 
-/// A user's lock for one setting: the one everyone has, or their own either way.
+/// A user's lock for one setting: the one everyone has (and keeps following), or their own
+/// either way.
 enum PolicyLockChoice: String, CaseIterable, Identifiable {
     case inherited, locked, unlocked
     var id: String { rawValue }
@@ -121,10 +122,10 @@ final class ArcfinSyncAdminModel {
     func setDefault(_ value: String?, for key: String) {
         var setting = entry(key, user: nil) ?? ArcfinSyncPolicySetting(key: key, defaultValue: nil, locked: false)
         setting.defaultValue = value
-        store(setting, user: nil, keep: value != nil || setting.locked)
+        store(setting, user: nil, keep: value != nil || setting.locked == true)
     }
 
-    func isLocked(_ key: String) -> Bool { entry(key, user: nil)?.locked ?? false }
+    func isLocked(_ key: String) -> Bool { entry(key, user: nil)?.locked == true }
 
     func setLocked(_ locked: Bool, for key: String) {
         var setting = entry(key, user: nil) ?? ArcfinSyncPolicySetting(key: key, defaultValue: nil, locked: false)
@@ -133,32 +134,31 @@ final class ArcfinSyncAdminModel {
     }
 
     func lockChoice(_ key: String, user: String) -> PolicyLockChoice {
-        guard let setting = entry(key, user: user) else { return .inherited }
-        return setting.locked ? .locked : .unlocked
-    }
-
-    /// A user's own entry overrides everyone's lock; without one they have everyone's.
-    func setLockChoice(_ choice: PolicyLockChoice, for key: String, user: String) {
-        let current = entry(key, user: user)
-        switch choice {
-        case .inherited:
-            if let value = current?.defaultValue {
-                store(ArcfinSyncPolicySetting(key: key, defaultValue: value, locked: isLocked(key)), user: user, keep: true)
-            } else {
-                store(ArcfinSyncPolicySetting(key: key, defaultValue: nil, locked: false), user: user, keep: false)
-            }
-        case .locked, .unlocked:
-            store(ArcfinSyncPolicySetting(key: key, defaultValue: current?.defaultValue, locked: choice == .locked),
-                  user: user, keep: true)
+        switch entry(key, user: user)?.locked {
+        case nil: .inherited
+        case true?: .locked
+        case false?: .unlocked
         }
     }
 
-    /// A user's own default; clearing it leaves their lock as it is.
+    /// A user's own lock overrides everyone's; without one they follow everyone's, even with a
+    /// default of their own.
+    func setLockChoice(_ choice: PolicyLockChoice, for key: String, user: String) {
+        let value = entry(key, user: user)?.defaultValue
+        let locked: Bool? = switch choice {
+        case .inherited: nil
+        case .locked: true
+        case .unlocked: false
+        }
+        store(ArcfinSyncPolicySetting(key: key, defaultValue: value, locked: locked), user: user,
+              keep: value != nil || locked != nil)
+    }
+
+    /// A user's own default; setting or clearing it leaves their lock as it is.
     func setUserDefault(_ value: String?, for key: String, user: String) {
-        let current = entry(key, user: user)
-        guard value != nil || current != nil else { return }
-        store(ArcfinSyncPolicySetting(key: key, defaultValue: value, locked: current?.locked ?? isLocked(key)),
-              user: user, keep: true)
+        let locked = entry(key, user: user)?.locked
+        store(ArcfinSyncPolicySetting(key: key, defaultValue: value, locked: locked), user: user,
+              keep: value != nil || locked != nil)
     }
 
     func overrideCount(user: String) -> Int {

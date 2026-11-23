@@ -51,6 +51,19 @@ struct ArcfinSyncDevicesTests {
         #expect(device.isCurrent)
     }
 
+    @Test("A user's entry with no lock of its own follows everyone's, and goes back without one")
+    func userLockFollowsEveryone() throws {
+        let policy = try decode(ArcfinSyncPolicy.self, """
+        {"Settings":[{"Key":"skipIntro","DefaultValue":"true","Locked":true}],
+         "Users":[{"UserId":"u1","Settings":[{"Key":"skipIntro","DefaultValue":"false"},{"Key":"wifiOnly","Locked":false}]}]}
+        """)
+        #expect(policy.settings[0].locked == true)
+        #expect(policy.users[0].settings[0].locked == nil)
+        #expect(policy.users[0].settings[1].locked == false)
+        let sent = String(decoding: try JSONEncoder().encode(policy.users[0].settings[0]), as: UTF8.self)
+        #expect(!sent.contains("Locked"))
+    }
+
     @Test("Device ids in a path can't add path segments")
     func pathComponent() {
         #expect(ArcfinSyncClient.component("a/../b") == "a%2F..%2Fb")
