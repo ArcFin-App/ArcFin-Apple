@@ -74,40 +74,44 @@ extension PlayerView {
 
     // MARK: - Skip intro/credits
 
+    /// On its own in the corner while the controls are hidden, where a click skips. With the
+    /// controls up it's in them instead (skipControl).
     var skipButton: some View {
         Group {
-            if let label = model.skipButtonLabel {
+            if let label = model.skipButtonLabel, model.tvControlsHidden {
                 VStack {
                     Spacer()
                     HStack {
                         Spacer()
-                        Button { model.skipToSegmentEnd() } label: {
-                            HStack(spacing: 6) {
-                                Text(label).font(.system(.footnote, design: .default, weight: .semibold))
-                                Image(systemName: "forward.fill").font(.system(.caption))
-                            }
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 16).padding(.vertical, 10)
-                            .background {
-                                if let countdown = model.autoSkipCountdown, countdown.kind == model.skipButtonKind {
-                                    CountdownFill(countdown: countdown, color: .white.opacity(0.28))
-                                }
-                            }
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
-                            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                            .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
-                        }
-                        .buttonStyle(TVCardButtonStyle())
-                        .focusEffectDisabled()
-                        .tvFocusRing(cornerRadius: DT.Radius.lg, prominent: true)
-                        // With the controls hidden, a click skips.
-                        .prefersDefaultFocus(model.tvControlsHidden, in: tvFocusNamespace)
-                        .padding(.trailing, DT.Spacing.pagePad)
-                        .padding(.bottom, 100)
+                        skipSegmentButton(label)
+                            .prefersDefaultFocus(true, in: tvFocusNamespace)
+                            .padding(.trailing, DT.Spacing.pagePad)
+                            .padding(.bottom, 100)
                     }
                 }
             }
         }
+    }
+
+    /// The skip button's place in the controls, above the scrubber at the trailing edge.
+    @ViewBuilder
+    var skipControl: some View {
+        if let label = model.skipButtonLabel {
+            HStack {
+                Spacer()
+                skipSegmentButton(label)
+            }
+            .focusSection()
+        }
+    }
+
+    private func skipSegmentButton(_ label: String) -> some View {
+        Button { model.skipToSegmentEnd() } label: {
+            SkipSegmentLabel(model: model, label: label)
+        }
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .tvFocusRing(cornerRadius: DT.Radius.lg, prominent: true)
     }
 
     /// The segment playback is in right now, if any, with its button label.

@@ -135,6 +135,7 @@ extension PlayerView {
 
     private var bottomBar: some View {
         VStack(spacing: 10) {
+            skipControl
             if model.isLive {
                 // Nothing to scrub on a channel, so nothing here to focus either.
                 HStack(spacing: 16) {

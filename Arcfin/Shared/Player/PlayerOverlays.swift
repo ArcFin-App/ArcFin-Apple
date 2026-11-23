@@ -109,37 +109,65 @@ struct SpeedBoostBadge: View {
     }
 }
 
+/// Skip Intro, Credits and the like, with the auto-skip countdown filling it.
+struct SkipSegmentLabel: View {
+    let model: PlayerModel
+    let label: String
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text(label).font(.system(.footnote, design: .default, weight: .semibold))
+            Image(systemName: "forward.fill").font(.system(.caption))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 16).padding(.vertical, 10)
+        .background {
+            if let countdown = model.autoSkipCountdown, countdown.kind == model.skipButtonKind {
+                CountdownFill(countdown: countdown, color: .white.opacity(0.28))
+            }
+        }
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
+    }
+}
+
+/// The skip button on its own in the corner, while the controls are hidden. With them up it
+/// sits in the controls instead (`SkipSegmentControl`).
 struct SkipSegmentButton: View {
+    let model: PlayerModel
+    let controlsShown: Bool
+
+    var body: some View {
+        if let label = model.skipButtonLabel, !controlsShown {
+            VStack {
+                Spacer()
+                HStack {
+                    Spacer()
+                    Button { model.skipToSegmentEnd() } label: {
+                        SkipSegmentLabel(model: model, label: label)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.trailing, DT.Spacing.pagePad)
+                    .padding(.bottom, 100)
+                }
+            }
+        }
+    }
+}
+
+/// The skip button's place in the controls, above the scrubber at the trailing edge.
+struct SkipSegmentControl: View {
     let model: PlayerModel
 
     var body: some View {
-        Group {
-            if let label = model.skipButtonLabel {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Spacer()
-                        Button { model.skipToSegmentEnd() } label: {
-                            HStack(spacing: 6) {
-                                Text(label).font(.system(.footnote, design: .default, weight: .semibold))
-                                Image(systemName: "forward.fill").font(.system(.caption))
-                            }
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 16).padding(.vertical, 10)
-                            .background {
-                                if let countdown = model.autoSkipCountdown, countdown.kind == model.skipButtonKind {
-                                    CountdownFill(countdown: countdown, color: .white.opacity(0.28))
-                                }
-                            }
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
-                            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
-                            .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(.white.opacity(0.15), lineWidth: 1))
-                        }
-                        .buttonStyle(.plain)
-                        .padding(.trailing, DT.Spacing.pagePad)
-                        .padding(.bottom, 100)
-                    }
+        if let label = model.skipButtonLabel {
+            HStack {
+                Spacer()
+                Button { model.skipToSegmentEnd() } label: {
+                    SkipSegmentLabel(model: model, label: label)
                 }
+                .buttonStyle(.plain)
             }
         }
     }

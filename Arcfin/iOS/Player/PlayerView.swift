@@ -167,7 +167,7 @@ struct PlayerView: View {
                 .opacity(model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil ? 1 : 0)
                 .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil)
 
-            SkipSegmentButton(model: model)
+            SkipSegmentButton(model: model, controlsShown: model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil)
             SpeedBoostBadge(model: model)
 
             if model.showUpNext, let nextEpisode = model.nextEpisode {

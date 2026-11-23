@@ -270,6 +270,7 @@ extension PlayerView {
 
     private var bottomBar: some View {
         VStack(spacing: 10) {
+            SkipSegmentControl(model: model)
             if model.isLive {
                 LiveProgramBar(program: model.liveProgram)
             } else {
