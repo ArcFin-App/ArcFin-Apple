@@ -2437,7 +2437,9 @@ final class DownloadManager: NSObject {
             try await withTaskCancellationHandler {
                 try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
                     continuations[task.taskIdentifier] = continuation
-                    task.resume()
+                    // A retry while the title is paused waits, like its other ranges, for the
+                    // resume, which starts every transfer in partTasks.
+                    if !pausedItemIds.contains(itemId), !pausedForPlayer.contains(itemId) { task.resume() }
                 }
             } onCancel: {
                 task.cancel()
@@ -2446,6 +2448,8 @@ final class DownloadManager: NSObject {
             // A retry starts a new transfer; this one's bytes no longer count toward progress.
             partTasks[itemId]?.removeAll { $0 === task }
             partBytes[task.taskIdentifier] = nil
+            // The total just went down; a speed sampled across that would come out negative.
+            speedSamples[itemId] = nil
             throw error
         }
     }
