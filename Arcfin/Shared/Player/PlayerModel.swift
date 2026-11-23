@@ -880,10 +880,12 @@ final class PlayerModel {
                 await loadSubtitleCues(from: listed)
             }
             await player.play()
+            guard !setupAbandoned(generation) else { return }
             playStartedAt = Date()
             applyEngineOptions()
             loadingStage = nil
             await applyRememberedRate()
+            guard !setupAbandoned(generation) else { return }
             if !isLive, capabilities.sharePlay { sharePlay.playerOpened(item) }
             if isLive, let credential {
                 let channel = LiveTVQueue.channels.first { $0.id == item.id }
@@ -893,6 +895,7 @@ final class PlayerModel {
             }
             // The preferred or remembered audio language, which a file played as is ignores.
             if selectedAudioIndex != nil { await selectAudioInEngine() }
+            guard !setupAbandoned(generation) else { return }
             // A cast that was already running when this screen opened (autoplay moved on to
             // the next episode) never produces an isConnected change to trigger this.
             if isCasting { startCasting() }
@@ -901,6 +904,8 @@ final class PlayerModel {
             updateNowPlayingInfo()
             Task { await fetchAndApplyNowPlayingArtwork() }
             await source.playbackStarted(item: item, info: info, positionTicks: resumeFrom)
+            // Closing during the awaits above has already cancelled tasks that didn't exist yet.
+            guard !setupAbandoned(generation) else { return }
             startProgressReporting(mediaSourceId: info.mediaSourceId)
             startAutoRecovery()
             watchForMissingPicture()
@@ -913,6 +918,7 @@ final class PlayerModel {
             if retryWithoutAV1() { return }
             errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
         }
+        guard !setupAbandoned(generation) else { return }
 
         autoSkipped = []
         if !isLive {
@@ -1327,10 +1333,11 @@ final class PlayerModel {
 
     private func startProgressReporting(mediaSourceId: String) {
         progressReportTask?.cancel()
+        guard !isClosed else { return }
         progressReportTask = Task {
-            while !Task.isCancelled {
+            while !Task.isCancelled, !isClosed {
                 try? await Task.sleep(for: .seconds(10))
-                guard !Task.isCancelled else { continue }
+                guard !Task.isCancelled, !isClosed else { continue }
                 await source.reportProgress(PlaybackProgressReport(
                     item: item, mediaSourceId: mediaSourceId, positionTicks: reportedPositionTicks,
                     durationTicks: player.durationTicks, isPaused: reportedIsPaused, liveStreamId: playbackInfo?.liveStreamId,
@@ -1391,9 +1398,9 @@ final class PlayerModel {
     /// every few minutes of smooth playback and raises the cap once it has clearly recovered.
     private func startAutoRecovery() {
         autoRecoveryTask?.cancel()
-        guard let credential, let authHeader else { return }
+        guard !isClosed, let credential, let authHeader else { return }
         autoRecoveryTask = Task {
-            while !Task.isCancelled {
+            while !Task.isCancelled, !isClosed {
                 try? await Task.sleep(for: .seconds(180))
                 guard !Task.isCancelled, quality == .auto, autoCap != nil, player.status == .playing,
                       !player.isBuffering, recentStallTimestamps.isEmpty,
@@ -1421,19 +1428,19 @@ final class PlayerModel {
     /// playback on screen with nothing rendered, that same AVFoundation/VLC fallback takes over
     /// at the same position. Not while the video is on AirPlay or another screen.
     private func watchForMissingPicture() {
-        guard playbackEnginePreference == .auto, let aether = player as? AetherEnginePlayer,
+        guard !isClosed, playbackEnginePreference == .auto, let aether = player as? AetherEnginePlayer,
               let info = playbackInfo, info.videoStream != nil else { return }
         pictureCheckTask?.cancel()
         pictureCheckTask = Task {
             var secondsPlayed = 0
             while secondsPlayed < 8 {
                 try? await Task.sleep(for: .seconds(1))
-                guard !Task.isCancelled, player === aether else { return }
+                guard !Task.isCancelled, !isClosed, player === aether else { return }
                 if scenePhase == .active, aether.status == .playing, !aether.isBuffering { secondsPlayed += 1 }
             }
             // On AirPlay or another screen the frames are drawn there, never here.
             guard aether.nativePlayerLayer?.player?.isExternalPlaybackActive != true,
-                  await !aether.hasRenderedVideoFrame(), !Task.isCancelled, player === aether else { return }
+                  await !aether.hasRenderedVideoFrame(), !Task.isCancelled, !isClosed, player === aether else { return }
             let resumeTicks = aether.positionTicks
             await aether.stop()
             engineReleased()
@@ -2080,10 +2087,12 @@ final class PlayerModel {
                     await loadSubtitleCues(from: listed)
                 }
                 await player.play()
+                guard reloadIsCurrent(generation) else { return }
                 applyEngineVolume()
                 watchForMissingPicture()
                 if selectedAudioIndex != nil { await selectAudioInEngine() }
                 await applyRememberedRate()
+                guard reloadIsCurrent(generation) else { return }
                 streamReloaded()
                 updateNowPlayingInfo()
                 startProgressReporting(mediaSourceId: info.mediaSourceId)
