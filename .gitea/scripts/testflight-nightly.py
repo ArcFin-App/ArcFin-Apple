@@ -21,6 +21,7 @@ import urllib.request
 
 API = "https://api.appstoreconnect.apple.com/v1"
 PLATFORMS = {"iOS": "IOS", "macOS": "MAC_OS", "tvOS": "TV_OS"}
+SUBMITTED_STATES = {"WAITING_FOR_BETA_REVIEW", "IN_BETA_REVIEW", "BETA_APPROVED", "IN_BETA_TESTING"}
 # Commits testers can't see: CI, docs, the project file, strings, tests and build numbers.
 UNDER_THE_HOOD = re.compile(r"^(CI|Docs?|Project|Strings?|String Catalogs?|Translations?|Tests?|README|ARCHITECTURE|Build \d+|Release|Merge)\b", re.I)
 FOOTER = """Found a problem? Open an issue: https://git.psmattas.com/ArcFin/ArcFin/issues
@@ -162,16 +163,55 @@ def distribute(app_id: str, locale: str, group_id: str, platform: str, notes: st
         print(f"::error::{platform}: couldn't add the build to the group: {first_error(reply)}")
         return False
 
+    label = f"{platform} {os.environ['VERSION']} ({os.environ['BUILD']})"
+    return submit_for_review(build_id, label) is not False
+
+
+def review_state(build_id: str) -> str | None:
+    _, reply = call("GET", f"/builds/{build_id}/buildBetaDetail")
+    return ((reply.get("data") or {}).get("attributes") or {}).get("externalBuildState")
+
+
+def submit_for_review(build_id: str, label: str) -> bool | None:
+    """Submits a build for beta review. True once Apple has it (or it needs none), None when
+    Apple won't take it yet, which is usually another build of the version still in review: it
+    stays in the group, ready, for the sweep on a later night. False on any other failure."""
     status, reply = call("POST", "/betaAppReviewSubmissions", {"data": {
         "type": "betaAppReviewSubmissions",
         "relationships": {"build": {"data": {"type": "builds", "id": build_id}}}}})
-    # 409: already submitted, or approved without a review.
-    if status >= 300 and status != 409:
-        print(f"::error::{platform}: couldn't submit for beta review: {first_error(reply)}")
-        return False
-    print(f"{platform}: {os.environ['VERSION']} ({os.environ['BUILD']}) is in {os.environ['GROUP']}"
-          f"{' and waiting for beta review' if status < 300 else ''}")
-    return True
+    # A refusal's code doesn't say whether it was already submitted or can't be yet; its state does.
+    state = review_state(build_id)
+    if state in SUBMITTED_STATES:
+        print(f"{label} is in {os.environ['GROUP']}, {state.replace('_', ' ').lower()}")
+        return True
+    if state == "READY_FOR_BETA_SUBMISSION":
+        print(f"::warning::{label} is in {os.environ['GROUP']}, but Apple won't take it for review yet "
+              f"({first_error(reply) if status >= 300 else 'no reason given'}). A later night submits it.")
+        return None
+    print(f"::error::{label}: couldn't submit for beta review ({state}): {first_error(reply)}")
+    return False
+
+
+def sweep(app_id: str, group_id: str) -> None:
+    """Each platform's newest build that's in the group but was never submitted, because
+    another was in review then, goes for review now."""
+    for platform, code in PLATFORMS.items():
+        _, reply = call("GET", "/builds", query={
+            "filter[app]": app_id, "filter[preReleaseVersion.platform]": code,
+            "sort": "-uploadedDate", "limit": "1", "include": "buildBetaDetail,betaGroups,preReleaseVersion"})
+        builds = reply.get("data") or []
+        if not builds:
+            continue
+        build = builds[0]
+        included = {(i["type"], i["id"]): i for i in reply.get("included") or []}
+        detail_ref = (build["relationships"].get("buildBetaDetail") or {}).get("data") or {}
+        state = ((included.get(("buildBetaDetails", detail_ref.get("id"))) or {}).get("attributes") or {}).get("externalBuildState")
+        groups = {g["id"] for g in (build["relationships"].get("betaGroups") or {}).get("data") or []}
+        if state != "READY_FOR_BETA_SUBMISSION" or group_id not in groups:
+            continue
+        version_ref = (build["relationships"].get("preReleaseVersion") or {}).get("data") or {}
+        version = ((included.get(("preReleaseVersions", version_ref.get("id"))) or {}).get("attributes") or {}).get("version", "?")
+        submit_for_review(build["id"], f"{platform} {version} ({build['attributes']['version']})")
 
 
 def main() -> int:
@@ -189,6 +229,9 @@ def main() -> int:
         print(f"::error::No TestFlight group called {os.environ['GROUP']}")
         return 1
 
+    if os.environ.get("SWEEP_ONLY") == "1":
+        sweep(app_id, group["id"])
+        return 0
     notes = what_to_test()
     results = [distribute(app_id, locale, group["id"], platform, notes) for platform in os.environ["UPLOADED"].split()]
     return 0 if all(results) else 1

@@ -48,8 +48,8 @@ jobs:
           git fetch --force --tags origin
           .gitea/scripts/nightly-plan.sh
 
+      # Also on nights with nothing new: the sweep below needs it.
       - name: App Store Connect key
-        if: env.RUN == 'true'
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
@@ -58,6 +58,18 @@ jobs:
           echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$key"
           chmod 600 "$key"
           echo "ASC_KEY_PATH=$key" >> "$GITHUB_ENV"
+
+      # A build Apple wouldn't take for review while another of its version was in review is
+      # still in the group, ready: the newest one on each platform goes for review now.
+      - name: Submit builds waiting for review
+        if: env.RUN != 'true'
+        continue-on-error: true
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          BUNDLE_ID: com.psmattas.Arcfin
+          SWEEP_ONLY: '1'
+        run: python3 -I .gitea/scripts/testflight-nightly.py
 
       - name: Archive and upload
         if: env.RUN == 'true'
