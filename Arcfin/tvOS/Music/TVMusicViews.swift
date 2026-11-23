@@ -274,10 +274,14 @@ struct TVMusicSongRow: View {
 private struct TVMusicLoading<Item: Identifiable & Sendable>: View {
     let list: MusicPagedList<Item>
     let empty: LocalizedStringKey
+    var searchTerm: String?
 
     var body: some View {
         if !list.hasLoaded {
             ProgressView().frame(maxWidth: .infinity, minHeight: 300)
+        } else if list.items.isEmpty, !list.hasFailed, let searchTerm {
+            ContentUnavailableView.search(text: searchTerm)
+                .frame(maxWidth: .infinity, minHeight: 300)
         } else if list.items.isEmpty {
             ContentUnavailableView(list.hasFailed ? "Can’t Load Music" : empty, systemImage: "music.note")
                 .frame(maxWidth: .infinity, minHeight: 300)
@@ -293,6 +297,7 @@ private struct TVAlbumGrid: View {
     /// On a screen with nothing else to focus, the first album takes focus once it loads.
     var claimsFocus = false
     @FocusState private var focused: String?
+    @State private var hasClaimed = false
 
     var body: some View {
         LazyVGrid(columns: albumColumns, alignment: .leading, spacing: 56) {
@@ -319,19 +324,35 @@ private struct TVAlbumGrid: View {
             }
         }
         .focusSection()
+        // Only the first time: a search's results arriving mustn't pull focus out of its keyboard.
         .onChange(of: list.items.first?.id) { _, first in
-            if claimsFocus, focused == nil { focused = first }
+            guard claimsFocus, !hasClaimed, let first else { return }
+            hasClaimed = true
+            if focused == nil { focused = first }
         }
     }
 }
 
-/// Focus for a screen whose only focusable things arrive with its list: the first one, once it does.
+extension View {
+    /// A music section's own search, set up as Browse's search is.
+    func tvMusicSectionSearch(query: Binding<String>, term: Binding<String?>, prompt: LocalizedStringKey) -> some View {
+        searchable(text: query, prompt: prompt)
+            .screenBackground()
+            .musicSearchTerm(query.wrappedValue, term)
+    }
+}
+
+/// Focus for a screen whose only focusable things arrive with its list: the first one, the
+/// first time it does. Not again, so a search's results don't pull focus out of its keyboard.
 private struct TVClaimFirstFocus<ID: Hashable>: ViewModifier {
     let first: ID?
     let focus: FocusState<ID?>.Binding
+    @State private var hasClaimed = false
 
     func body(content: Content) -> some View {
         content.onChange(of: first) { _, first in
+            guard !hasClaimed, let first else { return }
+            hasClaimed = true
             if focus.wrappedValue == nil { focus.wrappedValue = first }
         }
     }
@@ -506,32 +527,46 @@ struct TVMusicAlbumsView: View {
     let title: String
     let genreID: String?
     @State private var list: MusicPagedList<MusicAlbum>
+    @State private var query = ""
+    @State private var term: String?
+    /// The search `list` was made for.
+    @State private var listTerm: String?
 
     init(libraryID: String, title: String, genreID: String?) {
         self.libraryID = libraryID
         self.title = title
         self.genreID = genreID
-        let filter = MusicFilter(genreId: genreID)
-        _list = State(initialValue: MusicPagedList { start in
+        _list = State(initialValue: Self.list(libraryID: libraryID, genreID: genreID, term: nil))
+    }
+
+    private static func list(libraryID: String, genreID: String?, term: String?) -> MusicPagedList<MusicAlbum> {
+        let filter = MusicFilter(genreId: genreID, searchTerm: term)
+        return MusicPagedList { start in
             let page = try await MusicAPI.call {
                 try await $0.getMusicAlbums(credential: $1, authHeader: $2, libraryId: libraryID, filter: filter, startIndex: start)
             }
             return (page.albums, page.total)
-        })
+        }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
                 Text(verbatim: title).font(.title2.weight(.bold))
-                TVMusicLoading(list: list, empty: "No Albums")
+                TVMusicLoading(list: list, empty: "No Albums", searchTerm: term)
                 TVAlbumGrid(list: list, claimsFocus: true)
             }
             .padding(.horizontal, 80)
             .padding(.vertical, 48)
         }
-        .screenBackground()
-        .task { await list.loadIfNeeded() }
+        .tvMusicSectionSearch(query: $query, term: $term, prompt: "Search Albums")
+        .task(id: term) {
+            if term != listTerm {
+                list = Self.list(libraryID: libraryID, genreID: genreID, term: term)
+                listTerm = term
+            }
+            await list.loadIfNeeded()
+        }
     }
 }
 
@@ -539,22 +574,31 @@ struct TVMusicArtistsView: View {
     let libraryID: String
     @State private var list: MusicPagedList<MusicArtist>
     @FocusState private var focused: String?
+    @State private var query = ""
+    @State private var term: String?
+    /// The search `list` was made for.
+    @State private var listTerm: String?
 
     init(libraryID: String) {
         self.libraryID = libraryID
-        _list = State(initialValue: MusicPagedList { start in
+        _list = State(initialValue: Self.list(libraryID: libraryID, term: nil))
+    }
+
+    private static func list(libraryID: String, term: String?) -> MusicPagedList<MusicArtist> {
+        MusicPagedList { start in
             let page = try await MusicAPI.call {
-                try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: libraryID, startIndex: start)
+                try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: libraryID,
+                                             filter: MusicFilter(searchTerm: term), startIndex: start)
             }
             return (page.artists, page.total)
-        })
+        }
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
                 Text("Artists").font(.title2.weight(.bold))
-                TVMusicLoading(list: list, empty: "No Artists")
+                TVMusicLoading(list: list, empty: "No Artists", searchTerm: term)
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: 48)], spacing: 56) {
                     ForEach(list.items) { artist in
                         NavigationLink(value: MusicRoute.artist(artist, libraryID: libraryID)) {
@@ -572,8 +616,14 @@ struct TVMusicArtistsView: View {
             .padding(.horizontal, 80)
             .padding(.vertical, 48)
         }
-        .screenBackground()
-        .task { await list.loadIfNeeded() }
+        .tvMusicSectionSearch(query: $query, term: $term, prompt: "Search Artists")
+        .task(id: term) {
+            if term != listTerm {
+                list = Self.list(libraryID: libraryID, term: term)
+                listTerm = term
+            }
+            await list.loadIfNeeded()
+        }
     }
 }
 
@@ -581,6 +631,8 @@ struct TVMusicGenresView: View {
     let libraryID: String
     @State private var list: MusicPagedList<MusicGenre>
     @FocusState private var focused: String?
+    @State private var query = ""
+    @State private var term: String?
 
     init(libraryID: String) {
         self.libraryID = libraryID
@@ -595,8 +647,12 @@ struct TVMusicGenresView: View {
             VStack(alignment: .leading, spacing: 32) {
                 Text("Genres").font(.title2.weight(.bold))
                 TVMusicLoading(list: list, empty: "No Genres")
+                let genres = list.items.matching(term, \.name)
+                if list.hasLoaded, !list.items.isEmpty, genres.isEmpty, let term {
+                    ContentUnavailableView.search(text: term).frame(maxWidth: .infinity, minHeight: 300)
+                }
                 LazyVGrid(columns: [GridItem(.adaptive(minimum: 320), spacing: 32)], alignment: .leading, spacing: 32) {
-                    ForEach(list.items) { genre in
+                    ForEach(genres) { genre in
                         NavigationLink(value: MusicRoute.albums(libraryID: libraryID, title: genre.name, genreID: genre.id)) {
                             TVMusicPill(verbatim: genre.name, systemImage: "guitars")
                         }
@@ -611,7 +667,7 @@ struct TVMusicGenresView: View {
             .padding(.horizontal, 80)
             .padding(.vertical, 48)
         }
-        .screenBackground()
+        .tvMusicSectionSearch(query: $query, term: $term, prompt: "Search Genres")
         .task { await list.loadIfNeeded() }
     }
 }
@@ -622,14 +678,20 @@ struct TVMusicPlaylistsView: View {
         let playlists = try await MusicAPI.call { try await $0.getMusicPlaylists(credential: $1, authHeader: $2) }
         return (playlists, playlists.count)
     }
+    @State private var query = ""
+    @State private var term: String?
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 32) {
                 Text("Playlists").font(.title2.weight(.bold))
                 TVMusicLoading(list: list, empty: "No Playlists")
+                let playlists = list.items.matching(term, \.name)
+                if list.hasLoaded, !list.items.isEmpty, playlists.isEmpty, let term {
+                    ContentUnavailableView.search(text: term).frame(maxWidth: .infinity, minHeight: 300)
+                }
                 LazyVGrid(columns: albumColumns, alignment: .leading, spacing: 56) {
-                    ForEach(list.items) { playlist in
+                    ForEach(playlists) { playlist in
                         NavigationLink(value: MusicRoute.playlist(playlist)) {
                             TVMusicTile(url: MusicAPI.artworkURL(playlist, width: 520), title: playlist.name,
                                         subtitle: playlist.songCount.map { String(localized: "\($0) songs") })
@@ -645,7 +707,7 @@ struct TVMusicPlaylistsView: View {
             .padding(.horizontal, 80)
             .padding(.vertical, 48)
         }
-        .screenBackground()
+        .tvMusicSectionSearch(query: $query, term: $term, prompt: "Search Playlists")
         .task { await list.loadIfNeeded() }
     }
 }
@@ -744,17 +806,25 @@ struct TVMusicSongsView: View {
     let libraryID: String
     let favoritesOnly: Bool
     @State private var list: MusicPagedList<MusicSong>
+    @State private var query = ""
+    @State private var term: String?
+    /// The search `list` was made for.
+    @State private var listTerm: String?
 
     init(libraryID: String, favoritesOnly: Bool = false) {
         self.libraryID = libraryID
         self.favoritesOnly = favoritesOnly
-        let filter = MusicFilter(favoritesOnly: favoritesOnly)
-        _list = State(initialValue: MusicPagedList { start in
+        _list = State(initialValue: Self.list(libraryID: libraryID, favoritesOnly: favoritesOnly, term: nil))
+    }
+
+    private static func list(libraryID: String, favoritesOnly: Bool, term: String?) -> MusicPagedList<MusicSong> {
+        let filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
+        return MusicPagedList { start in
             let page = try await MusicAPI.call {
                 try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, filter: filter, startIndex: start)
             }
             return (page.tracks, page.total)
-        })
+        }
     }
 
     var body: some View {
@@ -767,7 +837,7 @@ struct TVMusicSongsView: View {
                     TVPillButton(title: "Shuffle", systemImage: "shuffle") { shuffleAll() }
                 }
                 .focusSection()
-                TVMusicLoading(list: list, empty: favoritesOnly ? "No Favorite Songs" : "No Songs")
+                TVMusicLoading(list: list, empty: favoritesOnly ? "No Favorite Songs" : "No Songs", searchTerm: term)
                 LazyVStack(spacing: 4) {
                     ForEach(Array(list.items.enumerated()), id: \.element.id) { index, song in
                         TVMusicSongRow(song: song, showsArtwork: true) { TVMusicPresenter.shared.play(list.items, from: index) }
@@ -779,12 +849,18 @@ struct TVMusicSongsView: View {
             .padding(.horizontal, 80)
             .padding(.vertical, 48)
         }
-        .screenBackground()
-        .task { await list.loadIfNeeded() }
+        .tvMusicSectionSearch(query: $query, term: $term, prompt: favoritesOnly ? "Search Favorites" : "Search Songs")
+        .task(id: term) {
+            if term != listTerm {
+                list = Self.list(libraryID: libraryID, favoritesOnly: favoritesOnly, term: term)
+                listTerm = term
+            }
+            await list.loadIfNeeded()
+        }
     }
 
     private func shuffleAll() {
-        let libraryID = libraryID, filter = MusicFilter(favoritesOnly: favoritesOnly)
+        let libraryID = libraryID, filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
         Task {
             let page = try? await MusicAPI.call {
                 try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: .random,

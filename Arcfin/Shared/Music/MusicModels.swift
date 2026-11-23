@@ -397,3 +397,28 @@ final class MusicSearchModel {
         }
     }
 }
+
+extension View {
+    /// A section's search: `term` follows `query` a moment after typing stops, trimmed, and nil
+    /// for the whole section. Clearing the field shows everything again at once.
+    func musicSearchTerm(_ query: String, _ term: Binding<String?>) -> some View {
+        task(id: query) {
+            let trimmed = query.trimmingCharacters(in: .whitespaces)
+            let next = trimmed.isEmpty ? nil : trimmed
+            guard next != term.wrappedValue else { return }
+            if next != nil {
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { return }
+            }
+            term.wrappedValue = next
+        }
+    }
+}
+
+extension Array {
+    /// A list that's all loaded at once, narrowed to the names that match.
+    func matching(_ term: String?, _ name: (Element) -> String) -> [Element] {
+        guard let term else { return self }
+        return filter { name($0).localizedStandardContains(term) }
+    }
+}

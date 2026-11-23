@@ -10,6 +10,8 @@ struct MusicSongsView: View {
     var favoritesOnly = false
     @AppStorage("music.songSort") private var sort: MusicSort = .name
     @State private var list: MusicPagedList<MusicSong>?
+    @State private var query = ""
+    @State private var term: String?
 
     var body: some View {
         List {
@@ -18,7 +20,7 @@ struct MusicSongsView: View {
                     .disabled(list.items.isEmpty)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-                MusicListState(list: list, empty: favoritesOnly ? "No Favorite Songs" : "No Songs")
+                MusicListState(list: list, empty: favoritesOnly ? "No Favorite Songs" : "No Songs", searchTerm: term)
                     .listRowBackground(Color.clear)
                 ForEach(Array(list.items.enumerated()), id: \.element.id) { index, song in
                     MusicSongRow(song: song) { MusicActions.play(list.items, from: index) }
@@ -30,6 +32,8 @@ struct MusicSongsView: View {
         .scrollContentBackground(.hidden)
         .screenBackground()
         .navigationTitle(favoritesOnly ? "Favorite Songs" : "Songs")
+        .sectionSearchable(text: $query, prompt: favoritesOnly ? "Search Favorites" : "Search Songs")
+        .musicSearchTerm(query, $term)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -45,8 +49,8 @@ struct MusicSongsView: View {
                 }
             }
         }
-        .task(id: sort) {
-            let libraryID = libraryID, sort = sort, filter = MusicFilter(favoritesOnly: favoritesOnly)
+        .task(id: "\(sort.rawValue)-\(term ?? "")") {
+            let libraryID = libraryID, sort = sort, filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
             let list = MusicPagedList<MusicSong> { start in
                 let page = try await MusicAPI.call {
                     try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
@@ -62,7 +66,7 @@ struct MusicSongsView: View {
 
     /// The whole list at random, not only the songs loaded so far.
     private func shuffleAll() {
-        let libraryID = libraryID, filter = MusicFilter(favoritesOnly: favoritesOnly)
+        let libraryID = libraryID, filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
         Task {
             let page = try? await MusicAPI.call {
                 try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: .random,
@@ -148,15 +152,24 @@ struct MusicSongRow: View {
 struct MusicArtistsView: View {
     let libraryID: String
     @State private var list: MusicPagedList<MusicArtist>
+    @State private var query = ""
+    @State private var term: String?
+    /// The search `list` was made for.
+    @State private var listTerm: String?
 
     init(libraryID: String) {
         self.libraryID = libraryID
-        _list = State(initialValue: MusicPagedList { start in
+        _list = State(initialValue: Self.list(libraryID: libraryID, term: nil))
+    }
+
+    private static func list(libraryID: String, term: String?) -> MusicPagedList<MusicArtist> {
+        MusicPagedList { start in
             let page = try await MusicAPI.call {
-                try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: libraryID, startIndex: start, limit: 500)
+                try await $0.getMusicArtists(credential: $1, authHeader: $2, libraryId: libraryID,
+                                             filter: MusicFilter(searchTerm: term), startIndex: start, limit: 500)
             }
             return (page.artists, page.total)
-        })
+        }
     }
 
     @Environment(\.horizontalSizeClass) private var sizeClass
@@ -185,7 +198,7 @@ struct MusicArtistsView: View {
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                MusicListState(list: list, empty: "No Artists")
+                MusicListState(list: list, empty: "No Artists", searchTerm: term)
                 LazyVStack(alignment: .leading, spacing: DT.Spacing.lg, pinnedViews: [.sectionHeaders]) {
                     ForEach(sections, id: \.letter) { section in
                         Section {
@@ -224,15 +237,23 @@ struct MusicArtistsView: View {
                 .padding(.bottom, DT.Spacing.xl)
             }
             .overlay {
-                if list.hasLoaded, !list.items.isEmpty {
+                if list.hasLoaded, !list.items.isEmpty, term == nil {
                     LetterIndexBar { letter in Task { await jump(to: letter, proxy) } }
                 }
             }
         }
         .screenBackground()
         .navigationTitle("Artists")
+        .sectionSearchable(text: $query, prompt: "Search Artists")
+        .musicSearchTerm(query, $term)
         .onChange(of: list.items, initial: true) { _, artists in sections = Self.sections(of: artists) }
-        .task { await list.loadIfNeeded() }
+        .task(id: term) {
+            if term != listTerm {
+                list = Self.list(libraryID: libraryID, term: term)
+                listTerm = term
+            }
+            await list.loadIfNeeded()
+        }
     }
 
     /// To the letter, or the next one that has artists, loading more until it's there.
@@ -256,6 +277,8 @@ struct MusicArtistsView: View {
 struct MusicGenresView: View {
     let libraryID: String
     @State private var list: MusicPagedList<MusicGenre>
+    @State private var query = ""
+    @State private var term: String?
 
     init(libraryID: String) {
         self.libraryID = libraryID
@@ -277,8 +300,12 @@ struct MusicGenresView: View {
     var body: some View {
         ScrollView {
             MusicListState(list: list, empty: "No Genres")
+            let genres = list.items.matching(term, \.name)
+            if list.hasLoaded, !list.items.isEmpty, genres.isEmpty, let term {
+                ContentUnavailableView.search(text: term)
+            }
             LazyVGrid(columns: MusicGrid.columns(sizeClass), spacing: DT.Spacing.md) {
-                ForEach(list.items) { genre in
+                ForEach(genres) { genre in
                     NavigationLink { MusicDestination(route: MusicRoute.albums(libraryID: libraryID, title: genre.name, genreID: genre.id)) } label: {
                         MusicGenreTile(genre: genre, libraryID: libraryID, tint: tint(genre))
                     }
@@ -290,6 +317,8 @@ struct MusicGenresView: View {
         }
         .screenBackground()
         .navigationTitle("Genres")
+        .sectionSearchable(text: $query, prompt: "Search Genres")
+        .musicSearchTerm(query, $term)
         .task { await list.loadIfNeeded() }
     }
 }
@@ -490,12 +519,20 @@ struct MusicPlaylistsView: View {
         let playlists = try await MusicAPI.call { try await $0.getMusicPlaylists(credential: $1, authHeader: $2) }
         return (playlists, playlists.count)
     }
+    @State private var query = ""
+    @State private var term: String?
 
     var body: some View {
+        let playlists = list.items.matching(term, \.name)
         List {
             MusicListState(list: list, empty: "No Playlists")
                 .listRowBackground(Color.clear)
-            ForEach(list.items) { playlist in
+            if list.hasLoaded, !list.items.isEmpty, playlists.isEmpty, let term {
+                ContentUnavailableView.search(text: term)
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
+            }
+            ForEach(playlists) { playlist in
                 NavigationLink { MusicDestination(route: MusicRoute.playlist(playlist)) } label: {
                     HStack(spacing: DT.Spacing.sm) {
                         MusicArtwork(url: MusicAPI.artworkURL(playlist, width: 200), cornerRadius: DT.Radius.sm)
@@ -526,6 +563,8 @@ struct MusicPlaylistsView: View {
         .scrollContentBackground(.hidden)
         .screenBackground()
         .navigationTitle("Playlists")
+        .sectionSearchable(text: $query, prompt: "Search Playlists")
+        .musicSearchTerm(query, $term)
         .task { await list.loadIfNeeded() }
         .refreshable { await list.reload() }
         .onChange(of: MusicPlaylistEditor.shared.changeCount) { Task { await list.reload() } }

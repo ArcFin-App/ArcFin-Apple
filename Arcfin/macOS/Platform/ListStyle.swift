@@ -49,6 +49,11 @@ extension View {
     func tvListRow() -> some View {
         self
     }
+
+    /// A music section's own search. In the toolbar, as the Mac searches a window.
+    func sectionSearchable(text: Binding<String>, prompt: LocalizedStringKey) -> some View {
+        searchable(text: text, placement: .toolbar, prompt: prompt)
+    }
 }
 
 /// A settings page: a list across the pane, as Settings › Music draws one, so every page
