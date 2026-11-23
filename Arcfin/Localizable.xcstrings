@@ -5292,6 +5292,70 @@
         }
       }
     },
+    "Admins can set defaults and lock settings for everyone or for one person, in Admin › Arcfin for Everyone. A locked setting says it's set by your server's admin." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Admins können unter Admin › Arcfin für alle Standardwerte festlegen und Einstellungen sperren, für alle oder für eine Person. Eine gesperrte Einstellung zeigt an, dass der Admin deines Servers sie festgelegt hat."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Los administradores pueden fijar valores predeterminados y bloquear ajustes para todos o para una persona en Administración › Arcfin para todos. Un ajuste bloqueado indica que lo ha fijado el administrador de tu servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les administrateurs peuvent définir des valeurs par défaut et verrouiller des réglages pour tout le monde ou pour une personne, dans Admin › Arcfin pour tous. Un réglage verrouillé indique qu’il est défini par l’administrateur de votre serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gli amministratori possono impostare valori predefiniti e bloccare le impostazioni per tutti o per una persona in Admin › Arcfin per tutti. Un’impostazione bloccata indica che è stata impostata dall’amministratore del server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "管理者は管理 › みんなのArcfinで、全員または特定の人のデフォルトを設定し、設定をロックできます。ロックされた設定には、サーバ管理者が設定したことが表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "관리자는 관리 › 모두를 위한 Arcfin에서 모든 사람이나 한 사람의 기본값을 정하고 설정을 잠글 수 있습니다. 잠긴 설정에는 서버 관리자가 설정했다고 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Beheerders kunnen standaardwaarden instellen en instellingen vergrendelen voor iedereen of voor één persoon in Beheer › Arcfin voor iedereen. Bij een vergrendelde instelling staat dat de beheerder van je server die heeft ingesteld."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Os administradores podem definir padrões e bloquear ajustes para todos ou para uma pessoa em Admin › Arcfin para todos. Um ajuste bloqueado avisa que foi definido pelo administrador do servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Администраторы могут задавать значения по умолчанию и блокировать настройки для всех или для одного человека в разделе «Админ › Arcfin для всех». У заблокированной настройки указано, что её задал администратор сервера."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "管理员可在“管理 › 所有人的 Arcfin”中为所有人或某个人设置默认值并锁定设置。被锁定的设置会注明由服务器管理员设置。"
+          }
+        }
+      }
+    },
     "After the restart, this device may not reach the server: Arcfin connects to it at %@." : {
       "localizations" : {
         "de" : {
@@ -6057,6 +6121,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在你允许通知之前，Arcfin 无法发送这些通知。"
+          }
+        }
+      }
+    },
+    "Arcfin goes with you to the car, your wrist and your other screens." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin begleitet dich ins Auto, ans Handgelenk und auf deine anderen Bildschirme."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin te acompaña en el coche, en la muñeca y en tus otras pantallas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin vous suit en voiture, à votre poignet et sur vos autres écrans."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin ti segue in auto, al polso e sugli altri schermi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfinは車の中でも、手首の上でも、ほかの画面でも一緒です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin이 차 안에서도, 손목 위에서도, 다른 화면에서도 함께합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin gaat met je mee in de auto, om je pols en naar je andere schermen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O Arcfin vai com você para o carro, para o pulso e para suas outras telas."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin с вами в машине, на запястье и на других экранах."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin 陪你上车、戴在手腕上，也出现在你的其他屏幕上。"
           }
         }
       }
@@ -6837,6 +6965,70 @@
         }
       }
     },
+    "Downloads and smart downloads to listen offline" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Downloads und Smart Downloads zum Offline-Hören"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descargas y descargas inteligentes para escuchar sin conexión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Téléchargements et téléchargements intelligents pour écouter hors ligne"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Download e download intelligenti per ascoltare offline"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "オフラインで聴けるダウンロードとスマートダウンロード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "오프라인 청취를 위한 다운로드 및 스마트 다운로드"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Downloads en slimme downloads om offline te luisteren"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Downloads e downloads inteligentes para ouvir offline"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Загрузки и умные загрузки для прослушивания офлайн"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "下载和智能下载，离线收听"
+          }
+        }
+      }
+    },
     "Downloads in the Full Player" : {
       "localizations" : {
         "de" : {
@@ -7354,6 +7546,70 @@
         }
       }
     },
+    "Home and Library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Start und Mediathek"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicio y Biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accueil et Bibliothèque"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Home e Libreria"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ホームとライブラリ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "홈 및 보관함"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Start en Bibliotheek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Início e Biblioteca"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Главная и медиатека"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "首页和媒体库"
+          }
+        }
+      }
+    },
     "Home Shelf Order" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -7484,6 +7740,70 @@
         }
       }
     },
+    "If You Run the Server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wenn du den Server betreibst"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si administras el servidor"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si vous gérez le serveur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se gestisci il server"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバを管理しているなら"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버를 운영한다면"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Als je de server beheert"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se você administra o servidor"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Если вы управляете сервером"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "如果你管理服务器"
+          }
+        }
+      }
+    },
     "If you run the server, choose defaults and lock settings for everyone or for one person, in Admin › Arcfin for Everyone. Needs Arcfin Sync 0.4." : {
       "localizations" : {
         "de" : {
@@ -7608,6 +7928,198 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "如果你管理服务器，可在“设置 › 服务器 › 所有人的 Arcfin”中为所有人或某个人选择默认值并锁定设置。需要 Arcfin Sync 0.4。"
+          }
+        }
+      }
+    },
+    "If you run the server, set defaults and lock settings for everyone or for one person, in Settings › Server › Arcfin for Everyone." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wenn du den Server betreibst, legst du unter Einstellungen › Server › Arcfin für alle Standardwerte fest und sperrst Einstellungen, für alle oder für eine Person."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si administras el servidor, fija valores predeterminados y bloquea ajustes para todos o para una persona en Ajustes › Servidor › Arcfin para todos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si vous gérez le serveur, définissez des valeurs par défaut et verrouillez des réglages pour tout le monde ou pour une personne, dans Réglages › Serveur › Arcfin pour tous."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se gestisci il server, imposta i valori predefiniti e blocca le impostazioni per tutti o per una persona in Impostazioni › Server › Arcfin per tutti."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバを管理しているなら、設定 › サーバ › みんなのArcfinで、全員または特定の人のデフォルトを設定し、設定をロックできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버를 운영한다면 설정 › 서버 › 모두를 위한 Arcfin에서 모든 사람이나 한 사람의 기본값을 정하고 설정을 잠글 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Beheer je de server, stel dan standaardwaarden in en vergrendel instellingen voor iedereen of voor één persoon in Instellingen › Server › Arcfin voor iedereen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se você administra o servidor, defina padrões e bloqueie ajustes para todos ou para uma pessoa em Ajustes › Servidor › Arcfin para todos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Если вы управляете сервером, задавайте значения по умолчанию и блокируйте настройки для всех или для одного человека в разделе «Настройки › Сервер › Arcfin для всех»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "如果你管理服务器，可在“设置 › 服务器 › 所有人的 Arcfin”中为所有人或某个人设置默认值并锁定设置。"
+          }
+        }
+      }
+    },
+    "If you run the server: its dashboard, sessions, libraries, users, devices, plugins, backups, settings and a metadata editor, in the Admin tab." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wenn du den Server betreibst: Dashboard, Sitzungen, Mediatheken, Benutzer, Geräte, Plugins, Backups, Einstellungen und ein Metadaten-Editor, im Admin-Tab."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si administras el servidor: su panel, sesiones, bibliotecas, usuarios, dispositivos, complementos, copias de seguridad, ajustes y un editor de metadatos, en la pestaña Administración."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si vous gérez le serveur : son tableau de bord, ses sessions, bibliothèques, utilisateurs, appareils, plugins, sauvegardes, réglages et un éditeur de métadonnées, dans l’onglet Admin."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se gestisci il server: dashboard, sessioni, librerie, utenti, dispositivi, plugin, backup, impostazioni e un editor dei metadati, nella scheda Admin."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバを管理しているなら、「管理」タブでダッシュボード、セッション、ライブラリ、ユーザ、デバイス、プラグイン、バックアップ、設定、メタデータエディタを利用できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버를 운영한다면 관리 탭에서 대시보드, 세션, 보관함, 사용자, 기기, 플러그인, 백업, 설정, 메타데이터 편집기를 사용할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Beheer je de server: het dashboard, sessies, bibliotheken, gebruikers, apparaten, plugins, back-ups, instellingen en een metadata-editor, op het tabblad Beheer."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se você administra o servidor: painel, sessões, bibliotecas, usuários, dispositivos, plugins, backups, ajustes e um editor de metadados, na aba Admin."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Если вы управляете сервером: панель управления, сеансы, медиатеки, пользователи, устройства, плагины, резервные копии, настройки и редактор метаданных — на вкладке «Админ»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "如果你管理服务器：仪表板、会话、媒体库、用户、设备、插件、备份、设置和元数据编辑器，都在“管理”标签页中。"
+          }
+        }
+      }
+    },
+    "If your server has Live TV, watch it here with the guide, recordings and reminders." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wenn dein Server Live-TV hat, schau es hier mit Programm, Aufnahmen und Erinnerungen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si tu servidor tiene TV en directo, mírala aquí con la guía, grabaciones y recordatorios."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Si votre serveur propose la TV en direct, regardez-la ici avec le guide, les enregistrements et les rappels."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se il tuo server ha la TV in diretta, guardala qui con guida, registrazioni e promemoria."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバがライブTVに対応していれば、番組表、録画、リマインダーと一緒にここで視聴できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 실시간 TV가 있다면 편성표, 녹화, 알림과 함께 여기서 시청하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Heeft je server live-tv, kijk dan hier met de gids, opnames en herinneringen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Se o seu servidor tem TV ao vivo, assista aqui com o guia, gravações e lembretes."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Если на сервере есть прямой эфир, смотрите его здесь с телегидом, записями и напоминаниями."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "如果你的服务器有电视直播，可以在这里观看，还有节目指南、录制和提醒。"
           }
         }
       }
@@ -8778,6 +9290,134 @@
         }
       }
     },
+    "Search inside Movies, Shows, Collections and Playlists, See All pages through the whole shelf, and collections your admin features show on Home." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Suche in Filmen, Serien, Sammlungen und Playlists, „Alle anzeigen“ blättert durch die ganze Reihe, und Sammlungen, die dein Admin hervorhebt, erscheinen auf der Startseite."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Busca dentro de Películas, Series, Colecciones y Listas; Ver todo recorre toda la fila, y las colecciones que destaca tu administrador aparecen en Inicio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Recherchez dans Films, Séries, Collections et Listes de lecture, Tout afficher parcourt toute la rangée, et les collections mises en avant par votre admin apparaissent dans Accueil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cerca in Film, Serie, Raccolte e Playlist, Mostra tutto scorre l’intera fila e le raccolte messe in evidenza dal tuo admin compaiono in Home."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "映画、番組、コレクション、プレイリスト内を検索。「すべて表示」で棚全体を見られ、管理者がおすすめするコレクションがホームに表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "영화, 프로그램, 컬렉션, 재생 목록 안에서 검색하고, 모두 보기로 전체 줄을 넘겨 보고, 관리자가 추천한 컬렉션을 홈에서 확인하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zoek in Films, Series, Collecties en Afspeellijsten, Toon alles bladert door de hele rij, en collecties die je beheerder uitlicht staan op Start."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Busque dentro de Filmes, Séries, Coleções e Playlists, Ver tudo percorre a fileira inteira e as coleções que seu admin destaca aparecem no Início."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Поиск внутри фильмов, сериалов, коллекций и плейлистов, «Показать все» листает всю полку, а коллекции, которые выделил администратор, показываются на главной."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在电影、剧集、合集和播放列表中搜索，“查看全部”可浏览整排内容，管理员精选的合集会显示在首页。"
+          }
+        }
+      }
+    },
+    "Search inside Movies, Shows, Collections and Playlists, the A–Z index down the right side, and a quicker Home as you move around it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Suche in Filmen, Serien, Sammlungen und Playlists, der A–Z-Index am rechten Rand und eine flüssigere Startseite beim Navigieren."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Busca dentro de Películas, Series, Colecciones y Listas, el índice A–Z en el lado derecho y un Inicio más ágil al moverte por él."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Recherchez dans Films, Séries, Collections et Listes de lecture, l’index A–Z sur le bord droit, et un Accueil plus rapide quand vous vous y déplacez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cerca in Film, Serie, Raccolte e Playlist, l’indice A–Z lungo il lato destro e una Home più rapida mentre ti sposti."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "映画、番組、コレクション、プレイリスト内の検索、右端のA–Zインデックス、移動がより速くなったホーム。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "영화, 프로그램, 컬렉션, 재생 목록 안에서 검색하고, 오른쪽의 A–Z 색인을 사용하고, 더 빨라진 홈을 둘러보세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zoek in Films, Series, Collecties en Afspeellijsten, de A–Z-index langs de rechterkant, en een snellere Start terwijl je erdoor beweegt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Busque dentro de Filmes, Séries, Coleções e Playlists, o índice A–Z na lateral direita e um Início mais rápido ao navegar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Поиск внутри фильмов, сериалов, коллекций и плейлистов, указатель A–Z справа и более быстрая главная при навигации."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在电影、剧集、合集和播放列表中搜索，右侧的 A–Z 索引，以及浏览时更流畅的首页。"
+          }
+        }
+      }
+    },
     "Search Playlists" : {
       "localizations" : {
         "de" : {
@@ -9162,6 +9802,70 @@
         }
       }
     },
+    "Seerr in One Tap" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr mit einem Tipp"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr con un toque"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr d’un simple toucher"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr con un tocco"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ワンタップでSeerr"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "탭 한 번으로 Seerr"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr met één tik"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr com um toque"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seerr в одно касание"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "一键连接 Seerr"
+          }
+        }
+      }
+    },
     "Seerr Server URL" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -9353,6 +10057,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Seerr 用户名"
+          }
+        }
+      }
+    },
+    "Sessions, activity and scheduled tasks" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sitzungen, Aktivität und geplante Aufgaben"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sesiones, actividad y tareas programadas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sessions, activité et tâches planifiées"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sessioni, cronologia attività e attività pianificate"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "セッション、アクティビティ、スケジュールされたタスク"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "세션, 활동 및 예약된 작업"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sessies, activiteit en geplande taken"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sessões, atividade e tarefas agendadas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Сеансы, активность и задачи по расписанию"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "会话、活动和计划任务"
           }
         }
       }
@@ -9611,6 +10379,262 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "西班牙语"
+          }
+        }
+      }
+    },
+    "Stats for Music Too" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistik jetzt auch für Musik"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Estadísticas también para música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Des statistiques pour la musique aussi"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistiche anche per la musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音楽の統計も"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "음악 통계도"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistieken ook voor muziek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Estatísticas também para música"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Статистика и для музыки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音乐也有统计"
+          }
+        }
+      }
+    },
+    "Stats for what you watch and listen to" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistik zu allem, was du schaust und hörst"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Estadísticas de lo que ves y escuchas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Des statistiques sur ce que vous regardez et écoutez"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistiche su ciò che guardi e ascolti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "視聴と再生の統計"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "시청하고 듣는 콘텐츠의 통계"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistieken over wat je kijkt en luistert"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Estatísticas do que você assiste e ouve"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Статистика того, что вы смотрите и слушаете"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "观看和收听统计"
+          }
+        }
+      }
+    },
+    "Stats has All, Movies & Shows and Music tabs, with listening from ListenBrainz or your server, and a card to share." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistik hat die Tabs Alle, Filme & Serien und Musik, mit Hördaten von ListenBrainz oder deinem Server und einer Karte zum Teilen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Estadísticas tiene las pestañas Todo, Películas y series y Música, con lo que escuchas desde ListenBrainz o tu servidor, y una tarjeta para compartir."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistiques propose les onglets Tout, Films et séries et Musique, avec vos écoutes depuis ListenBrainz ou votre serveur, et une carte à partager."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistiche ha le schede Tutto, Film e serie e Musica, con gli ascolti da ListenBrainz o dal tuo server e una scheda da condividere."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "統計には「すべて」「映画と番組」「ミュージック」タブがあり、ListenBrainzまたはサーバの再生履歴と、共有用のカードも表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "통계에 전체, 영화 및 TV 프로그램, 음악 탭이 있으며 ListenBrainz 또는 서버의 청취 기록과 공유용 카드를 제공합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistieken heeft de tabbladen Alles, Films en series en Muziek, met luistergegevens van ListenBrainz of je server, en een kaart om te delen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Estatísticas tem as abas Tudo, Filmes e séries e Música, com o que você ouve no ListenBrainz ou no seu servidor, e um cartão para compartilhar."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "В статистике есть вкладки «Все», «Фильмы и сериалы» и «Музыка» с прослушиваниями из ListenBrainz или с вашего сервера, а также карточка, которой можно поделиться."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "统计包含“全部”“电影和剧集”和“音乐”标签页，收听数据来自 ListenBrainz 或你的服务器，还有可分享的卡片。"
+          }
+        }
+      }
+    },
+    "Stats has All, Movies & Shows and Music tabs, with listening from ListenBrainz or your server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistik hat die Tabs Alle, Filme & Serien und Musik, mit Hördaten von ListenBrainz oder deinem Server."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Estadísticas tiene las pestañas Todo, Películas y series y Música, con lo que escuchas desde ListenBrainz o tu servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistiques propose les onglets Tout, Films et séries et Musique, avec vos écoutes depuis ListenBrainz ou votre serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistiche ha le schede Tutto, Film e serie e Musica, con gli ascolti da ListenBrainz o dal tuo server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "統計には「すべて」「映画と番組」「ミュージック」タブがあり、ListenBrainzまたはサーバの再生履歴が表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "통계에 전체, 영화 및 TV 프로그램, 음악 탭이 있으며 ListenBrainz 또는 서버의 청취 기록을 제공합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Statistieken heeft de tabbladen Alles, Films en series en Muziek, met luistergegevens van ListenBrainz of je server."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Estatísticas tem as abas Tudo, Filmes e séries e Música, com o que você ouve no ListenBrainz ou no seu servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "В статистике есть вкладки «Все», «Фильмы и сериалы» и «Музыка» с прослушиваниями из ListenBrainz или с вашего сервера."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "统计包含“全部”“电影和剧集”和“音乐”标签页，收听数据来自 ListenBrainz 或你的服务器。"
           }
         }
       }
@@ -10387,6 +11411,70 @@
         }
       }
     },
+    "Beyond Your iPhone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Über dein iPhone hinaus"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Más allá de tu iPhone"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Au-delà de votre iPhone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Oltre il tuo iPhone"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhoneの外へ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone을 넘어서"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verder dan je iPhone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Além do seu iPhone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не только iPhone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "不止于 iPhone"
+          }
+        }
+      }
+    },
     "Box Office" : {
       "localizations" : {
         "de" : {
@@ -11088,6 +12176,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "CarPlay 和 Apple Watch"
+          }
+        }
+      }
+    },
+    "CarPlay and Siri" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay und Siri"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay y Siri"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay et Siri"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay e Siri"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlayとSiri"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay 및 Siri"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay en Siri"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay e Siri"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay и Siri"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay 和 Siri"
+          }
+        }
+      }
+    },
+    "CarPlay, with voice search" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay, mit Sprachsuche"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay, con búsqueda por voz"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay, avec la recherche vocale"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay, con ricerca vocale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音声検索に対応したCarPlay"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "음성 검색을 지원하는 CarPlay"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay, met zoeken met je stem"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay, com busca por voz"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "CarPlay с голосовым поиском"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "支持语音搜索的 CarPlay"
           }
         }
       }
@@ -14677,6 +15893,70 @@
         }
       }
     },
+    "Download songs, albums, playlists or everything by an artist. Smart downloads keep your favourites ready, within a storage limit you set." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Lade Titel, Alben, Playlists oder alles von einem Künstler. Smart Downloads halten deine Favoriten bereit, innerhalb eines Speicherlimits, das du festlegst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descarga canciones, álbumes, listas o todo lo de un artista. Las descargas inteligentes tienen tus favoritos listos, dentro del límite de almacenamiento que elijas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Téléchargez des morceaux, des albums, des listes de lecture ou tout un artiste. Les téléchargements intelligents gardent vos favoris prêts, dans la limite de stockage que vous fixez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scarica brani, album, playlist o tutto di un artista. I download intelligenti tengono pronti i tuoi preferiti, entro un limite di spazio che scegli tu."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "曲、アルバム、プレイリスト、アーティストの全曲をダウンロード。スマートダウンロードなら、設定したストレージの上限内でお気に入りをいつでも聴けるようにしておけます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "노래, 앨범, 재생 목록 또는 아티스트의 모든 곡을 다운로드하세요. 스마트 다운로드는 설정한 저장 공간 한도 안에서 즐겨찾기를 준비해 둡니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Download nummers, albums, afspeellijsten of alles van een artiest. Slimme downloads houden je favorieten klaar, binnen een opslaglimiet die jij kiest."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Baixe músicas, álbuns, playlists ou tudo de um artista. Os downloads inteligentes deixam seus favoritos prontos, dentro do limite de armazenamento que você definir."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Загружайте песни, альбомы, плейлисты или всё от одного артиста. Умные загрузки держат избранное наготове в пределах заданного вами лимита хранилища."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "下载歌曲、专辑、播放列表或某位艺人的全部作品。智能下载会在你设定的存储上限内，让你的收藏随时可听。"
+          }
+        }
+      }
+    },
     "Downloading…" : {
       "localizations" : {
         "de" : {
@@ -17047,6 +18327,70 @@
         }
       }
     },
+    "Long-press your picture on Home to switch profile, with Face ID or Touch ID before the PIN." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Halte auf der Startseite dein Bild gedrückt, um das Profil zu wechseln – mit Face ID oder Touch ID vor der PIN."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantén pulsada tu foto en Inicio para cambiar de perfil, con Face ID o Touch ID antes del PIN."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Appuyez longuement sur votre photo dans Accueil pour changer de profil, avec Face ID ou Touch ID avant le code PIN."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tieni premuta la tua foto in Home per cambiare profilo, con Face ID o Touch ID prima del PIN."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ホームで自分の写真を長押しするとプロファイルを切り替えられます。PINの前にFace IDやTouch IDも使えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "홈에서 내 사진을 길게 눌러 프로필을 전환하세요. PIN 전에 Face ID 또는 Touch ID를 사용할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Houd je foto op Start ingedrukt om van profiel te wisselen, met Face ID of Touch ID vóór de pincode."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toque e segure sua foto no Início para trocar de perfil, com Face ID ou Touch ID antes do PIN."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Нажмите и удерживайте своё фото на главной, чтобы сменить профиль, — с Face ID или Touch ID перед PIN-кодом."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在首页长按你的头像即可切换描述文件，输入 PIN 码前可先用面容 ID 或触控 ID。"
+          }
+        }
+      }
+    },
     "Longest movie" : {
       "localizations" : {
         "de" : {
@@ -17239,6 +18583,70 @@
         }
       }
     },
+    "Lyrics alongside Now Playing" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Liedtexte neben „Läuft gerade“"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Letras junto a En reproducción"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les paroles à côté de À l’écoute"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testi accanto a In riproduzione"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "「再生中」の横に歌詞"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "지금 재생 중 옆에 가사 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Songteksten naast Nu aan het spelen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Letras ao lado de Reproduzindo"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Тексты рядом с «Исполняется»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "歌词与“正在播放”并排显示"
+          }
+        }
+      }
+    },
     "Lyrics not on your server come from LRCLIB." : {
       "localizations" : {
         "de" : {
@@ -17363,6 +18771,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "歌词不可用"
+          }
+        }
+      }
+    },
+    "Lyrics, a visualizer, crossfade and an equalizer" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Liedtexte, Visualizer, Überblenden und Equalizer"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Letras, visualizador, fundido y ecualizador"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Paroles, visualiseur, fondu enchaîné et égaliseur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Testi, visualizzatore, dissolvenza incrociata ed equalizzatore"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "歌詞、ビジュアライザ、クロスフェード、イコライザ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "가사, 시각화, 크로스페이드, 이퀄라이저"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Songteksten, een visualizer, crossfade en een equalizer"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Letras, visualizador, transição suave e equalizador"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Тексты, визуализатор, плавный переход и эквалайзер"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "歌词、可视化效果、淡入淡出和均衡器"
           }
         }
       }
@@ -18131,6 +19603,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "离线听音乐"
+          }
+        }
+      }
+    },
+    "Music on your Apple Watch, even without your phone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Musik auf deiner Apple Watch, auch ohne dein iPhone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Música en tu Apple Watch, incluso sin el iPhone"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De la musique sur votre Apple Watch, même sans votre iPhone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Musica sul tuo Apple Watch, anche senza iPhone"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhoneがなくてもApple Watchで音楽を"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone 없이도 Apple Watch에서 음악을"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Muziek op je Apple Watch, zelfs zonder je iPhone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Música no seu Apple Watch, mesmo sem o iPhone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Музыка на Apple Watch, даже без iPhone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在 Apple Watch 上听音乐，即使不带 iPhone"
           }
         }
       }
@@ -23838,6 +25374,134 @@
         }
       }
     },
+    "Sign In from Your iPhone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Anmelden mit deinem iPhone"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión desde tu iPhone"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion depuis votre iPhone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi dal tuo iPhone"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhoneからサインイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone에서 로그인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inloggen vanaf je iPhone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entre pelo seu iPhone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход с iPhone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用 iPhone 登录"
+          }
+        }
+      }
+    },
+    "Sign In from Your Phone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Anmelden mit deinem Handy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión desde tu móvil"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connexion depuis votre téléphone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi dal telefono"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "スマートフォンからサインイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "휴대폰에서 로그인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inloggen vanaf je telefoon"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Entre pelo celular"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход с телефона"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用手机登录"
+          }
+        }
+      }
+    },
     "Sign In with Your iPhone" : {
       "localizations" : {
         "de" : {
@@ -24027,6 +25691,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "自 %@ 起"
+          }
+        }
+      }
+    },
+    "Siri" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri"
           }
         }
       }
@@ -25116,6 +26844,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "该地址有响应，但不是 Jellyfin 服务器。"
+          }
+        }
+      }
+    },
+    "The Admin tab shows server admins what their server is doing and lets them manage it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Der Admin-Tab zeigt Server-Admins, was ihr Server gerade macht, und lässt sie ihn verwalten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La pestaña Administración muestra a los administradores qué hace su servidor y les permite gestionarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "L’onglet Admin montre aux administrateurs ce que fait leur serveur et leur permet de le gérer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La scheda Admin mostra agli amministratori cosa sta facendo il loro server e permette di gestirlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "「管理」タブでは、サーバ管理者がサーバの状況を確認し、管理できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "관리 탭에서 서버 관리자는 서버 상태를 확인하고 관리할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Op het tabblad Beheer zien serverbeheerders wat hun server doet en kunnen ze hem beheren."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A aba Admin mostra aos administradores o que o servidor está fazendo e permite gerenciá-lo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "На вкладке «Админ» администраторы видят, что происходит на сервере, и могут им управлять."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“管理”标签页让服务器管理员查看服务器的运行情况并进行管理。"
           }
         }
       }
@@ -28007,6 +29799,70 @@
         }
       }
     },
+    "With Arcfin Sync 0.4 on your server, your settings follow you to your other devices: automatically, after asking first, or not at all. Find it in Settings › Server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mit Arcfin Sync 0.4 auf deinem Server folgen dir deine Einstellungen auf deine anderen Geräte: automatisch, nach Rückfrage oder gar nicht. Du findest es unter Einstellungen › Server."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Con Arcfin Sync 0.4 en tu servidor, tus ajustes te siguen a tus otros dispositivos: automáticamente, preguntando antes o nunca. Lo encontrarás en Ajustes › Servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Avec Arcfin Sync 0.4 sur votre serveur, vos réglages vous suivent sur vos autres appareils : automatiquement, après confirmation ou pas du tout. Rendez-vous dans Réglages › Serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Con Arcfin Sync 0.4 sul tuo server, le tue impostazioni ti seguono sugli altri dispositivi: automaticamente, dopo averti chiesto o per niente. Lo trovi in Impostazioni › Server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバにArcfin Sync 0.4があれば、設定がほかのデバイスにも引き継がれます。自動、事前に確認、または引き継がないから選べます。設定 › サーバにあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버에 Arcfin Sync 0.4가 있으면 설정이 다른 기기로 따라옵니다. 자동으로, 먼저 물어본 후에, 또는 전혀 따라오지 않도록 선택할 수 있습니다. 설정 › 서버에서 찾을 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Met Arcfin Sync 0.4 op je server volgen je instellingen je naar je andere apparaten: automatisch, na eerst te vragen, of helemaal niet. Je vindt het in Instellingen › Server."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Com o Arcfin Sync 0.4 no seu servidor, seus ajustes acompanham você nos outros dispositivos: automaticamente, depois de perguntar ou nunca. Encontre em Ajustes › Servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Если на сервере есть Arcfin Sync 0.4, ваши настройки переходят на другие устройства: автоматически, после вопроса или никогда. Это в разделе «Настройки › Сервер»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "服务器装有 Arcfin Sync 0.4 时，你的设置会跟随你到其他设备：自动同步、先询问再同步，或不同步。可在“设置 › 服务器”中找到。"
+          }
+        }
+      }
+    },
     "With two or more profiles, turn on Always Ask Who's Watching in Settings › Profiles, and Apple TV asks when it opens and when you come back after a while." : {
       "localizations" : {
         "de" : {
@@ -28327,6 +30183,70 @@
         }
       }
     },
+    "Your iPhone can sign this Mac in, with every profile you pick, using Set Up Nearby Device in its Settings." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dein iPhone kann diesen Mac mit allen Profilen, die du auswählst, anmelden – über „Gerät in der Nähe einrichten“ in seinen Einstellungen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu iPhone puede iniciar sesión en este Mac con los perfiles que elijas, usando Configurar dispositivo cercano en sus Ajustes."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre iPhone peut connecter ce Mac avec tous les profils que vous choisissez, grâce à Configurer un appareil à proximité dans ses réglages."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Il tuo iPhone può accedere su questo Mac con tutti i profili che scegli, usando Configura dispositivo vicino nelle sue Impostazioni."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhoneの設定にある「近くのデバイスを設定」を使えば、選んだすべてのプロファイルでこのMacにサインインできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone 설정의 주변 기기 설정을 사용하면 선택한 모든 프로필로 이 Mac에 로그인할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je iPhone kan deze Mac inloggen met elk profiel dat je kiest, via Apparaat in de buurt instellen in de instellingen."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seu iPhone pode iniciar a sessão neste Mac com todos os perfis que escolher, usando Configurar dispositivo próximo nos Ajustes dele."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone может выполнить вход на этом Mac с выбранными профилями через «Настроить устройство поблизости» в его настройках."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "使用 iPhone 设置中的“设置附近的设备”，即可用你选择的所有描述文件为这台 Mac 登录。"
+          }
+        }
+      }
+    },
     "Your iPhone offers to sign this Apple TV in when it's nearby, or scan the code on screen." : {
       "localizations" : {
         "de" : {
@@ -28451,6 +30371,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的 Jellyfin 电影、剧集、音乐和合集，尽在专为 iPhone、iPad、Mac 和 Apple TV 打造的 App 中。"
+          }
+        }
+      }
+    },
+    "Your Jellyfin movies, shows, music and Live TV, in an app made for iPhone, iPad, Mac, Apple TV and Apple Watch." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Jellyfin-Filme, -Serien, -Musik und dein Live-TV in einer App für iPhone, iPad, Mac, Apple TV und Apple Watch."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tus películas, series, música y TV en directo de Jellyfin, en una app hecha para iPhone, iPad, Mac, Apple TV y Apple Watch."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vos films, séries, musique et TV en direct Jellyfin, dans une app conçue pour l’iPhone, l’iPad, le Mac, l’Apple TV et l’Apple Watch."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I tuoi film, serie, musica e TV in diretta di Jellyfin, in un’app pensata per iPhone, iPad, Mac, Apple TV e Apple Watch."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfinの映画、番組、音楽、ライブTVを、iPhone、iPad、Mac、Apple TV、Apple Watchのために作られたアプリで。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Jellyfin의 영화, 시리즈, 음악, 실시간 TV를 iPhone, iPad, Mac, Apple TV, Apple Watch를 위해 만든 앱에서 즐기세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je Jellyfin-films, -series, -muziek en live-tv, in een app gemaakt voor iPhone, iPad, Mac, Apple TV en Apple Watch."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seus filmes, séries, músicas e TV ao vivo do Jellyfin, em um app feito para iPhone, iPad, Mac, Apple TV e Apple Watch."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Фильмы, сериалы, музыка и прямой эфир из Jellyfin в приложении для iPhone, iPad, Mac, Apple TV и Apple Watch."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的 Jellyfin 电影、剧集、音乐和电视直播，尽在专为 iPhone、iPad、Mac、Apple TV 和 Apple Watch 打造的 App 中。"
           }
         }
       }
@@ -28643,6 +30627,326 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的资料库"
+          }
+        }
+      }
+    },
+    "Your Music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Musik"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre musique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La tua musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "あなたの音楽"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "나의 음악"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je muziek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Suas músicas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ваша музыка"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的音乐"
+          }
+        }
+      }
+    },
+    "Your music in the car, with voice search. Ask Siri to \"Play … in Arcfin\" for music, movies and shows." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Musik im Auto, mit Sprachsuche. Frag Siri: „Spiele … in Arcfin“ – für Musik, Filme und Serien."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu música en el coche, con búsqueda por voz. Pídele a Siri “Pon … en Arcfin” para música, películas y series."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre musique en voiture, avec la recherche vocale. Demandez à Siri « Joue … dans Arcfin » pour la musique, les films et les séries."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La tua musica in auto, con la ricerca vocale. Chiedi a Siri “Riproduci … in Arcfin” per musica, film e serie."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "車でも音声検索で音楽を。Siriに「Arcfinで…を再生して」と頼めば、音楽、映画、番組を再生できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "음성 검색으로 차에서도 음악을. Siri에게 “Arcfin에서 … 재생해 줘”라고 말해 음악, 영화, 프로그램을 재생하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je muziek in de auto, met zoeken met je stem. Vraag Siri ‘Speel … af in Arcfin’ voor muziek, films en series."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Suas músicas no carro, com busca por voz. Peça à Siri “Toque … no Arcfin” para músicas, filmes e séries."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ваша музыка в машине с голосовым поиском. Попросите Siri: «Включи … в Arcfin» — для музыки, фильмов и сериалов."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在车上听你的音乐，支持语音搜索。对 Siri 说“在 Arcfin 中播放…”，即可播放音乐、电影和剧集。"
+          }
+        }
+      }
+    },
+    "Your music library on the big screen: albums, artists, playlists and Made for You." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Musikmediathek auf dem großen Bildschirm: Alben, Künstler, Playlists und „Für dich“."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu biblioteca de música en la pantalla grande: álbumes, artistas, listas y Hecho para ti."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre bibliothèque musicale sur grand écran : albums, artistes, listes de lecture et Pour vous."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La tua libreria musicale sul grande schermo: album, artisti, playlist e Creati per te."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "大画面で音楽ライブラリを：アルバム、アーティスト、プレイリスト、「あなたへのおすすめ」。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "큰 화면에서 즐기는 음악 보관함: 앨범, 아티스트, 재생 목록, 당신을 위한 추천."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je muziekbibliotheek op het grote scherm: albums, artiesten, afspeellijsten en Voor jou."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sua biblioteca de músicas na tela grande: álbuns, artistas, playlists e Feito para você."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ваша музыкальная медиатека на большом экране: альбомы, артисты, плейлисты и «Для вас»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "大屏幕上的音乐库：专辑、艺人、播放列表和“为你推荐”。"
+          }
+        }
+      }
+    },
+    "Your music library, made for listening: albums, artists, playlists and Made for You." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Musikmediathek, gemacht zum Hören: Alben, Künstler, Playlists und „Für dich“."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu biblioteca de música, hecha para escuchar: álbumes, artistas, listas y Hecho para ti."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre bibliothèque musicale, pensée pour l’écoute : albums, artistes, listes de lecture et Pour vous."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La tua libreria musicale, pensata per l’ascolto: album, artisti, playlist e Creati per te."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "聴くために作られた音楽ライブラリ：アルバム、アーティスト、プレイリスト、「あなたへのおすすめ」。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "듣기 위해 만든 음악 보관함: 앨범, 아티스트, 재생 목록, 당신을 위한 추천."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je muziekbibliotheek, gemaakt om te luisteren: albums, artiesten, afspeellijsten en Voor jou."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sua biblioteca de músicas, feita para ouvir: álbuns, artistas, playlists e Feito para você."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ваша музыкальная медиатека, созданная для прослушивания: альбомы, артисты, плейлисты и «Для вас»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "专为聆听打造的音乐库：专辑、艺人、播放列表和“为你推荐”。"
+          }
+        }
+      }
+    },
+    "Your music on your watch, with playlists kept on it to play without your phone, and a remote for Arcfin on your other devices." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Musik auf deiner Watch, mit Playlists direkt darauf, die ohne iPhone spielen, und einer Fernbedienung für Arcfin auf deinen anderen Geräten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tu música en el reloj, con listas guardadas en él para escucharlas sin el iPhone, y un mando para Arcfin en tus otros dispositivos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Votre musique sur votre montre, avec des listes de lecture enregistrées dessus pour les écouter sans iPhone, et une télécommande pour Arcfin sur vos autres appareils."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "La tua musica sull’orologio, con playlist salvate per ascoltarle senza iPhone, e un telecomando per Arcfin sugli altri dispositivi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "腕の上で音楽を。プレイリストを保存してiPhoneなしで再生でき、ほかのデバイスのArcfinのリモコンにもなります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "워치에서 음악을 즐기세요. 재생 목록을 저장해 iPhone 없이 재생하고, 다른 기기의 Arcfin을 위한 리모컨으로도 사용할 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je muziek op je horloge, met afspeellijsten erop om zonder je iPhone af te spelen, en een afstandsbediening voor Arcfin op je andere apparaten."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Suas músicas no relógio, com playlists salvas nele para tocar sem o iPhone, e um controle remoto para o Arcfin nos seus outros dispositivos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ваша музыка на часах: плейлисты хранятся на них и играют без iPhone, а ещё это пульт для Arcfin на других устройствах."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在手表上听你的音乐，播放列表存储在手表上，不带 iPhone 也能播放，还能遥控其他设备上的 Arcfin。"
           }
         }
       }
@@ -37269,6 +39573,70 @@
         }
       }
     },
+    "A Better Player" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ein besserer Player"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un reproductor mejor"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un meilleur lecteur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un player migliore"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "さらに進化したプレーヤー"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "더 좋아진 플레이어"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Een betere speler"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Um player melhor"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Улучшенный плеер"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "更好的播放器"
+          }
+        }
+      }
+    },
     "A button in Music that listens with Shazam and finds the song in your library." : {
       "localizations" : {
         "de" : {
@@ -37841,6 +40209,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "请求可观看时收到通知"
+          }
+        }
+      }
+    },
+    "A Now Playing tab while music plays" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ein „Läuft gerade“-Tab, während Musik läuft"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Una pestaña En reproducción mientras suena música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Un onglet À l’écoute pendant la lecture de musique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Una scheda In riproduzione mentre ascolti musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音楽の再生中は「再生中」タブ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "음악 재생 중에는 지금 재생 중 탭"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Een tabblad Nu aan het spelen terwijl er muziek speelt"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Uma aba Reproduzindo enquanto a música toca"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вкладка «Исполняется» во время воспроизведения музыки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "播放音乐时显示“正在播放”标签页"
           }
         }
       }
@@ -41814,6 +44246,134 @@
         }
       }
     },
+    "Albums, artists, songs, playlists and genres, with lyrics, Made for You and a Now Playing tab while music plays. Every section has its own search." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alben, Künstler, Titel, Playlists und Genres, mit Liedtexten, „Für dich“ und einem „Läuft gerade“-Tab, während Musik läuft. Jeder Bereich hat seine eigene Suche."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Álbumes, artistas, canciones, listas y géneros, con letras, Hecho para ti y una pestaña En reproducción mientras suena música. Cada sección tiene su propia búsqueda."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Albums, artistes, morceaux, listes de lecture et genres, avec les paroles, Pour vous et un onglet À l’écoute pendant la lecture. Chaque section a sa propre recherche."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Album, artisti, brani, playlist e generi, con testi, Creati per te e una scheda In riproduzione mentre ascolti musica. Ogni sezione ha la sua ricerca."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "アルバム、アーティスト、曲、プレイリスト、ジャンル。歌詞や「あなたへのおすすめ」、音楽の再生中は「再生中」タブも。各セクションにそれぞれ検索があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "앨범, 아티스트, 노래, 재생 목록, 장르와 함께 가사, 당신을 위한 추천, 음악 재생 중에는 지금 재생 중 탭까지. 섹션마다 자체 검색이 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Albums, artiesten, nummers, afspeellijsten en genres, met songteksten, Voor jou en een tabblad Nu aan het spelen terwijl er muziek speelt. Elk onderdeel heeft een eigen zoekfunctie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Álbuns, artistas, músicas, playlists e gêneros, com letras, Feito para você e uma aba Reproduzindo enquanto a música toca. Cada seção tem sua própria busca."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Альбомы, артисты, песни, плейлисты и жанры, а также тексты, «Для вас» и вкладка «Исполняется» во время воспроизведения музыки. В каждом разделе свой поиск."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "专辑、艺人、歌曲、播放列表和类型，还有歌词、“为你推荐”，以及播放音乐时的“正在播放”标签页。每个部分都有自己的搜索。"
+          }
+        }
+      }
+    },
+    "Albums, artists, songs, playlists and genres, with Made for You, lyrics, a visualizer, crossfade, an equalizer and a sleep timer. Every section has its own search." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Alben, Künstler, Titel, Playlists und Genres, mit „Für dich“, Liedtexten, Visualizer, Überblenden, Equalizer und Schlaftimer. Jeder Bereich hat seine eigene Suche."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Álbumes, artistas, canciones, listas y géneros, con Hecho para ti, letras, visualizador, fundido, ecualizador y temporizador. Cada sección tiene su propia búsqueda."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Albums, artistes, morceaux, listes de lecture et genres, avec Pour vous, les paroles, un visualiseur, le fondu enchaîné, un égaliseur et un minuteur de veille. Chaque section a sa propre recherche."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Album, artisti, brani, playlist e generi, con Creati per te, testi, visualizzatore, dissolvenza incrociata, equalizzatore e timer di spegnimento. Ogni sezione ha la sua ricerca."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "アルバム、アーティスト、曲、プレイリスト、ジャンル。「あなたへのおすすめ」、歌詞、ビジュアライザ、クロスフェード、イコライザ、スリープタイマーも。各セクションにそれぞれ検索があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "앨범, 아티스트, 노래, 재생 목록, 장르와 함께 당신을 위한 추천, 가사, 시각화, 크로스페이드, 이퀄라이저, 잠자기 타이머까지. 섹션마다 자체 검색이 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Albums, artiesten, nummers, afspeellijsten en genres, met Voor jou, songteksten, een visualizer, crossfade, een equalizer en een slaaptimer. Elk onderdeel heeft een eigen zoekfunctie."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Álbuns, artistas, músicas, playlists e gêneros, com Feito para você, letras, visualizador, transição suave, equalizador e timer de desligamento. Cada seção tem sua própria busca."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Альбомы, артисты, песни, плейлисты и жанры, а также «Для вас», тексты, визуализатор, плавный переход, эквалайзер и таймер сна. В каждом разделе свой поиск."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "专辑、艺人、歌曲、播放列表和类型，还有“为你推荐”、歌词、可视化效果、淡入淡出、均衡器和睡眠定时器。每个部分都有自己的搜索。"
+          }
+        }
+      }
+    },
     "All" : {
       "localizations" : {
         "de" : {
@@ -42386,6 +44946,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "已全部观看"
+          }
+        }
+      }
+    },
+    "All Your Music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine ganze Musik"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toda tu música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toute votre musique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tutta la tua musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "すべての音楽を"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "나의 모든 음악"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Al je muziek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Todas as suas músicas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вся ваша музыка"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "你的全部音乐"
           }
         }
       }
@@ -44053,6 +46677,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "始终询问谁在观看"
+          }
+        }
+      }
+    },
+    "Always Ask Who's Watching, when Apple TV opens" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "„Immer fragen, wer zuschaut“, wenn Apple TV startet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Preguntar siempre quién está viendo al abrir el Apple TV"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Toujours demander qui regarde, à l’ouverture de l’Apple TV"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chiedi sempre chi sta guardando, all’apertura di Apple TV"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TVを開くときに毎回視聴者を確認"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple TV를 열 때 항상 시청자 묻기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Altijd vragen wie er kijkt als Apple TV opent"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sempre perguntar quem está assistindo ao abrir a Apple TV"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "«Всегда спрашивать, кто смотрит» при запуске Apple TV"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "打开 Apple TV 时始终询问谁在观看"
           }
         }
       }
@@ -46231,6 +48919,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "Apple VideoToolbox"
+          }
+        }
+      }
+    },
+    "Apple Watch" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apple Watch"
           }
         }
       }
@@ -53468,6 +56220,134 @@
         }
       }
     },
+    "Channels and the guide by category, pause and rewind, recordings and reminders, radio, and your channels on Home and in the Top Shelf." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kanäle und Programm nach Kategorie, Pausieren und Zurückspulen, Aufnahmen und Erinnerungen, Radio und deine Kanäle auf der Startseite und im Top Shelf."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Canales y guía por categoría, pausa y retroceso, grabaciones y recordatorios, radio, y tus canales en Inicio y en la fila superior."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les chaînes et le guide par catégorie, la pause et le retour en arrière, les enregistrements et les rappels, la radio, et vos chaînes dans Accueil et le Top Shelf."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Canali e guida per categoria, pausa e riavvolgimento, registrazioni e promemoria, radio, e i tuoi canali in Home e nella Top Shelf."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "カテゴリ別のチャンネルと番組表、一時停止と巻き戻し、録画とリマインダー、ラジオ。ホームとトップシェルフにはあなたのチャンネルも。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "카테고리별 채널과 편성표, 일시 정지 및 되감기, 녹화와 알림, 라디오, 그리고 홈과 상단 선반에 내 채널까지."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kanalen en de gids per categorie, pauzeren en terugspoelen, opnames en herinneringen, radio, en je kanalen op Start en in de bovenste rij."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Canais e guia por categoria, pausar e voltar, gravações e lembretes, rádio, e seus canais no Início e na Estante Superior."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Каналы и телегид по категориям, пауза и перемотка назад, записи и напоминания, радио, а также ваши каналы на главной и на верхней полке."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "按类别浏览频道和节目指南，暂停和倒回，录制和提醒，电台，还有首页和顶部栏中的你的频道。"
+          }
+        }
+      }
+    },
+    "Channels and the guide by category, pause and rewind, recordings and reminders, radio, and your channels on Home." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kanäle und Programm nach Kategorie, Pausieren und Zurückspulen, Aufnahmen und Erinnerungen, Radio und deine Kanäle auf der Startseite."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Canales y guía por categoría, pausa y retroceso, grabaciones y recordatorios, radio, y tus canales en Inicio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les chaînes et le guide par catégorie, la pause et le retour en arrière, les enregistrements et les rappels, la radio, et vos chaînes dans Accueil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Canali e guida per categoria, pausa e riavvolgimento, registrazioni e promemoria, radio, e i tuoi canali in Home."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "カテゴリ別のチャンネルと番組表、一時停止と巻き戻し、録画とリマインダー、ラジオ。ホームにはあなたのチャンネルも。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "카테고리별 채널과 편성표, 일시 정지 및 되감기, 녹화와 알림, 라디오, 그리고 홈에 내 채널까지."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kanalen en de gids per categorie, pauzeren en terugspoelen, opnames en herinneringen, radio, en je kanalen op Start."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Canais e guia por categoria, pausar e voltar, gravações e lembretes, rádio, e seus canais no Início."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Каналы и телегид по категориям, пауза и перемотка назад, записи и напоминания, радио, а также ваши каналы на главной."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "按类别浏览频道和节目指南，暂停和倒回，录制和提醒，电台，还有首页中的你的频道。"
+          }
+        }
+      }
+    },
     "Channels you add to your favorites show up here." : {
       "localizations" : {
         "de" : {
@@ -56604,6 +59484,134 @@
         }
       }
     },
+    "Connect Seerr through Quick Connect, and request a whole collection." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verbinde Seerr per Quick Connect und fordere eine ganze Sammlung an."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conecta Seerr con Conexión rápida y solicita una colección entera."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connectez Seerr via Connexion rapide et demandez une collection entière."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Collega Seerr con Connessione rapida e richiedi un’intera raccolta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "クイック接続でSeerrに接続し、コレクションをまるごとリクエストできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "빠른 연결로 Seerr에 연결하고 컬렉션 전체를 요청하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verbind Seerr via Snel verbinden en vraag een hele collectie aan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conecte o Seerr pela Conexão rápida e peça uma coleção inteira."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Подключайте Seerr через «Быстрое подключение» и запрашивайте целые коллекции."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "通过快速连接接入 Seerr，并请求整个合集。"
+          }
+        }
+      }
+    },
+    "Connect Seerr through Quick Connect, approve and decline requests, and request a whole collection." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verbinde Seerr per Quick Connect, genehmige und lehne Anfragen ab und fordere eine ganze Sammlung an."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conecta Seerr con Conexión rápida, aprueba y rechaza solicitudes, y solicita una colección entera."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connectez Seerr via Connexion rapide, approuvez et refusez des demandes, et demandez une collection entière."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Collega Seerr con Connessione rapida, approva e rifiuta le richieste e richiedi un’intera raccolta."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "クイック接続でSeerrに接続し、リクエストの承認と却下や、コレクションまるごとのリクエストができます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "빠른 연결로 Seerr에 연결하고, 요청을 승인하거나 거절하고, 컬렉션 전체를 요청하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verbind Seerr via Snel verbinden, keur verzoeken goed of af, en vraag een hele collectie aan."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Conecte o Seerr pela Conexão rápida, aprove e recuse pedidos, e peça uma coleção inteira."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Подключайте Seerr через «Быстрое подключение», одобряйте и отклоняйте запросы и запрашивайте целые коллекции."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "通过快速连接接入 Seerr，批准和拒绝请求，并请求整个合集。"
+          }
+        }
+      }
+    },
     "Connect to Your Server" : {
       "localizations" : {
         "de" : {
@@ -57756,6 +60764,134 @@
         }
       }
     },
+    "Control Arcfin playing on another device from your iPhone, with its volume buttons and from the Lock Screen." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steuere Arcfin auf einem anderen Gerät von deinem iPhone aus, mit den Lautstärketasten und vom Sperrbildschirm."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controla Arcfin en otro dispositivo desde tu iPhone, con los botones de volumen y desde la pantalla bloqueada."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Contrôlez Arcfin en lecture sur un autre appareil depuis votre iPhone, avec ses boutons de volume et depuis l’écran verrouillé."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controlla Arcfin in riproduzione su un altro dispositivo dal tuo iPhone, con i tasti del volume e dalla schermata di blocco."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ほかのデバイスで再生中のArcfinを、iPhoneの音量ボタンやロック画面から操作できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다른 기기에서 재생 중인 Arcfin을 iPhone의 음량 버튼과 잠금 화면에서 제어하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bedien Arcfin op een ander apparaat vanaf je iPhone, met de volumeknoppen en vanaf het toegangsscherm."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controle o Arcfin tocando em outro dispositivo pelo iPhone, com os botões de volume e pela Tela Bloqueada."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Управляйте Arcfin на другом устройстве с iPhone — кнопками громкости и с экрана блокировки."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在 iPhone 上用音量按钮和锁定屏幕控制正在其他设备上播放的 Arcfin。"
+          }
+        }
+      }
+    },
+    "Control Arcfin playing on your other devices" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Steuere Arcfin auf deinen anderen Geräten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controla Arcfin en tus otros dispositivos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Contrôlez Arcfin sur vos autres appareils"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controlla Arcfin sui tuoi altri dispositivi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ほかのデバイスで再生中のArcfinを操作"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다른 기기에서 재생 중인 Arcfin 제어"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bedien Arcfin op je andere apparaten"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controle o Arcfin nos seus outros dispositivos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Управление Arcfin на других устройствах"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "控制其他设备上正在播放的 Arcfin"
+          }
+        }
+      }
+    },
     "Control Other Users' Playback" : {
       "localizations" : {
         "de" : {
@@ -57880,6 +61016,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "控制共享设备"
+          }
+        }
+      }
+    },
+    "Control Your Other Devices" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine anderen Geräte steuern"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controla tus otros dispositivos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Contrôlez vos autres appareils"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controlla gli altri dispositivi"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ほかのデバイスを操作"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다른 기기 제어"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Bedien je andere apparaten"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Controle seus outros dispositivos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Управляйте другими устройствами"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "控制你的其他设备"
           }
         }
       }
@@ -78430,6 +81630,70 @@
         }
       }
     },
+    "Hold to play faster, skip ad breaks in recordings, raise quiet audio, Skip Intro in the controls, and AV1 where your device can play it. Downloads and your own files play in it too." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Halten für schnellere Wiedergabe, Werbepausen in Aufnahmen überspringen, leises Audio anheben, „Intro überspringen“ in der Steuerung und AV1, wo dein Gerät es abspielen kann. Auch Downloads und deine eigenen Dateien laufen darin."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mantén pulsado para reproducir más rápido, salta las pausas publicitarias de las grabaciones, sube el audio bajo, Saltar intro en los controles y AV1 donde tu dispositivo pueda reproducirlo. Las descargas y tus propios archivos también se reproducen en él."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Maintenez pour accélérer la lecture, passez les coupures pub des enregistrements, relevez l’audio faible, Passer l’intro dans les commandes, et l’AV1 là où votre appareil peut le lire. Les téléchargements et vos propres fichiers s’y lisent aussi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tieni premuto per riprodurre più veloce, salta le interruzioni pubblicitarie nelle registrazioni, alza l’audio basso, Salta intro nei controlli e AV1 dove il tuo dispositivo lo supporta. Anche i download e i tuoi file si riproducono qui."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "長押しで速く再生、録画のCMをスキップ、小さい音を上げる、コントロールの「イントロをスキップ」、デバイスが対応していればAV1も。ダウンロードや自分のファイルもこのプレーヤーで再生できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "길게 눌러 빠르게 재생하고, 녹화본의 광고 구간을 건너뛰고, 작은 소리를 키우고, 컨트롤에서 인트로 건너뛰기를 사용하고, 기기가 지원하면 AV1도 재생하세요. 다운로드와 내 파일도 이 플레이어에서 재생됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Houd ingedrukt om sneller af te spelen, sla reclameblokken in opnames over, versterk zacht geluid, Intro overslaan in de bediening, en AV1 waar je apparaat het kan afspelen. Ook downloads en je eigen bestanden spelen erin af."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Segure para reproduzir mais rápido, pule os intervalos comerciais das gravações, aumente o áudio baixo, Pular abertura nos controles e AV1 onde seu dispositivo puder reproduzir. Downloads e seus próprios arquivos também tocam nele."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Удерживайте для ускоренного воспроизведения, пропускайте рекламные паузы в записях, поднимайте тихий звук, «Пропустить заставку» в элементах управления и AV1, где устройство его поддерживает. Загрузки и ваши собственные файлы тоже воспроизводятся в нём."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "按住即可加速播放，跳过录像中的广告时段，提升小音量，在控制栏中“跳过片头”，设备支持时还可播放 AV1。下载内容和你自己的文件也能用它播放。"
+          }
+        }
+      }
+    },
     "Hold your iPhone near the music." : {
       "localizations" : {
         "de" : {
@@ -86175,6 +89439,70 @@
         }
       }
     },
+    "ListenBrainz and Year in Music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz und Musikjahr"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz y Año en música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz et Année en musique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz e Anno in musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainzと今年の音楽"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz 및 올해의 음악"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz en Muziekjaar"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz e Ano em música"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz и «Год в музыке»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz 和年度音乐"
+          }
+        }
+      }
+    },
     "ListenBrainz stopped taking listens. Try again later; plays already sent aren't counted twice." : {
       "localizations" : {
         "de" : {
@@ -86299,6 +89627,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "ListenBrainz 拒绝了此令牌。在你保存新令牌之前不会发送任何内容。"
+          }
+        }
+      }
+    },
+    "ListenBrainz, Stats and Year in Music" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz, Statistik und Musikjahr"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz, Estadísticas y Año en música"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz, Statistiques et Année en musique"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz, Statistiche e Anno in musica"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz、統計、今年の音楽"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz, 통계 및 올해의 음악"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz, Statistieken en Muziekjaar"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz, Estatísticas e Ano em música"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz, статистика и «Год в музыке»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ListenBrainz、统计和年度音乐"
           }
         }
       }
@@ -93156,6 +96548,70 @@
         }
       }
     },
+    "Name a song playing near you, send your listens and loves to ListenBrainz, import your listening history and look back with Year in Music." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Erkenne einen Song, der in deiner Nähe läuft, sende deine Wiedergaben und Lieblingssongs an ListenBrainz, importiere deinen Hörverlauf und blicke mit dem Musikjahr zurück."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Identifica una canción que suena cerca, envía tus escuchas y favoritos a ListenBrainz, importa tu historial de escucha y repasa tu año con Año en música."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Identifiez un morceau qui passe près de vous, envoyez vos écoutes et coups de cœur à ListenBrainz, importez votre historique d’écoute et revivez votre année avec Année en musique."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Riconosci un brano che suona vicino a te, invia ascolti e brani amati a ListenBrainz, importa la cronologia degli ascolti e ripercorri l’anno con Anno in musica."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "近くで流れている曲を特定し、再生とラブをListenBrainzに送信。再生履歴を読み込んで、「今年の音楽」で1年を振り返れます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "주변에서 재생 중인 노래를 알아내고, 청취 기록과 좋아요를 ListenBrainz로 보내고, 청취 기록을 가져와 올해의 음악으로 돌아보세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Herken een nummer dat bij je in de buurt speelt, stuur je luisterbeurten en favorieten naar ListenBrainz, importeer je luistergeschiedenis en blik terug met Muziekjaar."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descubra a música que está tocando perto de você, envie suas audições e músicas amadas ao ListenBrainz, importe seu histórico de audição e relembre com Ano em música."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Узнавайте песню, которая играет рядом, отправляйте прослушивания и любимые треки в ListenBrainz, импортируйте историю прослушиваний и вспоминайте год с «Годом в музыке»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "识别身边正在播放的歌曲，把收听记录和喜爱发送到 ListenBrainz，导入收听历史，并通过年度音乐回顾这一年。"
+          }
+        }
+      }
+    },
     "Navigation" : {
       "localizations" : {
         "de" : {
@@ -93984,6 +97440,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "仅新剧集"
+          }
+        }
+      }
+    },
+    "New episodes, new films and server events, with Quiet Hours." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Neue Folgen, neue Filme und Server-Ereignisse, mit Ruhezeiten."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuevos episodios, nuevas películas y eventos del servidor, con Horas de silencio."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nouveaux épisodes, nouveaux films et événements du serveur, avec Heures calmes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nuovi episodi, nuovi film ed eventi del server, con Ore silenziose."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新しいエピソード、新しい映画、サーバのイベントを通知。おやすみ時間にも対応。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "새 에피소드, 새 영화, 서버 이벤트 알림을 방해 금지 시간과 함께."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Nieuwe afleveringen, nieuwe films en servergebeurtenissen, met Stille uren."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Novos episódios, novos filmes e eventos do servidor, com Horário de silêncio."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Новые серии, новые фильмы и события сервера, с «Тихими часами»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "新剧集、新电影和服务器事件通知，支持勿扰时段。"
           }
         }
       }
@@ -95136,6 +98656,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "接下来"
+          }
+        }
+      }
+    },
+    "Next, enter your Jellyfin server's address and sign in, or set this Apple TV up from your iPhone or iPad. Servers on your network show up by themselves." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gib als Nächstes die Adresse deines Jellyfin-Servers ein und melde dich an, oder richte dieses Apple TV von deinem iPhone oder iPad aus ein. Server in deinem Netzwerk erscheinen von selbst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "A continuación, introduce la dirección de tu servidor Jellyfin e inicia sesión, o configura este Apple TV desde tu iPhone o iPad. Los servidores de tu red aparecen solos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Saisissez ensuite l’adresse de votre serveur Jellyfin et connectez-vous, ou configurez cette Apple TV depuis votre iPhone ou iPad. Les serveurs de votre réseau apparaissent d’eux-mêmes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ora inserisci l’indirizzo del tuo server Jellyfin e accedi, oppure configura questo Apple TV dal tuo iPhone o iPad. I server sulla tua rete compaiono da soli."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "次に、Jellyfinサーバのアドレスを入力してサインインするか、iPhoneやiPadからこのApple TVを設定します。ネットワーク上のサーバは自動的に表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "다음으로 Jellyfin 서버 주소를 입력하고 로그인하거나, iPhone 또는 iPad에서 이 Apple TV를 설정하세요. 네트워크의 서버는 자동으로 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Voer nu het adres van je Jellyfin-server in en log in, of stel deze Apple TV in vanaf je iPhone of iPad. Servers op je netwerk verschijnen vanzelf."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Em seguida, digite o endereço do seu servidor Jellyfin e inicie a sessão, ou configure esta Apple TV pelo iPhone ou iPad. Os servidores da sua rede aparecem sozinhos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Затем введите адрес своего сервера Jellyfin и войдите или настройте этот Apple TV с iPhone или iPad. Серверы в вашей сети появятся сами."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "接下来，输入你的 Jellyfin 服务器地址并登录，或者在 iPhone 或 iPad 上设置这台 Apple TV。你网络中的服务器会自动显示。"
           }
         }
       }
@@ -105261,6 +108845,70 @@
         }
       }
     },
+    "Pause and rewind a channel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Einen Kanal pausieren und zurückspulen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pausa y retrocede un canal"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Mettez une chaîne en pause et revenez en arrière"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Metti in pausa e riavvolgi un canale"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "チャンネルを一時停止して巻き戻し"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "채널 일시 정지 및 되감기"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Een kanaal pauzeren en terugspoelen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pause e volte um canal"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Пауза и перемотка канала"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "暂停和倒回频道"
+          }
+        }
+      }
+    },
     "Pause download" : {
       "localizations" : {
         "de" : {
@@ -106153,6 +109801,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "从“文件”App 中选取视频文件"
+          }
+        }
+      }
+    },
+    "Pick the audio and subtitle tracks and a smaller HEVC or AV1 quality. A download that fails stays in the list with the reason and Retry." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wähle Audio- und Untertitelspuren und eine kleinere HEVC- oder AV1-Qualität. Ein fehlgeschlagener Download bleibt mit dem Grund und „Erneut versuchen“ in der Liste."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Elige las pistas de audio y subtítulos, y una calidad HEVC o AV1 más ligera. Una descarga que falla se queda en la lista con el motivo y Reintentar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Choisissez les pistes audio et de sous-titres, et une qualité HEVC ou AV1 plus légère. Un téléchargement qui échoue reste dans la liste avec la raison et Réessayer."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scegli le tracce audio e dei sottotitoli e una qualità HEVC o AV1 più leggera. Un download non riuscito resta nell’elenco con il motivo e Riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "音声トラックと字幕トラック、容量の小さいHEVCまたはAV1の画質を選べます。失敗したダウンロードは理由と「再試行」付きでリストに残ります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "오디오 및 자막 트랙과 더 작은 HEVC 또는 AV1 화질을 선택하세요. 실패한 다운로드는 이유 및 재시도와 함께 목록에 남습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kies de audio- en ondertitelsporen en een kleinere HEVC- of AV1-kwaliteit. Een mislukte download blijft in de lijst staan met de reden en Probeer opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escolha as faixas de áudio e legendas e uma qualidade HEVC ou AV1 menor. Um download que falha fica na lista com o motivo e Tentar de novo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выбирайте звуковые дорожки и субтитры, а также более компактное качество HEVC или AV1. Неудавшаяся загрузка остаётся в списке с причиной и кнопкой «Повторить»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "选择音轨和字幕轨，以及更小的 HEVC 或 AV1 画质。下载失败时会留在列表中，并显示原因和“重试”。"
           }
         }
       }
@@ -115826,6 +119538,70 @@
         }
       }
     },
+    "Record a programme or a whole series" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Eine Sendung oder eine ganze Serie aufnehmen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Graba un programa o una serie entera"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Enregistrez un programme ou une série entière"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Registra un programma o un’intera serie"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "番組やシリーズ全体を録画"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "프로그램 또는 시리즈 전체 녹화"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Neem een programma of een hele serie op"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Grave um programa ou uma série inteira"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Записывайте передачу или весь сериал"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "录制单个节目或整部剧集"
+          }
+        }
+      }
+    },
     "Record Every Episode" : {
       "localizations" : {
         "de" : {
@@ -121906,6 +125682,70 @@
         }
       }
     },
+    "Rest on a title in the Top Shelf and its trailer plays, when your server has one." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verweile im Top Shelf auf einem Titel, und sein Trailer wird abgespielt, wenn dein Server einen hat."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Detente en un título de la fila superior y se reproducirá su tráiler, si tu servidor tiene uno."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arrêtez-vous sur un titre dans le Top Shelf et sa bande-annonce se lance, si votre serveur en a une."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Soffermati su un titolo nella Top Shelf e parte il suo trailer, se il server ne ha uno."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "トップシェルフでタイトルにとどまると、サーバに予告編があれば再生されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "상단 선반에서 항목에 머무르면 서버에 예고편이 있을 경우 재생됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Blijf in de bovenste rij op een titel staan en de trailer wordt afgespeeld, als je server er een heeft."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pare em um título na Estante Superior e o trailer começa, se o seu servidor tiver um."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Задержитесь на фильме на верхней полке, и запустится его трейлер, если он есть на сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在顶部栏停留在某个项目上，如果服务器有预告片就会播放。"
+          }
+        }
+      }
+    },
     "Restart" : {
       "localizations" : {
         "de" : {
@@ -124786,6 +128626,70 @@
         }
       }
     },
+    "Scan the code on screen with your phone, or set this Apple TV up from your iPhone or iPad with every profile you pick." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scanne den Code auf dem Bildschirm mit deinem Handy, oder richte dieses Apple TV von deinem iPhone oder iPad aus mit allen Profilen ein, die du auswählst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escanea el código de la pantalla con tu móvil o configura este Apple TV desde tu iPhone o iPad con los perfiles que elijas."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scannez le code affiché à l’écran avec votre téléphone, ou configurez cette Apple TV depuis votre iPhone ou iPad avec tous les profils que vous choisissez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scansiona il codice sullo schermo con il telefono, oppure configura questo Apple TV dal tuo iPhone o iPad con tutti i profili che scegli."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "画面のコードをスマートフォンでスキャンするか、iPhoneやiPadから、選んだすべてのプロファイルでこのApple TVを設定できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "휴대폰으로 화면의 코드를 스캔하거나, iPhone 또는 iPad에서 선택한 모든 프로필로 이 Apple TV를 설정하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Scan de code op het scherm met je telefoon, of stel deze Apple TV in vanaf je iPhone of iPad met elk profiel dat je kiest."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Escaneie o código na tela com o celular ou configure esta Apple TV pelo iPhone ou iPad com todos os perfis que escolher."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Отсканируйте код на экране телефоном или настройте этот Apple TV с iPhone или iPad, выбрав нужные профили."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用手机扫描屏幕上的代码，或者在 iPhone 或 iPad 上用你选择的所有描述文件设置这台 Apple TV。"
+          }
+        }
+      }
+    },
     "Scan with your iPhone's Camera" : {
       "localizations" : {
         "de" : {
@@ -125422,6 +129326,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "在整个服务器中搜索"
+          }
+        }
+      }
+    },
+    "Search across your whole server, or inside a library" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Suche auf deinem ganzen Server oder in einer Mediathek"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Busca en todo tu servidor o dentro de una biblioteca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Recherchez sur tout votre serveur ou dans une bibliothèque"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cerca in tutto il server o in una libreria"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "サーバ全体、またはライブラリ内を検索"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "서버 전체 또는 보관함 안에서 검색"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zoek op je hele server of in een bibliotheek"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Busque em todo o servidor ou dentro de uma biblioteca"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Поиск по всему серверу или внутри медиатеки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在整个服务器或某个媒体库中搜索"
           }
         }
       }
@@ -128114,6 +132082,70 @@
         }
       }
     },
+    "Send your listens and loves to ListenBrainz, import your listening history and look back with Year in Music." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sende deine Wiedergaben und Lieblingssongs an ListenBrainz, importiere deinen Hörverlauf und blicke mit dem Musikjahr zurück."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Envía tus escuchas y favoritos a ListenBrainz, importa tu historial de escucha y repasa tu año con Año en música."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Envoyez vos écoutes et coups de cœur à ListenBrainz, importez votre historique d’écoute et revivez votre année avec Année en musique."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Invia ascolti e brani amati a ListenBrainz, importa la cronologia degli ascolti e ripercorri l’anno con Anno in musica."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "再生とラブをListenBrainzに送信。再生履歴を読み込んで、「今年の音楽」で1年を振り返れます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "청취 기록과 좋아요를 ListenBrainz로 보내고, 청취 기록을 가져와 올해의 음악으로 돌아보세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Stuur je luisterbeurten en favorieten naar ListenBrainz, importeer je luistergeschiedenis en blik terug met Muziekjaar."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Envie suas audições e músicas amadas ao ListenBrainz, importe seu histórico de audição e relembre com Ano em música."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Отправляйте прослушивания и любимые треки в ListenBrainz, импортируйте историю прослушиваний и вспоминайте год с «Годом в музыке»."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "把收听记录和喜爱发送到 ListenBrainz，导入收听历史，并通过年度音乐回顾这一年。"
+          }
+        }
+      }
+    },
     "Sends a notification just before it starts" : {
       "localizations" : {
         "de" : {
@@ -130037,6 +134069,70 @@
         }
       }
     },
+    "Set Up Nearby Devices" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Geräte in der Nähe einrichten"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurar dispositivos cercanos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurer des appareils à proximité"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configura dispositivi vicini"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "近くのデバイスを設定"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "주변 기기 설정"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apparaten in de buurt instellen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Configurar dispositivos próximos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Настроить устройства поблизости"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "设置附近的设备"
+          }
+        }
+      }
+    },
     "Set Up Nearby Devices?" : {
       "localizations" : {
         "de" : {
@@ -130290,6 +134386,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "设置"
+          }
+        }
+      }
+    },
+    "Settings in Its Own Window" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Einstellungen im eigenen Fenster"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ajustes en su propia ventana"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les réglages dans leur propre fenêtre"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impostazioni in una finestra dedicata"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "設定を専用ウインドウで"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "별도 창에서 열리는 설정"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Instellingen in een eigen venster"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ajustes em uma janela própria"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Настройки в отдельном окне"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "设置拥有独立窗口"
+          }
+        }
+      }
+    },
+    "Settings opens in a window of its own, with only what applies to the Mac." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die Einstellungen öffnen sich in einem eigenen Fenster, nur mit dem, was für den Mac gilt."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Ajustes se abre en su propia ventana, solo con lo que se aplica al Mac."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Les réglages s’ouvrent dans leur propre fenêtre, avec uniquement ce qui concerne le Mac."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Le impostazioni si aprono in una finestra dedicata, solo con ciò che riguarda il Mac."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "設定は専用のウインドウで開き、Macに関係する項目だけが表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "설정이 별도 창에서 열리며 Mac에 해당하는 항목만 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Instellingen opent in een eigen venster, met alleen wat voor de Mac geldt."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Os ajustes abrem em uma janela própria, só com o que vale para o Mac."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Настройки открываются в отдельном окне, и в них только то, что относится к Mac."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "设置会在独立窗口中打开，只显示适用于 Mac 的选项。"
           }
         }
       }
@@ -134651,6 +138875,134 @@
         }
       }
     },
+    "Sign in a nearby Apple TV, iPad or Mac from here" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Melde ein Apple TV, iPad oder einen Mac in der Nähe von hier aus an"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión en un Apple TV, iPad o Mac cercano desde aquí"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connectez une Apple TV, un iPad ou un Mac à proximité depuis cet appareil"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi da qui su un Apple TV, iPad o Mac vicino"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "近くのApple TV、iPad、Macにここからサインイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "여기에서 근처의 Apple TV, iPad 또는 Mac에 로그인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Log een Apple TV, iPad of Mac in de buurt hiervandaan in"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicie a sessão em uma Apple TV, iPad ou Mac próximo daqui"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход на Apple TV, iPad или Mac поблизости прямо отсюда"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "从这里为附近的 Apple TV、iPad 或 Mac 登录"
+          }
+        }
+      }
+    },
+    "Sign in an Apple TV, iPad or Mac from your iPhone, with every profile you pick. Nothing is sent until you allow it on the new device." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Melde ein Apple TV, iPad oder einen Mac von deinem iPhone aus an, mit allen Profilen, die du auswählst. Nichts wird gesendet, bis du es auf dem neuen Gerät erlaubst."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión en un Apple TV, iPad o Mac desde tu iPhone, con los perfiles que elijas. No se envía nada hasta que lo permitas en el nuevo dispositivo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connectez une Apple TV, un iPad ou un Mac depuis votre iPhone, avec tous les profils que vous choisissez. Rien n’est envoyé tant que vous ne l’autorisez pas sur le nouvel appareil."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi su un Apple TV, iPad o Mac dal tuo iPhone, con tutti i profili che scegli. Non viene inviato nulla finché non lo consenti sul nuovo dispositivo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhoneから、選んだすべてのプロファイルでApple TV、iPad、Macにサインインできます。新しいデバイスで許可するまで何も送信されません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone에서 선택한 모든 프로필로 Apple TV, iPad 또는 Mac에 로그인하세요. 새 기기에서 허용하기 전에는 아무것도 전송되지 않습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Log een Apple TV, iPad of Mac in vanaf je iPhone, met elk profiel dat je kiest. Er wordt niets verstuurd tot je het op het nieuwe apparaat toestaat."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicie a sessão em uma Apple TV, iPad ou Mac pelo iPhone, com todos os perfis que escolher. Nada é enviado até você permitir no novo dispositivo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Выполните вход на Apple TV, iPad или Mac с iPhone, выбрав нужные профили. Ничего не отправляется, пока вы не разрешите это на новом устройстве."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "在 iPhone 上用你选择的所有描述文件为 Apple TV、iPad 或 Mac 登录。在新设备上允许之前，不会发送任何内容。"
+          }
+        }
+      }
+    },
     "Sign In Apple TV?" : {
       "localizations" : {
         "de" : {
@@ -135934,6 +140286,70 @@
         }
       }
     },
+    "Sign this Mac in from your iPhone" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Melde diesen Mac von deinem iPhone aus an"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicia sesión en este Mac desde tu iPhone"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Connectez ce Mac depuis votre iPhone"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Accedi su questo Mac dal tuo iPhone"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhoneからこのMacにサインイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "iPhone에서 이 Mac에 로그인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Log deze Mac in vanaf je iPhone"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Inicie a sessão neste Mac pelo iPhone"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Вход на этом Mac с iPhone"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用 iPhone 为这台 Mac 登录"
+          }
+        }
+      }
+    },
     "Sign-in method" : {
       "localizations" : {
         "de" : {
@@ -136955,6 +141371,134 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "跳过广告"
+          }
+        }
+      }
+    },
+    "Skip ad breaks in recordings, raise quiet audio, Skip Intro in the controls, and AV1 where your Mac can play it. Downloads and your own files play in it too." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Werbepausen in Aufnahmen überspringen, leises Audio anheben, „Intro überspringen“ in der Steuerung und AV1, wo dein Mac es abspielen kann. Auch Downloads und deine eigenen Dateien laufen darin."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Salta las pausas publicitarias de las grabaciones, sube el audio bajo, Saltar intro en los controles y AV1 donde tu Mac pueda reproducirlo. Las descargas y tus propios archivos también se reproducen en él."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Passez les coupures pub des enregistrements, relevez l’audio faible, Passer l’intro dans les commandes, et l’AV1 là où votre Mac peut le lire. Les téléchargements et vos propres fichiers s’y lisent aussi."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Salta le interruzioni pubblicitarie nelle registrazioni, alza l’audio basso, Salta intro nei controlli e AV1 dove il tuo Mac lo supporta. Anche i download e i tuoi file si riproducono qui."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "録画のCMをスキップ、小さい音を上げる、コントロールの「イントロをスキップ」、Macが対応していればAV1も。ダウンロードや自分のファイルもこのプレーヤーで再生できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "녹화본의 광고 구간을 건너뛰고, 작은 소리를 키우고, 컨트롤에서 인트로 건너뛰기를 사용하고, Mac이 지원하면 AV1도 재생하세요. 다운로드와 내 파일도 이 플레이어에서 재생됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sla reclameblokken in opnames over, versterk zacht geluid, Intro overslaan in de bediening, en AV1 waar je Mac het kan afspelen. Ook downloads en je eigen bestanden spelen erin af."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pule os intervalos comerciais das gravações, aumente o áudio baixo, Pular abertura nos controles e AV1 onde seu Mac puder reproduzir. Downloads e seus próprios arquivos também tocam nele."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Пропускайте рекламные паузы в записях, поднимайте тихий звук, «Пропустить заставку» в элементах управления и AV1, где Mac его поддерживает. Загрузки и ваши собственные файлы тоже воспроизводятся в нём."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "跳过录像中的广告时段，提升小音量，在控制栏中“跳过片头”，Mac 支持时还可播放 AV1。下载内容和你自己的文件也能用它播放。"
+          }
+        }
+      }
+    },
+    "Skip ad breaks in recordings, raise quiet audio, Skip Intro in the controls, and the TV stays in the video's mode between episodes." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Werbepausen in Aufnahmen überspringen, leises Audio anheben, „Intro überspringen“ in der Steuerung, und der Fernseher bleibt zwischen Folgen im Modus des Videos."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Salta las pausas publicitarias de las grabaciones, sube el audio bajo, Saltar intro en los controles, y la tele se mantiene en el modo del vídeo entre episodios."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Passez les coupures pub des enregistrements, relevez l’audio faible, Passer l’intro dans les commandes, et le téléviseur reste dans le mode de la vidéo entre les épisodes."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Salta le interruzioni pubblicitarie nelle registrazioni, alza l’audio basso, Salta intro nei controlli, e la TV resta nella modalità del video tra un episodio e l’altro."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "録画のCMをスキップ、小さい音を上げる、コントロールの「イントロをスキップ」。エピソードの合間もテレビはビデオに合ったモードのままです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "녹화본의 광고 구간 건너뛰기, 작은 소리 키우기, 컨트롤의 인트로 건너뛰기, 그리고 에피소드 사이에도 TV가 동영상 모드를 유지합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sla reclameblokken in opnames over, versterk zacht geluid, Intro overslaan in de bediening, en de tv blijft tussen afleveringen in de modus van de video."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pule os intervalos comerciais das gravações, aumente o áudio baixo, Pular abertura nos controles, e a TV fica no modo do vídeo entre os episódios."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Пропуск рекламных пауз в записях, подъём тихого звука, «Пропустить заставку» в элементах управления, а телевизор остаётся в режиме видео между сериями."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "跳过录像中的广告时段，提升小音量，在控制栏中“跳过片头”，电视在剧集之间也会保持视频的模式。"
           }
         }
       }
@@ -138939,6 +143483,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "智能下载会为剧集准备好接下来的几集"
+          }
+        }
+      }
+    },
+    "Smarter Downloads" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Schlauere Downloads"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Descargas más inteligentes"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Des téléchargements plus intelligents"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Download più intelligenti"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "さらに賢くなったダウンロード"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "더 똑똑해진 다운로드"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Slimmere downloads"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Downloads mais inteligentes"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Более умные загрузки"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "更智能的下载"
           }
         }
       }
@@ -144317,6 +148925,70 @@
           "stringUnit" : {
             "state" : "needs_review",
             "value" : "切换描述文件"
+          }
+        }
+      }
+    },
+    "Switch Profiles Faster" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Schneller das Profil wechseln"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cambia de perfil más rápido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Changez de profil plus vite"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cambia profilo più in fretta"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "プロファイルをすばやく切り替え"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "더 빠른 프로필 전환"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Sneller van profiel wisselen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Troque de perfil mais rápido"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Быстрая смена профиля"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "更快切换描述文件"
           }
         }
       }
@@ -163725,6 +168397,134 @@
         }
       }
     },
+    "What's Playing? and ListenBrainz" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "„Was läuft gerade?“ und ListenBrainz"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Qué está sonando? y ListenBrainz"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Qu’est-ce qui passe ? et ListenBrainz"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cosa sta suonando? e ListenBrainz"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "「この曲は？」とListenBrainz"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "무슨 노래일까요? 및 ListenBrainz"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wat speelt er? en ListenBrainz"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O que está tocando? e ListenBrainz"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "«Что играет?» и ListenBrainz"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“正在播放什么？”和 ListenBrainz"
+          }
+        }
+      }
+    },
+    "What's Playing? names a song playing near you" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "„Was läuft gerade?“ erkennt einen Song in deiner Nähe"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "¿Qué está sonando? identifica una canción que suena cerca"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Qu’est-ce qui passe ? identifie un morceau qui passe près de vous"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cosa sta suonando? riconosce un brano che suona vicino a te"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "「この曲は？」で近くで流れている曲がわかる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "무슨 노래일까요?로 주변에서 재생 중인 노래 확인"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Wat speelt er? herkent een nummer dat bij je in de buurt speelt"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "O que está tocando? identifica a música tocando perto de você"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "«Что играет?» узнаёт песню, которая звучит рядом"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "“正在播放什么？”可识别身边正在播放的歌曲"
+          }
+        }
+      }
+    },
     "What's saved, the space it takes, and removing it." : {
       "localizations" : {
         "de" : {
@@ -166798,6 +171598,134 @@
         }
       }
     },
+    "Your favourite and recent channels on Home" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Lieblings- und zuletzt gesehenen Kanäle auf der Startseite"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tus canales favoritos y recientes en Inicio"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vos chaînes favorites et récentes dans Accueil"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I tuoi canali preferiti e recenti in Home"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "お気に入りと最近のチャンネルをホームに"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "홈에 즐겨찾는 채널과 최근 채널 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je favoriete en recente kanalen op Start"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seus canais favoritos e recentes no Início"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Избранные и недавние каналы на главной"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "首页显示你收藏和最近观看的频道"
+          }
+        }
+      }
+    },
+    "Your favourite channels in the Top Shelf" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Deine Lieblingskanäle im Top Shelf"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Tus canales favoritos en la fila superior"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vos chaînes favorites dans le Top Shelf"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "I tuoi canali preferiti nella Top Shelf"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "お気に入りのチャンネルをトップシェルフに"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "상단 선반에 즐겨찾는 채널 표시"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Je favoriete kanalen in de bovenste rij"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Seus canais favoritos na Estante Superior"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Избранные каналы на верхней полке"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "顶部栏显示你收藏的频道"
+          }
+        }
+      }
+    },
     "Your Jellyfin libraries will appear here." : {
       "localizations" : {
         "de" : {
@@ -169038,6 +173966,198 @@
         }
       }
     },
+    "Ask Siri to \"Play … in Arcfin\"" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Frag Siri: „Spiele … in Arcfin“"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pídele a Siri “Pon … en Arcfin”"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Demandez à Siri « Joue … dans Arcfin »"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chiedi a Siri “Riproduci … in Arcfin”"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siriに「Arcfinで…を再生して」"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Siri에게 “Arcfin에서 … 재생해 줘”"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vraag Siri ‘Speel … af in Arcfin’"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Peça à Siri “Toque … no Arcfin”"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Попросите Siri: «Включи … в Arcfin»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "对 Siri 说“在 Arcfin 中播放…”"
+          }
+        }
+      }
+    },
+    "Ask Siri to \"Play … in Arcfin\" for music, movies and shows from the remote." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Frag Siri mit der Fernbedienung: „Spiele … in Arcfin“ – für Musik, Filme und Serien."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pídele a Siri “Pon … en Arcfin” desde el mando para música, películas y series."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Demandez à Siri « Joue … dans Arcfin » depuis la télécommande pour la musique, les films et les séries."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chiedi a Siri “Riproduci … in Arcfin” dal telecomando per musica, film e serie."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "リモコンからSiriに「Arcfinで…を再生して」と頼めば、音楽、映画、番組を再生できます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "리모컨으로 Siri에게 “Arcfin에서 … 재생해 줘”라고 말해 음악, 영화, 프로그램을 재생하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vraag Siri via de afstandsbediening ‘Speel … af in Arcfin’ voor muziek, films en series."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Peça à Siri “Toque … no Arcfin” pelo controle remoto para músicas, filmes e séries."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Попросите Siri с пульта: «Включи … в Arcfin» — для музыки, фильмов и сериалов."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用遥控器对 Siri 说“在 Arcfin 中播放…”，即可播放音乐、电影和剧集。"
+          }
+        }
+      }
+    },
+    "Ask Siri to \"Play … in Arcfin\" from the remote" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Frag Siri mit der Fernbedienung: „Spiele … in Arcfin“"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Pídele a Siri “Pon … en Arcfin” desde el mando"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Demandez à Siri « Joue … dans Arcfin » depuis la télécommande"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chiedi a Siri “Riproduci … in Arcfin” dal telecomando"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "リモコンからSiriに「Arcfinで…を再生して」"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "리모컨으로 Siri에게 “Arcfin에서 … 재생해 줘”"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vraag Siri via de afstandsbediening ‘Speel … af in Arcfin’"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Peça à Siri “Toque … no Arcfin” pelo controle remoto"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Попросите Siri с пульта: «Включи … в Arcfin»"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "用遥控器对 Siri 说“在 Arcfin 中播放…”"
+          }
+        }
+      }
+    },
     "Automatically" : {
       "localizations" : {
         "de" : {
@@ -169290,6 +174410,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "设备与同步"
+          }
+        }
+      }
+    },
+    "Devices & Sync with the Arcfin Sync plugin" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Geräte & Sync mit dem Plugin Arcfin Sync"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dispositivos y sincronización con el complemento Arcfin Sync"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Appareils et synchro avec le plugin Arcfin Sync"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dispositivi e sincronizzazione con il plugin Arcfin Sync"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin Syncプラグインでデバイスと同期"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin Sync 플러그인으로 기기 및 동기화"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Apparaten en synchronisatie met de plugin Arcfin Sync"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Dispositivos e sincronização com o plugin Arcfin Sync"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Устройства и синхронизация с плагином Arcfin Sync"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "借助 Arcfin Sync 插件实现设备与同步"
           }
         }
       }
@@ -171978,6 +177162,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "所有人的 Arcfin"
+          }
+        }
+      }
+    },
+    "Arcfin for Everyone: defaults and locks for every Arcfin app" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin für alle: Standardwerte und Sperren für jede Arcfin-App"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin para todos: valores predeterminados y bloqueos para cada app de Arcfin"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin pour tous : valeurs par défaut et verrous pour chaque app Arcfin"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin per tutti: valori predefiniti e blocchi per ogni app Arcfin"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "みんなのArcfin：すべてのArcfinアプリのデフォルトとロック"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "모두를 위한 Arcfin: 모든 Arcfin 앱의 기본값과 잠금"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin voor iedereen: standaardwaarden en vergrendelingen voor elke Arcfin-app"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin para todos: padrões e bloqueios para todos os apps Arcfin"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Arcfin для всех: значения по умолчанию и блокировки для всех приложений Arcfin"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "所有人的 Arcfin：为每个 Arcfin App 设置默认值和锁定"
           }
         }
       }

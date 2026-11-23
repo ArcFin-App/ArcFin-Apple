@@ -19,7 +19,7 @@ struct OnboardingView: View {
         pages.append(OnboardingPage(
             art: .logo,
             title: "Welcome to Arcfin",
-            message: "Your Jellyfin movies, shows, music and collections, in an app made for iPhone, iPad, Mac and Apple TV."
+            message: "Your Jellyfin movies, shows, music and Live TV, in an app made for iPhone, iPad, Mac, Apple TV and Apple Watch."
         ))
         pages.append(OnboardingPage(
             art: .symbol("house"),
@@ -28,8 +28,28 @@ struct OnboardingView: View {
             highlights: [
                 ("play.circle", "Continue Watching and Next Up, in step with your other devices"),
                 ("square.grid.2x2", "Every library, with filters, sorting and collections"),
-                ("music.note", "Your music, by album, artist and playlist"),
-                ("magnifyingglass", "Search across your whole server"),
+                ("magnifyingglass", "Search across your whole server, or inside a library"),
+                ("chart.bar", "Stats for what you watch and listen to"),
+            ]
+        ))
+        pages.append(OnboardingPage(
+            art: .symbol("music.note"),
+            title: "All Your Music",
+            message: "Your music library on the big screen: albums, artists, playlists and Made for You.",
+            highlights: [
+                ("quote.bubble", "Lyrics alongside Now Playing"),
+                ("play.circle", "A Now Playing tab while music plays"),
+                ("mic", "Ask Siri to \"Play … in Arcfin\" from the remote"),
+            ]
+        ))
+        pages.append(OnboardingPage(
+            art: .symbol("tv"),
+            title: "Live TV",
+            message: "If your server has Live TV, watch it here with the guide, recordings and reminders.",
+            highlights: [
+                ("gobackward", "Pause and rewind a channel"),
+                ("record.circle", "Record a programme or a whole series"),
+                ("rectangle.on.rectangle", "Your favourite channels in the Top Shelf"),
             ]
         ))
         pages.append(OnboardingPage(
@@ -67,6 +87,7 @@ struct OnboardingView: View {
                 ("server.rack", "Add more servers and switch between them"),
                 ("lock", "Lock a profile with a PIN"),
                 ("figure.and.child.holdinghands", "Your server's parental controls apply here too"),
+                ("person.2", "Always Ask Who's Watching, when Apple TV opens"),
             ]
         ))
         if isSignedIn {
@@ -79,7 +100,7 @@ struct OnboardingView: View {
             pages.append(OnboardingPage(
                 art: .symbol("server.rack"),
                 title: "Connect Your Server",
-                message: "Next, enter your Jellyfin server's address and sign in. Servers on your network show up by themselves."
+                message: "Next, enter your Jellyfin server's address and sign in, or set this Apple TV up from your iPhone or iPad. Servers on your network show up by themselves."
             ))
         }
         return pages

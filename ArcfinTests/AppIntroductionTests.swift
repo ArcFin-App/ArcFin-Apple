@@ -24,6 +24,20 @@ struct AppIntroductionTests {
         #expect(AppIntroduction(defaults: defaults).presentation == nil)
     }
 
+    @Test func updatingGetsTheTourThenWhatsNew() async throws {
+        defaults.set(UUID().uuidString, forKey: "arcfin.activeProfileID")
+        defaults.set(AppIntroduction.onboardingVersion - 1, forKey: AppIntroduction.onboardingKey)
+        defaults.set(AppIntroduction.whatsNewVersion - 1, forKey: AppIntroduction.whatsNewKey)
+        let introduction = AppIntroduction(defaults: defaults)
+        #expect(introduction.presentation == .onboarding)
+        introduction.finishOnboarding()
+        #expect(introduction.presentation == nil)
+        try await Task.sleep(for: .seconds(1))
+        #expect(introduction.presentation == .whatsNew)
+        introduction.finishWhatsNew()
+        #expect(AppIntroduction(defaults: defaults).presentation == nil)
+    }
+
     @Test func updatingFromBeforeTheTourShowsWhatsNew() {
         defaults.set(UUID().uuidString, forKey: "arcfin.activeProfileID")
         #expect(AppIntroduction(defaults: defaults).presentation == .whatsNew)
