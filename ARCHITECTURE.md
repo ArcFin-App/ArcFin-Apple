@@ -53,9 +53,7 @@ LocalPackages/Sources/
 └── Features
     ├── MediaEngine      Aether, AVFoundation and VLC behind one player protocol
     ├── SyncEngine       offline progress sync and Arcfin Sync settings sync
-    ├── SearchKit        server search
-    ├── CastKit          Chromecast sender
-    └── AppState         unused scaffold
+    └── CastKit          Chromecast sender
 ```
 
 Package tests are in `LocalPackages/Tests/`, one test target per package.
@@ -66,7 +64,7 @@ Package tests are in `LocalPackages/Tests/`, one test target per package.
 |---|---|
 | Language | Swift 6 with strict concurrency |
 | UI | SwiftUI, with Liquid Glass on iOS 26 |
-| State | Plain `@Observable` classes with `@State` and `@Environment`. TCA is a dependency, but only the unused `AppState` scaffold uses it |
+| State | Plain `@Observable` classes with `@State` and `@Environment` |
 | Storage | SwiftData for app data, the Keychain for secrets |
 | Images | Nuke |
 | Playback | [AetherEngine](https://github.com/superuser404notfound/AetherEngine) (the default), AVFoundation and [SwiftVLC](https://github.com/harflabs/SwiftVLC), behind `MediaPlayerProtocol`. Downloads play through Aether or VLC |

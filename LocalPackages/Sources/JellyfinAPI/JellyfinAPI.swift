@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Foundation
-import OpenAPIRuntime
-import OpenAPIURLSession
 import AuthCore
 import Telemetry
 
 // MARK: - Client protocol
-// Replace stub implementations with OpenAPI-generated types once openapi.yaml is wired up.
 
 public protocol JellyfinAPIClientProtocol: Sendable {
     // Auth
@@ -24,7 +21,7 @@ public protocol JellyfinAPIClientProtocol: Sendable {
     func reportPlaybackStopped(serverID: UUID, itemID: String, positionTicks: Int64) async throws
 }
 
-// MARK: - Stub models (replace with OpenAPI-generated when specs land)
+// MARK: - Models
 
 public struct MediaItem: Sendable, Identifiable, Equatable, Hashable {
     public let id: String
