@@ -4,6 +4,7 @@
 import AppIntents
 import CoreSpotlight
 import Foundation
+import JellyfinAPI
 import SeerrAPI
 
 // MARK: - Snapshot
@@ -174,7 +175,7 @@ enum SeerrSpotlightIndexer {
             for entry in all {
                 group.addTask {
                     var entity = SeerrTitleEntity(entry: entry)
-                    if let url = entity.posterURL, let (data, _) = try? await URLSession.shared.data(from: url) {
+                    if let url = entity.posterURL, let (data, _) = try? await URLSession.arcfin.data(from: url) {
                         entity.thumbnailData = data
                     }
                     return entity

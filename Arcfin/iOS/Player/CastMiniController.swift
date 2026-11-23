@@ -588,8 +588,8 @@ final class RemotePlaybackActivity {
 
     private func thumbnail(for session: JellyfinSession) async -> Data? {
         guard let url = AppServices.remoteSessions.artworkURL(for: session, type: "Primary", width: 160),
-              let response = try? await URLSession.shared.data(from: url),
-              let image = UIImage(data: response.0),
+              let data = await URLSession.arcfin.imageData(from: url),
+              let image = UIImage(data: data),
               let small = await image.byPreparingThumbnail(ofSize: CGSize(width: 64, height: 64 * image.size.height / max(image.size.width, 1)))
         else { return nil }
         for quality in [0.6, 0.4, 0.25] {

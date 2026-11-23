@@ -48,16 +48,25 @@ public struct ArcfinSession: Sendable {
     }
 
     public func data(for request: URLRequest) async throws -> (Data, URLResponse) {
-        try await session.data(for: Self.withHeaders(request))
+        await Self.firstPath.wait()
+        return try await session.data(for: Self.withHeaders(request))
     }
 
     public func data(from url: URL) async throws -> (Data, URLResponse) {
-        try await session.data(for: Self.withHeaders(URLRequest(url: url)))
+        await Self.firstPath.wait()
+        return try await session.data(for: Self.withHeaders(URLRequest(url: url)))
     }
 
     public func download(for request: URLRequest) async throws -> (URL, URLResponse) {
-        try await session.download(for: Self.withHeaders(request))
+        await Self.firstPath.wait()
+        return try await session.download(for: Self.withHeaders(request))
     }
+
+    /// waitsForConnectivity alone doesn't cover a path that reads as unsatisfied for a moment
+    /// at cold launch (Local Network permission settling), so the first requests wait for a
+    /// satisfied one, bounded. Siri, widgets and background refresh start with a request
+    /// straight away, before MediaRepository's own wait.
+    private static let firstPath = FirstPathWait()
 
     /// An image's bytes, or nil. Jellyfin's resize cache can answer one size of an image
     /// with an empty 200 forever, so a failed or empty resized request retries the original.
@@ -81,5 +90,16 @@ public struct ArcfinSession: Sendable {
             request.setValue(value, forHTTPHeaderField: name)
         }
         return request
+    }
+}
+
+private final class FirstPathWait: @unchecked Sendable {
+    private let lock = NSLock()
+    private var done = false
+
+    func wait() async {
+        guard !lock.withLock({ done }) else { return }
+        await withCheckedContinuation { PathWait(continuation: $0).start(timeoutSeconds: 6) }
+        lock.withLock { done = true }
     }
 }

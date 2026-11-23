@@ -13,7 +13,7 @@ import os
 /// Races a one-shot NWPathMonitor read against a timeout — mirrors AuthManager's
 /// TimeoutResult, which uses the same lock-guarded resume-once pattern for a system
 /// callback with no bounded completion time of its own.
-private final class PathWait: @unchecked Sendable {
+nonisolated final class PathWait: @unchecked Sendable {
     private let lock = NSLock()
     private var finished = false
     private let continuation: CheckedContinuation<Void, Never>

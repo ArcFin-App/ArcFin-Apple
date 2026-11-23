@@ -76,6 +76,7 @@ public actor WikidataAwardsClient {
         request.setValue("Arcfin/1.0 (https://github.com/ArcFin/ArcFin)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/sparql-results+json", forHTTPHeaderField: "Accept")
 
+        await withCheckedContinuation { PathWait(continuation: $0).start(timeoutSeconds: 6) }
         guard let (data, response) = try? await session.data(for: request),
               let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode)
         else { return [] }
