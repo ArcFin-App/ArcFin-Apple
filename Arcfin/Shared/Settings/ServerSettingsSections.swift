@@ -3,6 +3,7 @@
 import SwiftUI
 import AuthCore
 import JellyfinAPI
+import SyncEngine
 
 /// The server's public info for Server Settings, and the Wi-Fi network this device is on.
 @MainActor @Observable
@@ -94,6 +95,11 @@ struct ArcfinSyncSection: View {
 
     @Environment(AuthManager.self) private var authManager
 
+    /// The admin's locks by name, in the schema's order.
+    private var lockedSettings: [SettingsSchema.Setting] {
+        SettingsSchema.bundled.settings.filter { authManager.arcfinSyncLockedKeys.contains($0.key) }
+    }
+
     var body: some View {
         Section {
             if authManager.isSyncingArcfin {
@@ -106,6 +112,11 @@ struct ArcfinSyncSection: View {
                     .tvReadOnlyRow()
                 LabeledContent("Locked Settings", value: "\(authManager.arcfinSyncLockedKeys.count)")
                     .tvReadOnlyRow()
+                ForEach(lockedSettings) { setting in
+                    Label(SettingDisplay.title(setting), systemImage: "lock.fill")
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .tvReadOnlyRow()
+                }
                 if let lastSynced = authManager.arcfinSyncLastSyncedAt {
                     LabeledContent("Last Synced") {
                         Text(lastSynced, style: .relative)

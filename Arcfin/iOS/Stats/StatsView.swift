@@ -80,6 +80,7 @@ struct StatsView: View {
                 Button("Try Again") { Task { await model.load(authManager: authManager) } }
                     .buttonStyle(.glassProminent)
                     .tint(DT.Color.accent)
+                    .foregroundStyle(DT.Color.onAccent)
             }
         default:
             ScrollView(showsIndicators: false) {

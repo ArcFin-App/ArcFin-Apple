@@ -15,6 +15,7 @@ struct HomeHeroBanner<Background: View>: View {
     let carousel: HomeHeroCarousel
     let openItem: (MediaItem) -> Void
     @ViewBuilder let background: Background
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -49,13 +50,18 @@ struct HomeHeroBanner<Background: View>: View {
         .background(DT.Color.backgroundPrimary)
     }
 
+    /// In light mode the page is near-white, so the slide fades to a dark scrim behind the
+    /// white logo, details and dots, and only meets the page below them.
     private var imageFade: some View {
-        LinearGradient(
-            stops: [.init(color: .clear, location: 0.3),
-                    .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.75),
-                    .init(color: DT.Color.backgroundPrimary, location: 1)],
-            startPoint: .top, endPoint: .bottom
-        )
+        let stops: [Gradient.Stop] = colorScheme == .dark
+            ? [.init(color: .clear, location: 0.3),
+               .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.75),
+               .init(color: DT.Color.backgroundPrimary, location: 1)]
+            : [.init(color: .clear, location: 0.3),
+               .init(color: .black.opacity(0.45), location: 0.7),
+               .init(color: .black.opacity(0.6), location: 0.93),
+               .init(color: DT.Color.backgroundPrimary, location: 1)]
+        return LinearGradient(stops: stops, startPoint: .top, endPoint: .bottom)
     }
 }
 
@@ -184,8 +190,6 @@ private struct HomeHeroInfo: View {
                     .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 10))
                 }
             }
-            // The buttons sit on the artwork, so their glass stays dark under the white labels.
-            .alwaysDark()
             .padding(.top, 16)
 
             if items.count > 1 {
@@ -209,6 +213,8 @@ private struct HomeHeroInfo: View {
             }
         }
         .frame(maxWidth: .infinity)
+        // It sits on the artwork, so it stays dark in light mode too.
+        .alwaysDark()
     }
 }
 

@@ -129,6 +129,7 @@ struct LiveTVProgramDetails: View {
                 }
                 .buttonStyle(.glassProminent)
                 .tint(DT.Color.accent)
+                .foregroundStyle(DT.Color.onAccent)
                 .controlSize(.large)
             }
 
@@ -225,6 +226,7 @@ struct LiveTVProgramDetails: View {
             }
             .buttonStyle(.glassProminent)
             .tint(DT.Color.accent)
+            .foregroundStyle(DT.Color.onAccent)
             .controlSize(.large)
             .disabled(isWorking)
         }

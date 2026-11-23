@@ -122,6 +122,7 @@ struct LiveTVGuideView: View {
                 }
                 .buttonStyle(.glassProminent)
                 .tint(DT.Color.accent)
+                .foregroundStyle(DT.Color.onAccent)
                 .padding(DT.Spacing.pagePad)
                 .transition(.scale.combined(with: .opacity))
             }

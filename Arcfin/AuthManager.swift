@@ -121,6 +121,8 @@ final class AuthManager {
     // MARK: - Startup
 
     @ObservationIgnored private var storedAuthCheck: Task<Void, Never>?
+    /// Called once the launch's stored sign-in is read, before its token is checked.
+    @ObservationIgnored var onStoredSignInRead: ((ServerCredential) -> Void)?
 
     /// The launch's stored sign-in check, run once whichever screen asks first: the window, or
     /// CarPlay when the app starts in the car.
@@ -166,6 +168,12 @@ final class AuthManager {
         if resolvedURL != cred.baseURL {
             cred.baseURL = resolvedURL
             upsert(cred)
+        }
+        // Home starts loading beside the token check and the splash. Offline Mode and Apple TV's
+        // Who's Watching decide what Home shows first, so they wait for it as before.
+        if !UserDefaults.standard.bool(forKey: "offlineModeEnabled"),
+           !WhoIsWatching.asksAtLaunch(profileCount: all.count) {
+            onStoredSignInRead?(cred)
         }
 
         let credForValidation = cred

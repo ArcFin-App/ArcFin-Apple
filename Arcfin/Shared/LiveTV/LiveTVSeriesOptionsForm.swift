@@ -79,6 +79,7 @@ struct LiveTVSeriesEditor: View {
                     }
                     .buttonStyle(.glassProminent)
                     .tint(DT.Color.accent)
+                    .foregroundStyle(DT.Color.onAccent)
                     .disabled(isSaving)
                 }
                 .controlSize(.large)
