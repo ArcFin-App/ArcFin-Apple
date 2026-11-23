@@ -247,58 +247,55 @@ extension SettingsSyncEngine {
 
     // MARK: Plugin v2 sync
 
-    /// A sync with plugin v2. Automatic is exactly `sync`, then this device's record. Ask First
-    /// sends what changed here but holds what changed on another device for a yes. Off only takes
-    /// locked settings. In every mode the device's record is updated and device locks apply.
+    /// A sync with plugin v2. Automatic merges as `sync` does, then updates this device's record.
+    /// Ask First sends what changed here but holds what changed on another device for a yes. Off
+    /// only takes locked settings. In every mode the device's record is updated and device locks
+    /// apply, before the mode is read, so a sync mode the admin just locked counts straight away.
+    /// Runs on the main actor: see `sync` for `isCurrent`.
+    @MainActor
     public static func syncDevice(credential: ServerCredential, authHeader: String, deviceID: String,
-                                  registration: @Sendable ([String: String]) async -> ArcfinSyncDeviceRegistration,
+                                  registration: @MainActor ([String: String]) -> ArcfinSyncDeviceRegistration,
                                   defaults: UserDefaults = .standard,
-                                  isCurrent: @Sendable () async -> Bool = { true }) async -> DeviceSyncResult? {
+                                  isCurrent: @MainActor () -> Bool = { true }) async -> DeviceSyncResult? {
         let client = ArcfinSyncClient()
         let profile = credential.id.uuidString
-        let mode = SettingsSyncMode.current(defaults: defaults)
+        guard let state = try? await client.fetchSync(credential: credential, authHeader: authHeader), isCurrent()
+        else { return nil }
+        let devicePolicy = devicePolicy(state.settings, local: snapshot(scope: .device, defaults: defaults))
+        write(devicePolicy.apply, schema: .bundled, defaults: defaults)
+        let syncedLocked = state.lockedKeys.intersection(SettingsSyncRegistry.allKeys)
         var pending: RemoteSettingsChange?
 
-        if mode == .automatic {
-            guard await sync(credential: credential, authHeader: authHeader, defaults: defaults, clearsOnServer: true,
-                             isCurrent: isCurrent) != nil
-            else { return nil }
-        }
-        guard let state = try? await client.fetchSync(credential: credential, authHeader: authHeader),
-              await isCurrent()
-        else { return nil }
-        let syncedLocked = state.lockedKeys.intersection(SettingsSyncRegistry.allKeys)
-
-        switch mode {
+        switch SettingsSyncMode.current(defaults: defaults) {
         case .automatic:
+            guard let synced = await syncSettings(credential: credential, authHeader: authHeader, state: state,
+                                                  defaults: defaults, isCurrent: isCurrent)
+            else { return nil }
             // Seen here already, so switching to Ask First doesn't ask about it.
-            markHandled(state.updatedAt, profile: profile, defaults: defaults)
+            markHandled(synced.updatedAt, profile: profile, defaults: defaults)
         case .ask:
             let found = await askFirst(state: state, client: client, credential: credential, authHeader: authHeader,
                                        deviceID: deviceID, locked: syncedLocked, defaults: defaults, isCurrent: isCurrent)
             pending = stillPending(savedPending(profile: profile, defaults: defaults), found: found, profile: profile)
         case .off:
             let local = collectLocalPayload(defaults: defaults).settings
-            let remote = state.values
-            let taken = remote.filter { syncedLocked.contains($0.key) && local[$0.key] != $0.value }
+            let taken = state.values.filter { syncedLocked.contains($0.key) && local[$0.key] != $0.value }
             apply(SyncPayload(settings: taken), defaults: defaults)
         }
-        guard await isCurrent() else { return nil }
+        guard isCurrent() else { return nil }
         savePending(pending, profile: profile, defaults: defaults)
-
-        let devicePolicy = devicePolicy(state.settings, local: snapshot(scope: .device, defaults: defaults))
-        write(devicePolicy.apply, schema: .bundled, defaults: defaults)
         let locked = syncedLocked.union(devicePolicy.locked)
         defaults.set(locked.sorted(), forKey: lockedKey(profile: profile))
 
-        let body = await registration(snapshot(defaults: defaults))
+        let body = registration(snapshot(defaults: defaults))
         let device = try? await client.registerDevice(credential: credential, authHeader: authHeader, body)
         return DeviceSyncResult(locked: locked, pending: pending, device: device)
     }
 
+    @MainActor
     private static func askFirst(state: ArcfinSyncState, client: ArcfinSyncClient, credential: ServerCredential,
                                  authHeader: String, deviceID: String, locked: Set<String>, defaults: UserDefaults,
-                                 isCurrent: @Sendable () async -> Bool) async -> RemoteSettingsChange? {
+                                 isCurrent: @MainActor () -> Bool) async -> RemoteSettingsChange? {
         let profile = credential.id.uuidString
         let local = collectLocalPayload(defaults: defaults).settings
         let (base, adoptRemote) = startingPoint(profile: profile, defaults: defaults)
@@ -320,7 +317,7 @@ extension SettingsSyncEngine {
             for (key, value) in merged.push where kept[key] == value { agreed[key] = value }
             for key in merged.clearOnServer { agreed[key] = nil }
         }
-        guard await isCurrent() else { return nil }
+        guard isCurrent() else { return nil }
         defaults.set(agreed, forKey: lastSyncedKey(profile: profile))
         defaults.set(profile, forKey: lastProfileKey)
         saveDeclined(offered.declined, profile: profile, defaults: defaults)
@@ -383,16 +380,20 @@ extension SettingsSyncEngine {
         forgetPending(profile: profile, defaults: defaults)
     }
 
-    /// "Send This Device's Settings to My Other Devices".
+    /// "Send This Device's Settings to My Other Devices". A profile switch while it waits on the
+    /// server stops it before it reads or records the next profile's settings.
+    @MainActor
     public static func sendToAll(credential: ServerCredential, authHeader: String, platform: String,
-                                 defaults: UserDefaults = .standard) async throws {
+                                 defaults: UserDefaults = .standard, isCurrent: @MainActor () -> Bool = { true }) async throws {
         let client = ArcfinSyncClient()
         let profile = credential.id.uuidString
         let state = try await client.fetchSync(credential: credential, authHeader: authHeader)
+        guard isCurrent() else { throw CancellationError() }
         let locked = state.lockedKeys
         let values = replacePayload(local: collectLocalPayload(defaults: defaults).settings, remote: state.values,
                                     platform: platform, locked: locked)
         let saved = try await client.updateSync(credential: credential, authHeader: authHeader, values: values, replace: true)
+        guard isCurrent() else { throw CancellationError() }
         var agreed = saved.values.filter { SettingsSyncRegistry.allKeys.contains($0.key) }
         for (key, value) in collectLocalPayload(defaults: defaults).settings where !locked.contains(key) { agreed[key] = value }
         defaults.set(agreed, forKey: lastSyncedKey(profile: profile))

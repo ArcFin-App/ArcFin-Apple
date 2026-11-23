@@ -577,49 +577,67 @@ public enum SettingsSyncEngine {
     /// Returns the set of admin-locked keys, so the caller can disable those controls in Settings,
     /// or nil when the server's settings couldn't be read: nothing was merged, and the locks last
     /// seen (`lockedKeys(profile:)`) still apply.
-    /// `isCurrent` says whether the profile is still the one in use: a sync that finishes after
-    /// a switch would read and write the next profile's settings, so it stops there.
-    @discardableResult
+    /// `isCurrent` says whether the profile is still the one in use. It's checked on the main
+    /// actor in the same step as the reads and writes after it, so a profile switch can't land
+    /// between the check and the writes and mix two profiles' settings.
+    @MainActor @discardableResult
     public static func sync(credential: ServerCredential, authHeader: String, defaults: UserDefaults = .standard,
-                            clearsOnServer: Bool = false,
-                            isCurrent: @Sendable () async -> Bool = { true }) async -> Set<String>? {
+                            isCurrent: @MainActor () -> Bool = { true }) async -> Set<String>? {
+        await syncSettings(credential: credential, authHeader: authHeader, state: nil, defaults: defaults,
+                           isCurrent: isCurrent)?.locked
+    }
+
+    /// The merge. With plugin v2's `state` it works from that, and sends through PUT Sync, which
+    /// also takes clears; without it, through the 0.3 Settings endpoints. `updatedAt` is the
+    /// server's after any send.
+    @MainActor
+    static func syncSettings(credential: ServerCredential, authHeader: String, state: ArcfinSyncState?,
+                             defaults: UserDefaults, isCurrent: @MainActor () -> Bool)
+        async -> (locked: Set<String>, updatedAt: Date?)? {
         let client = ArcfinSyncClient()
         let profile = credential.id.uuidString
 
         // One read gives both the values and the locks, so a merge never runs with the locks
         // missing and sends this device's value for a locked key.
-        guard let settings = try? await client.fetchSettings(credential: credential, authHeader: authHeader)
-        else { return nil }
-        var remote: [String: String] = [:]
-        for setting in settings {
-            if let value = setting.value { remote[setting.key] = value }
+        let remote: [String: String]
+        let locked: Set<String>
+        if let state {
+            remote = state.values
+            locked = state.lockedKeys.intersection(SettingsSyncRegistry.allKeys)
+        } else {
+            guard let settings = try? await client.fetchSettings(credential: credential, authHeader: authHeader)
+            else { return nil }
+            remote = Dictionary(settings.compactMap { s in s.value.map { (s.key, $0) } }, uniquingKeysWith: { _, last in last })
+            locked = Set(settings.filter { $0.isLocked }.map { $0.key })
         }
-        let locked = Set(settings.filter { $0.isLocked }.map { $0.key })
+        guard isCurrent() else { return nil }
         defaults.set(locked.sorted(), forKey: lockedKey(profile: profile))
-        guard await isCurrent() else { return nil }
         let local = collectLocalPayload(defaults: defaults).settings
         let (base, adoptRemote) = startingPoint(profile: profile, defaults: defaults)
 
         let merged = merge(local: local, remote: remote, base: base, locked: locked, adoptRemote: adoptRemote,
-                           canClearOnServer: clearsOnServer)
+                           canClearOnServer: state != nil)
         apply(SyncPayload(settings: merged.apply), defaults: defaults)
         for key in merged.clear { defaults.removeObject(forKey: key) }
         var agreed = collectLocalPayload(defaults: defaults).settings
+        var updatedAt = state?.updatedAt
         if !merged.push.isEmpty || !merged.clearOnServer.isEmpty {
             let kept: [String: String]?
-            if clearsOnServer {
-                kept = try? await client.updateSync(credential: credential, authHeader: authHeader, values: merged.push,
-                                                    clearing: merged.clearOnServer, replace: false).values
+            if state != nil {
+                let saved = try? await client.updateSync(credential: credential, authHeader: authHeader, values: merged.push,
+                                                         clearing: merged.clearOnServer, replace: false)
+                kept = saved?.values
+                if let saved { updatedAt = saved.updatedAt }
             } else {
                 kept = (try? await client.updateSettings(credential: credential, authHeader: authHeader, values: merged.push))
                     .map { Dictionary($0.compactMap { s in s.value.map { (s.key, $0) } }, uniquingKeysWith: { _, last in last }) }
             }
             agreed = agreedAfterSending(agreed, pushed: merged.push, cleared: merged.clearOnServer, kept: kept, base: base)
         }
-        guard await isCurrent() else { return locked }
+        guard isCurrent() else { return (locked, updatedAt) }
         defaults.set(agreed, forKey: lastSyncedKey(profile: profile))
         defaults.set(profile, forKey: lastProfileKey)
-        return locked
+        return (locked, updatedAt)
     }
 
     /// Only what the server kept counts as agreed. One it didn't take (not sent, or a value it

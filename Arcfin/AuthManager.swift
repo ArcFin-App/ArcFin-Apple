@@ -104,6 +104,11 @@ final class AuthManager {
     private let syncClient = ArcfinSyncClient()
     @ObservationIgnored private var settingsObserver: NSObjectProtocol?
     @ObservationIgnored private var settingsPushTask: Task<Void, Never>?
+    /// The last sync queued (see enqueueSync), and how many are running or waiting.
+    @ObservationIgnored private var syncTail: Task<Void, Never>?
+    @ObservationIgnored private var syncsRunning = 0
+    /// The profile a refresh is already waiting for.
+    @ObservationIgnored private var refreshQueued: UUID?
     private let keychain = KeychainStore()
 
     // MARK: - Startup
@@ -411,49 +416,74 @@ final class AuthManager {
         }
         arcfinSyncLockedKeys = SettingsSyncEngine.lockedKeys(profile: credential.id.uuidString)
         arcfinSyncLastSyncedAt = nil
-        isSyncingArcfin = true
-        Task { [weak self] in
-            guard let self else { return }
-            // A switch since has started its own sync; this one leaves that alone.
-            defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
-            // The locks last seen stay while the server can't be reached; only a server that
-            // answers without the plugin clears them.
-            let presence = await self.syncClient.fetchStatus(baseURL: credential.baseURL)
-            guard self.isActive(credential) else { return }
-            guard case .installed(let status) = presence else {
-                Self.syncLog.notice("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
-                if presence == .notInstalled {
-                    SettingsSyncEngine.forgetLockedKeys(profile: credential.id.uuidString)
-                    SettingsSyncEngine.forgetPending(profile: credential.id.uuidString)
-                    self.arcfinSyncLockedKeys = []
-                    self.arcfinSyncDevicesProfile = nil
-                    self.pendingRemoteSettings = nil
-                }
-                return
-            }
-            Self.syncLog.notice("Arcfin Sync plugin detected: version \(status.version, privacy: .public), API \(status.apiVersion, privacy: .public)")
-            self.arcfinSyncStatus = status
-            self.arcfinSyncDevicesProfile = status.hasDevicesAndPolicy ? credential.id : nil
-            let header = self.authClient.authHeader(token: credential.accessToken)
-            let locked = status.hasDevicesAndPolicy
-                ? await self.syncDevice(credential: credential, header: header)
-                : await SettingsSyncEngine.sync(credential: credential, authHeader: header,
-                                                isCurrent: { await self.isActive(credential) })
-            guard self.isActive(credential) else { return }
-            if let locked {
-                self.arcfinSyncLockedKeys = locked
-                self.arcfinSyncLastSyncedAt = .now
-            }
-            self.watchSettingsChanges()
-            // Which encoders the server's hardware really has (plugin 0.3+); nil leaves it to
-            // the learn-on-failure path.
-            if let encoders = await self.syncClient.fetchEncoders(credential: credential, authHeader: header),
-               let av1 = encoders.encoders["av1"] {
-                AV1Encoding.apply(serverEncodesAV1: av1, on: credential.baseURL)
-                Self.syncLog.notice("Server encoders (\(encoders.hardwareAcceleration, privacy: .public)): AV1 \(av1 ? "works" : "unavailable", privacy: .public)")
-            }
-            Self.syncLog.notice("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
+        // One already waiting for this profile does the same.
+        guard refreshQueued != credential.id else { return }
+        refreshQueued = credential.id
+        enqueueSync {
+            if self.refreshQueued == credential.id { self.refreshQueued = nil }
+            await self.runArcfinRefresh(for: credential)
         }
+    }
+
+    private func runArcfinRefresh(for credential: ServerCredential) async {
+        // A switch since has queued its own.
+        guard isActive(credential) else { return }
+        // The locks last seen stay while the server can't be reached; only a server that
+        // answers without the plugin clears them.
+        let presence = await syncClient.fetchStatus(baseURL: credential.baseURL)
+        guard isActive(credential) else { return }
+        guard case .installed(let status) = presence else {
+            Self.syncLog.notice("Arcfin Sync plugin not detected at \(credential.baseURL.absoluteString, privacy: .public)")
+            if presence == .notInstalled {
+                SettingsSyncEngine.forgetLockedKeys(profile: credential.id.uuidString)
+                SettingsSyncEngine.forgetPending(profile: credential.id.uuidString)
+                arcfinSyncLockedKeys = []
+                arcfinSyncDevicesProfile = nil
+                pendingRemoteSettings = nil
+            }
+            return
+        }
+        Self.syncLog.notice("Arcfin Sync plugin detected: version \(status.version, privacy: .public), API \(status.apiVersion, privacy: .public)")
+        arcfinSyncStatus = status
+        arcfinSyncDevicesProfile = status.hasDevicesAndPolicy ? credential.id : nil
+        let header = authClient.authHeader(token: credential.accessToken)
+        let locked = status.hasDevicesAndPolicy
+            ? await syncDevice(credential: credential, header: header)
+            : await SettingsSyncEngine.sync(credential: credential, authHeader: header,
+                                            isCurrent: { self.isActive(credential) })
+        guard isActive(credential) else { return }
+        if let locked {
+            arcfinSyncLockedKeys = locked
+            arcfinSyncLastSyncedAt = .now
+        }
+        watchSettingsChanges()
+        // Which encoders the server's hardware really has (plugin 0.3+); nil leaves it to
+        // the learn-on-failure path.
+        if let encoders = await syncClient.fetchEncoders(credential: credential, authHeader: header),
+           let av1 = encoders.encoders["av1"] {
+            AV1Encoding.apply(serverEncodesAV1: av1, on: credential.baseURL)
+            Self.syncLog.notice("Server encoders (\(encoders.hardwareAcceleration, privacy: .public)): AV1 \(av1 ? "works" : "unavailable", privacy: .public)")
+        }
+        Self.syncLog.notice("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
+    }
+
+    /// Runs `job` after the syncs already running or waiting, so two never merge into the same
+    /// settings at once: the foreground, the 15-minute loop, an admin's save, a sync mode change
+    /// and a change made here can each ask for one at the same time.
+    @discardableResult
+    private func enqueueSync<T: Sendable>(_ job: @escaping @MainActor @Sendable () async -> T) -> Task<T, Never> {
+        let previous = syncTail
+        syncsRunning += 1
+        isSyncingArcfin = true
+        let task = Task { @MainActor () -> T in
+            await previous?.value
+            let result = await job()
+            self.syncsRunning -= 1
+            if self.syncsRunning == 0 { self.isSyncingArcfin = false }
+            return result
+        }
+        syncTail = Task { _ = await task.value }
+        return task
     }
 
     /// Sends a synced setting changed here a moment after the change, rather than at the next
@@ -477,30 +507,31 @@ final class AuthManager {
             guard let self, !Task.isCancelled, !self.isSyncingArcfin,
                   case .authenticated(let credential) = self.state
             else { return }
-            let profile = credential.id.uuidString
-            let header = self.authClient.authHeader(token: credential.accessToken)
-            guard self.hasArcfinSyncDevices else {
-                guard SettingsSyncEngine.hasLocalChanges(profile: profile) else { return }
-                self.isSyncingArcfin = true
-                defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
-                let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
-                                                           isCurrent: { await self.isActive(credential) })
-                guard self.isActive(credential), let locked else { return }
-                self.arcfinSyncLockedKeys = locked
-                self.arcfinSyncLastSyncedAt = .now
-                return
-            }
-            // Off sends nothing, so only this device's record follows a change.
-            if SettingsSyncMode.current() != .off, SettingsSyncEngine.hasLocalChanges(profile: profile) {
-                self.isSyncingArcfin = true
-                defer { if self.isActive(credential) { self.isSyncingArcfin = false } }
-                guard let locked = await self.syncDevice(credential: credential, header: header),
-                      self.isActive(credential) else { return }
-                self.arcfinSyncLockedKeys = locked
-                self.arcfinSyncLastSyncedAt = .now
-            } else if SettingsSyncEngine.snapshot() != self.registeredSnapshot {
-                await self.registerDevice(credential: credential, header: header)
-            }
+            await self.enqueueSync { await self.pushSettings(credential: credential) }.value
+        }
+    }
+
+    private func pushSettings(credential: ServerCredential) async {
+        guard isActive(credential) else { return }
+        let profile = credential.id.uuidString
+        let header = authClient.authHeader(token: credential.accessToken)
+        guard hasArcfinSyncDevices else {
+            guard SettingsSyncEngine.hasLocalChanges(profile: profile) else { return }
+            let locked = await SettingsSyncEngine.sync(credential: credential, authHeader: header,
+                                                       isCurrent: { self.isActive(credential) })
+            guard isActive(credential), let locked else { return }
+            arcfinSyncLockedKeys = locked
+            arcfinSyncLastSyncedAt = .now
+            return
+        }
+        // Off sends nothing, so only this device's record follows a change.
+        if SettingsSyncMode.current() != .off, SettingsSyncEngine.hasLocalChanges(profile: profile) {
+            guard let locked = await syncDevice(credential: credential, header: header),
+                  isActive(credential) else { return }
+            arcfinSyncLockedKeys = locked
+            arcfinSyncLastSyncedAt = .now
+        } else if SettingsSyncEngine.snapshot() != registeredSnapshot {
+            await registerDevice(credential: credential, header: header)
         }
     }
 
@@ -510,8 +541,8 @@ final class AuthManager {
     private func syncDevice(credential: ServerCredential, header: String) async -> Set<String>? {
         let result = await SettingsSyncEngine.syncDevice(
             credential: credential, authHeader: header, deviceID: authClient.currentDeviceID,
-            registration: { await self.deviceRegistration(settings: $0) },
-            isCurrent: { await self.isActive(credential) })
+            registration: { self.deviceRegistration(settings: $0) },
+            isCurrent: { self.isActive(credential) })
         guard let result, isActive(credential) else { return nil }
         if let device = result.device { arcfinSyncCurrentDevice = device }
         // Also after a failed send, so a server that keeps refusing isn't asked after every change.
@@ -558,7 +589,10 @@ final class AuthManager {
         if SettingsSyncMode.current() == .off {
             pendingRemoteSettings = nil
             SettingsSyncEngine.forgetPending(profile: session.credential.id.uuidString)
-            Task { await registerDevice(credential: session.credential, header: session.header) }
+            enqueueSync {
+                guard self.isActive(session.credential) else { return }
+                await self.registerDevice(credential: session.credential, header: session.header)
+            }
         } else {
             refreshArcfinSync(for: session.credential)
         }
@@ -575,20 +609,24 @@ final class AuthManager {
         return true
     }
 
-    /// "Send This Device's Settings to My Other Devices".
+    /// "Send This Device's Settings to My Other Devices", after any sync already running.
     func sendSettingsToOtherDevices() async -> Bool {
         guard let session = arcfinSyncDevicesSession else { return false }
-        isSyncingArcfin = true
-        defer { if isActive(session.credential) { isSyncingArcfin = false } }
+        return await enqueueSync { await self.sendSettings(credential: session.credential, header: session.header) }.value
+    }
+
+    private func sendSettings(credential: ServerCredential, header: String) async -> Bool {
+        guard isActive(credential) else { return false }
         // The server clears only what this device's platform shows, which it reads from this
         // device's record, so that has to be there first.
         if arcfinSyncCurrentDevice == nil {
-            await registerDevice(credential: session.credential, header: session.header)
+            await registerDevice(credential: credential, header: header)
             guard arcfinSyncCurrentDevice != nil else { return false }
         }
         do {
-            try await SettingsSyncEngine.sendToAll(credential: session.credential, authHeader: session.header,
-                                                   platform: ArcfinDeviceInfo.platform)
+            try await SettingsSyncEngine.sendToAll(credential: credential, authHeader: header,
+                                                   platform: ArcfinDeviceInfo.platform,
+                                                   isCurrent: { self.isActive(credential) })
         } catch {
             return false
         }
