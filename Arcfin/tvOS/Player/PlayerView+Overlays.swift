@@ -130,7 +130,7 @@ extension PlayerView {
                 Spacer()
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 12) {
-                        if let url = mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
+                        if let url = model.source.isLocal ? model.source.localImageURL(for: next.id) : mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
                             CachedAsyncImage(url: url) { phase in
                                 switch phase {
                                 case .success(let img): img.resizable().scaledToFill()

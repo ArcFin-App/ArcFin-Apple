@@ -396,7 +396,7 @@ extension PlayerView {
         .background {
             ZStack {
                 Color.black
-                if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
+                if let url = model.source.isLocal ? model.source.localImageURL(for: item.id) : mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
                     CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
@@ -464,7 +464,7 @@ extension PlayerView {
         .background {
             ZStack {
                 Color.black
-                if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
+                if let url = model.source.isLocal ? model.source.localImageURL(for: item.id) : mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 800) {
                     CachedAsyncImage(url: url) { phase in
                         switch phase {
                         case .success(let img): img.resizable().scaledToFill()
