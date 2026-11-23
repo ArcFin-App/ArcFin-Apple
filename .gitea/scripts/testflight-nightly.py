@@ -11,6 +11,7 @@ beyond the standard library.
 import base64
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -20,6 +21,8 @@ import urllib.request
 
 API = "https://api.appstoreconnect.apple.com/v1"
 PLATFORMS = {"iOS": "IOS", "macOS": "MAC_OS", "tvOS": "TV_OS"}
+# Commits testers can't see: CI, docs, the project file, strings, tests and build numbers.
+UNDER_THE_HOOD = re.compile(r"^(CI|Docs?|Project|Strings?|String Catalogs?|Translations?|Tests?|README|ARCHITECTURE|Build \d+|Release|Merge)\b", re.I)
 FOOTER = """Found a problem? Open an issue: https://git.psmattas.com/ArcFin/ArcFin/issues
 Please include your device and OS version, your Jellyfin server version (Settings › Server), and what you did right before it happened. Screen recordings help a lot for anything visual.
 
@@ -78,7 +81,7 @@ def what_to_test() -> str:
     with open(os.environ["CHANGES"], encoding="utf-8") as changes:
         for line in changes:
             subject = line.rstrip("\n").split("\t")[0].strip()
-            if subject:
+            if subject and not UNDER_THE_HOOD.match(subject):
                 lines.append(f"• {subject}.")
     intro = (f"Nightly build {os.environ['VERSION']} ({os.environ['BUILD']}). Nightlies are built from "
              "everything finished so far and haven't been tested like a release, so expect the odd rough edge.\n\n"
