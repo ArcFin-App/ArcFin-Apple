@@ -13,7 +13,10 @@ enum PlaybackErrorText {
         if let urlError = error as? URLError {
             return message(for: urlError, isLive: isLive)
         }
-        if error is DecodingError {
+        if error is DownloadFileMissing {
+            return String(localized: "The file may be missing or damaged. Delete it in Downloads and download it again.")
+        }
+                if error is DecodingError {
             return String(localized: "Your server sent an answer Arcfin couldn't read. Try again in a moment.")
         }
         // Everything else comes from the engine opening the stream the server handed out.

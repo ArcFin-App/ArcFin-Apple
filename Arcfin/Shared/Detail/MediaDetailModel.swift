@@ -396,6 +396,12 @@ final class MediaDetailModel {
         pendingPlaybackChoice = nil
     }
 
+    /// The next downloaded episode, from where it was left.
+    func playDownloaded(_ next: DownloadedItem) {
+        offlineStartOverride = nil
+        offlinePlaybackTarget = next
+    }
+
     func streamInstead() {
         if let choice = pendingPlaybackChoice {
             playbackRequest = MediaDetailView.PlaybackRequest(item: choice.item, startTicks: choice.startTicks)

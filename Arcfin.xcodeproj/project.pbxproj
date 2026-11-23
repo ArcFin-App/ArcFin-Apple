@@ -166,7 +166,6 @@
 				iOS/Downloads/DownloadedItemDetailView.swift = (ios, );
 				iOS/Downloads/DownloadedSeriesDetailView.swift = (ios, );
 				iOS/Downloads/DownloadsView.swift = (ios, );
-				iOS/Downloads/OfflinePlayerView.swift = (ios, );
 				iOS/Downloads/StorageManagementView.swift = (ios, );
 				iOS/Home/HeroVideoBackdrop.swift = (ios, );
 				iOS/Home/HomeView.swift = (ios, );
@@ -180,7 +179,6 @@
 				iOS/Library/LibraryDetailView.swift = (ios, );
 				iOS/Library/LibraryFilterControls.swift = (ios, );
 				iOS/Library/LibraryView.swift = (ios, );
-				iOS/Library/LocalPlayerView.swift = (ios, );
 				iOS/LiveTV/LiveTVProgramSheet.swift = (ios, );
 				iOS/LiveTV/LiveTVView.swift = (ios, );
 				iOS/Lock/AppLockView.swift = (ios, );
@@ -275,7 +273,6 @@
 				macOS/Downloads/DownloadedItemDetailView.swift = (macos, );
 				macOS/Downloads/DownloadedSeriesDetailView.swift = (macos, );
 				macOS/Downloads/DownloadsView.swift = (macos, );
-				macOS/Downloads/OfflinePlayerView.swift = (macos, );
 				macOS/Downloads/StorageManagementView.swift = (macos, );
 				macOS/Home/HeroVideoBackdrop.swift = (macos, );
 				macOS/Home/HomeView.swift = (macos, );
@@ -288,7 +285,6 @@
 				macOS/Library/LibraryDetailView.swift = (macos, );
 				macOS/Library/LibraryFilterControls.swift = (macos, );
 				macOS/Library/LibraryView.swift = (macos, );
-				macOS/Library/LocalPlayerView.swift = (macos, );
 				macOS/Library/PlayableVideo.swift = (macos, );
 				macOS/LiveTV/LiveTVView.swift = (macos, );
 				macOS/Lock/AppLockView.swift = (macos, );

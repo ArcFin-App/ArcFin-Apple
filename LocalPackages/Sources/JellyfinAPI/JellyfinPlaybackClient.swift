@@ -39,6 +39,34 @@ public struct JellyfinMediaStream: Sendable, Equatable {
     public let bitDepth: Int?
     /// Video-only — e.g. 150 means Level 15.0.
     public let level: Double?
+
+    public init(index: Int, type: String, codec: String? = nil, language: String? = nil, displayTitle: String? = nil,
+                isDefault: Bool = false, isForced: Bool = false, isExternal: Bool = false, deliveryUrl: String? = nil,
+                width: Int? = nil, height: Int? = nil, videoRange: String? = nil, bitRate: Int? = nil,
+                profile: String? = nil, bitDepth: Int? = nil, level: Double? = nil) {
+        self.index = index; self.type = type; self.codec = codec; self.language = language
+        self.displayTitle = displayTitle; self.isDefault = isDefault; self.isForced = isForced
+        self.isExternal = isExternal; self.deliveryUrl = deliveryUrl; self.width = width; self.height = height
+        self.videoRange = videoRange; self.bitRate = bitRate; self.profile = profile; self.bitDepth = bitDepth
+        self.level = level
+    }
+
+    /// The first version's streams and container in a saved item-detail response (a
+    /// download's detail.json), which keeps every stream's index, language and flags.
+    public static func savedStreams(fromItemDetail data: Data) -> (container: String?, streams: [JellyfinMediaStream])? {
+        guard let saved = try? JSONDecoder().decode(SavedItemDetailResponse.self, from: data) else { return nil }
+        let source = saved.mediaSources?.first
+        guard let streams = source?.mediaStreams ?? saved.mediaStreams else { return nil }
+        return (source?.container, streams.map { $0.toStream() })
+    }
+}
+
+private struct SavedItemDetailResponse: Decodable {
+    let mediaSources: [MediaSourceResponse]?
+    let mediaStreams: [MediaStreamStreamResponse]?
+    enum CodingKeys: String, CodingKey {
+        case mediaSources = "MediaSources", mediaStreams = "MediaStreams"
+    }
 }
 
 /// Trickplay scrub-thumbnail sprite sheet info (Jellyfin 10.9+ "Trickplay" plugin/core
@@ -50,6 +78,11 @@ public struct JellyfinTrickplayInfo: Sendable {
     public let tileHeight: Int
     public let thumbnailCount: Int
     public let intervalMs: Int
+
+    public init(width: Int, height: Int, tileWidth: Int, tileHeight: Int, thumbnailCount: Int, intervalMs: Int) {
+        self.width = width; self.height = height; self.tileWidth = tileWidth; self.tileHeight = tileHeight
+        self.thumbnailCount = thumbnailCount; self.intervalMs = intervalMs
+    }
 }
 
 /// Mirrors Jellyfin's own three PlayMethod states — the server's dashboard distinguishes
@@ -99,6 +132,19 @@ public struct JellyfinPlaybackInfo: Sendable {
     /// Ties playback reports to the server's encode for this stream, so a Stopped report
     /// ends it rather than leaving it to time out.
     public var playSessionId: String? = nil
+
+    public init(mediaSourceId: String, playURL: URL, playMethod: JellyfinPlayMethod, container: String?, runTimeTicks: Int64?,
+                audioStreams: [JellyfinMediaStream], subtitleStreams: [JellyfinMediaStream],
+                defaultAudioStreamIndex: Int?, defaultSubtitleStreamIndex: Int?, trickplay: JellyfinTrickplayInfo?,
+                videoStream: JellyfinMediaStream?, bitrate: Int?, versions: [MediaVersion],
+                liveStreamId: String? = nil, playSessionId: String? = nil) {
+        self.mediaSourceId = mediaSourceId; self.playURL = playURL; self.playMethod = playMethod
+        self.container = container; self.runTimeTicks = runTimeTicks
+        self.audioStreams = audioStreams; self.subtitleStreams = subtitleStreams
+        self.defaultAudioStreamIndex = defaultAudioStreamIndex; self.defaultSubtitleStreamIndex = defaultSubtitleStreamIndex
+        self.trickplay = trickplay; self.videoStream = videoStream; self.bitrate = bitrate; self.versions = versions
+        self.liveStreamId = liveStreamId; self.playSessionId = playSessionId
+    }
 
     public var isTranscoding: Bool { playMethod == .transcode }
     /// The server was asked to convert to AV1 first. Whether it could is only known from

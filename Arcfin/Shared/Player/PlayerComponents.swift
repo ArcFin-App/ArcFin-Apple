@@ -535,10 +535,11 @@ struct SuggestionRow: View {
 struct CastPanelPersonRow: View {
     let person: MediaPerson
     let compact: Bool
+    var localPhoto: URL? = nil
     @Environment(MediaRepository.self) private var mediaRepo
 
     var body: some View {
-        let photo = CachedAsyncImage(url: person.primaryImageTag.flatMap {
+        let photo = CachedAsyncImage(url: localPhoto ?? person.primaryImageTag.flatMap {
             mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 160)
         }) { phase in
             switch phase {

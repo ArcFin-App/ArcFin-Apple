@@ -28,9 +28,9 @@ struct DocumentPickerView: UIViewControllerRepresentable {
         init(onPick: @escaping (URL) -> Void) { self.onPick = onPick }
 
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            // Access is started/stopped as a matched pair inside LocalPlayerView itself
-            // (task/onDisappear), not here — starting it in both places would leave one
-            // extra unmatched start once LocalPlayerView's single stop call runs.
+            // Access is started/stopped as a matched pair by the player's FilePlaybackSource
+            // (first load / engine stopped), not here — starting it in both places would leave
+            // one extra unmatched start once its single stop call runs.
             guard let url = urls.first else { return }
             onPick(url)
         }

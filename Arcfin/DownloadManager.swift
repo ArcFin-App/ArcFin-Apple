@@ -814,8 +814,8 @@ final class DownloadManager: NSObject {
         guard let info = try? await client.getPlaybackInfo(credential: credential, authHeader: authHeader, itemId: item.id) else {
             return nil
         }
-        // Playback is always VLC for downloads (OfflinePlayerView), which plays the original
-        // file natively regardless of container/codec — no remux needed by default anymore.
+        // A download plays from its file on Aether (VLC if Aether can't open it), which take the
+        // original container and codecs as they are — no remux needed by default anymore.
         // Only an explicit lower-quality pick (handled in performDownload via bitrateCap)
         // still forces one, since that's the only way to actually shrink a download.
         let videoURL = JellyfinMediaClient.originalFileDownloadURL(baseURL: credential.baseURL, itemID: item.id, token: credential.accessToken)
@@ -1138,8 +1138,8 @@ final class DownloadManager: NSObject {
                                            subtitles: tracks.subtitleStreams(from: info.subtitleStreams),
                                            credential: credential, authHeader: authHeader, dir: dir)
 
-            // Playback is always VLC for downloads, which plays the original file's container/
-            // codec natively — no remux needed for compatibility. Only a lower quality tier
+            // A download plays on Aether, or VLC, which take the original file's container and
+            // codecs as they are — no remux needed for compatibility. Only a lower quality tier
             // that actually makes the file smaller converts it.
             let sourceContainer = (info.container ?? "").lowercased()
             let needsRemux = conversionBitrate != nil

@@ -78,7 +78,7 @@ struct ContentView: View {
                         navigateToOfflineLocalPlayer = true
                     }
                     .navigationDestination(isPresented: $navigateToOfflineLocalPlayer) {
-                        if let url = offlinePickedURL { LocalPlayerView(url: url) }
+                        if let url = offlinePickedURL { PlayerView(fileURL: url) }
                     }
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {

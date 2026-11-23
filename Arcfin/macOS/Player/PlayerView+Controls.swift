@@ -173,19 +173,19 @@ extension PlayerView {
                     Label("Picture in Picture", systemImage: "pip.enter")
                 }
             }
-            if supportsMultipleWindows, !isPlayerWindow {
+            if supportsMultipleWindows, !isPlayerWindow, model.capabilities.newWindow {
                 Button { openInNewWindow() } label: {
                     Label("Open in New Window", systemImage: "macwindow.badge.plus")
                 }
             }
 
             // SyncPlay keeps everyone at the same position; a channel has none to share.
-            if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive {
+            if syncPlayEnabled && ProfileRules.shared.canUseSyncPlay && !model.isLive && model.capabilities.syncPlay {
                 Button { showSyncPlayMenu = true } label: {
                     Label("SyncPlay", systemImage: syncPlayManager.isInGroup ? "person.2.wave.2.fill" : "person.2.wave.2")
                 }
             }
-            if !model.isLive { sharePlayMenuItem }
+            if !model.isLive, model.capabilities.sharePlay { sharePlayMenuItem }
 
             if !model.castMembers.isEmpty {
                 Button { openCastPanel() } label: {
@@ -199,7 +199,7 @@ extension PlayerView {
             Button { showTrackMenu = true } label: {
                 Label("Subtitles & Audio", systemImage: "captions.bubble")
             }
-            if let info = model.playbackInfo, info.versions.count > 1 {
+            if model.capabilities.versions, let info = model.playbackInfo, info.versions.count > 1 {
                 Picker(selection: Binding(get: { info.mediaSourceId }, set: { model.changeVersion($0) })) {
                     ForEach(info.versions) { Text($0.name).tag($0.id) }
                 } label: {
@@ -213,8 +213,10 @@ extension PlayerView {
                 }
             }
             subtitleTimingMenu
-            Button { showQualityMenu = true } label: {
-                Label("Quality", systemImage: "slider.horizontal.3")
+            if model.capabilities.quality {
+                Button { showQualityMenu = true } label: {
+                    Label("Quality", systemImage: "slider.horizontal.3")
+                }
             }
             sleepTimerMenu
             Button { showInfoSheet = true } label: {
@@ -231,7 +233,7 @@ extension PlayerView {
 
     @ViewBuilder
     private var subtitleTimingMenu: some View {
-        if !model.subtitleCues.isEmpty {
+        if model.hasTimedSubtitles {
             Menu {
                 Button("Later by 0.5 s") { model.subtitleDelay += 0.5 }
                 Button("Earlier by 0.5 s") { model.subtitleDelay -= 0.5 }

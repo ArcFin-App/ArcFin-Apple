@@ -66,7 +66,7 @@ struct LibraryView: View {
             }
             .navigationDestination(isPresented: $model.navigateToLocalPlayer) {
                 if let url = model.pickedURL {
-                    LocalPlayerView(url: url)
+                    PlayerView(fileURL: url)
                 }
             }
             .navigationDestination(isPresented: $model.navigateToDownloadsDeepLink) {

@@ -7,6 +7,7 @@ import AVKit
 import AuthCore
 import JellyfinAPI
 import MediaEngine
+import Persistence
 import SwiftVLC
 import CastKit
 import GroupActivities
@@ -85,11 +86,28 @@ struct PlayerView: View {
 
     enum DragAxis { case brightness, volume, seek }
 
-    init(item: MediaItem, startPositionTicks: Int64 = 0, onPlayNext: @escaping (MediaItem) -> Void = { _ in }) {
+    init(item: MediaItem, startPositionTicks: Int64 = 0, source: (any PlaybackSource)? = nil,
+         onPlayNext: @escaping (MediaItem) -> Void = { _ in }) {
         self.item = item
         self.startPositionTicks = startPositionTicks
         self.onPlayNext = onPlayNext
-        _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext))
+        _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext,
+                                                 source: source))
+    }
+
+    /// A download, played from its file with the details saved beside it. Up Next and
+    /// Previous move between the show's downloaded episodes.
+    init(download: DownloadedItem, startPositionOverride: Int64? = nil, onPlayNext: @escaping (DownloadedItem) -> Void = { _ in }) {
+        let source = DownloadPlaybackSource(downloadedItem: download, startPositionOverride: startPositionOverride)
+        self.init(item: source.item, source: source) { next in
+            if let nextDownload = source.download(for: next.id) { onPlayNext(nextDownload) }
+        }
+    }
+
+    /// A video picked from Files.
+    init(fileURL: URL) {
+        let source = FilePlaybackSource(url: fileURL)
+        self.init(item: source.item, source: source)
     }
 
     var body: some View {
@@ -102,7 +120,7 @@ struct PlayerView: View {
             Color.black.ignoresSafeArea()
             PlaybackPositionObserver(player: model.player) { model.positionChanged(from: $0, to: $1) }
 
-            if CastManager.shared.isConnected {
+            if model.isCasting {
                 // The receiver is playing the video, not this screen — leaving the last
                 // local frame frozen behind the controls read as "stuck paused" rather
                 // than "actively casting elsewhere", so the surface is swapped for a
@@ -146,10 +164,10 @@ struct PlayerView: View {
                 PlayerNetworkToast(text: networkToast)
             }
 
-            if let currentSubtitleText = model.currentSubtitleText, !CastManager.shared.isConnected {
+            if let currentSubtitleText = model.currentSubtitleText, !model.isCasting {
                 PlayerSubtitleOverlay(text: currentSubtitleText, isControlsVisible: model.isControlsVisible)
             }
-            if let currentBitmapCue = model.currentBitmapCue, !CastManager.shared.isConnected {
+            if let currentBitmapCue = model.currentBitmapCue, !model.isCasting {
                 PlayerBitmapSubtitleOverlay(cue: currentBitmapCue, isControlsVisible: model.isControlsVisible)
             }
 
@@ -164,10 +182,10 @@ struct PlayerView: View {
             // screen on every tap. Keeping the view always mounted means there's nothing to
             // insert/remove, so there's no layout pass to get wrong.
             controlsOverlay
-                .opacity(model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil ? 1 : 0)
-                .allowsHitTesting(model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil)
+                .opacity(model.isControlsVisible && !model.isCasting && airPlayRoute == nil ? 1 : 0)
+                .allowsHitTesting(model.isControlsVisible && !model.isCasting && airPlayRoute == nil)
 
-            SkipSegmentButton(model: model, controlsShown: model.isControlsVisible && !CastManager.shared.isConnected && airPlayRoute == nil)
+            SkipSegmentButton(model: model, controlsShown: model.isControlsVisible && !model.isCasting && airPlayRoute == nil)
             SpeedBoostBadge(model: model)
 
             if model.showUpNext, let nextEpisode = model.nextEpisode {
@@ -175,7 +193,9 @@ struct PlayerView: View {
             }
 
             MoreLikeThisPanel(model: model, suggestionsAreHorizontal: isLandscape)
-            CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel) { openCastPanelPerson($0) }
+            CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel,
+                      photoURL: model.localCastPhotoURL,
+                      onSelect: model.capabilities.personPages ? { openCastPanelPerson($0) } : nil)
             PlayerChannelListLayer(model: model)
 
             if model.showStillWatchingPrompt {
@@ -196,11 +216,13 @@ struct PlayerView: View {
         }
         .task {
             if model.handOffToDefaultPlayer() { closePlayer(); return }
+            await model.resolveStartPosition()
+            guard !Task.isCancelled else { return }
             if !model.isAskingToResume { await setup() }
         }
         .alert("Resume Playback?", isPresented: $model.isAskingToResume) {
-            Button("Resume from \(model.timeLabel(ticks: startPositionTicks))") {
-                model.resumeFrom = startPositionTicks
+            Button("Resume from \(model.timeLabel(ticks: model.startPositionTicks))") {
+                model.resumeFrom = model.startPositionTicks
                 model.resumeAnswered = true
             }
             Button("Start from Beginning") {
@@ -300,6 +322,7 @@ struct PlayerView: View {
             model.castPlaybackFinished()
         }
         .onChange(of: CastManager.shared.isConnected) { wasConnected, isConnected in
+            guard model.capabilities.casting else { return }
             if isConnected {
                 model.startCasting()
             } else if wasConnected {

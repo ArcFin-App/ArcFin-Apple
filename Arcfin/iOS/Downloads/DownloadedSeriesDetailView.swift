@@ -68,7 +68,11 @@ struct DownloadedSeriesDetailView: View {
             if model.selectedSeason == nil { model.selectedSeason = DownloadedSeriesDetailModel.seasonNumbers(of: episodes).first }
         }
         .fullScreenCover(item: $model.playingItem) { item in
-            OfflinePlayerView(downloadedItem: item, startPositionOverride: model.playStartOverride)
+            PlayerView(download: item, startPositionOverride: model.playStartOverride) { next in
+                PlayerView.keepOrientationOnNextDisappear = true
+                model.play(next, startOverride: nil)
+            }
+            .id(item.itemId)
         }
         .alert("Delete this episode?", isPresented: Binding(
             get: { model.pendingDelete != nil }, set: { if !$0 { model.pendingDelete = nil } }

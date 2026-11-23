@@ -178,7 +178,7 @@ final class AppRootModel {
     /// waits for the splash and the lock, and never comes up over a player or the tour.
     func canAskAboutRemoteSettings(phase: AppPhase) -> Bool {
         authManager.pendingRemoteSettings != nil && phase == .main && splashDone && isPastLock
-            && introduction.presentation == nil && !playerCoversWindow && !PlayerActivity.shared.isAnyPlayerOpen
+            && introduction.presentation == nil && !playerCoversWindow && !PlayerActivity.shared.isPlayerOpen
     }
 
     /// Any way the presentation closes counts as seen, a swipe down or Menu included.
