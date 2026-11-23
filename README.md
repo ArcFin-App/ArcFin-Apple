@@ -72,15 +72,30 @@ Between 100 and 150 people have been testing Arcfin on TestFlight, reporting bug
 ### Watching
 - **Three playback engines:** Aether (FFmpeg demuxing with VideoToolbox decoding, the default), AVFoundation and VLC. Auto picks Aether and falls back to the others if a file won't open.
 - **Formats:** direct play or server transcoding, HEVC and HDR, surround and Atmos audio, and text and image subtitles with your own styling.
-- **In the player:** Skip Intro, Recap, Credits and Preview; chapters; scrubbing previews; playback speed; audio and subtitle switching without reloading; Previous and Next; Up Next with a countdown; "Are you still watching?"; Cast & Characters; and a sleep timer.
+- **In the player:** Skip Intro, Recap, Credits and Preview, right in the controls while they're showing; chapters; scrubbing previews; playback speed; audio and subtitle switching without reloading; Previous and Next; Up Next with a countdown; "Are you still watching?"; Cast & Characters; and a sleep timer.
 - **Around the player:** AirPlay, Chromecast (iPhone and iPad), Picture in Picture, Now Playing and Control Center.
 - **Watching together:** SharePlay over FaceTime, and Jellyfin's SyncPlay.
 - **Player in its own window** on iPad and Mac, so you can keep browsing beside it.
+- **Downloads and your own files** play in the same player as streaming, with chapters, scrubbing previews and Up Next. Open a video file from the device with **Browse Files**.
+- **Play On and remote control:** send what you're watching to another device signed in to the server, or control one from here, from the Jellyfin web app or from your Apple Watch.
+
+### Music
+- **A full music library:** artists with an A–Z bar, albums, songs, genres with covers, playlists and favourites, each with its own search, and Made for You playlists. Artist pages show the artist's logo and backdrop when the server has them.
+- **Now Playing** with the cover as the hero, synced and plain lyrics, a visualizer, a quality badge, the queue and what played earlier, Repeat, Shuffle and a sleep timer.
+- **Offline and in the background:** download songs, albums, playlists or everything by an artist, with smart downloads, a storage limit and a Live Activity.
+- **Together and everywhere:** SharePlay, CarPlay with voice search, Siri ("Play … in Arcfin"), interactive widgets in every size, and AirPlay and casting.
+- **Your listening:** likes and dislikes, ListenBrainz scrobbling and loves, importing your listening history from other music services, What's Playing? to recognise a song and find it, and Year in Music.
+
+### Live TV
+- **Channels and the guide,** narrowed to movies, series, news, kids or sports, with radio stations and search across channels and programmes.
+- **Watch live:** pause and rewind a channel, and switch from a channel list over the picture.
+- **Recordings:** record a programme or a whole series, programme reminders, and finished recordings to watch.
+- **On Home:** favourite, on-now and recent channels. Live TV follows the server's permissions.
 
 ### Browsing
 - **Home:** Continue Watching, Next Up, Recently Added, recommendations, collections, and Seerr and streaming-service shelves. You choose and order the shelves.
 - **Live updates:** what you watch on other devices, and new titles on the server, show up on Home while the app is open.
-- **Library:** filters, sorting, genres, playlists, collections, Surprise Me and Hide Watched.
+- **Library:** filters, sorting, genres, playlists, collections, Surprise Me and Hide Watched, with search inside Movies, Shows, Collections and Playlists.
 - **Title pages:** cast, review scores, age ratings, where to watch, trailers (the server's, or YouTube when it has none), More Like This, and the collections and playlists a title is in.
 - **Search** across the server and Discover, with optional search history.
 - **Spoiler Protection** for episode thumbnails and descriptions.
@@ -93,12 +108,19 @@ Between 100 and 150 people have been testing Arcfin on TestFlight, reporting bug
 - **Control:** quality, mobile data, pausing in Low Power and Low Data Mode, subtitles, and automatic clean-up.
 
 ### Stats
-An optional tab, worked out entirely from your Jellyfin watch history: time watched by week, month, year or all time; streaks and when you watch; top shows and movies; the genres, decades, studios and people you watch most; and a card to share.
+An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, year or all time:
+- **Watching,** worked out from your Jellyfin watch history: time watched, streaks and when you watch, top shows and movies, and the genres, decades, studios and people you watch most.
+- **Listening:** plays, minutes listened, your top songs, artists, albums and genres, from ListenBrainz when it's linked (it counts every listen) or from your Jellyfin server.
+- **A card to share** for both, in Story or Post size.
 
 ### Profiles, settings and help
 - **Profiles** with a picker, Face ID, Touch ID or PIN lock, and the server's parental controls and access schedule.
-- **Settings sync** across devices with the Arcfin Sync server plugin, including settings an admin can lock.
-- **Active Sessions** for server admins: see who's watching and why a stream transcodes, then pause, stop or message a session.
+- **Devices & Sync** with the Arcfin Sync server plugin: your settings follow you to your other devices, automatically, after asking first, or not at all, and you can send one device's settings to all the others.
+- **Admin tab** for server admins:
+  - the server dashboard, Active Sessions (see who's watching and why a stream transcodes, then pause, stop or message them), scheduled tasks and activity;
+  - libraries, users, devices, plugins, API keys, logs and backups;
+  - server settings, and a title's metadata editor;
+  - **Arcfin for Everyone**: defaults and locks for every Arcfin app on the server, or for one person.
 - **Languages:** English, German, French, Spanish, Simplified Chinese, Brazilian Portuguese, Japanese, Italian, Korean, Dutch and Russian, with a language picker in Settings.
 - **Accessibility:** VoiceOver labels throughout, Dynamic Type, Increase Contrast and Reduce Motion.
 - **Help:** Report a Problem and Share Diagnostics in Settings › About. Diagnostics stay on your device until you choose to send them.
@@ -106,7 +128,8 @@ An optional tab, worked out entirely from your Jellyfin watch history: time watc
 ### Across the system
 - **Siri and Shortcuts:** play a title, play a random movie, download the next episode of a show, open Discover.
 - **Widgets** for Continue Watching and Recently Added, Control Center controls, Spotlight, Handoff, and notifications for new episodes with Quiet Hours.
-- **Apple TV:** Top Shelf, and a library screensaver made from your artwork.
+- **Apple TV:** Top Shelf with trailers from the server, Spotlight Home with the title you're on full screen and its trailer, Always Ask Who's Watching, and a library screensaver made from your artwork.
+- **Apple Watch:** your music on the watch, with playlists kept on it to play without the phone, and a remote for Arcfin playing on another device, with the Digital Crown for volume.
 - **Mac:** every player control in the menu bar, with a keyboard shortcut.
 
 ### Add-ons
@@ -120,9 +143,11 @@ An optional tab, worked out entirely from your Jellyfin watch history: time watc
 | iOS 26 and iPadOS 26 | The main platform |
 | macOS 26 | Feature parity with iPhone and iPad, with a native video surface, sidebar, menu bar commands and Touch ID |
 | tvOS 26 | Feature parity apart from downloads, with remote and focus navigation throughout |
+| watchOS 26 | Music on the watch and a remote, with the iPhone app |
 
 Some features can't work on every platform:
 - **Chromecast** is iPhone and iPad only, because Google's SDK is.
+- **CarPlay** is iPhone only, and plays music.
 - **Live Activities and Lock Screen widgets** are iPhone only.
 - **Downloads** aren't available on Apple TV, which has no lasting storage.
 - **Face ID and Touch ID** aren't available on Apple TV.
