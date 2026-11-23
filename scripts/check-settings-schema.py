@@ -10,6 +10,11 @@ device) or in EXCLUDED, with the reason it isn't a setting the plugin should kno
 An @AppStorage whose key can't be worked out fails too, so a new setting can't slip past.
 Keys built at run time ("prefix.\\(id)") aren't checked.
 
+Each schema setting also needs a control that follows an administrator's lock on every
+platform it lists: `.syncLocked(key, authManager)` or a check of
+`authManager.arcfinSyncLockedKeys.contains(key)`, in Arcfin/Shared or that platform's folder.
+A setting locked some other way goes in LOCKED_ELSEWHERE with how.
+
 A new or changed setting goes in SettingsSyncRegistry (synced) or the schema's device scope,
 with its title and options, and the same schema file goes to the Arcfin-Sync plugin
 (Schema/settings-schema.json) in the same change. --plugin checks that copy is identical.
@@ -96,6 +101,13 @@ EXCLUDED = {
     "topShelf.recentlyAdded": "Top Shelf cache",
 }
 
+# Settings whose controls follow a lock in a way the scan below can't see.
+LOCKED_ELSEWHERE = {
+    "seerrURL": "the Seerr sign-in is edited as one form, locked when any of its three keys is (SeerrPluginView)",
+    "seerrUsername": "the Seerr sign-in is edited as one form, locked when any of its three keys is (SeerrPluginView)",
+    "seerrAuthMethod": "the Seerr sign-in is edited as one form, locked when any of its three keys is (SeerrPluginView)",
+}
+
 TYPE = re.compile(r"^(\s*)(?:(?:@\w+(?:\([^)]*\))?|public|private|fileprivate|internal|final|nonisolated)\s+)*"
                   r"(?:enum|struct|class|extension|actor)\s+(\w+)")
 CONST = re.compile(r'\blet\s+(\w+)(?:\s*:\s*String)?\s*=\s*"([^"\\]+)"')
@@ -103,6 +115,8 @@ APPSTORAGE_LITERAL = re.compile(r'@AppStorage\(\s*"([^"\\]+)"')
 APPSTORAGE_NAME = re.compile(r"@AppStorage\(\s*([A-Za-z_][\w.]*)")
 FORKEY_LITERAL = re.compile(r'forKey:\s*"([^"\\]+)"')
 FORKEY_NAME = re.compile(r"forKey:\s*([A-Z][\w]*\.[a-z]\w*)\s*[,)]")
+LOCK_AWARE = re.compile(r'(?:\.syncLocked|arcfinSyncLockedKeys\.contains)\(\s*(?:"([^"\\]+)"|([A-Za-z_][\w.]*))')
+PLATFORMS = ("iOS", "macOS", "tvOS")
 
 
 def swift_files():
@@ -144,9 +158,17 @@ def main():
         return by_file.get((path, token))
 
     found, problems = {}, []
+    lock_aware = {platform: set() for platform in PLATFORMS}
     for path in files:
         rel = os.path.relpath(path, REPO)
         source = open(path, errors="ignore").read()
+        parts = rel.split(os.sep)
+        if parts[0] == "Arcfin":
+            platforms = [parts[1]] if len(parts) > 2 and parts[1] in PLATFORMS else PLATFORMS
+            for literal, token in LOCK_AWARE.findall(source):
+                for key in {literal} if literal else (resolve(token, path) or ()):
+                    for platform in platforms:
+                        lock_aware[platform].add(key)
         for key in APPSTORAGE_LITERAL.findall(source) + FORKEY_LITERAL.findall(source):
             found.setdefault(key, rel)
         for token in APPSTORAGE_NAME.findall(source):
@@ -177,6 +199,12 @@ def main():
             problems.append(f"{setting['key']!r} is in unknown group {setting['group']!r}")
         if setting["scope"] not in ("synced", "device"):
             problems.append(f"{setting['key']!r} has scope {setting['scope']!r}")
+        if setting["key"] not in LOCKED_ELSEWHERE:
+            missing = [p for p in setting.get("platforms", PLATFORMS) if setting["key"] not in lock_aware[p]]
+            if missing:
+                problems.append(f"{setting['key']!r} has no control that follows an administrator's lock on "
+                                f"{', '.join(missing)}: add .syncLocked({setting['key']!r}, authManager) to it, "
+                                "or list it in LOCKED_ELSEWHERE with how it's locked")
 
     if "--plugin" in sys.argv:
         plugin = sys.argv[sys.argv.index("--plugin") + 1]

@@ -222,6 +222,7 @@ struct MusicAlbumsView: View {
     var fixedSort: MusicSort?
     @Environment(\.horizontalSizeClass) private var sizeClass
     @AppStorage("music.albumSort") private var savedSort: MusicSort = .name
+    @Environment(AuthManager.self) private var authManager
     private var sort: MusicSort { fixedSort ?? savedSort }
     @State private var favoritesOnly = false
     @State private var list: MusicPagedList<MusicAlbum>?
@@ -256,6 +257,7 @@ struct MusicAlbumsView: View {
                         Text("Year").tag(MusicSort.year)
                         Text("Recently Added").tag(MusicSort.dateAdded)
                         }
+                        .syncLocked("music.albumSort", authManager)
                     }
                     Toggle("Favorites Only", systemImage: "star", isOn: $favoritesOnly)
                 } label: {
@@ -354,6 +356,7 @@ struct MusicLibraryRowsEditor: View {
     @Binding var order: String
     @Binding var hidden: String
     @Environment(\.dismiss) private var dismiss
+    @Environment(AuthManager.self) private var authManager
     @State private var rows: [MusicLibraryRow] = []
     @State private var hiddenRows: Set<String> = []
 
@@ -374,9 +377,11 @@ struct MusicLibraryRowsEditor: View {
                             }
                         }
                         .buttonStyle(.plain)
+                        .syncLocked(MusicLibraryRow.hiddenKey, authManager)
                         .accessibilityAddTraits(hiddenRows.contains(row.rawValue) ? [] : .isSelected)
                     }
                     .onMove { rows.move(fromOffsets: $0, toOffset: $1) }
+                    .moveDisabled(authManager.arcfinSyncLockedKeys.contains(MusicLibraryRow.orderKey))
                 } footer: {
                     Text("Tick the rows to show, and drag them into the order you like.")
                 }
@@ -386,14 +391,14 @@ struct MusicLibraryRowsEditor: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Reset") {
-                        rows = MusicLibraryRow.allCases
-                        hiddenRows = []
+                        if !isLocked(MusicLibraryRow.orderKey) { rows = MusicLibraryRow.allCases }
+                        if !isLocked(MusicLibraryRow.hiddenKey) { hiddenRows = [] }
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
-                        order = rows.map(\.rawValue).joined(separator: ",")
-                        hidden = hiddenRows.sorted().joined(separator: ",")
+                        if !isLocked(MusicLibraryRow.orderKey) { order = rows.map(\.rawValue).joined(separator: ",") }
+                        if !isLocked(MusicLibraryRow.hiddenKey) { hidden = hiddenRows.sorted().joined(separator: ",") }
                         dismiss()
                     }
                 }
@@ -404,4 +409,6 @@ struct MusicLibraryRowsEditor: View {
             hiddenRows = Set(hidden.split(separator: ",").map(String.init))
         }
     }
+
+    private func isLocked(_ key: String) -> Bool { authManager.arcfinSyncLockedKeys.contains(key) }
 }

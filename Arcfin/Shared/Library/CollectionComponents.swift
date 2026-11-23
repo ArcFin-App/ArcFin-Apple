@@ -16,6 +16,7 @@ struct CollectionContent: View {
     let zoomNamespace: Namespace.ID?
 
     @Environment(MediaRepository.self) private var mediaRepo
+    @Environment(AuthManager.self) private var authManager
 
     private var items: [MediaItem] { model.items }
     private var sortedItems: [MediaItem] { model.sortedItems(by: sort) }
@@ -174,6 +175,7 @@ struct CollectionContent: View {
                         .foregroundStyle(DT.Color.accent)
                         .frame(minHeight: 44)
                 }
+                .syncLocked("collectionSort", authManager)
                 .accessibilityLabel("Sort by \(sort.label)")
                 Button {
                     withAnimation(DT.Animation.fast) { showsGrid.toggle() }
@@ -184,6 +186,7 @@ struct CollectionContent: View {
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
+                .syncLocked("collectionShowsGrid", authManager)
                 .accessibilityLabel(showsGrid ? "Show as list" : "Show as grid")
             }
             .padding(.horizontal, DT.Spacing.pagePad)

@@ -91,6 +91,7 @@ struct StatsView: View {
             ForEach(StatsPeriod.allCases) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
+        .syncLocked("statsPeriod", authManager)
     }
 
     /// Steps back through earlier weeks, months or years, and forward again to the current one.

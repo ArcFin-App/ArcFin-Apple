@@ -56,10 +56,11 @@ struct HomeShelfSettingsView: View {
                         }
                         .accessibilityLabel(active.contains(shelf) ? "Hide \(shelf.title)" : "Show \(shelf.title)")
                         .buttonStyle(.plain)
+                        .syncLocked(HomeShelfPrefs.activeKey, authManager)
                     }
                 }
                 .onMove(perform: move)
-                .moveDisabled(shuffleShelves)
+                .moveDisabled(shuffleShelves || authManager.arcfinSyncLockedKeys.contains(HomeShelfPrefs.orderKey))
             } header: {
                 Text("Home Shelves")
             } footer: {

@@ -119,7 +119,7 @@ struct LibraryDetailView: View {
         .toolbarBackground(model.playlist != nil ? .hidden : .automatic, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .toolbar {
-            LibraryDetailToolbar(model: model, gridDensity: $gridDensity, showFilterSheet: $showFilterSheet) {
+            LibraryDetailToolbar(model: model, authManager: authManager, gridDensity: $gridDensity, showFilterSheet: $showFilterSheet) {
                 Task { await model.pickRandom(authManager: authManager) }
             }
         }

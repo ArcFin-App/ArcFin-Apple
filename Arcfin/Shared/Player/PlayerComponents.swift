@@ -597,6 +597,7 @@ struct CastPanelPersonRow: View {
 // MARK: - Audio & subtitle track selection
 
 struct TrackSelectionSheet: View {
+    @Environment(AuthManager.self) private var authManager
     let audioStreams: [JellyfinMediaStream]
     let subtitleStreams: [JellyfinMediaStream]
     let selectedAudioIndex: Int?
@@ -634,6 +635,7 @@ struct TrackSelectionSheet: View {
                                 .foregroundStyle(DT.Color.textPrimary)
                         }
                         .tint(DT.Color.accent)
+                        .syncLocked(PlayerModel.dialogueBoostKey, authManager)
                         .listRowBackground(rowBackground)
                     }
                     if let raiseQuietAudio {
@@ -643,6 +645,7 @@ struct TrackSelectionSheet: View {
                                 .foregroundStyle(DT.Color.textPrimary)
                         }
                         .tint(DT.Color.accent)
+                        .syncLocked(PlayerModel.raiseQuietAudioKey, authManager)
                         .listRowBackground(rowBackground)
                     }
                 } header: {

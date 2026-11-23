@@ -47,9 +47,11 @@ struct BottomNavSettingsView: View {
                         }
                         .accessibilityLabel(active.contains(tab) ? "Hide \(tab.title)" : "Show \(tab.title)")
                         .buttonStyle(.plain)
+                        .syncLocked(BottomNavPrefs.activeKey, authManager)
                     }
                 }
                 .onMove(perform: move)
+                .moveDisabled(authManager.arcfinSyncLockedKeys.contains(BottomNavPrefs.orderKey))
             } header: {
                 Text(navTitle)
             } footer: {
@@ -64,6 +66,7 @@ struct BottomNavSettingsView: View {
                 } label: {
                     TVRowLabelText(title: "Open On", detail: "The tab Arcfin opens on. Discover and Watchlist need Seerr; without it, Home.")
                 }
+                .syncLocked(BottomNavPrefs.launchTabKey, authManager)
             }
         }
         .environment(\.editMode, .constant(.active))

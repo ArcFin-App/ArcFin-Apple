@@ -94,6 +94,7 @@ struct PlaybackAutomationSection: View {
                            options: PlayerModel.holdSpeedOptions.map(Double.init)) { rate in
                 Text("\(rate.formatted())×")
             }
+            .syncLocked(PlayerModel.holdSpeedKey, authManager)
             Toggle(isOn: $rememberPlaybackSpeed) {
                 TVRowLabelText(title: "Remember Playback Speed", detail: "New videos start at the speed you last picked.")
             }

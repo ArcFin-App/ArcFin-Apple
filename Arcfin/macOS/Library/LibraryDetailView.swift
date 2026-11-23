@@ -107,7 +107,7 @@ struct LibraryDetailView: View {
         }
         .navigationTitle(model.playlistName ?? model.library.name)
         .toolbar {
-            LibraryDetailToolbar(model: model, gridDensity: $gridDensity, showFilterSheet: $showFilterSheet) {
+            LibraryDetailToolbar(model: model, authManager: authManager, gridDensity: $gridDensity, showFilterSheet: $showFilterSheet) {
                 Task { await model.pickRandom(authManager: authManager) }
             }
         }

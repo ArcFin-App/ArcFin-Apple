@@ -43,13 +43,16 @@ struct HomeShelfSettingsView: View {
                             Text(shelf.title)
                             Spacer()
                             Image(systemName: active.contains(shelf) ? "checkmark.circle.fill" : "circle")
+                                .opacity(isLocked(HomeShelfPrefs.activeKey) ? 0.5 : 1)
                         }
                     }
                     .tvListRow()
                     .contextMenu {
                         if !shuffleShelves {
                             Button("Move Up") { moveShelf(at: index, by: -1) }.disabled(index == 0)
+                                .syncLocked(HomeShelfPrefs.orderKey, authManager)
                             Button("Move Down") { moveShelf(at: index, by: 1) }.disabled(index == shown.count - 1)
+                                .syncLocked(HomeShelfPrefs.orderKey, authManager)
                         }
                     }
                 }
@@ -83,7 +86,11 @@ struct HomeShelfSettingsView: View {
         orderString = HomeShelfPrefs.encode(items)
     }
 
+    /// The row stays focusable for its Move Up and Down, so a locked on/off is checked here.
+    private func isLocked(_ key: String) -> Bool { authManager.arcfinSyncLockedKeys.contains(key) }
+
     private func toggle(_ shelf: HomeShelf) {
+        guard !isLocked(HomeShelfPrefs.activeKey) else { return }
         var items = active
         if items.contains(shelf) {
             items.remove(shelf)

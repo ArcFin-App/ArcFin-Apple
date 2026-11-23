@@ -82,6 +82,7 @@ struct LibraryVisibilityView: View {
                         TVRowLabelText(verbatim: library.name)
                     }
                     .tvListRow()
+                    .syncLocked(LibraryVisibility.hiddenKey, authManager)
                 }
             } header: {
                 Text("Show in Browse")

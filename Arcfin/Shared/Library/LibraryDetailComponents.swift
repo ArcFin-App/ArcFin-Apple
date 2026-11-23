@@ -280,6 +280,7 @@ struct LibraryItemPreview: View {
 /// toolbar.
 struct LibraryDetailToolbar: ToolbarContent {
     let model: LibraryDetailModel
+    let authManager: AuthManager
     @Binding var gridDensity: LibraryGridDensity
     @Binding var showFilterSheet: Bool
     let pickRandom: () -> Void
@@ -312,6 +313,7 @@ struct LibraryDetailToolbar: ToolbarContent {
             } label: {
                 Image(systemName: gridDensity.systemIcon)
             }
+            .syncLocked("libraryGridDensity", authManager)
             .accessibilityLabel("Grid density")
         }
         if model.isPlaylistsLibrary {

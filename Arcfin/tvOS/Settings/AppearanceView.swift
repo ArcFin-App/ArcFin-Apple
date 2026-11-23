@@ -56,9 +56,11 @@ struct AppearanceView: View {
                     TVRowLabelText(title: "Library Screensaver", detail: "Shows your library's artwork when the remote hasn't been used for a while, except during playback. Press any button to go back.")
                 }
                 .tvListRow()
+                .syncLocked("libraryScreensaverEnabled", authManager)
                 if screensaverEnabled {
                     SettingsPicker("Start After", detail: "After 30 minutes the Apple TV's own screensaver and sleep settings take over.",
                                    selection: $screensaverMinutes, options: [2, 3, 5, 10]) { Text("\($0) Minutes") }
+                        .syncLocked("libraryScreensaverMinutes", authManager)
                 }
             } header: {
                 Text("Screensaver")
@@ -79,6 +81,7 @@ struct AppearanceView: View {
                     TVRowLabelText(title: "Stats", detail: "Adds a Stats tab with your watch time, habits and favourites.")
                 }
                 .tvListRow()
+                .syncLocked(BottomNavPrefs.activeKey, authManager)
             } header: {
                 Text("Tabs")
                     .font(.system(.caption, design: .default, weight: .semibold))

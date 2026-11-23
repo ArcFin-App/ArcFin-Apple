@@ -9,6 +9,7 @@ struct MusicSongsView: View {
     let libraryID: String
     var favoritesOnly = false
     @AppStorage("music.songSort") private var sort: MusicSort = .name
+    @Environment(AuthManager.self) private var authManager
     @State private var list: MusicPagedList<MusicSong>?
     @State private var query = ""
     @State private var term: String?
@@ -44,6 +45,7 @@ struct MusicSongsView: View {
                         Text("Recently Added").tag(MusicSort.dateAdded)
                         Text("Most Played").tag(MusicSort.playCount)
                     }
+                    .syncLocked("music.songSort", authManager)
                 } label: {
                     Label("Sort", systemImage: "arrow.up.arrow.down")
                 }
