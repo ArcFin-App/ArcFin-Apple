@@ -3,11 +3,20 @@
 import Foundation
 import Testing
 import ImageCache
+import Nuke
 
 struct ImageRetryTests {
     @Test func aMissingImageIsNotTriedAgain() {
         #expect(ImageCache.retry(statusCode: 404, isConnectivityError: false) == .giveUp)
         #expect(ImageCache.retry(statusCode: 401, isConnectivityError: false) == .giveUp)
+    }
+
+    @Test func aMissingImageFromThePipelineIsNotTriedAgain() {
+        let notFound = ImagePipeline.Error.dataLoadingFailed(error: DataLoader.Error.statusCodeUnacceptable(404))
+        #expect(ImageCache.retry(after: notFound) == .giveUp)
+        let serverError = ImagePipeline.Error.dataLoadingFailed(error: DataLoader.Error.statusCodeUnacceptable(503))
+        #expect(ImageCache.retry(after: serverError) == .originalSize)
+        #expect(ImageCache.retry(after: ImagePipeline.Error.dataIsEmpty) == .originalSize)
     }
 
     @Test func aDroppedConnectionTriesTheSameImageOnce() {
