@@ -22,7 +22,8 @@ transcoded depending on the source), and try Settings > Playback, Downloads, and
 profile picker (Face ID/PIN lock is off by default — it's an opt-in per-profile setting
 under Settings, not required to use the app).
 
-Local network permission (server/Chromecast discovery) and location permission (home
+Local network permission (server/Chromecast discovery, and Set Up Nearby Device, which signs
+an Apple TV, iPad or Mac in from an iPhone or iPad) and location permission (home
 Wi-Fi network name, used only to switch between a server's local/remote address) are both
 optional — declining either still leaves the app fully usable by entering a server URL
 manually.
@@ -33,4 +34,7 @@ URL and username with the on-screen keyboard).
 Arcfin allows plain-HTTP connections (NSAllowsArbitraryLoads) because the server is one the
 user runs or is invited to, and many home Jellyfin servers on a local network have no TLS
 certificate. Arcfin never loads web content from those servers, only Jellyfin API and media
-requests.
+requests. A per-domain exception or NSAllowsLocalNetworking can't cover this: every user
+types their own server's address, which can be a local IP, a .local name, or a remote
+address or hostname that's plain HTTP. Arcfin's server setup recommends HTTPS and explains
+how to add it.
