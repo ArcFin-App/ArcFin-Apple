@@ -25,7 +25,7 @@ struct StatsView: View {
                 .screenBackground()
                 .arcfinNavTitleLarge("Stats")
                 .toolbar {
-                    if shownKind != .music, let stats = model.stats, !stats.isEmpty {
+                    if shareContent != nil {
                         ToolbarItem(placement: .primaryAction) {
                             Button { showShare = true } label: {
                                 Label("Share", systemImage: "square.and.arrow.up")
@@ -34,8 +34,8 @@ struct StatsView: View {
                     }
                 }
                 .sheet(isPresented: $showShare) {
-                    if let stats = model.stats {
-                        StatsShareSheet(stats: stats, name: authManager.state.credential?.displayName)
+                    if let shareContent {
+                        StatsShareSheet(content: shareContent, name: authManager.state.credential?.displayName)
                     }
                 }
                 .navigationDestination(for: MediaItem.self) { item in
@@ -53,6 +53,16 @@ struct StatsView: View {
     /// Music shows up only with a music library to play from.
     private var hasMusic: Bool { mediaRepo.libraries.contains { $0.collectionType == .music } }
     private var shownKind: StatsKind { hasMusic ? kind : .video }
+    /// The Music tab shares the listening card; All and Movies & Shows share the watch card.
+    private var shareContent: StatsShareContent? {
+        if shownKind == .music {
+            guard let music = model.music, !music.isEmpty else { return nil }
+            return .music(music)
+        }
+        guard let stats = model.stats, !stats.isEmpty else { return nil }
+        return .video(stats)
+    }
+
     private var musicTaskID: String { "\(authManager.state.credential?.id.uuidString ?? "")-\(shownKind != .video)" }
 
     @ViewBuilder
