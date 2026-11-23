@@ -135,6 +135,7 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 ### Add-ons
 - **[Seerr](https://github.com/seerr-team/seerr):** browse, request and keep a watchlist, signed in per profile.
 - **[TMDB](https://www.themoviedb.org):** an optional key for review scores, where to watch and what's popular.
+- **[ListenBrainz](https://listenbrainz.org):** an optional token per profile. Arcfin sends your listens and loves to it, and Stats and Year in Music can count from it. On a Jellyfin 12.4 server, Jellyfin's own ListenBrainz similarity provider also feeds Similar Artists.
 
 ## Platforms
 
