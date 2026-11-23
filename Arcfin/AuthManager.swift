@@ -514,7 +514,7 @@ final class AuthManager {
         guard let result, isActive(credential) else { return nil }
         if let device = result.device {
             arcfinSyncCurrentDevice = device
-            registeredSnapshot = device.settings
+            registeredSnapshot = SettingsSyncEngine.snapshot()
         }
         pendingRemoteSettings = result.pending
         return result.locked

@@ -131,6 +131,15 @@ struct ArcfinSyncSection: View {
                 .font(.caption)
                 .foregroundStyle(DT.Color.textSecondary)
         }
+
+        // Outside the status rows above, which a running sync swaps for a spinner.
+        if authManager.hasArcfinSyncDevices {
+            Section {
+                NavigationLink { DevicesSyncView().tvSettingsPage() } label: {
+                    TVRowLabelText(title: "Devices & Sync", detail: "Name this device, choose how it syncs, and see your other devices.")
+                }
+            }
+        }
     }
 }
 
