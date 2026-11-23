@@ -1339,7 +1339,7 @@ final class PlayerModel {
 
     private var localPositionTicks: Int64 {
         Self.reportablePosition(engineTicks: player.positionTicks, status: player.status, trusted: positionIsTrusted,
-                                lastGood: lastGoodPositionTicks, resumeFrom: resumeFrom)
+                                lastGood: lastGoodPositionTicks, savedPosition: isLive ? 0 : startPositionTicks)
     }
 
     /// Off while a stream is loading (the first one, or a reload's), when the engine's position
@@ -1353,10 +1353,11 @@ final class PlayerModel {
     }
 
     /// The engine's position once it can be trusted; before that the last good one, or the
-    /// resume point when playback never started.
+    /// saved resume point when playback never started (even after Start Over, so closing
+    /// before the picture appears keeps it).
     nonisolated static func reportablePosition(engineTicks: Int64, status: PlaybackStatus, trusted: Bool,
-                                               lastGood: Int64?, resumeFrom: Int64) -> Int64 {
-        positionIsReportable(status: status, trusted: trusted) ? engineTicks : lastGood ?? resumeFrom
+                                               lastGood: Int64?, savedPosition: Int64) -> Int64 {
+        positionIsReportable(status: status, trusted: trusted) ? engineTicks : lastGood ?? savedPosition
     }
 
     private var reportedIsPaused: Bool {
