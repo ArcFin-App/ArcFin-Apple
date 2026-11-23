@@ -791,7 +791,13 @@ final class AuthManager {
                 return .unreadable
             } catch {
                 Self.logPINReadFailureOnce(error)
+                // An unsigned development build can't use the Keychain at all, so there the
+                // profile opens; a shipped build keeps it locked and offers Sign Out instead.
+                #if DEBUG
                 return .none
+                #else
+                return .unreadable
+                #endif
             }
         }
     }
