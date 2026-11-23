@@ -315,6 +315,7 @@ final class PlayerModel {
         // up as a jump here, so this is where Auto learns a seek just happened.
         let jumped = abs(newValue - oldValue) > 30_000_000
         if jumped { lastSeekAt = Date() }
+        if Self.positionIsReportable(status: player.status, trusted: positionIsTrusted) { lastGoodPositionTicks = newValue }
         source.positionChanged(ticks: newValue, durationTicks: player.durationTicks, status: player.status)
         updateSubtitleText(forTicks: newValue)
         checkUpNextThreshold(positionTicks: newValue)
@@ -763,6 +764,7 @@ final class PlayerModel {
             PlayerActivity.shared.opened()
         }
         playStartedAt = nil
+        positionIsTrusted = false
         av1Watchdog?.cancel()
         setupGeneration += 1
         let generation = setupGeneration
@@ -882,6 +884,7 @@ final class PlayerModel {
             await player.play()
             guard !setupAbandoned(generation) else { return }
             playStartedAt = Date()
+            positionIsTrusted = true
             applyEngineOptions()
             loadingStage = nil
             await applyRememberedRate()
@@ -1071,7 +1074,7 @@ final class PlayerModel {
             try? await Task.sleep(for: .milliseconds(500))
             await client.reportPlaybackProgress(
                 credential: credential, authHeader: authHeader, itemId: item.id,
-                mediaSourceId: info.mediaSourceId, positionTicks: player.positionTicks,
+                mediaSourceId: info.mediaSourceId, positionTicks: reportedPositionTicks,
                 isPaused: player.status == .paused, liveStreamId: info.liveStreamId,
                 volumeLevel: reportedVolume, isMuted: volumeBeforeMute != nil,
                 playSessionId: info.playSessionId, playMethod: info.playMethod
@@ -1324,7 +1327,29 @@ final class PlayerModel {
         if isCasting, let seconds = CastManager.shared.lastKnownPositionSeconds {
             return Int64(seconds * 10_000_000)
         }
-        return player.positionTicks
+        return localPositionTicks
+    }
+
+    private var localPositionTicks: Int64 {
+        Self.reportablePosition(engineTicks: player.positionTicks, status: player.status, trusted: positionIsTrusted,
+                                lastGood: lastGoodPositionTicks, resumeFrom: resumeFrom)
+    }
+
+    /// Off while a stream is loading (the first one, or a reload's), when the engine's position
+    /// is 0 or wherever the load has got to: sent to the server, it would replace the resume point.
+    @ObservationIgnored private var positionIsTrusted = false
+    /// The last position seen while playing or paused on a loaded stream.
+    @ObservationIgnored private var lastGoodPositionTicks: Int64?
+
+    nonisolated static func positionIsReportable(status: PlaybackStatus, trusted: Bool) -> Bool {
+        trusted && (status == .playing || status == .paused)
+    }
+
+    /// The engine's position once it can be trusted; before that the last good one, or the
+    /// resume point when playback never started.
+    nonisolated static func reportablePosition(engineTicks: Int64, status: PlaybackStatus, trusted: Bool,
+                                               lastGood: Int64?, resumeFrom: Int64) -> Int64 {
+        positionIsReportable(status: status, trusted: trusted) ? engineTicks : lastGood ?? resumeFrom
     }
 
     private var reportedIsPaused: Bool {
@@ -1337,7 +1362,7 @@ final class PlayerModel {
         progressReportTask = Task {
             while !Task.isCancelled, !isClosed {
                 try? await Task.sleep(for: .seconds(10))
-                guard !Task.isCancelled, !isClosed else { continue }
+                guard !Task.isCancelled, !isClosed, positionIsTrusted else { continue }
                 await source.reportProgress(PlaybackProgressReport(
                     item: item, mediaSourceId: mediaSourceId, positionTicks: reportedPositionTicks,
                     durationTicks: player.durationTicks, isPaused: reportedIsPaused, liveStreamId: playbackInfo?.liveStreamId,
@@ -1442,6 +1467,7 @@ final class PlayerModel {
             guard aether.nativePlayerLayer?.player?.isExternalPlaybackActive != true,
                   await !aether.hasRenderedVideoFrame(), !Task.isCancelled, !isClosed, player === aether else { return }
             let resumeTicks = aether.positionTicks
+            positionIsTrusted = false
             await aether.stop()
             engineReleased()
             player = source.fallbackEngine(for: info)
@@ -2057,8 +2083,10 @@ final class PlayerModel {
         reloadTask = Task {
             await pendingSetup?.value
             guard reloadIsCurrent(generation) else { return }
-            // Read once any setup is done: before that, the position is still 0.
-            let resumeTicks = isLive ? 0 : overrideTicks ?? player.positionTicks
+            // Read once any setup is done: before that, the position is still 0. A reload this
+            // one replaced may have left the engine mid-load, so it's the last good position then.
+            let resumeTicks = isLive ? 0 : overrideTicks ?? localPositionTicks
+            positionIsTrusted = false
             do {
                 let info = try await source.playbackInfo(for: item, PlaybackInfoRequest(
                     mediaSourceId: selectedMediaSourceId, quality: qualityCap(for: quality),
@@ -2088,6 +2116,7 @@ final class PlayerModel {
                 }
                 await player.play()
                 guard reloadIsCurrent(generation) else { return }
+                positionIsTrusted = true
                 applyEngineVolume()
                 watchForMissingPicture()
                 if selectedAudioIndex != nil { await selectAudioInEngine() }

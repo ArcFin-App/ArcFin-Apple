@@ -108,6 +108,33 @@ struct LocalPlaybackTests {
         #expect(DownloadPlaybackSource.hasStarted(atTicks: 50_000_000, durationTicks: 36_000_000_000, status: .paused))
     }
 
+    // MARK: Reporting the position
+
+    private let resumePoint: Int64 = 24_000_000_000
+
+    @Test func beforePlaybackStartsTheResumePointIsReported() {
+        for status: PlaybackStatus in [.idle, .loading, .paused, .playing, .failed("no stream")] {
+            #expect(PlayerModel.reportablePosition(engineTicks: 0, status: status, trusted: false,
+                                                   lastGood: nil, resumeFrom: resumePoint) == resumePoint)
+        }
+    }
+
+    @Test func duringAReloadTheLastGoodPositionIsReported() {
+        #expect(PlayerModel.reportablePosition(engineTicks: 0, status: .playing, trusted: false,
+                                               lastGood: 30_000_000_000, resumeFrom: resumePoint) == 30_000_000_000)
+        #expect(PlayerModel.reportablePosition(engineTicks: 0, status: .idle, trusted: true,
+                                               lastGood: 30_000_000_000, resumeFrom: resumePoint) == 30_000_000_000)
+    }
+
+    @Test func whilePlayingOrPausedTheEnginesPositionIsReported() {
+        #expect(PlayerModel.reportablePosition(engineTicks: 31_000_000_000, status: .playing, trusted: true,
+                                               lastGood: 30_000_000_000, resumeFrom: resumePoint) == 31_000_000_000)
+        #expect(PlayerModel.reportablePosition(engineTicks: 0, status: .paused, trusted: true,
+                                               lastGood: 30_000_000_000, resumeFrom: resumePoint) == 0)
+        #expect(!PlayerModel.positionIsReportable(status: .loading, trusted: true))
+        #expect(!PlayerModel.positionIsReportable(status: .playing, trusted: false))
+    }
+
     // MARK: Capabilities
 
     @Test func onlyTheServerOffersItsExtras() {
