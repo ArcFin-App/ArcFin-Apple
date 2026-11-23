@@ -402,6 +402,7 @@ final class PlayerModel {
 
     private func handleStatusChange(_ newStatus: PlaybackStatus) {
         if newStatus == .playing { scheduleAutoHide() }
+        if newStatus == .paused { holdCountdownsForPause() } else if newStatus == .playing { resumeHeldCountdowns() }
         if newStatus == .ended { Task { await finishPlayback() } }
         // A failure while loading throws from setup(), which handles it (and Aether's
         // fallback); this is the engine giving up after playback had already started.
@@ -1712,6 +1713,11 @@ final class PlayerModel {
 
     private func startAutoSkip(kind: String) {
         autoSkipTask?.cancel()
+        guard player.status == .playing else {
+            autoSkipCountdown = nil
+            autoSkipHeldByPause = kind
+            return
+        }
         let countdown = PlayerView.AutoActionCountdown(kind: kind, startedAt: Date(), seconds: PlayerView.autoActionSeconds)
         autoSkipCountdown = countdown
         autoSkipTask = Task {
@@ -1750,6 +1756,10 @@ final class PlayerModel {
 
     private func startUpNextCountdown() {
         cancelUpNextCountdown()
+        guard player.status == .playing else {
+            upNextHeldByPause = true
+            return
+        }
         let countdown = PlayerView.AutoActionCountdown(kind: "next", startedAt: Date(), seconds: PlayerView.autoActionSeconds)
         upNextCountdownState = countdown
         upNextCountdown = Task {
@@ -1762,6 +1772,34 @@ final class PlayerModel {
     func cancelUpNextCountdown() {
         upNextCountdown?.cancel()
         upNextCountdownState = nil
+        upNextHeldByPause = false
+    }
+
+    /// The Up Next and automatic-skip countdowns paused with the video, to start again when it plays.
+    @ObservationIgnored private var upNextHeldByPause = false
+    @ObservationIgnored private var autoSkipHeldByPause: String?
+
+    private func holdCountdownsForPause() {
+        if upNextCountdownState != nil {
+            cancelUpNextCountdown()
+            upNextHeldByPause = true
+        }
+        if let countdown = autoSkipCountdown {
+            autoSkipTask?.cancel()
+            autoSkipCountdown = nil
+            autoSkipHeldByPause = countdown.kind
+        }
+    }
+
+    private func resumeHeldCountdowns() {
+        if upNextHeldByPause {
+            upNextHeldByPause = false
+            if showUpNext, !upNextDismissed, nextEpisode != nil { startUpNextCountdown() }
+        }
+        if let kind = autoSkipHeldByPause {
+            autoSkipHeldByPause = nil
+            if currentSkippable?.kind == kind { startAutoSkip(kind: kind) }
+        }
     }
 
     /// `isAutomatic` distinguishes the countdown silently firing from the user actually
