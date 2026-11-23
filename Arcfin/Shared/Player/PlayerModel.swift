@@ -2014,7 +2014,11 @@ final class PlayerModel {
         }
         let seconds = Double(ticks) / 10_000_000 - subtitleDelay
         // Set only when they change: the screen reads both, and this runs on every tick.
-        let text = subtitleCues.isEmpty ? nil : SubtitleLoader.cue(at: seconds, in: subtitleCues)
+        var text = subtitleCues.isEmpty ? nil : SubtitleLoader.cue(at: seconds, in: subtitleCues)
+        // A text track inside a file played from this device: the engine decodes the words.
+        if text == nil, drawsEngineTextHere, let aether = player as? AetherEnginePlayer {
+            text = aether.nativeTextCues.last { seconds >= $0.startTime && seconds < $0.endTime }?.text
+        }
         if text != currentSubtitleText { currentSubtitleText = text }
         var bitmapCue: NativeBitmapCue?
         if let aetherPlayer = player as? AetherEnginePlayer, !aetherPlayer.nativeBitmapCues.isEmpty {
@@ -2024,6 +2028,15 @@ final class PlayerModel {
         }
         if bitmapCue?.id != currentBitmapCue?.id { currentBitmapCue = bitmapCue }
     }
+
+    /// The selected subtitle is a track inside a local file, which the engine decodes.
+    private var drawsEngineTextHere: Bool {
+        guard source.tracksComeFromEngine, let currentSubtitleStream else { return false }
+        return source.drawsSubtitleInEngine(currentSubtitleStream)
+    }
+
+    /// Subtitle Timing has words to move: drawn from a file here, or decoded by the engine.
+    var hasTimedSubtitles: Bool { !subtitleCues.isEmpty || drawsEngineTextHere }
 
     /// Each reload replaces the one before it: the last track or quality picked is the one
     /// that plays, however the requests finish. One asked for while setup() is still loading

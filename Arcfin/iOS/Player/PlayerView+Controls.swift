@@ -1033,7 +1033,7 @@ struct PlayerMoreMenu: View, Equatable {
 
     @ViewBuilder
     private var subtitleTimingMenu: some View {
-        if !model.subtitleCues.isEmpty {
+        if model.hasTimedSubtitles {
             Menu {
                 Button("Later by 0.5 s") { model.subtitleDelay += 0.5 }
                 Button("Earlier by 0.5 s") { model.subtitleDelay -= 0.5 }
