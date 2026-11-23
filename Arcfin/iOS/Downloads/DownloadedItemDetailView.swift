@@ -16,7 +16,11 @@ struct DownloadedItemDetailView: View {
             .toolbarBackground(.hidden, for: .navigationBar)
             .task(id: item.itemId) { await model.load(item, downloadManager: downloadManager) }
             .fullScreenCover(item: $model.playingItem) { item in
-                OfflinePlayerView(downloadedItem: item, startPositionOverride: model.startOverride)
+                PlayerView(download: item, startPositionOverride: model.startOverride) { next in
+                    PlayerView.keepOrientationOnNextDisappear = true
+                    model.play(next, startOverride: nil)
+                }
+                .id(item.itemId)
             }
             .alert("Delete this download?", isPresented: $model.showDeleteConfirm) {
                 Button("Delete", role: .destructive) {

@@ -8,12 +8,15 @@ import os
 
 /// Fetches and crops Jellyfin trickplay sprite-sheet tiles into individual scrub-preview
 /// thumbnails, caching whole tiles (each holds many frames) rather than individual crops.
+/// The tiles come from the server, or from the files a download saved them to.
 @MainActor
 final class TrickplayLoader {
-    private let credential: ServerCredential
-    private let authHeader: String
-    private let client: JellyfinMediaClient
-    private let itemId: String
+    private enum Tiles {
+        case server(credential: ServerCredential, authHeader: String, client: JellyfinMediaClient, itemId: String)
+        /// In tile order: a tile that failed to download keeps an empty name.
+        case files(directory: URL, fileNames: [String])
+    }
+    private let tiles: Tiles
     private let info: JellyfinTrickplayInfo
     private static let log = Telemetry.logger(category: "Trickplay")
     /// A few decoded sheets, most recent last: each is large, and a scrub only moves between
@@ -24,10 +27,12 @@ final class TrickplayLoader {
     private var inFlight: [Int: Task<PlatformImage?, Never>] = [:]
 
     init(credential: ServerCredential, authHeader: String, client: JellyfinMediaClient, itemId: String, info: JellyfinTrickplayInfo) {
-        self.credential = credential
-        self.authHeader = authHeader
-        self.client = client
-        self.itemId = itemId
+        tiles = .server(credential: credential, authHeader: authHeader, client: client, itemId: itemId)
+        self.info = info
+    }
+
+    init(directory: URL, fileNames: [String], info: JellyfinTrickplayInfo) {
+        tiles = .files(directory: directory, fileNames: fileNames)
         self.info = info
     }
 
@@ -54,9 +59,30 @@ final class TrickplayLoader {
             return cached
         }
         if let existing = inFlight[tileIndex] { return await existing.value }
-        let url = client.trickplayTileURL(credential: credential, itemId: itemId, width: info.width, tileIndex: tileIndex)
-        let authHeader = authHeader
-        let task = Task<PlatformImage?, Never> {
+        let task: Task<PlatformImage?, Never>
+        switch tiles {
+        case .files(let directory, let fileNames):
+            guard fileNames.indices.contains(tileIndex), !fileNames[tileIndex].isEmpty else { return nil }
+            let path = directory.appendingPathComponent(fileNames[tileIndex]).path
+            task = Task { PlatformImage.from(contentsOfFile: path) }
+        case .server(let credential, let authHeader, let client, let itemId):
+            task = serverTile(tileIndex, url: client.trickplayTileURL(credential: credential, itemId: itemId, width: info.width, tileIndex: tileIndex),
+                              authHeader: authHeader)
+        }
+        inFlight[tileIndex] = task
+        let image = await task.value
+        inFlight[tileIndex] = nil
+        if let image {
+            tileCache[tileIndex] = image
+            tileOrder.removeAll { $0 == tileIndex }
+            tileOrder.append(tileIndex)
+            while tileOrder.count > Self.cachedTiles { tileCache[tileOrder.removeFirst()] = nil }
+        }
+        return image
+    }
+
+    private func serverTile(_ tileIndex: Int, url: URL, authHeader: String) -> Task<PlatformImage?, Never> {
+        Task<PlatformImage?, Never> {
             do {
                 var req = URLRequest(url: url)
                 // The api_key query param alone 401s on this endpoint — unlike Items/Images,
@@ -74,15 +100,5 @@ final class TrickplayLoader {
                 return nil
             }
         }
-        inFlight[tileIndex] = task
-        let image = await task.value
-        inFlight[tileIndex] = nil
-        if let image {
-            tileCache[tileIndex] = image
-            tileOrder.removeAll { $0 == tileIndex }
-            tileOrder.append(tileIndex)
-            while tileOrder.count > Self.cachedTiles { tileCache[tileOrder.removeFirst()] = nil }
-        }
-        return image
     }
 }

@@ -57,7 +57,11 @@ struct DownloadsView: View {
             MediaDetailView(item: item)
         }
         .fullScreenCover(item: $model.playingItem) { item in
-            OfflinePlayerView(downloadedItem: item)
+            PlayerView(download: item) { next in
+                PlayerView.keepOrientationOnNextDisappear = true
+                model.playingItem = next
+            }
+            .id(item.itemId)
         }
         .modifier(DownloadsAlerts(items: items, model: model))
     }

@@ -56,7 +56,8 @@ struct DownloadsView: View {
             MediaDetailView(item: item)
         }
         .sheet(item: $model.playingItem) { item in
-            OfflinePlayerView(downloadedItem: item)
+            PlayerView(download: item) { model.playingItem = $0 }
+                .id(item.itemId)
                 .frame(minWidth: 900, minHeight: 560)
         }
         .modifier(DownloadsAlerts(items: items, model: model))

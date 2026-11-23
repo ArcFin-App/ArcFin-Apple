@@ -188,7 +188,7 @@ struct UpNextCard: View {
                 Spacer()
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(spacing: 12) {
-                        if let url = mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
+                        if let url = model.source.localImageURL(for: next.id) ?? mediaRepo.imageURL(for: next, type: .thumb, fillWidth: 240) {
                             CachedAsyncImage(url: url) { phase in
                                 switch phase {
                                 case .success(let img): img.resizable().scaledToFill()
@@ -232,11 +232,13 @@ struct UpNextCard: View {
                             model.playNextEpisode()
                         }
                         .accessibilityLabel("Play \(next.name)")
-                        CreditsActionButton(title: "Like", systemImage: "hand.thumbsup", isSelected: model.currentLikes == true) {
-                            model.rateCurrentItem(true)
-                        }
-                        CreditsActionButton(title: "Dislike", systemImage: "hand.thumbsdown", isSelected: model.currentLikes == false) {
-                            model.rateCurrentItem(false)
+                        if model.capabilities.rating {
+                            CreditsActionButton(title: "Like", systemImage: "hand.thumbsup", isSelected: model.currentLikes == true) {
+                                model.rateCurrentItem(true)
+                            }
+                            CreditsActionButton(title: "Dislike", systemImage: "hand.thumbsdown", isSelected: model.currentLikes == false) {
+                                model.rateCurrentItem(false)
+                            }
                         }
                     }
                 }
@@ -347,7 +349,10 @@ struct CastPanel: View {
     let item: MediaItem
     let castMembers: [MediaPerson]
     @Binding var isPresented: Bool
-    let onSelect: (MediaPerson) -> Void
+    /// A photo kept on this device, for a download's cast.
+    var photoURL: (MediaPerson) -> URL? = { _ in nil }
+    /// Opens the person's page; nil where there's no server to show it from.
+    let onSelect: ((MediaPerson) -> Void)?
 
     var body: some View {
         if isPresented {
@@ -390,10 +395,15 @@ struct CastPanel: View {
                                 : AnyLayout(HStackLayout(alignment: .top, spacing: 14))
                             layout {
                                 ForEach(castMembers) { person in
-                                    Button { onSelect(person) } label: {
-                                        CastPanelPersonRow(person: person, compact: !landscape)
+                                    if let onSelect {
+                                        Button { onSelect(person) } label: {
+                                            CastPanelPersonRow(person: person, compact: !landscape, localPhoto: photoURL(person))
+                                        }
+                                        .playerOverlayButton(cornerRadius: DT.Radius.md)
+                                    } else {
+                                        CastPanelPersonRow(person: person, compact: !landscape, localPhoto: photoURL(person))
+                                            .accessibilityElement(children: .combine)
                                     }
-                                    .playerOverlayButton(cornerRadius: DT.Radius.md)
                                 }
                             }
                         }

@@ -50,6 +50,23 @@ public struct JellyfinMediaStream: Sendable, Equatable {
         self.videoRange = videoRange; self.bitRate = bitRate; self.profile = profile; self.bitDepth = bitDepth
         self.level = level
     }
+
+    /// The first version's streams and container in a saved item-detail response (a
+    /// download's detail.json), which keeps every stream's index, language and flags.
+    public static func savedStreams(fromItemDetail data: Data) -> (container: String?, streams: [JellyfinMediaStream])? {
+        guard let saved = try? JSONDecoder().decode(SavedItemDetailResponse.self, from: data) else { return nil }
+        let source = saved.mediaSources?.first
+        guard let streams = source?.mediaStreams ?? saved.mediaStreams else { return nil }
+        return (source?.container, streams.map { $0.toStream() })
+    }
+}
+
+private struct SavedItemDetailResponse: Decodable {
+    let mediaSources: [MediaSourceResponse]?
+    let mediaStreams: [MediaStreamStreamResponse]?
+    enum CodingKeys: String, CodingKey {
+        case mediaSources = "MediaSources", mediaStreams = "MediaStreams"
+    }
 }
 
 /// Trickplay scrub-thumbnail sprite sheet info (Jellyfin 10.9+ "Trickplay" plugin/core
@@ -61,6 +78,11 @@ public struct JellyfinTrickplayInfo: Sendable {
     public let tileHeight: Int
     public let thumbnailCount: Int
     public let intervalMs: Int
+
+    public init(width: Int, height: Int, tileWidth: Int, tileHeight: Int, thumbnailCount: Int, intervalMs: Int) {
+        self.width = width; self.height = height; self.tileWidth = tileWidth; self.tileHeight = tileHeight
+        self.thumbnailCount = thumbnailCount; self.intervalMs = intervalMs
+    }
 }
 
 /// Mirrors Jellyfin's own three PlayMethod states — the server's dashboard distinguishes

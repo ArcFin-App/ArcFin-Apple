@@ -2358,6 +2358,11 @@ final class PlayerModel {
         playbackInfo?.audioStreams.first(where: { $0.index == selectedAudioIndex })
     }
 
+    /// A cast member's photo saved with a download.
+    func localCastPhotoURL(_ person: MediaPerson) -> URL? {
+        (source as? DownloadPlaybackSource)?.castPhotoURL(for: person, in: castMembers)
+    }
+
     var currentSubtitleStream: JellyfinMediaStream? {
         guard let selectedSubtitleIndex else { return nil }
         return playbackInfo?.subtitleStreams.first(where: { $0.index == selectedSubtitleIndex })

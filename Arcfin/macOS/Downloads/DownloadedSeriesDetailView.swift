@@ -60,10 +60,10 @@ struct DownloadedSeriesDetailView: View {
         .onAppear {
             if model.selectedSeason == nil { model.selectedSeason = DownloadedSeriesDetailModel.seasonNumbers(of: episodes).first }
         }
-        // fullScreenCover is unavailable on macOS — OfflinePlayerView has its own in-window
-        // fullscreen (F key) now that it has a real macOS video surface, so a sheet is enough.
+        // fullScreenCover is unavailable on macOS; the player has its own full screen (F).
         .sheet(item: $model.playingItem) { item in
-            OfflinePlayerView(downloadedItem: item, startPositionOverride: model.playStartOverride)
+            PlayerView(download: item, startPositionOverride: model.playStartOverride) { model.play($0, startOverride: nil) }
+                .id(item.itemId)
                 .frame(minWidth: 900, minHeight: 560)
         }
         .alert("Delete this episode?", isPresented: Binding(

@@ -163,7 +163,11 @@ struct MediaDetailView: View {
             Button("Cancel", role: .cancel) { model.pendingPlaybackChoice = nil }
         }
         .fullScreenCover(item: $model.offlinePlaybackTarget, onDismiss: { Task { await model.refreshAfterPlayback(authManager: authManager) } }) { downloaded in
-            OfflinePlayerView(downloadedItem: downloaded, startPositionOverride: model.offlineStartOverride)
+            PlayerView(download: downloaded, startPositionOverride: model.offlineStartOverride) { next in
+                PlayerView.keepOrientationOnNextDisappear = true
+                model.playDownloaded(next)
+            }
+            .id(downloaded.itemId)
         }
         .alert("Download Failed", isPresented: Binding(
             get: { model.seasonDownloadErrorMessage != nil }, set: { if !$0 { model.seasonDownloadErrorMessage = nil } }

@@ -7,6 +7,7 @@ import AVKit
 import AuthCore
 import JellyfinAPI
 import MediaEngine
+import Persistence
 import SwiftVLC
 import CastKit
 import GroupActivities
@@ -84,6 +85,15 @@ struct PlayerView: View {
         self.onPlayNext = onPlayNext
         _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext,
                                                  source: source))
+    }
+
+    /// A download, played from its file with the details saved beside it. Up Next and
+    /// Previous move between the show's downloaded episodes.
+    init(download: DownloadedItem, startPositionOverride: Int64? = nil, onPlayNext: @escaping (DownloadedItem) -> Void = { _ in }) {
+        let source = DownloadPlaybackSource(downloadedItem: download, startPositionOverride: startPositionOverride)
+        self.init(item: source.item, source: source) { next in
+            if let nextDownload = source.download(for: next.id) { onPlayNext(nextDownload) }
+        }
     }
 
     /// A video picked from Files.
@@ -164,7 +174,9 @@ struct PlayerView: View {
             }
 
             MoreLikeThisPanel(model: model, suggestionsAreHorizontal: true)
-            CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel) { openCastPanelPerson($0) }
+            CastPanel(item: item, castMembers: model.castMembers, isPresented: $showCastPanel,
+                      photoURL: model.localCastPhotoURL,
+                      onSelect: model.capabilities.personPages ? { openCastPanelPerson($0) } : nil)
             PlayerChannelListLayer(model: model)
 
             if model.showStillWatchingPrompt {
