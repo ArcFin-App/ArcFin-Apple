@@ -16,11 +16,6 @@ import AppKit
 public typealias PlatformImage = NSImage
 
 extension PlatformImage {
-    var cgImageRepresentation: CGImage? {
-        var rect = CGRect(origin: .zero, size: size)
-        return cgImage(forProposedRect: &rect, context: nil, hints: nil)
-    }
-
     static func from(cgImage: CGImage) -> PlatformImage {
         return PlatformImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
     }

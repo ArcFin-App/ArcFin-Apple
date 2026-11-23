@@ -6,7 +6,7 @@ import AuthCore
 import Telemetry
 import os
 
-struct SubtitleCue: Sendable {
+nonisolated struct SubtitleCue: Sendable {
     let start: TimeInterval
     let end: TimeInterval
     let text: String
@@ -22,7 +22,7 @@ enum SubtitleLoader {
         guard let data = await fetchRawVTTData(deliveryUrl: deliveryUrl, credential: credential),
               let text = String(data: data, encoding: .utf8)
         else { return [] }
-        return parseVTT(text)
+        return await Task.detached(priority: .userInitiated) { parseVTT(text) }.value
     }
 
     /// Raw VTT bytes, for saving to disk for offline playback — same URL construction as
@@ -55,8 +55,12 @@ enum SubtitleLoader {
         }
     }
 
-    /// Parses a locally-saved VTT file — used by offline playback.
-    static func loadCues(fileURL: URL) -> [SubtitleCue] {
+    /// Parses a locally-saved VTT file — used by offline playback. Off the main thread.
+    static func loadCues(fileURL: URL) async -> [SubtitleCue] {
+        await Task.detached(priority: .userInitiated) { readCues(fileURL: fileURL) }.value
+    }
+
+    private nonisolated static func readCues(fileURL: URL) -> [SubtitleCue] {
         guard let text = try? String(contentsOf: fileURL, encoding: .utf8) else { return [] }
         return parseVTT(text)
     }
@@ -80,7 +84,7 @@ enum SubtitleLoader {
         return active.isEmpty ? nil : active.joined(separator: "\n")
     }
 
-    private static func parseVTT(_ content: String) -> [SubtitleCue] {
+    private nonisolated static func parseVTT(_ content: String) -> [SubtitleCue] {
         var cues: [SubtitleCue] = []
         let blocks = content.replacingOccurrences(of: "\r\n", with: "\n")
             .components(separatedBy: "\n\n")
@@ -104,7 +108,7 @@ enum SubtitleLoader {
         return cues.sorted { $0.start < $1.start }
     }
 
-    private static func parseTimestamp(_ raw: String) -> TimeInterval? {
+    private nonisolated static func parseTimestamp(_ raw: String) -> TimeInterval? {
         let cleaned = raw.trimmingCharacters(in: .whitespaces)
             .components(separatedBy: " ").first ?? raw
         let parts = cleaned.split(separator: ":").map(String.init)
@@ -118,7 +122,7 @@ enum SubtitleLoader {
 }
 
 private extension String {
-    func stripHTMLTags() -> String {
+    nonisolated func stripHTMLTags() -> String {
         replacingOccurrences(of: #"<[^>]+>"#, with: "", options: .regularExpression)
     }
 }

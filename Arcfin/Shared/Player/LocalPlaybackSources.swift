@@ -133,8 +133,10 @@ final class DownloadPlaybackSource: PlaybackSource {
     private let startPositionOverride: Int64?
     private var authManager: AuthManager?
     /// The page as the server sent it when this was downloaded; older downloads may have none.
-    private let savedDetailData: Data?
-    private let savedStreams: (container: String?, streams: [JellyfinMediaStream])?
+    /// Read off the main thread when the player first asks for the stream, not when the view is made.
+    private var savedDetailData: Data?
+    private var savedStreams: (container: String?, streams: [JellyfinMediaStream])?
+    private var savedDetailsLoad: Task<Void, Never>?
     /// The other downloaded episodes the player can move on to, by id.
     private var episodes: [String: DownloadedItem] = [:]
     /// Playing with a position: until then the player's position is 0, and saving it would
@@ -146,10 +148,22 @@ final class DownloadPlaybackSource: PlaybackSource {
     init(downloadedItem: DownloadedItem, startPositionOverride: Int64? = nil) {
         self.downloadedItem = downloadedItem
         self.startPositionOverride = startPositionOverride
-        let data = try? Data(contentsOf: DownloadStore.directory(for: downloadedItem).appendingPathComponent("detail.json"))
-        savedDetailData = data
-        savedStreams = data.flatMap(JellyfinMediaStream.savedStreams(fromItemDetail:))
         item = Self.mediaItem(for: downloadedItem)
+    }
+
+    private func loadSavedDetails() async {
+        if savedDetailsLoad == nil {
+            let file = directory.appendingPathComponent("detail.json")
+            savedDetailsLoad = Task {
+                let saved = await Task.detached(priority: .userInitiated) {
+                    let data = try? Data(contentsOf: file)
+                    return (data: data, streams: data.flatMap(JellyfinMediaStream.savedStreams(fromItemDetail:)))
+                }.value
+                savedDetailData = saved.data
+                savedStreams = saved.streams
+            }
+        }
+        await savedDetailsLoad?.value
     }
 
     static func mediaItem(for download: DownloadedItem) -> MediaItem {
@@ -233,6 +247,7 @@ final class DownloadPlaybackSource: PlaybackSource {
 
     func playbackInfo(for item: MediaItem, _ request: PlaybackInfoRequest) async throws -> JellyfinPlaybackInfo {
         guard FileManager.default.fileExists(atPath: videoURL.path) else { throw DownloadFileMissing() }
+        await loadSavedDetails()
         let saved = savedStreams?.streams ?? []
         return .local(url: videoURL, container: videoURL.pathExtension.lowercased(), runTimeTicks: item.runTimeTicks,
                       audio: saved.filter { $0.type == "Audio" },
@@ -241,6 +256,7 @@ final class DownloadPlaybackSource: PlaybackSource {
 
     func tracksLoaded(on player: any MediaPlayerProtocol, info: JellyfinPlaybackInfo) async -> JellyfinPlaybackInfo? {
         await waitForEngineTracks(player)
+        await loadSavedDetails()
         let tracks = LocalTracks.streams(saved: savedStreams?.streams ?? [], sidecars: sidecars,
                                          engineAudio: player.availableAudioTracks, engineSubtitles: player.availableSubtitleTracks)
         let defaultAudio = tracks.audio.first(where: \.isDefault)?.index ?? (tracks.audio.isEmpty ? nil : player.selectedAudioTrackIndex)
@@ -252,7 +268,11 @@ final class DownloadPlaybackSource: PlaybackSource {
 
     func details(for item: MediaItem, info: JellyfinPlaybackInfo, includesItemDetail: Bool) async -> PlaybackDetails {
         var details = PlaybackDetails()
-        let detail = savedDetailData.flatMap { try? JellyfinMediaClient.decodeItemDetail($0) }
+        await loadSavedDetails()
+        let data = savedDetailData
+        let detail = await Task.detached(priority: .userInitiated) {
+            data.flatMap { try? JellyfinMediaClient.decodeItemDetail($0) }
+        }.value
         if let trickplay = localTrickplay {
             details.trickplay = TrickplayLoader(directory: directory, fileNames: downloadedItem.trickplayFileNames, info: trickplay)
         }
@@ -302,7 +322,7 @@ final class DownloadPlaybackSource: PlaybackSource {
     }
 
     func subtitleCues(at location: String) async -> [SubtitleCue] {
-        SubtitleLoader.loadCues(fileURL: URL(fileURLWithPath: location))
+        await SubtitleLoader.loadCues(fileURL: URL(fileURLWithPath: location))
     }
 
     func drawsSubtitleInEngine(_ stream: JellyfinMediaStream) -> Bool { !stream.isExternal }

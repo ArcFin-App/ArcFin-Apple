@@ -18,10 +18,6 @@ import GoogleCast
 public typealias PlatformImage = UIImage
 
 extension PlatformImage {
-    var cgImageRepresentation: CGImage? {
-        return cgImage
-    }
-
     static func from(cgImage: CGImage) -> PlatformImage {
         return PlatformImage(cgImage: cgImage)
     }
