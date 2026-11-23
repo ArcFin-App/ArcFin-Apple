@@ -275,13 +275,13 @@ extension PlayerView {
     /// With the controls hidden, an invisible catcher holds focus, so a click never presses a
     /// button nobody can see.
     var tvCatcherActive: Bool {
-        model.tvControlsHidden && !tvOverlayHasFocusTarget && model.skipButtonLabel == nil && model.errorMessage == nil
+        model.tvControlsHidden && !tvOverlayHasFocusTarget && !model.showsFloatingSkip && model.errorMessage == nil
             && !model.showChannelList
     }
 
     /// Changes whenever a different control should hold focus.
     var tvFocusContext: String {
-        "\(model.tvControlsHidden)-\(tvCatcherActive)-\(model.skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)-\(model.errorMessage != nil)-\(model.showChannelList)"
+        "\(model.tvControlsHidden)-\(tvCatcherActive)-\(model.showsFloatingSkip)-\(model.skipButtonLabel ?? "")-\(tvOverlayHasFocusTarget)-\(model.errorMessage != nil)-\(model.showChannelList)"
     }
 
     /// The remote while the controls are hidden, as in the system player: a click or a swipe

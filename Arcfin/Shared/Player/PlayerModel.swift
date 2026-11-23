@@ -1235,6 +1235,7 @@ final class PlayerModel {
         progressReportTask?.cancel()
         autoRecoveryTask?.cancel()
         autoSkipTask?.cancel()
+        skipPromptTask?.cancel()
         foregroundCheckTask?.cancel()
         pictureCheckTask?.cancel()
         sleepTimerTask?.cancel()
@@ -2338,10 +2339,31 @@ final class PlayerModel {
     private(set) var skipButtonLabel: String?
     private(set) var skipButtonKind: String?
 
+    /// The floating skip button's time on screen is up: without an automatic skip it shows for
+    /// a few seconds, then only with the controls.
+    private(set) var skipPromptTimedOut = false
+    @ObservationIgnored private var skipPromptTask: Task<Void, Never>?
+    static let skipPromptSeconds = 8
+
+    /// The skip button on its own, over the picture.
+    var showsFloatingSkip: Bool { skipButtonLabel != nil && !skipPromptTimedOut }
+
     private func refreshSkipButton() {
         let current = currentSkippable
         if current?.label != skipButtonLabel { skipButtonLabel = current?.label }
-        if current?.kind != skipButtonKind { skipButtonKind = current?.kind }
+        if current?.kind != skipButtonKind {
+            skipButtonKind = current?.kind
+            skipPromptTask?.cancel()
+            if skipPromptTimedOut { skipPromptTimedOut = false }
+            if let kind = current?.kind {
+                skipPromptTask = Task { [weak self] in
+                    try? await Task.sleep(for: .seconds(Self.skipPromptSeconds))
+                    guard let self, !Task.isCancelled, self.skipButtonKind == kind,
+                          self.autoSkipCountdown?.kind != kind else { return }
+                    self.skipPromptTimedOut = true
+                }
+            }
+        }
     }
 
     func skipToSegmentEnd() {

@@ -74,17 +74,20 @@ extension PlayerView {
 
     // MARK: - Skip intro/credits
 
-    /// On its own in the corner while the controls are hidden, where a click skips. With the
-    /// controls up it's in them instead (skipControl).
+    /// On its own in the corner while the controls are hidden, where a click skips, for a few
+    /// seconds unless it's counting down to skip. With the controls up it's in them instead
+    /// (skipControl).
     var skipButton: some View {
         Group {
-            if let label = model.skipButtonLabel, model.tvControlsHidden {
+            if let label = model.skipButtonLabel, model.showsFloatingSkip, model.tvControlsHidden {
                 VStack {
                     Spacer()
                     HStack {
                         Spacer()
                         skipSegmentButton(label)
                             .prefersDefaultFocus(true, in: tvFocusNamespace)
+                            // It holds focus, so any swipe brings up the controls; a click skips.
+                            .onMoveCommand { _ in model.toggleControlsVisibilityOnAction() }
                             .padding(.trailing, DT.Spacing.pagePad)
                             .padding(.bottom, 100)
                     }

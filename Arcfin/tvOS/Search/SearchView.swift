@@ -78,7 +78,7 @@ struct SearchView: View {
                             libraryShelf(group)
                         }
                         if !music.results.isEmpty {
-                            TVMusicSearchSection(results: music.results)
+                            TVMusicSearchSection(results: music.results) { saveRecentSearch() }
                         }
                         if liveTV.hasSearchResults {
                             LiveTVSearchSection(model: liveTV)
@@ -161,7 +161,7 @@ struct SearchView: View {
                     ProgressView().frame(maxWidth: .infinity)
                 }
                 if !music.results.isEmpty {
-                    TVMusicSearchSection(results: music.results)
+                    TVMusicSearchSection(results: music.results) { saveRecentSearch() }
                         .padding(.horizontal, -DT.Spacing.pagePad)
                 }
                 if liveTV.hasSearchResults {

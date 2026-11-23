@@ -225,11 +225,13 @@ struct MusicAlbumsView: View {
     private var sort: MusicSort { fixedSort ?? savedSort }
     @State private var favoritesOnly = false
     @State private var list: MusicPagedList<MusicAlbum>?
+    @State private var query = ""
+    @State private var term: String?
 
     var body: some View {
         ScrollView {
             if let list {
-                MusicListState(list: list, empty: favoritesOnly ? "No Favorite Albums" : "No Albums")
+                MusicListState(list: list, empty: favoritesOnly ? "No Favorite Albums" : "No Albums", searchTerm: term)
                 LazyVGrid(columns: MusicGrid.columns(sizeClass), alignment: .leading, spacing: DT.Spacing.lg) {
                     ForEach(list.items) { album in
                         MusicAlbumCard(album: album)
@@ -242,6 +244,8 @@ struct MusicAlbumsView: View {
         }
         .screenBackground()
         .navigationTitle(Text(verbatim: title))
+        .sectionSearchable(text: $query, prompt: "Search Albums")
+        .musicSearchTerm(query, $term)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -259,7 +263,7 @@ struct MusicAlbumsView: View {
                 }
             }
         }
-        .task(id: "\(sort.rawValue)-\(favoritesOnly)") {
+        .task(id: "\(sort.rawValue)-\(favoritesOnly)-\(term ?? "")") {
             let list = makeList()
             self.list = list
             await list.loadIfNeeded()
@@ -267,7 +271,7 @@ struct MusicAlbumsView: View {
     }
 
     private func makeList() -> MusicPagedList<MusicAlbum> {
-        let filter = MusicFilter(favoritesOnly: favoritesOnly, genreId: genreID)
+        let filter = MusicFilter(favoritesOnly: favoritesOnly, genreId: genreID, searchTerm: term)
         let libraryID = libraryID, sort = sort
         return MusicPagedList { start in
             let page = try await MusicAPI.call {
