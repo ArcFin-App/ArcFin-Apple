@@ -115,6 +115,7 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 
 ### Profiles, settings and help
 - **Profiles** with a picker, Face ID, Touch ID or PIN lock, and the server's parental controls and access schedule.
+- **Set Up Nearby Device:** sign in an Apple TV, iPad or Mac from your iPhone or iPad, with every profile you pick and their Seerr and ListenBrainz, over your own network. Both screens show a code to compare, nothing is sent until you allow it on the new device, and passwords are never sent.
 - **Devices & Sync** with the Arcfin Sync server plugin: your settings follow you to your other devices, automatically, after asking first, or not at all, and you can send one device's settings to all the others.
 - **Admin tab** for server admins:
   - the server dashboard, Active Sessions (see who's watching and why a stream transcodes, then pause, stop or message them), scheduled tasks and activity;
@@ -146,10 +147,10 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 | macOS 26 | Feature parity with iPhone and iPad, with a native video surface, sidebar, menu bar commands and Touch ID |
 | tvOS 26 | Feature parity apart from downloads, with remote and focus navigation throughout |
 | watchOS 26 | Music on the watch and a remote, with the iPhone app |
+| CarPlay | Music, from the iPhone app |
 
 Some features can't work on every platform:
 - **Chromecast** is iPhone and iPad only, because Google's SDK is.
-- **CarPlay** is iPhone only, and plays music.
 - **Live Activities and Lock Screen widgets** are iPhone only.
 - **Downloads** aren't available on Apple TV, which has no lasting storage.
 - **Face ID and Touch ID** aren't available on Apple TV.
