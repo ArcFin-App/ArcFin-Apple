@@ -132,6 +132,19 @@ struct MusicDecodingTests {
         #expect(direct.query?.contains("StartTimeTicks") == false)
     }
 
+    @Test("A list's search term goes to the server; without one, none is sent")
+    func searchTerm() {
+        let client = JellyfinMediaClient()
+        let searched = client.musicItemsQuery(credential: Self.credential, types: "Audio", parentId: "lib", sort: .name,
+                                              ascending: true, filter: MusicFilter(favoritesOnly: true, searchTerm: "blue"),
+                                              startIndex: 0, limit: 100)
+        #expect(searched.contains(URLQueryItem(name: "SearchTerm", value: "blue")))
+        #expect(searched.contains(URLQueryItem(name: "IsFavorite", value: "true")))
+        let all = client.musicItemsQuery(credential: Self.credential, types: "Audio", parentId: "lib", sort: .name,
+                                         ascending: true, filter: MusicFilter(), startIndex: 0, limit: 100)
+        #expect(!all.contains { $0.name == "SearchTerm" })
+    }
+
     @Test("A song's container is decoded")
     func containerDecoded() throws {
         let json = #"{"Items":[{"Id":"s","Name":"x","Container":"flac"}],"TotalRecordCount":1}"#

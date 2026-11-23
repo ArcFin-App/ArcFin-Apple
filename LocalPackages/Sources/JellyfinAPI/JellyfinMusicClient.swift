@@ -210,12 +210,15 @@ public struct MusicFilter: Sendable, Equatable {
     public var playedOnly = false
     /// Only what this profile has never played.
     public var unplayedOnly = false
+    /// Only names that match, as the server searches them.
+    public var searchTerm: String?
 
     public init(favoritesOnly: Bool = false, genreId: String? = nil, artistId: String? = nil, playedOnly: Bool = false,
-                unplayedOnly: Bool = false) {
+                unplayedOnly: Bool = false, searchTerm: String? = nil) {
         self.favoritesOnly = favoritesOnly; self.genreId = genreId; self.artistId = artistId
         self.playedOnly = playedOnly
         self.unplayedOnly = unplayedOnly
+        self.searchTerm = searchTerm
     }
 }
 
@@ -262,6 +265,7 @@ extension JellyfinMediaClient {
         ]
         if filter.favoritesOnly { query.append(.init(name: "IsFavorite", value: "true")) }
         if let genreId = filter.genreId { query.append(.init(name: "GenreIds", value: genreId)) }
+        if let term = filter.searchTerm { query.append(.init(name: "SearchTerm", value: term)) }
         let page: MusicPage = try await getMusic(albumArtistsOnly ? "Artists/AlbumArtists" : "Artists", query: query,
                                                  credential: credential, authHeader: authHeader)
         let artists = page.items.map { $0.asArtist }
@@ -515,7 +519,7 @@ extension JellyfinMediaClient {
         ]
     }
 
-    private func musicItemsQuery(credential: ServerCredential, types: String, parentId: String?, sort: MusicSort,
+    func musicItemsQuery(credential: ServerCredential, types: String, parentId: String?, sort: MusicSort,
                                  ascending: Bool, filter: MusicFilter, startIndex: Int, limit: Int) -> [URLQueryItem] {
         var query = baseQuery(credential: credential, startIndex: startIndex, limit: limit)
         if let parentId { query.append(.init(name: "ParentId", value: parentId)) }
@@ -530,6 +534,7 @@ extension JellyfinMediaClient {
         if let genreId = filter.genreId { query.append(.init(name: "GenreIds", value: genreId)) }
         if filter.playedOnly { query.append(.init(name: "IsPlayed", value: "true")) }
         if filter.unplayedOnly { query.append(.init(name: "IsPlayed", value: "false")) }
+        if let term = filter.searchTerm { query.append(.init(name: "SearchTerm", value: term)) }
         return query
     }
 
