@@ -904,7 +904,7 @@ struct TVMusicArtistView: View {
                     TVMusicArtwork(url: MusicAPI.artworkURL(artist, width: 600), isCircle: true)
                         .frame(width: 280, height: 280)
                     VStack(alignment: .leading, spacing: 24) {
-                        Text(verbatim: artist.name).font(.largeTitle.weight(.bold))
+                        MusicArtistTitle(artist: artist, logoSize: CGSize(width: 560, height: 160), alignment: .leading)
                         if let overview = artist.overview, !overview.isEmpty {
                             Text(verbatim: overview)
                                 .font(.callout)

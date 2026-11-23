@@ -35,9 +35,9 @@ enum MusicAPI {
         return try await body(client, credential, auth.authClient.authHeader(token: credential.accessToken))
     }
 
-    static func imageURL(itemID: String, tag: String?, width: Int) -> URL? {
+    static func imageURL(itemID: String, tag: String?, type: JellyfinImageType = .primary, width: Int) -> URL? {
         guard let tag, let credential = AppServices.authManager.state.credential else { return nil }
-        return JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: itemID, tag: tag,
+        return JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: itemID, tag: tag, type: type,
                                             fillWidth: width, token: credential.accessToken)
     }
 
@@ -47,6 +47,14 @@ enum MusicAPI {
 
     static func artworkURL(_ artist: MusicArtist, width: Int = 400) -> URL? {
         imageURL(itemID: artist.id, tag: artist.primaryImageTag, width: width)
+    }
+
+    static func backdropURL(_ artist: MusicArtist, width: Int = 1600) -> URL? {
+        imageURL(itemID: artist.id, tag: artist.backdropImageTags.first, type: .backdrop, width: width)
+    }
+
+    static func logoURL(_ artist: MusicArtist, width: Int = 800) -> URL? {
+        imageURL(itemID: artist.id, tag: artist.logoImageTag, type: .logo, width: width)
     }
 
     static func artworkURL(_ playlist: MusicPlaylist, width: Int = 400) -> URL? {

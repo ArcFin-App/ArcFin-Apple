@@ -361,13 +361,11 @@ struct MusicArtistView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DT.Spacing.lg) {
-                // The artist's photo across the top, like an album page, with their name below.
+                // The artist's photo across the top, like an album page, with their logo or name below.
                 MusicHero(play: { play(shuffled: false) }, shuffle: { play(shuffled: true) }) { _ in
-                    MusicHeroImage(url: MusicAPI.artworkURL(artist, width: 1200))
+                    MusicHeroImage(url: heroArtURL(width: 1600))
                 } info: {
-                    Text(verbatim: artist.name)
-                        .font(.largeTitle.weight(.bold))
-                        .foregroundStyle(DT.Color.textPrimary)
+                    MusicArtistTitle(artist: artist)
                 }
                 VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                     if !topSongs.isEmpty {
@@ -442,7 +440,7 @@ struct MusicArtistView: View {
             .padding(.bottom, DT.Spacing.xl)
         }
         .ignoresSafeArea(edges: .top)
-        .musicHeroBackground(MusicAPI.artworkURL(artist, width: 300))
+        .musicHeroBackground(heroArtURL(width: 300))
         .inlineNavigationTitle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -480,6 +478,12 @@ struct MusicArtistView: View {
             appearsOn = await on ?? []
             similar = await like ?? []
         }
+    }
+
+    /// The square hero takes the photo, the wide strip the backdrop; either stands in for the other.
+    private func heroArtURL(width: Int) -> URL? {
+        let photo = MusicAPI.artworkURL(artist, width: width), backdrop = MusicAPI.backdropURL(artist, width: width)
+        return sizeClass == .regular ? backdrop ?? photo : photo ?? backdrop
     }
 
     private func sectionTitle(_ title: LocalizedStringKey) -> some View {

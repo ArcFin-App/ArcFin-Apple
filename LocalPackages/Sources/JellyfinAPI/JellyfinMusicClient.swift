@@ -65,13 +65,15 @@ public struct MusicArtist: Sendable, Identifiable, Equatable, Hashable {
     public var overview: String?
     public var primaryImageTag: String?
     public var backdropImageTags: [String]
+    public var logoImageTag: String?
     public var genres: [String]
     public var isFavorite: Bool
 
     public init(id: String, name: String, overview: String? = nil, primaryImageTag: String? = nil,
-                backdropImageTags: [String] = [], genres: [String] = [], isFavorite: Bool = false) {
+                backdropImageTags: [String] = [], logoImageTag: String? = nil, genres: [String] = [], isFavorite: Bool = false) {
         self.id = id; self.name = name; self.overview = overview; self.primaryImageTag = primaryImageTag
-        self.backdropImageTags = backdropImageTags; self.genres = genres; self.isFavorite = isFavorite
+        self.backdropImageTags = backdropImageTags; self.logoImageTag = logoImageTag
+        self.genres = genres; self.isFavorite = isFavorite
     }
 }
 
@@ -693,7 +695,7 @@ struct MusicItemResponse: Decodable {
 
     var asArtist: MusicArtist {
         MusicArtist(id: id, name: name ?? "", overview: overview, primaryImageTag: imageTags?["Primary"],
-                    backdropImageTags: backdropImageTags ?? [], genres: genres ?? [],
+                    backdropImageTags: backdropImageTags ?? [], logoImageTag: imageTags?["Logo"], genres: genres ?? [],
                     isFavorite: userData?.isFavorite ?? false)
     }
 
