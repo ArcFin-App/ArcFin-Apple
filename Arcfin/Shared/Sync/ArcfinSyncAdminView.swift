@@ -130,7 +130,7 @@ struct AdminPolicyGroupView: View {
         if let value = setting.default {
             parts.append(String(localized: "The app's own default: \(SettingDisplay.value(value, of: setting))."))
         }
-        let platforms = setting.platforms.map { SettingDisplay.platformName($0) }.formatted(.list(type: .and))
+        let platforms = setting.platforms.flatMap { $0 == "iOS" ? ["iOS", "iPadOS"] : [$0] }.map { SettingDisplay.platformName($0) }.formatted(.list(type: .and))
         if !platforms.isEmpty { parts.append(String(localized: "On \(platforms).")) }
         return parts.joined(separator: " ")
     }
