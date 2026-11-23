@@ -313,9 +313,12 @@ extension ArcfinSyncClient {
         try decode(await send("GET", "Admin/Policy", credential: credential, authHeader: authHeader))
     }
 
+    /// What the server saved, which can differ from what was sent: it fills in a lock's value
+    /// and drops what it doesn't keep. Read back when the answer doesn't say.
     public func updatePolicy(credential: ServerCredential, authHeader: String, _ policy: ArcfinSyncPolicy) async throws -> ArcfinSyncPolicy {
         let data = try await send("PUT", "Admin/Policy", body: policy, credential: credential, authHeader: authHeader)
-        return (try? decode(data)) ?? policy
+        if let saved: ArcfinSyncPolicy = try? decode(data) { return saved }
+        return try await fetchPolicy(credential: credential, authHeader: authHeader)
     }
 
     public func fetchAdminUsers(credential: ServerCredential, authHeader: String) async throws -> [ArcfinSyncAdminUser] {
