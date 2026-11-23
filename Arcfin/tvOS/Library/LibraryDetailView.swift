@@ -33,13 +33,13 @@ struct LibraryDetailView: View {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .screenBackground()
-            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive, !model.loadFailed {
+            } else if model.items.isEmpty, model.playlist != nil, !model.filtersActive, !model.isSearching, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "Empty Playlist",
                     description: "Add movies, shows and episodes, or long-press any title and choose Add to Playlist.",
                     buttonTitle: "Add Titles"
                 ) { model.showAddTitles = true }
-            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive, !model.loadFailed {
+            } else if model.items.isEmpty, model.isPlaylistsLibrary, !model.filtersActive, !model.isSearching, !model.loadFailed {
                 PlaylistEmptyState(
                     title: "No Playlists",
                     description: "Make a playlist, then add movies, shows and episodes to it.",
@@ -59,7 +59,6 @@ struct LibraryDetailView: View {
                     ScrollView(showsIndicators: false) {
                         if model.playlist != nil { playlistHeader }
                         tvActionRow
-                        if model.showsLetterIndex { tvLetterRow }
                         LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
                             ForEach(model.gridEntries) { entry in
                                 Group {
@@ -87,12 +86,17 @@ struct LibraryDetailView: View {
                             }
                         }
                         .padding(DT.Spacing.pagePad)
+                        // Room for the A–Z column.
+                        .padding(.trailing, model.showsLetterIndex ? 64 : 0)
                         .accessibilityElement(children: .contain)
                         .accessibilityIdentifier("library.grid")
                         .focusSection()
                         .scrollClipDisabled()
                     }
                     .scrollPosition(id: $scrolledItemID)
+                    .overlay(alignment: .trailing) {
+                        if model.showsLetterIndex { tvLetterColumn }
+                    }
                     .modifier(PlaylistPageStyle(isPlaylist: model.playlist != nil, tint: model.playlistTint))
                     .onChange(of: model.jumpTarget) { _, target in
                         guard let target else { return }
@@ -129,6 +133,7 @@ struct LibraryDetailView: View {
         .onChange(of: model.extraFilters) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
         .onChange(of: model.watchedFilter) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
         .onChange(of: model.favoritesOnly) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
+        .modifier(LibrarySearchModifier(model: model, authManager: authManager, mediaRepo: mediaRepo))
         .fullScreenCover(item: $model.playlistPlayback, onDismiss: {
             PlayQueue.clear()
             reload()
@@ -225,22 +230,19 @@ struct LibraryDetailView: View {
         .focusSection()
     }
 
-    private var tvLetterRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 16) {
-                ForEach(LibraryLetterIndex.letters, id: \.self) { letter in
-                    Button { Task { await model.jump(to: letter, authManager: authManager) } } label: {
-                        TVLetterLabel(letter: letter)
-                    }
-                    .accessibilityLabel(Text("Jump to \(letter)"))
+    /// The A–Z index down the trailing edge, as on the other platforms.
+    private var tvLetterColumn: some View {
+        VStack(spacing: 0) {
+            ForEach(LibraryLetterIndex.letters, id: \.self) { letter in
+                Button { Task { await model.jump(to: letter, authManager: authManager) } } label: {
+                    TVLetterLabel(letter: letter)
                 }
+                .accessibilityLabel(Text("Jump to \(letter)"))
             }
-            .buttonStyle(TVCardButtonStyle())
-            .focusEffectDisabled()
-            .padding(.horizontal, DT.Spacing.pagePad)
-            .padding(.vertical, DT.Spacing.sm)
         }
-        .scrollClipDisabled()
+        .buttonStyle(TVCardButtonStyle())
+        .focusEffectDisabled()
+        .padding(.trailing, DT.Spacing.md)
         .focusSection()
     }
 
