@@ -698,6 +698,63 @@ final class PlayerModel {
         isClosed || Task.isCancelled || generation != setupGeneration
     }
 
+    /// The first audio and subtitle picks: the stream's defaults, Settings › Playback's languages,
+    /// then what this show was last watched with.
+    @discardableResult
+    private func pickTracks(from info: JellyfinPlaybackInfo) -> Bool {
+        selectedAudioIndex = info.defaultAudioStreamIndex
+        // The server only marks a subtitle default when one's flagged default/forced
+        // there — most libraries don't have that set, so "Show Subtitles by Default"
+        // needs its own fallback to the first available track rather than staying nil.
+        if let serverDefault = info.defaultSubtitleStreamIndex {
+            selectedSubtitleIndex = serverDefault
+        } else if UserDefaults.standard.bool(forKey: "subtitleDefault") {
+            selectedSubtitleIndex = info.subtitleStreams.first?.index
+        } else {
+            selectedSubtitleIndex = nil
+        }
+        // Settings > Playback's global language defaults only steer this very first
+        // pick, and only when a track in that language actually exists — a later
+        // change always goes through changeTrack()/reload() instead.
+        var languagePreferenceApplied = false
+        let preferredAudioLang = UserDefaults.standard.string(forKey: "preferredAudioLanguage") ?? ""
+        if !preferredAudioLang.isEmpty,
+           let match = info.audioStreams.first(where: { $0.language == preferredAudioLang }),
+           match.index != selectedAudioIndex {
+            selectedAudioIndex = match.index
+            languagePreferenceApplied = true
+        }
+        let preferredSubtitleLang = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
+        if !preferredSubtitleLang.isEmpty,
+           let match = info.subtitleStreams.first(where: { $0.language == preferredSubtitleLang }),
+           match.index != selectedSubtitleIndex {
+            selectedSubtitleIndex = match.index
+            languagePreferenceApplied = true
+        }
+        // A show's own remembered choice beats the global defaults above.
+        if ShowTrackMemory.isEnabled, item.type == .episode, let seriesId = item.seriesId,
+           let memory = ShowTrackMemory.load(seriesID: seriesId) {
+            if let language = memory.audio,
+               let match = info.audioStreams.first(where: { $0.language == language }),
+               match.index != selectedAudioIndex {
+                selectedAudioIndex = match.index
+                languagePreferenceApplied = true
+            }
+            if memory.subtitlesOff {
+                if selectedSubtitleIndex != nil {
+                    selectedSubtitleIndex = nil
+                    languagePreferenceApplied = true
+                }
+            } else if let language = memory.subtitle,
+                      let match = info.subtitleStreams.first(where: { $0.language == language }),
+                      match.index != selectedSubtitleIndex {
+                selectedSubtitleIndex = match.index
+                languagePreferenceApplied = true
+            }
+        }
+        return languagePreferenceApplied
+    }
+
     private func setup() async {
         guard !isClosed else { return }
         // Before the connection check below, which downloads running alongside would skew.
@@ -726,14 +783,12 @@ final class PlayerModel {
             await primeAutoLadder(credential: credential, authHeader: authHeader)
             guard !setupAbandoned(generation) else { return }
         }
-        loadingStage = String(localized: "Contacting the server…")
+        loadingStage = source.isLocal ? String(localized: "Opening the video…") : String(localized: "Contacting the server…")
         do {
             // The engine is picked before asking the server how to stream, because the answer
             // depends on it: Aether and VLC take the file as is, AVFoundation needs it repackaged.
             // .choose always resolves Auto down to a concrete engine — three outcomes here.
-            let engine = PlaybackEngineSelector.choose(
-                preference: playbackEnginePreference, container: nil, videoStream: nil
-            )
+            let engine = source.engine(for: playbackEnginePreference)
             switch engine {
             case .aether, .auto:
                 if !(player is AetherEnginePlayer) {
@@ -749,56 +804,7 @@ final class PlayerModel {
             }
             var info = try await source.playbackInfo(for: item, PlaybackInfoRequest(
                 mediaSourceId: selectedMediaSourceId, quality: qualityCap(for: quality), nativeDecoder: decodesNatively))
-            selectedAudioIndex = info.defaultAudioStreamIndex
-            // The server only marks a subtitle default when one's flagged default/forced
-            // there — most libraries don't have that set, so "Show Subtitles by Default"
-            // needs its own fallback to the first available track rather than staying nil.
-            if let serverDefault = info.defaultSubtitleStreamIndex {
-                selectedSubtitleIndex = serverDefault
-            } else if UserDefaults.standard.bool(forKey: "subtitleDefault") {
-                selectedSubtitleIndex = info.subtitleStreams.first?.index
-            } else {
-                selectedSubtitleIndex = nil
-            }
-            // Settings > Playback's global language defaults only steer this very first
-            // pick, and only when a track in that language actually exists — a later
-            // change always goes through changeTrack()/reload() instead.
-            var languagePreferenceApplied = false
-            let preferredAudioLang = UserDefaults.standard.string(forKey: "preferredAudioLanguage") ?? ""
-            if !preferredAudioLang.isEmpty,
-               let match = info.audioStreams.first(where: { $0.language == preferredAudioLang }),
-               match.index != selectedAudioIndex {
-                selectedAudioIndex = match.index
-                languagePreferenceApplied = true
-            }
-            let preferredSubtitleLang = UserDefaults.standard.string(forKey: "preferredSubtitleLanguage") ?? ""
-            if !preferredSubtitleLang.isEmpty,
-               let match = info.subtitleStreams.first(where: { $0.language == preferredSubtitleLang }),
-               match.index != selectedSubtitleIndex {
-                selectedSubtitleIndex = match.index
-                languagePreferenceApplied = true
-            }
-            // A show's own remembered choice beats the global defaults above.
-            if ShowTrackMemory.isEnabled, item.type == .episode, let seriesId = item.seriesId,
-               let memory = ShowTrackMemory.load(seriesID: seriesId) {
-                if let language = memory.audio,
-                   let match = info.audioStreams.first(where: { $0.language == language }),
-                   match.index != selectedAudioIndex {
-                    selectedAudioIndex = match.index
-                    languagePreferenceApplied = true
-                }
-                if memory.subtitlesOff {
-                    if selectedSubtitleIndex != nil {
-                        selectedSubtitleIndex = nil
-                        languagePreferenceApplied = true
-                    }
-                } else if let language = memory.subtitle,
-                          let match = info.subtitleStreams.first(where: { $0.language == language }),
-                          match.index != selectedSubtitleIndex {
-                    selectedSubtitleIndex = match.index
-                    languagePreferenceApplied = true
-                }
-            }
+            let languagePreferenceApplied = pickTracks(from: info)
             // Jellyfin negotiates audio/subtitle selection server-side (see changeTrack) —
             // a language default that actually changed the pick needs the same re-fetch
             // with explicit indices before the very first play, not just a local index change.
@@ -866,6 +872,13 @@ final class PlayerModel {
             }
             // The AV1 watchdog started over while this load hung; that attempt owns the player now.
             guard !setupAbandoned(generation) else { return }
+            if let listed = await source.tracksLoaded(on: player, info: info) {
+                guard !setupAbandoned(generation) else { return }
+                info = listed
+                playbackInfo = listed
+                pickTracks(from: listed)
+                await loadSubtitleCues(from: listed)
+            }
             await player.play()
             playStartedAt = Date()
             applyEngineOptions()
@@ -1236,7 +1249,6 @@ final class PlayerModel {
             holdsPlayerActivity = false
             PlayerActivity.shared.closed()
         }
-        source.playerClosed()
     }
 
     /// Closing the player closes the group too — an orphaned WebSocket connection with
@@ -1259,6 +1271,7 @@ final class PlayerModel {
         // Another window's player is still using the shared audio session.
         if PlayerActivity.shared.isPlayerOpen { (player as? AetherEnginePlayer)?.keepsAudioSessionOnStop = true }
         await player.stop()
+        source.playerClosed()
     }
 
     @ObservationIgnored private var isOnScreen = false
@@ -1294,7 +1307,7 @@ final class PlayerModel {
             return
         }
         guard source.unavailableMessage == nil else { return }
-        await source.playbackFinished(item: item, durationTicks: player.durationTicks)
+        await source.playbackFinished(item: item, positionTicks: player.positionTicks, durationTicks: player.durationTicks)
         closePlayer()
     }
 
@@ -1871,6 +1884,12 @@ final class PlayerModel {
     @discardableResult
     private func selectAudioInEngine() async -> Bool {
         guard let info = playbackInfo, info.playMethod == .directPlay, let index = selectedAudioIndex else { return false }
+        // The list is the engine's own, so the index is its id for the track.
+        if source.tracksComeFromEngine {
+            guard player.availableAudioTracks.contains(where: { $0.id == index }) else { return true }
+            if index != player.selectedAudioTrackIndex { await player.setAudioTrack(index: index) }
+            return true
+        }
         // Aether names tracks by their stream index in the file, the same number Jellyfin uses,
         // so it needs no matching by order (which gave up whenever the two lists differed).
         if player is AetherEnginePlayer {
@@ -1961,6 +1980,14 @@ final class PlayerModel {
     }
 
     private func loadSubtitleCues(from info: JellyfinPlaybackInfo) async {
+        if source.tracksComeFromEngine {
+            // A track inside the file is drawn from what the engine decodes; any other leaves it off.
+            let stream = selectedSubtitleIndex.flatMap { index in info.subtitleStreams.first { $0.index == index } }
+            let engineTrack = stream.flatMap { source.drawsSubtitleInEngine($0) ? $0.index : nil }
+            if engineTrack != player.selectedSubtitleTrackIndex || engineTrack == nil {
+                await player.setSubtitleTrack(index: engineTrack)
+            }
+        }
         guard let index = selectedSubtitleIndex,
               let stream = info.subtitleStreams.first(where: { $0.index == index }),
               let location = source.subtitleLocation(for: stream, in: info, item: item)
@@ -2032,6 +2059,12 @@ final class PlayerModel {
                     return
                 }
                 guard reloadIsCurrent(generation) else { return }
+                if let listed = await source.tracksLoaded(on: player, info: info) {
+                    guard reloadIsCurrent(generation) else { return }
+                    carryTrackPicks(from: info, to: listed)
+                    playbackInfo = listed
+                    await loadSubtitleCues(from: listed)
+                }
                 await player.play()
                 applyEngineVolume()
                 watchForMissingPicture()
@@ -2048,6 +2081,19 @@ final class PlayerModel {
                 errorMessage = PlaybackErrorText.message(for: error, isLive: isLive)
             }
         }
+    }
+
+    /// Another engine numbers the file's tracks its own way: the same picks, by their place in the list.
+    private func carryTrackPicks(from old: JellyfinPlaybackInfo, to new: JellyfinPlaybackInfo) {
+        func carried(_ index: Int?, _ oldStreams: [JellyfinMediaStream], _ newStreams: [JellyfinMediaStream]) -> Int? {
+            guard let index else { return nil }
+            if let stream = oldStreams.first(where: { $0.index == index }), stream.isExternal { return index }
+            guard let position = oldStreams.firstIndex(where: { $0.index == index }), newStreams.indices.contains(position)
+            else { return newStreams.contains { $0.index == index } ? index : nil }
+            return newStreams[position].index
+        }
+        selectedAudioIndex = carried(selectedAudioIndex, old.audioStreams, new.audioStreams) ?? new.defaultAudioStreamIndex
+        selectedSubtitleIndex = carried(selectedSubtitleIndex, old.subtitleStreams, new.subtitleStreams)
     }
 
     private func reloadIsCurrent(_ generation: Int) -> Bool {

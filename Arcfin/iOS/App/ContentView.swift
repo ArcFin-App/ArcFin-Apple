@@ -83,7 +83,8 @@ struct ContentView: View {
                     }
                     .navigationDestination(isPresented: $navigateToOfflineLocalPlayer) {
                         if let url = offlinePickedURL {
-                            LocalPlayerView(url: url)
+                            PlayerView(fileURL: url)
+                                .toolbar(.hidden, for: .navigationBar)
                                 .toolbar(.hidden, for: .tabBar)
                         }
                     }

@@ -74,7 +74,8 @@ struct LibraryView: View {
             }
             .navigationDestination(isPresented: $model.navigateToLocalPlayer) {
                 if let url = model.pickedURL {
-                    LocalPlayerView(url: url)
+                    PlayerView(fileURL: url)
+                        .toolbar(.hidden, for: .navigationBar)
                         .toolbar(.hidden, for: .tabBar)
                 }
             }

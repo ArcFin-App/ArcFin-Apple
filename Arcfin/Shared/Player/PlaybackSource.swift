@@ -54,6 +54,10 @@ struct PlaybackDetails {
 @MainActor
 protocol PlaybackSource: AnyObject {
     var capabilities: PlaybackCapabilities { get }
+    /// Plays from this device, with nothing asked of a server.
+    var isLocal: Bool { get }
+    /// The engine to open the stream with, for Settings › Playback › Playback Engine.
+    func engine(for preference: PlaybackEngineKind) -> PlaybackEngineKind
     /// The list of tracks is the engine's own, read once the file is open, so a track's index is
     /// the engine's id for it.
     var tracksComeFromEngine: Bool { get }
@@ -82,13 +86,18 @@ protocol PlaybackSource: AnyObject {
     func positionChanged(ticks: Int64, durationTicks: Int64, status: PlaybackStatus)
     func reportProgress(_ progress: PlaybackProgressReport) async
     func playbackStopped(_ stop: PlaybackStopReport) async
-    func playbackFinished(item: MediaItem, durationTicks: Int64) async
+    func playbackFinished(item: MediaItem, positionTicks: Int64, durationTicks: Int64) async
     /// The engine to try when Aether can't open the stream.
     func fallbackEngine(for info: JellyfinPlaybackInfo) -> any MediaPlayerProtocol
+    /// The player has closed and its engine has stopped.
     func playerClosed()
 }
 
 extension PlaybackSource {
+    var isLocal: Bool { false }
+    func engine(for preference: PlaybackEngineKind) -> PlaybackEngineKind {
+        PlaybackEngineSelector.choose(preference: preference, container: nil, videoStream: nil)
+    }
     var tracksComeFromEngine: Bool { false }
     func attach(authManager: AuthManager, mediaRepo: MediaRepository) {}
     func startPosition() async -> (ticks: Int64, decided: Bool)? { nil }
@@ -269,7 +278,7 @@ final class ServerPlaybackSource: PlaybackSource {
         NotificationCenter.default.post(name: .arcfinPlaybackReported, object: nil)
     }
 
-    func playbackFinished(item: MediaItem, durationTicks: Int64) async {
+    func playbackFinished(item: MediaItem, positionTicks: Int64, durationTicks: Int64) async {
         guard let credential, let authHeader else { return }
         _ = try? await client.markWatched(credential: credential, authHeader: authHeader, itemId: item.id, watched: true)
     }

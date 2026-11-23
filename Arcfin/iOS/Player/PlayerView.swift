@@ -94,6 +94,12 @@ struct PlayerView: View {
                                                  source: source))
     }
 
+    /// A video picked from Files.
+    init(fileURL: URL) {
+        let source = FilePlaybackSource(url: fileURL)
+        self.init(item: source.item, source: source)
+    }
+
     var body: some View {
         bodyContent.alwaysDarkPlayer()
     }

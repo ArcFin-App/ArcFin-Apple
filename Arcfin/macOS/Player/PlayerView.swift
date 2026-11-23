@@ -39,6 +39,10 @@ struct PlayerView: View {
             dismissWindow()
             return
         }
+        if model.source.isLocal {
+            dismiss()
+            return
+        }
         playbackPresenter.dismiss()
     }
 
@@ -80,6 +84,12 @@ struct PlayerView: View {
         self.onPlayNext = onPlayNext
         _model = State(initialValue: PlayerModel(item: item, startPositionTicks: startPositionTicks, onPlayNext: onPlayNext,
                                                  source: source))
+    }
+
+    /// A video picked from Files.
+    init(fileURL: URL) {
+        let source = FilePlaybackSource(url: fileURL)
+        self.init(item: source.item, source: source)
     }
 
     var body: some View {
