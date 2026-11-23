@@ -27,7 +27,7 @@ Each platform gets an interface of its own rather than a stretched phone app: Li
 
 ## Get Arcfin
 
-You need your own [Jellyfin](https://jellyfin.org) server, or an account on one. Every build first goes to a small internal beta, then to the public beta that anyone can join.
+You need your own [Jellyfin](https://jellyfin.org) server, or an account on one. Every build first goes to a small internal beta as a nightly, and only a nightly the internal testers approve goes on to the public beta that anyone can join.
 
 ### Public beta
 
@@ -37,8 +37,11 @@ Public builds go through Apple's TestFlight review first. A new version usually 
 
 ### Internal beta
 
-Internal testers get each build **as soon as it's uploaded**, before it's sent to Apple's review for the public beta. They test it first, and only builds that pass go on to the public beta.
+Internal testers get a **nightly build**. Every night at midnight Irish time, if anything has changed since the last one, Arcfin builds the newest code and sends it to them on iPhone, iPad, Mac and Apple TV. They test it first: once a nightly has held up and they've approved it, that build goes on to the public beta.
 
+- **Apple checks every nightly first.** Most get through within a few hours, depending on how quickly Apple's reviewers get to them, so a nightly often arrives in the morning rather than at midnight.
+- **A new version takes longer.** The first build of each new version gets Apple's full review, which usually takes 1 to 3 days. After a version change, nightlies can wait in line until Apple approves it.
+- **Sometimes there's more than one a day,** when an urgent fix can't wait until midnight.
 - **Seats are limited.** To ask for one, email **[support.arcfin@psmattas.com](mailto:support.arcfin@psmattas.com)** with the Apple Account email to invite and the devices you'd test on.
 - **Expect rough edges.** Internal builds are the newest and least tested, so please report problems with **Settings › About › Report a Problem**.
 
@@ -54,8 +57,8 @@ Internal testers get each build **as soon as it's uploaded**, before it's sent t
 
 Arcfin moves to a rolling cycle. New features and improvements go through three stages:
 
-1. **Internal builds** go to the [internal beta](#internal-beta) first, as soon as they're ready. Anyone can ask for a seat.
-2. **Nightly builds** go to the [public beta](#public-beta) on TestFlight. It's the same invite link, so nothing changes if you've already joined.
+1. **Nightly builds** go to the [internal beta](#internal-beta) every night something has changed. Anyone can ask for a seat.
+2. **Approved nightlies** go to the [public beta](#public-beta) on TestFlight, once the internal testers have used a nightly and approved it. It's the same invite link, so nothing changes if you've already joined.
 3. **App Store updates** reach everyone once both beta groups have used a build without problems.
 
 **Security fixes** skip the wait. They go out as fast as the targets in [SECURITY.md](SECURITY.md#what-happens-next), on TestFlight and on the App Store.

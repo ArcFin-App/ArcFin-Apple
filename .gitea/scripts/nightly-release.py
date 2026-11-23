@@ -68,7 +68,7 @@ def prune(keep: int) -> None:
 
 def main() -> int:
     tag = os.environ["NIGHTLY_TAG"]
-    day = tag.removeprefix("nightly-")
+    day = tag.split("-")[1]
     call("POST", "/tags", {"tag_name": tag, "target": os.environ["SHA"],
                            "message": f"Nightly {os.environ['VERSION']} build {os.environ['BUILD']}"})
     call("POST", "/releases", {

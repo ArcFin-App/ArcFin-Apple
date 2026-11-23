@@ -1,13 +1,14 @@
 name: Nightly
 
-# Every night at midnight UK time, main goes to the Arcfin Nightly Builds TestFlight group on
-# all three platforms, when it has commits since the last nightly and isn't a release build.
-# Its build number is the project's with the date after it (1.20261124), so nothing is
-# committed and it never takes a number a release PR will need. Each nightly gets an unsigned
-# nightly-<date> tag and a pre-release; the last 14 are kept.
+# Every night at midnight Irish time, main goes to the Arcfin Nightly Builds TestFlight group
+# on all three platforms, when it has commits since the last nightly and isn't a release build.
+# Its build number is the project's with the Unix time after it (2.1764028800), so nothing is
+# committed, it never takes a number a release PR will need, and running it again the same
+# day (a hotfix) still works. Each nightly gets an unsigned nightly-<date>-<unix time> tag and
+# a pre-release; the last 14 are kept.
 on:
   schedule:
-    # 23:00 and 00:00 UTC: one of them is midnight in London, GMT or BST.
+    # 23:00 and 00:00 UTC: one of them is midnight in Dublin, winter or summer.
     - cron: '0 0,23 * * *'
   workflow_dispatch:
     inputs:
