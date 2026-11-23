@@ -208,8 +208,10 @@ struct MusicAlbumView: View {
             songs = try await tracks
             if let full = try? await full { album = full }
             hasFailed = false
+        } catch where Task.isCancelled || SeerrRepository.isCancellation(error) {
+            return
         } catch {
-            hasFailed = !(error is CancellationError)
+            hasFailed = true
         }
         hasLoaded = true
         guard let artistID = album.albumArtists.first?.id else { return }

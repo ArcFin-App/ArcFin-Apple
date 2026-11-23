@@ -10,6 +10,8 @@ struct MusicSongsView: View {
     var favoritesOnly = false
     @AppStorage("music.songSort") private var sort: MusicSort = .name
     @State private var list: MusicPagedList<MusicSong>?
+    /// The sort and search `list` was made for.
+    @State private var listKey: String?
     @State private var query = ""
     @State private var term: String?
 
@@ -50,17 +52,21 @@ struct MusicSongsView: View {
             }
         }
         .task(id: "\(sort.rawValue)-\(term ?? "")") {
-            let libraryID = libraryID, sort = sort, filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
-            let list = MusicPagedList<MusicSong> { start in
-                let page = try await MusicAPI.call {
-                    try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
-                                                ascending: sort != .dateAdded && sort != .playCount, filter: filter,
-                                                startIndex: start)
+            // The task runs again on coming back from a pushed screen; the list and its place stay.
+            let key = "\(sort.rawValue)-\(term ?? "")"
+            if key != listKey {
+                let libraryID = libraryID, sort = sort, filter = MusicFilter(favoritesOnly: favoritesOnly, searchTerm: term)
+                list = MusicPagedList<MusicSong> { start in
+                    let page = try await MusicAPI.call {
+                        try await $0.getMusicTracks(credential: $1, authHeader: $2, libraryId: libraryID, sort: sort,
+                                                    ascending: sort != .dateAdded && sort != .playCount, filter: filter,
+                                                    startIndex: start)
+                    }
+                    return (page.tracks, page.total)
                 }
-                return (page.tracks, page.total)
+                listKey = key
             }
-            self.list = list
-            await list.loadIfNeeded()
+            await list?.loadIfNeeded()
         }
     }
 
