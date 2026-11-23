@@ -83,9 +83,13 @@ def what_to_test() -> str:
             subject = line.rstrip("\n").split("\t")[0].strip()
             if subject and not UNDER_THE_HOOD.match(subject):
                 lines.append(f"• {subject}.")
-    intro = (f"Nightly build {os.environ['VERSION']} ({os.environ['BUILD']}). Nightlies are built from "
-             "everything finished so far and haven't been tested like a release, so expect the odd rough edge.\n\n"
-             "Changed since the last nightly:\n\n")
+    if os.environ.get("MODE") == "release":
+        intro = (f"Arcfin {os.environ['VERSION']} ({os.environ['BUILD']}). This build goes on to the public beta "
+                 "once it has held up here, so please give it a good try.\n\nChanged since the last release:\n\n")
+    else:
+        intro = (f"Nightly build {os.environ['VERSION']} ({os.environ['BUILD']}). Nightlies are built from "
+                 "everything finished so far and haven't been tested like a release, so expect the odd rough edge.\n\n"
+                 "Changed since the last nightly:\n\n")
     if not lines:
         lines = ["• Small fixes and changes under the hood."]
     # TestFlight's limit is 4000 characters.

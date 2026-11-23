@@ -14,6 +14,9 @@ concurrency:
 
 jobs:
   upload:
+    # The nightly workflow uploads and tags release builds itself; the tags it makes don't
+    # start a second upload.
+    if: github.actor != 'gitea-actions'
     runs-on: macos
     defaults:
       run:
