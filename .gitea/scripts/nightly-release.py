@@ -1,14 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Tags tonight's upload and makes its Gitea release.
+"""Publishes the Gitea pre-release for tonight's tag, then removes nightlies past the last KEEP.
 
-- Nightly: an unsigned nightly-<date>-<unix time> tag and a published pre-release; nightlies
-  past the last KEEP are removed.
-- Release: an unsigned <Platform>-<version>-build-<N> tag and a draft pre-release for each
-  platform that uploaded, in the release notes' usual layout, for sorting into New, Improved
-  and Fixed before publishing.
-
-CI has no signing key, so the tags aren't signed. testflight.yml skips tags CI made, so a tag
-from here never starts a second upload.
+One release covers every platform that uploaded. A build that goes to the App Store is made a
+full release by hand, which keeps it: only pre-releases of this scheme's tags (and the older
+nightly-<date> ones) are removed. A release that's already there is left as it is, so a run
+can be repeated.
 """
 
 import json
@@ -21,19 +17,36 @@ import urllib.request
 
 API = os.environ["API"]
 REPO = f"{os.environ['SERVER_URL']}/{os.environ['REPOSITORY']}"
-VERSION, BUILD, SHA = os.environ["VERSION"], os.environ["BUILD"], os.environ["SHA"]
-LABELS = {"iOS": "iOS/iPadOS", "macOS": "macOS", "tvOS": "tvOS"}
+VERSION, BUILD, SHA, TAG = os.environ["VERSION"], os.environ["BUILD"], os.environ["SHA"], os.environ["TAG"]
+PREVIOUS = os.environ.get("PREVIOUS", "")
+UPLOADED = os.environ["UPLOADED"].split()
 TITLES = {"iOS": "iOS & iPadOS", "macOS": "macOS", "tvOS": "tvOS"}
 BADGES = {"iOS": "iOS%20%7C%20iPadOS", "macOS": "macOS", "tvOS": "tvOS"}
+PRUNED = ("v", "nightly-")
 
 
 def call(method: str, path: str, body: dict | None = None):
     request = urllib.request.Request(API + path, method=method, data=json.dumps(body).encode() if body else None,
                                      headers={"Authorization": f"token {os.environ['TOKEN']}",
                                               "Content-Type": "application/json"})
-    with urllib.request.urlopen(request, timeout=60) as response:
-        text = response.read()
-        return json.loads(text) if text else None
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            text = response.read()
+            return json.loads(text) if text else None
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode(errors="replace")[:300]
+        sys.exit(f"::error::{method} {path}: {error.code} {detail}")
+
+
+def exists(path: str) -> bool:
+    request = urllib.request.Request(API + path, headers={"Authorization": f"token {os.environ['TOKEN']}"})
+    try:
+        urllib.request.urlopen(request, timeout=60).close()
+        return True
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return False
+        raise
 
 
 def changes() -> list[str]:
@@ -46,54 +59,31 @@ def changes() -> list[str]:
     return lines or ["- Small fixes and changes under the hood."]
 
 
-def nightly() -> None:
-    tag, previous = os.environ["NIGHTLY_TAG"], os.environ.get("PREVIOUS_TAG", "")
-    day = tag.split("-")[1]
-    platforms = " · ".join(TITLES[p] for p in os.environ["UPLOADED"].split())
-    body = "\n".join([
-        f"> **Nightly build.** Built from `main` at {SHA[:8]} for the internal beta. It hasn't been tested "
-        "like a release. It reaches testers once Apple's beta review approves it, usually within a few hours.",
-        "",
-        f"**Version:** {VERSION} ({BUILD}) · **Uploaded:** {platforms}",
-        "",
-        "## Changes",
-        *changes(),
-        "",
-        f"**Full changes:** [{previous}...{tag}]({REPO}/compare/{previous}...{tag})" if previous
-        else f"**Commit:** [{SHA[:8]}]({REPO}/commit/{SHA})",
-    ])
-    call("POST", "/tags", {"tag_name": tag, "target": SHA, "message": f"Nightly {VERSION} build {BUILD}"})
-    call("POST", "/releases", {
-        "tag_name": tag, "name": f"Arcfin Nightly {day[:4]}-{day[4:6]}-{day[6:8]} · {VERSION} ({BUILD})",
-        "body": body, "draft": False, "prerelease": True,
-    })
-    print(f"Published {tag}")
-    try:
-        prune(int(os.environ.get("KEEP", "14")))
-    except urllib.error.HTTPError as error:
-        print(f"::warning::Couldn't remove old nightlies: HTTP {error.code}")
+def first_of_version() -> bool:
+    """Build 1 of this version, with no earlier build of it tagged (in this scheme or the older
+    per-platform tags)."""
+    if BUILD.split(".")[0] != "1":
+        return False
+    tags = subprocess.run(["git", "tag", "-l", f"v{VERSION}-build-*", f"*-{VERSION}-build-*"],
+                          capture_output=True, text=True).stdout.split()
+    return not [t for t in tags if t != TAG]
 
 
-def previous_tag(platform: str) -> str:
-    """The platform's last release tag before this one, for the compare link."""
-    found = subprocess.run(["git", "describe", "--tags", "--abbrev=0", "--match", f"{platform}-*-build-*", SHA],
-                           capture_output=True, text=True)
-    return found.stdout.strip() if found.returncode == 0 else ""
-
-
-def release(platform: str) -> None:
-    tag = f"{platform}-{VERSION}-build-{BUILD}"
-    previous = previous_tag(platform)
-    wait = ("This is a new version, so Apple's TestFlight review usually takes **1 to 3 days** before it "
-            "reaches testers." if BUILD == "1" else
+def body() -> str:
+    wait = ("This is the first build of a new version, so Apple's TestFlight review usually takes "
+            "**1 to 3 days** before it reaches testers." if first_of_version() else
             "This is a new build of an existing version, so Apple's TestFlight review is usually done "
             "**within 24 hours**, though it can take as long as a new version (up to 3 days).")
-    body = "\n".join([
+    platforms = "%20%7C%20".join(BADGES[p] for p in UPLOADED)
+    return "\n".join([
         '[<img src="https://git.psmattas.com/ArcFin/ArcFin/media/branch/main/assets/badges/testflight-badge.png" '
         'alt="Available on TestFlight" height="48">](https://testflight.apple.com/join/kkC58n2w)',
         "",
         f"![Version](https://img.shields.io/badge/version-{VERSION}%20(build%20{BUILD})-blue) "
-        f"![Platform](https://img.shields.io/badge/platform-{BADGES[platform]}-lightgrey?logo=apple&logoColor=white)",
+        f"![Platform](https://img.shields.io/badge/platform-{platforms}-lightgrey?logo=apple&logoColor=white)",
+        "",
+        f"Built from `main` at {SHA[:8]} for the internal beta. A build the internal testers approve goes on "
+        "to the public beta, and then the App Store.",
         "",
         "> **When will I get this build?**",
         ">",
@@ -105,30 +95,23 @@ def release(platform: str) -> None:
         ">",
         "> Thanks for your patience.",
         "",
-        "<!-- Made at midnight by the nightly workflow. Sort these into ## New, ## Improved, ## Fixed, "
-        "## Removed and ## Under the hood, keep only what affects this platform, then publish. -->",
         "## Changes",
         *changes(),
         "",
-        f"**Full changes:** [{previous}...{tag}]({REPO}/compare/{previous}...{tag})" if previous
+        f"**Full changes:** [{PREVIOUS}...{TAG}]({REPO}/compare/{PREVIOUS}...{TAG})" if PREVIOUS
         else f"**Commit:** [{SHA[:8]}]({REPO}/commit/{SHA})",
     ])
-    call("POST", "/tags", {"tag_name": tag, "target": SHA, "message": f"{LABELS[platform]} {VERSION} build {BUILD}"})
-    call("POST", "/releases", {
-        "tag_name": tag, "name": f"Arcfin {VERSION} (Build {BUILD}) · {TITLES[platform]}",
-        "body": body, "draft": True, "prerelease": True,
-    })
-    print(f"Tagged {tag} and drafted its release")
 
 
 def prune(keep: int) -> None:
-    nightlies, page = [], 1
+    releases, page = [], 1
     while True:
-        releases = call("GET", f"/releases?limit=50&page={page}") or []
-        nightlies += [r for r in releases if r["tag_name"].startswith("nightly-")]
-        if len(releases) < 50:
+        batch = call("GET", f"/releases?limit=50&page={page}") or []
+        releases += batch
+        if len(batch) < 50:
             break
         page += 1
+    nightlies = [r for r in releases if r["prerelease"] and not r["draft"] and r["tag_name"].startswith(PRUNED)]
     nightlies.sort(key=lambda r: r["created_at"], reverse=True)
     for old in nightlies[keep:]:
         call("DELETE", f"/releases/{old['id']}")
@@ -137,11 +120,16 @@ def prune(keep: int) -> None:
 
 
 def main() -> int:
-    if os.environ.get("MODE") == "release":
-        for platform in os.environ["UPLOADED"].split():
-            release(platform)
+    if exists(f"/releases/tags/{urllib.parse.quote(TAG, safe='')}"):
+        print(f"{TAG} already has a release")
     else:
-        nightly()
+        # The title's "Arcfin <version> (Build <n>) ·" start is what the README's version badge reads.
+        call("POST", "/releases", {
+            "tag_name": TAG, "name": f"Arcfin {VERSION} (Build {BUILD}) · {' · '.join(TITLES[p] for p in UPLOADED)}",
+            "body": body(), "draft": False, "prerelease": True,
+        })
+        print(f"Published {TAG}")
+    prune(int(os.environ.get("KEEP", "14")))
     return 0
 
 

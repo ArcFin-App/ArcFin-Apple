@@ -2,8 +2,8 @@
 
 import XCTest
 
-/// Captures the main screens for a release's screenshots. testflight.yml runs it after each
-/// upload and attaches the result to the release. It signs in to Jellyfin's public demo
+/// Captures the main screens for a release's screenshots. screenshots.yml runs it when a
+/// build's release is made a full release and attaches the result to that release. It signs in to Jellyfin's public demo
 /// server and opens the first item it finds, since the demo library changes; if the server
 /// can't be reached, every test skips.
 ///

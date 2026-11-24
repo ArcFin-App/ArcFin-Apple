@@ -3,6 +3,8 @@
 
 For each platform in UPLOADED: waits for App Store Connect to finish processing the build, sets
 its What to Test, adds it to GROUP and submits it for beta review, which external groups need.
+SWEEP_ONLY=1 instead submits each platform's newest build in GROUP that was never submitted;
+UPLOADED_CHECK=1 prints the platforms that have this VERSION and BUILD on App Store Connect.
 
 The App Store Connect token is signed with the openssl command line, so this needs nothing
 beyond the standard library.
@@ -84,13 +86,10 @@ def what_to_test() -> str:
             subject = line.rstrip("\n").split("\t")[0].strip()
             if subject and not UNDER_THE_HOOD.match(subject):
                 lines.append(f"• {subject}.")
-    if os.environ.get("MODE") == "release":
-        intro = (f"Arcfin {os.environ['VERSION']} ({os.environ['BUILD']}). This build goes on to the public beta "
-                 "once it has held up here, so please give it a good try.\n\nChanged since the last release:\n\n")
-    else:
-        intro = (f"Nightly build {os.environ['VERSION']} ({os.environ['BUILD']}). Nightlies are built from "
-                 "everything finished so far and haven't been tested like a release, so expect the odd rough edge.\n\n"
-                 "Changed since the last nightly:\n\n")
+    intro = (f"Nightly build {os.environ['VERSION']} ({os.environ['BUILD']}). Nightlies are built from "
+             "everything finished so far and haven't been tested like a release, so expect the odd rough edge. "
+             "One that holds up goes on to the public beta and the App Store.\n\n"
+             "Changed since the last build:\n\n")
     if not lines:
         lines = ["• Small fixes and changes under the hood."]
     # TestFlight's limit is 4000 characters.
@@ -128,6 +127,18 @@ def find_build(app_id: str, platform: str) -> dict | None:
     return None
 
 
+def uploaded(app_id: str, platform: str) -> bool:
+    """This version and build is on App Store Connect for the platform, in any state."""
+    status, reply = call("GET", "/builds", query={
+        "filter[app]": app_id,
+        "filter[version]": os.environ["BUILD"],
+        "filter[preReleaseVersion.version]": os.environ["VERSION"],
+        "filter[preReleaseVersion.platform]": PLATFORMS[platform],
+        "limit": "1",
+    })
+    return status == 200 and bool(reply.get("data"))
+
+
 def set_what_to_test(build_id: str, locale: str, platform: str, notes: str) -> bool:
     """TestFlight's What to Test, which the API calls whatsNew."""
     _, reply = call("GET", f"/builds/{build_id}/betaBuildLocalizations")
@@ -159,7 +170,8 @@ def distribute(app_id: str, locale: str, group_id: str, platform: str, notes: st
 
     status, reply = call("POST", f"/betaGroups/{group_id}/relationships/builds",
                          {"data": [{"type": "builds", "id": build_id}]})
-    if status >= 300:
+    # 409: already in the group, from a run that stopped after this.
+    if status >= 300 and status != 409:
         print(f"::error::{platform}: couldn't add the build to the group: {first_error(reply)}")
         return False
 
@@ -222,6 +234,9 @@ def main() -> int:
         return 1
     app_id = apps[0]["id"]
     locale = apps[0]["attributes"].get("primaryLocale") or "en-US"
+    if os.environ.get("UPLOADED_CHECK") == "1":
+        print(" ".join(p for p in PLATFORMS if uploaded(app_id, p)))
+        return 0
 
     _, reply = call("GET", f"/apps/{app_id}/betaGroups", query={"limit": "200"})
     group = next((g for g in reply.get("data") or [] if g["attributes"]["name"] == os.environ["GROUP"]), None)
