@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import JellyfinAPI
 import AuthCore
 
 /// Replaces the whole tab bar/nav chrome — not just Home's content — when the server can't
@@ -15,6 +16,7 @@ struct NoConnectionContent<MoreActions: View>: View {
 
     @Environment(AuthManager.self) private var authManager
     @Environment(MediaRepository.self) private var mediaRepo
+    @State private var now = Date.now
 
     private let tips = [
         String(localized: "Check that Wi-Fi or Mobile Data is turned on"),
@@ -31,20 +33,25 @@ struct NoConnectionContent<MoreActions: View>: View {
                 VStack(spacing: 28) {
                     Spacer().frame(height: 40)
 
-                    Image(systemName: "wifi.slash")
-                        .scaledFont(size: 44, weight: .medium)
-                        .foregroundStyle(DT.Color.textSecondary)
-
-                    VStack(spacing: 8) {
-                        Text("Can't Reach Your Server")
-                            .font(.system(.title2, design: .default, weight: .bold))
-                            .foregroundStyle(DT.Color.textPrimary)
-                        Text("Arcfin couldn't load anything from your Jellyfin server.")
-                            .font(.system(.footnote))
+                    if let maintenance {
+                        MaintenanceNotice(window: maintenance)
+                    } else {
+                        Image(systemName: "wifi.slash")
+                            .scaledFont(size: 44, weight: .medium)
                             .foregroundStyle(DT.Color.textSecondary)
-                            .multilineTextAlignment(.center)
+
+                        VStack(spacing: 8) {
+                            Text("Can't Reach Your Server")
+                                .font(.system(.title2, design: .default, weight: .bold))
+                                .foregroundStyle(DT.Color.textPrimary)
+                            Text("Arcfin couldn't load anything from your Jellyfin server.")
+                                .font(.system(.footnote))
+                                .foregroundStyle(DT.Color.textSecondary)
+                                .multilineTextAlignment(.center)
+                        }
                     }
 
+                    if maintenance == nil {
                     VStack(alignment: .leading, spacing: 12) {
                         ForEach(tips, id: \.self) { tip in
                             HStack(alignment: .top, spacing: 10) {
@@ -61,6 +68,7 @@ struct NoConnectionContent<MoreActions: View>: View {
                     .frame(maxWidth: 340, alignment: .leading)
                     .padding(16)
                     .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
+                    }
 
                     VStack(spacing: 12) {
                         Button {
@@ -77,7 +85,7 @@ struct NoConnectionContent<MoreActions: View>: View {
                             .background(DT.Color.accent, in: RoundedRectangle(cornerRadius: DT.Radius.md))
                         }
                         .buttonStyle(.plain)
-                        .disabled(mediaRepo.isLoading)
+                        .disabled(mediaRepo.isLoading || maintenance != nil)
 
                         moreActions
 
@@ -90,6 +98,19 @@ struct NoConnectionContent<MoreActions: View>: View {
                 .padding(.bottom, 40)
             }
         }
+        // During maintenance nothing is retried until the window ends; then once.
+        .task(id: maintenance?.id) {
+            guard let window = maintenance else { return }
+            try? await Task.sleep(for: .seconds(max(1, window.ends.timeIntervalSinceNow + 5)))
+            guard !Task.isCancelled else { return }
+            now = .now
+            retry()
+        }
+    }
+
+    /// The admin's planned window the server is down for, from the notices kept on this device.
+    private var maintenance: MaintenanceWindow? {
+        ServerCompanion.shared.currentNotices()?.currentMaintenance(at: now)
     }
 
     private func retry() {

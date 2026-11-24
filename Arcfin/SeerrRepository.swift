@@ -3,6 +3,7 @@
 import Foundation
 import Observation
 import SeerrAPI
+import JellyfinAPI
 import AuthCore
 import Telemetry
 // Needed for the privacy-annotated string interpolation in the error logs below — Telemetry
@@ -72,7 +73,13 @@ final class SeerrRepository {
     var hasCatalog: Bool { client != nil || tmdb != nil }
 
     func reloadTMDB() {
-        tmdb = TMDBCredential.load().map(TMDBClient.init(key:))
+        let auth = AppServices.authManager
+        if ServerCompanion.shared.integrations.tmdb, case .authenticated(let credential) = auth.state {
+            tmdb = TMDBClient(serverProxy: ArcfinCompanionClient.tmdbProxyBase(credential.baseURL),
+                              jellyfinAuthorization: auth.authClient.authHeader(token: credential.accessToken))
+        } else {
+            tmdb = TMDBCredential.load().map(TMDBClient.init(key:))
+        }
         tmdbDetails = [:]
         resetRetry()
     }
@@ -141,11 +148,12 @@ final class SeerrRepository {
         let trimURL  = urlString.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimUser = username.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
-        let viaQuickConnect = authMethod == .jellyfin && trimPass.isEmpty && authorizeQuickConnect != nil
+        let viaQuickConnect = authMethod.usesQuickConnect(password: trimPass) && authorizeQuickConnect != nil
         // The username is set once someone chooses to connect, Quick Connect or not.
         guard !trimURL.isEmpty, !trimUser.isEmpty, viaQuickConnect || !trimPass.isEmpty,
               let url = URL(string: trimURL) else {
             client = nil
+            isThroughServer = false
             configuredURL = ""; configuredUsername = ""; configuredPassword = ""
             currentUser = nil; canManageRequests = false; publicSettings = nil; authFailed = false
             trending = []; popularMovies = []; popularTV = []; requests = []; watchlist = []
@@ -161,6 +169,7 @@ final class SeerrRepository {
         }
         // Clear any persisted auth-failure cooldown when credentials change.
         if let old = client { Task { await old.clearAuthFailure() } }
+        isThroughServer = false
         configuredURL = trimURL; configuredUsername = trimUser
         configuredPassword = trimPass; configuredMethod = authMethod
         client = SeerrHTTPClient(baseURL: url, username: trimUser, password: trimPass,
@@ -168,6 +177,33 @@ final class SeerrRepository {
                                  onSavedPasswordRejected: onSavedPasswordRejected)
         resetRetry()
         // A different Seerr user, whose permissions and quota are their own.
+        currentUser = nil
+        canManageRequests = false
+        publicSettings = nil
+        authFailed = false
+        cachedRegion = nil
+        trending = []; popularMovies = []; popularTV = []; requests = []; watchlist = []
+        upcomingMovies = []; upcomingTV = []; movieGenres = []; tvGenres = []
+    }
+
+    /// Whether Seerr is reached through the server's Arcfin Sync plugin rather than signed in to here.
+    private(set) var isThroughServer = false
+
+    /// Seerr through the server: the plugin holds the key and calls Seerr as this Jellyfin user,
+    /// so there's nothing to sign in to. Replaces any direct connection until the server stops
+    /// offering it.
+    func configureThroughServer(credential: ServerCredential, authorization: String) {
+        let proxy = ArcfinCompanionClient.seerrProxyBase(credential.baseURL)
+        let owner = "server:\(credential.id.uuidString)"
+        if client != nil, isThroughServer, configuredURL == proxy.absoluteString, configuredUsername == owner,
+           configuredPassword == authorization {
+            return
+        }
+        configuredURL = proxy.absoluteString; configuredUsername = owner
+        configuredPassword = authorization; configuredMethod = .jellyfin
+        client = SeerrHTTPClient(serverProxy: proxy, jellyfinAuthorization: authorization)
+        isThroughServer = true
+        resetRetry()
         currentUser = nil
         canManageRequests = false
         publicSettings = nil
@@ -376,15 +412,19 @@ final class SeerrRepository {
     /// Someone already asked for this title: Seerr answers a duplicate request with 409.
     struct AlreadyRequested: Error {}
 
-    func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
+    /// True when the server couldn't reach Seerr and kept the request to send later.
+    @discardableResult
+    func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws -> Bool {
         guard let client else { throw URLError(.badURL) }
+        let queued: Bool
         do {
-            try await client.createRequest(mediaType: mediaType, mediaId: mediaId, seasons: seasons)
+            queued = try await client.createRequest(mediaType: mediaType, mediaId: mediaId, seasons: seasons)
         } catch SeerrError.requestFailed(status: 409, body: _) {
             await loadRequests()
             throw AlreadyRequested()
         }
-        await loadRequests()
+        if !queued { await loadRequests() }
+        return queued
     }
 
     /// A movie's film series, its parts filtered by the profile's parental controls.

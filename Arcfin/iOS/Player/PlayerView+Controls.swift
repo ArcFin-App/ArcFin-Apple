@@ -51,7 +51,7 @@ extension PlayerView {
 
     private var topBar: some View {
         HStack(spacing: 16) {
-            Button { closePlayer() } label: {
+            Button { HapticManager.impact(.light); closePlayer() } label: {
                 Image(systemName: "chevron.down")
                     .font(.system(.title3, weight: .semibold))
                     .foregroundStyle(.white)
@@ -242,7 +242,7 @@ extension PlayerView {
                         .accessibilityLabel(previousLabel)
                     }
                     if !model.isLive || model.canRewindLive {
-                        Button { model.seek(by: -skipBackwardSeconds) } label: {
+                        Button { HapticManager.impact(.light); model.seek(by: -skipBackwardSeconds) } label: {
                             Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
                                 .font(.system(.title3)).foregroundStyle(.white)
                                 .frame(width: 44, height: 44)
@@ -250,7 +250,7 @@ extension PlayerView {
                         }
                         .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                     }
-                    Button { model.togglePlayPause() } label: {
+                    Button { HapticManager.impact(.light); model.togglePlayPause() } label: {
                         Image(systemName: playPauseIconIsPlaying ? "pause.fill" : "play.fill")
                             .font(.system(.largeTitle))
                             .foregroundStyle(.white)
@@ -259,7 +259,7 @@ extension PlayerView {
                     }
                     .accessibilityLabel(playPauseIconIsPlaying ? "Pause" : "Play")
                     if !model.isLive || model.canRewindLive {
-                        Button { model.seek(by: skipForwardSeconds) } label: {
+                        Button { HapticManager.impact(.light); model.seek(by: skipForwardSeconds) } label: {
                             Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                                 .font(.system(.title3)).foregroundStyle(.white)
                                 .frame(width: 44, height: 44)
@@ -358,7 +358,7 @@ extension PlayerView {
             ScrollView {
                 VStack(spacing: 0) {
                     HStack {
-                        Button { closePlayer() } label: {
+                        Button { HapticManager.impact(.light); closePlayer() } label: {
                             Image(systemName: "chevron.down")
                                 .font(.title3.weight(.semibold))
                                 .foregroundStyle(.white)
@@ -391,7 +391,7 @@ extension PlayerView {
         }
         // Down closes it, as on the music player.
         .simultaneousGesture(DragGesture(minimumDistance: 20).onEnded { drag in
-            if drag.translation.height > 80, drag.translation.height > abs(drag.translation.width) { closePlayer() }
+            if drag.translation.height > 80, drag.translation.height > abs(drag.translation.width) { HapticManager.impact(.light); closePlayer() }
         })
         .background {
             ZStack {
@@ -431,7 +431,7 @@ extension PlayerView {
             ScrollView {
                 VStack(spacing: 0) {
                     HStack {
-                        Button { closePlayer() } label: {
+                        Button { HapticManager.impact(.light); closePlayer() } label: {
                             Image(systemName: "chevron.down")
                                 .font(.title3.weight(.semibold))
                                 .foregroundStyle(.white)
@@ -527,7 +527,7 @@ extension PlayerView {
 
             HStack(spacing: 24) {
                 if !model.isLive {
-                    Button { model.seek(by: -skipBackwardSeconds) } label: {
+                    Button { HapticManager.impact(.light); model.seek(by: -skipBackwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
                             .font(.title)
                             .frame(minWidth: 52, minHeight: 52)
@@ -535,7 +535,7 @@ extension PlayerView {
                     }
                     .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                 }
-                Button { model.togglePlayPause() } label: {
+                Button { HapticManager.impact(.light); model.togglePlayPause() } label: {
                     Image(systemName: model.player.status == .playing ? "pause.fill" : "play.fill")
                         .font(.largeTitle)
                         .frame(minWidth: 64, minHeight: 64)
@@ -543,7 +543,7 @@ extension PlayerView {
                 }
                 .accessibilityLabel(model.player.status == .playing ? "Pause" : "Play")
                 if !model.isLive {
-                    Button { model.seek(by: skipForwardSeconds) } label: {
+                    Button { HapticManager.impact(.light); model.seek(by: skipForwardSeconds) } label: {
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
                             .font(.title)
                             .frame(minWidth: 52, minHeight: 52)
@@ -661,6 +661,7 @@ extension PlayerView {
                                     castScrubTicks = Double(model.player.durationTicks) * f
                                 }
                                 .onEnded { _ in
+                                    HapticManager.impact(.light)
                                     cast.seek(toSeconds: castScrubTicks / 10_000_000)
                                     isCastScrubbing = false
                                 }
@@ -689,6 +690,7 @@ extension PlayerView {
             HStack(spacing: 24) {
                 if !model.isLive {
                     Button {
+                        HapticManager.impact(.light)
                         cast.seek(toSeconds: max(liveSeconds - Double(skipBackwardSeconds), 0))
                     } label: {
                         Image(systemName: skipIconName(seconds: skipBackwardSeconds, forward: false))
@@ -700,7 +702,7 @@ extension PlayerView {
                     .accessibilityLabel("Skip back \(skipBackwardSeconds) seconds")
                 }
 
-                Button { cast.togglePlayPause() } label: {
+                Button { HapticManager.impact(.light); cast.togglePlayPause() } label: {
                     Image(systemName: cast.isPaused ? "play.fill" : "pause.fill")
                         .font(.largeTitle)
                         .foregroundStyle(.white)
@@ -711,6 +713,7 @@ extension PlayerView {
 
                 if !model.isLive {
                     Button {
+                        HapticManager.impact(.light)
                         cast.seek(toSeconds: min(liveSeconds + Double(skipForwardSeconds), durationSeconds))
                     } label: {
                         Image(systemName: skipIconName(seconds: skipForwardSeconds, forward: true))
@@ -852,10 +855,12 @@ extension PlayerView {
                 selectedAudioIndex: model.selectedAudioIndex,
                 selectedSubtitleIndex: model.selectedSubtitleIndex,
                 onSelectAudio: { index in
+                    HapticManager.selection()
                     showTrackMenu = false
                     model.changeTrack(audioIndex: index)
                 },
                 onSelectSubtitle: { index in
+                    HapticManager.selection()
                     showTrackMenu = false
                     model.changeTrack(subtitleIndex: .some(index))
                 },
@@ -905,6 +910,7 @@ extension PlayerView {
     var rateMenuButtons: some View {
         ForEach(PlayerModel.rateOptions, id: \.self) { rate in
             Button(model.rateLabel(rate) + (rate == model.player.playbackRate ? " ✓" : "")) {
+                HapticManager.selection()
                 model.choosePlaybackRate(rate)
             }
         }
@@ -986,6 +992,11 @@ struct PlayerMoreMenu: View, Equatable {
                 }
             }
             if !model.isLive, model.capabilities.sharePlay { sharePlayMenuItem }
+            if SharedAccountWatching.isAvailable {
+                Button { SharedAccountWatching.ask() } label: {
+                    Label("Who's Watching?", systemImage: "person.2.badge.gearshape")
+                }
+            }
 
             if !model.castMembers.isEmpty {
                 Button { openCastPanel() } label: {

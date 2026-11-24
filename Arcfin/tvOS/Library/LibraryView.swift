@@ -7,6 +7,8 @@ import AuthCore
 struct LibraryView: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @Environment(AuthManager.self) private var authManager
+    @State private var watchParty: WatchPartyLaunch?
+    @State private var playbackRequest: Arcfin.PlaybackRequest?
 
     private let columns = [GridItem(.adaptive(minimum: 400), spacing: 20)]
 
@@ -35,6 +37,13 @@ struct LibraryView: View {
                                 .buttonStyle(TVCardButtonStyle())
                                 .focusEffectDisabled()
                             }
+                            if WatchPartyDetailButton.isAvailable(authManager) {
+                                Button { watchParty = WatchPartyLaunch(.join(code: nil)) } label: {
+                                    BrowseIconTile(systemImage: "person.3.sequence", title: "Watch Party")
+                                }
+                                .buttonStyle(TVCardButtonStyle())
+                                .focusEffectDisabled()
+                            }
                         }
                         .padding(.horizontal, 80)
                         .padding(.top, 48)
@@ -44,6 +53,13 @@ struct LibraryView: View {
                 }
             }
             .screenBackground()
+            .watchPartyCover($watchParty) { playbackRequest = $0 }
+            .fullScreenCover(item: $playbackRequest) { request in
+                PlayerView(item: request.item, startPositionTicks: request.startTicks) { next in
+                    playbackRequest = Arcfin.PlaybackRequest(item: next, startTicks: 0)
+                }
+                .id(request.item.id)
+            }
             .navigationDestination(for: JellyfinLibrary.self) { library in
                 if library.collectionType == .livetv {
                     LiveTVView(library: library)

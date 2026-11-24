@@ -428,6 +428,7 @@ final class AuthManager {
             pendingRemoteSettings = nil
             arcfinSyncCurrentDevice = nil
             registeredSnapshot = nil
+            ServerCompanion.shared.reset()
         }
         arcfinSyncLockedKeys = SettingsSyncEngine.lockedKeys(profile: credential.id.uuidString)
         arcfinSyncLastSyncedAt = nil
@@ -455,6 +456,7 @@ final class AuthManager {
                 arcfinSyncLockedKeys = []
                 arcfinSyncDevicesProfile = nil
                 pendingRemoteSettings = nil
+                ServerCompanion.shared.forgetFeatures(server: credential.baseURL)
             }
             return
         }
@@ -479,6 +481,8 @@ final class AuthManager {
             AV1Encoding.apply(serverEncodesAV1: av1, on: credential.baseURL)
             Self.syncLog.notice("Server encoders (\(encoders.hardwareAcceleration, privacy: .public)): AV1 \(av1 ? "works" : "unavailable", privacy: .public)")
         }
+        await ServerCompanion.shared.refresh(status: status, credential: credential, authManager: self)
+        guard isActive(credential) else { return }
         Self.syncLog.notice("Sync complete — \(self.arcfinSyncLockedKeys.count, privacy: .public) locked key(s): \(self.arcfinSyncLockedKeys.sorted().joined(separator: ", "), privacy: .public)")
     }
 
@@ -708,6 +712,7 @@ final class AuthManager {
         UserDefaults.standard.removeObject(forKey: Self.seerrUsernameKey(for: id))
         for key in Self.perProfileSeerrKeys { UserDefaults.standard.removeObject(forKey: Self.perProfileKey(key, for: id)) }
         try? TMDBCredential.save("", profile: id)
+        AdminLock.forget(profile: id)
         MusicScrobbler.forget(profile: id)
         ProfileSettings.forget(profile: id.uuidString)
         SettingsSyncEngine.forgetAskFirst(profile: id.uuidString)
@@ -793,6 +798,8 @@ final class AuthManager {
     enum PINCheck: Equatable {
         case correct, incorrect, unreadable
         case waiting(TimeInterval)
+        /// Too many wrong tries under the server admin's rules: only the admin can unlock it.
+        case lockedOut
 
         var message: String? {
             switch self {
@@ -801,6 +808,8 @@ final class AuthManager {
             case .unreadable: String(localized: "Couldn't check the PIN. Try again.")
             case .waiting(let seconds):
                 String(localized: "Too many tries. Try again in \(PINAttempts.formatted(seconds)).")
+            case .lockedOut:
+                String(localized: "Locked after too many wrong PINs. Ask your server's admin to unlock it.")
             }
         }
 
@@ -840,12 +849,17 @@ final class AuthManager {
 
     /// Checks a typed PIN against the stored one, counting wrong tries (see `PINAttempts`).
     func checkPIN(_ entered: String, for credentialID: UUID) async -> PINCheck {
+        if ServerCompanion.shared.isLockedForPINTries(credentialID) { return .lockedOut }
         if let wait = PINAttempts.remainingWait(for: credentialID) { return .waiting(wait) }
         switch await storedPIN(for: credentialID) {
         case .unreadable:
             return .unreadable
         case .set(let pin) where pin != entered:
             PINAttempts.recordFailure(for: credentialID)
+            if ServerCompanion.shared.pinFailed(profile: credentialID, failures: PINAttempts.failures(for: credentialID),
+                                                authManager: self) {
+                return .lockedOut
+            }
             return PINAttempts.remainingWait(for: credentialID).map(PINCheck.waiting) ?? .incorrect
         case .set, .none:
             PINAttempts.reset(for: credentialID)
@@ -856,6 +870,8 @@ final class AuthManager {
     /// A PIN for the profile in use takes its titles away from everywhere outside the app, once
     /// it's saved: what's published next checks for it.
     func savePin(_ pin: String, for credentialID: UUID) {
+        PINLength.set(pin.count, profile: credentialID)
+        ServerCompanion.shared.notePIN(true, profile: credentialID)
         keychainWrite({ try $0.savePin(pin, for: credentialID) }) { [weak self] in
             guard let self, self.state.credential?.id == credentialID else { return }
             self.forgetOutsideTheApp()
@@ -866,6 +882,8 @@ final class AuthManager {
     }
 
     func removePin(for credentialID: UUID) {
+        PINLength.forget(profile: credentialID)
+        ServerCompanion.shared.notePIN(false, profile: credentialID)
         #if os(iOS)
         keychainWrite({ try $0.deletePin(for: credentialID) }) { [weak self] in
             guard let self, self.state.credential?.id == credentialID else { return }
@@ -1135,6 +1153,10 @@ nonisolated enum PINAttempts {
         guard failures >= freeTries else { return }
         let wait = waits[min(failures - freeTries, waits.count - 1)]
         defaults.set(TrustedClock.now.timeIntervalSince1970 + wait, forKey: waitUntilKey(id))
+    }
+
+    static func failures(for id: UUID) -> Int {
+        UserDefaults.standard.integer(forKey: failuresKey(id))
     }
 
     static func reset(for id: UUID) {

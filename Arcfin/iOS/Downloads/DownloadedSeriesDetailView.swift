@@ -51,6 +51,7 @@ struct DownloadedSeriesDetailView: View {
             if editMode.isEditing && !model.selection.isEmpty {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Delete (\(model.selection.count))", role: .destructive) {
+                        HapticManager.warning()
                         model.showBulkDeleteConfirm = true
                     }
                 }
@@ -127,14 +128,14 @@ struct DownloadedSeriesDetailView: View {
                         Label("Start Over", systemImage: "arrow.counterclockwise")
                     }
                 }
-                Button(role: .destructive) { model.pendingDelete = episode } label: {
+                Button(role: .destructive) { HapticManager.warning(); model.pendingDelete = episode } label: {
                     Label("Delete Download", systemImage: "trash")
                 }
             }, preview: {
                 DownloadedEpisodeRowPreview(episode: episode)
             })
             .swipeActions(edge: .trailing) {
-                Button(role: .destructive) { model.pendingDelete = episode } label: {
+                Button(role: .destructive) { HapticManager.warning(); model.pendingDelete = episode } label: {
                     Label("Delete", systemImage: "trash")
                 }
             }

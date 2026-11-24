@@ -10,22 +10,33 @@ public struct ArcfinSyncStatus: Sendable, Decodable, Equatable {
     public let version: String
     /// 1 for a plugin from before devices and admin policy, which doesn't say.
     public let apiVersion: Int
+    /// What the plugin can do: the admin screens to show.
     public let features: [String]
+    /// The optional features the admin turned on, or nil from a plugin that doesn't say (where
+    /// everything it has is on).
+    public let enabled: [String]?
 
     public var hasDevicesAndPolicy: Bool { apiVersion >= 2 }
+
+    /// Whether everyone's Arcfin should offer a feature: it's there and the admin turned it on.
+    public func isOn(_ feature: String) -> Bool {
+        features.contains(feature) && (enabled?.contains(feature) ?? true)
+    }
 
     enum CodingKeys: String, CodingKey {
         case installed = "Installed"
         case version = "Version"
         case apiVersion = "ApiVersion"
         case features = "Features"
+        case enabled = "Enabled"
     }
 
-    public init(installed: Bool, version: String, apiVersion: Int = 1, features: [String] = []) {
+    public init(installed: Bool, version: String, apiVersion: Int = 1, features: [String] = [], enabled: [String]? = nil) {
         self.installed = installed
         self.version = version
         self.apiVersion = apiVersion
         self.features = features
+        self.enabled = enabled
     }
 
     public init(from decoder: Decoder) throws {
@@ -34,6 +45,7 @@ public struct ArcfinSyncStatus: Sendable, Decodable, Equatable {
         version = try container.decode(String.self, forKey: .version)
         apiVersion = try container.decodeIfPresent(Int.self, forKey: .apiVersion) ?? 1
         features = try container.decodeIfPresent([String].self, forKey: .features) ?? []
+        enabled = try container.decodeIfPresent([String].self, forKey: .enabled)
     }
 }
 

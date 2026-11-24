@@ -30,11 +30,11 @@ final class SeerrConnectionForm {
     func beginEditing(url: String, username: String, password: String, authMethod: SeerrAuthMethod,
                       jellyfinUsername: String? = nil) {
         self.jellyfinUsername = jellyfinUsername ?? ""
-        usesPassword = !password.isEmpty || authMethod == .local
+        usesPassword = authMethod != .quickConnect && (!password.isEmpty || authMethod == .local)
         self.url = url
         self.username = username.isEmpty ? self.jellyfinUsername : username
         self.password = password
-        self.authMethod = authMethod
+        self.authMethod = authMethod == .quickConnect ? .jellyfin : authMethod
         testResult = nil
         isEditing = true
     }
@@ -67,8 +67,10 @@ final class SeerrConnectionForm {
                     ? String(localized: "Connected with Quick Connect")
                     : String(localized: "Connected"))
                 seerrRepo.clearAuthFailure()
+                HapticManager.success()
                 onSuccess?()
             } catch {
+                HapticManager.error()
                 testResult = "✗ " + SeerrSignInText.message(for: error)
             }
             isTesting = false
@@ -167,7 +169,7 @@ struct SeerrAccountTypeSection: View {
     var body: some View {
         Section {
             Picker("Account Type", selection: $form.authMethod) {
-                ForEach(SeerrAuthMethod.allCases, id: \.self) { method in
+                ForEach(SeerrAuthMethod.accountTypes, id: \.self) { method in
                     Text(method.label).tag(method)
                 }
             }

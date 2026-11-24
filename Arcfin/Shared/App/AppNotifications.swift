@@ -7,6 +7,8 @@ extension Notification.Name {
     static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
     /// arcfin://pick/<code>, from a Pick Together share link; userInfo["code"].
     static let arcfinPickTogether = Notification.Name("arcfinPickTogether")
+    /// arcfin://party/<code>, from a scanned watch party QR code; userInfo["code"].
+    static let arcfinWatchParty = Notification.Name("arcfinWatchParty")
     /// Posted by onOpenURL for arcfin://downloads — tapping the download Live Activity.
     static let arcfinShowDownloads = Notification.Name("arcfinShowDownloads")
     /// Browse to the front, for an album or artist opened from Now Playing.

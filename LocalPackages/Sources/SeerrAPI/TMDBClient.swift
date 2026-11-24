@@ -8,18 +8,39 @@ import Foundation
 public struct TMDBClient: Sendable {
     private let key: String
     private let session: URLSession
-    private static let base = URL(string: "https://api.themoviedb.org/3/")!
+    private let base: URL
+    /// Through the Arcfin Sync plugin, which adds the server's own key: none is held here.
+    public let throughServer: Bool
+    /// The Jellyfin session's Authorization header, through the server only.
+    private let jellyfinAuthorization: String?
+    private static let tmdb = URL(string: "https://api.themoviedb.org/3/")!
 
     /// `key` is either a v3 API key (32 hex characters) or a v4 read access token.
     public init(key: String) {
         self.key = key.trimmingCharacters(in: .whitespacesAndNewlines)
+        base = Self.tmdb
+        throughServer = false
+        jellyfinAuthorization = nil
         let config = URLSessionConfiguration.default
         config.waitsForConnectivity = true
         config.timeoutIntervalForResource = 30
         session = URLSession(configuration: config)
     }
 
-    private var usesBearerToken: Bool { key.count > 40 }
+    /// TMDB through the server: `proxyBase` is the plugin's TMDB path, and every call carries
+    /// the Jellyfin session instead of a key.
+    public init(serverProxy proxyBase: URL, jellyfinAuthorization: String) {
+        key = ""
+        base = proxyBase
+        throughServer = true
+        let config = URLSessionConfiguration.default
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForResource = 30
+        session = URLSession(configuration: config)
+        self.jellyfinAuthorization = jellyfinAuthorization
+    }
+
+    private var usesBearerToken: Bool { !throughServer && key.count > 40 }
 
     // MARK: - Lists
 
@@ -155,14 +176,15 @@ public struct TMDBClient: Sendable {
     }
 
     private func get(_ path: String, _ query: [String: String]) async throws -> Data {
-        var comps = URLComponents(url: Self.base.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
+        var comps = URLComponents(url: base.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
         var items = query.map { URLQueryItem(name: $0.key, value: $0.value) }
-        if !usesBearerToken { items.append(URLQueryItem(name: "api_key", value: key)) }
+        if !usesBearerToken && !throughServer { items.append(URLQueryItem(name: "api_key", value: key)) }
         comps.queryItems = items.isEmpty ? nil : items
         var req = URLRequest(url: comps.url!)
         req.timeoutInterval = 15
         req.setValue("application/json", forHTTPHeaderField: "Accept")
         if usesBearerToken { req.setValue("Bearer \(key)", forHTTPHeaderField: "Authorization") }
+        if let jellyfinAuthorization { req.setValue(jellyfinAuthorization, forHTTPHeaderField: "Authorization") }
         await withCheckedContinuation { PathWait(continuation: $0).start(timeoutSeconds: 6) }
         let (data, response) = try await session.data(for: req)
         if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {

@@ -87,10 +87,19 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 
 ## With the Arcfin Sync plugin
 
-[Arcfin Sync](https://arcfin.psmattas.com/plugin/) is a free plugin for your Jellyfin server. Everything above works without it; these need it, from the version shown:
+[Arcfin Sync](https://arcfin.psmattas.com/plugin/) is a free plugin for your Jellyfin server. Everything above works without it; these need it, from the version shown. Every 0.6 feature is off until the server's admin turns it on, in the plugin's dashboard page or Admin › Arcfin for Everyone:
 
 | Feature | What it does | Needs |
 |---|---|---|
+| **Watch parties** | Watch together in sync over SyncPlay, hosting or joining on iPhone, iPad, Mac or Apple TV. Invite people with a code, which guests type in or, on iPhone and iPad, scan as a QR code; plan a party up to 30 days ahead and see what time it'll be for each guest. Start one from Home or a title's page. People in other SyncPlay apps can join; the host needs Arcfin. | 0.6 or later |
+| **Seerr and TMDB through the server** | The admin keeps the Seerr and TMDB keys on the server, encrypted, and they never reach a device. Requests are made as you, with your own Seerr limits, and one made while Seerr is down is sent once it's back. | 0.6 or later |
+| **Signed commands** | Your admin can clear a forgotten PIN, lock or unlock a profile and wipe a lost device. Commands are signed with the server's key, so nothing else can send them. Also PIN rules, approving new devices from a trusted iPhone or iPad, HTTPS away from home, and signing out devices that fall behind. | 0.6 or later |
+| **Watch time and bedtime** | Daily limits and a bedtime per person, counted across every app, with warnings 10 and 5 minutes before. | 0.6 or later |
+| **Download limits** | Caps on titles and space for movies and shows, and albums, songs and space for music, counted once across all your devices. | 0.6 or later |
+| **Who's Watching?** | On a shared account, like the living-room TV, pick who's watching and each person's progress follows along. | 0.6 or later |
+| **Announcements and maintenance** | Messages from the admin and planned maintenance at the top of Home. | 0.6 or later |
+| **Hide from Continue Watching** | Hidden titles are the same on all your devices, and come back once you play them again. | 0.6 or later |
+| **Recommendations** | Top Picks, Because You Watched and Popular on This Server rows on Home. | 0.6 or later |
 | **Pick Together** (iPhone and iPad) | Everyone swipes through titles on their own device until you all like the same one, then watches it here, on another device or together over SyncPlay. Join with a code or a QR code; the device that starts it can lock the session and remove people. | 0.5 or later |
 | **Devices & Sync** | Your settings follow you to your other devices: automatically, after asking first, or not at all. Send one device's settings to all the others. | 0.4 or later |
 | **Arcfin for Everyone** | Server admins give any setting a default or lock it, for everyone or for one person, and choose who can use Pick Together. | 0.4 or later |
@@ -103,13 +112,14 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 |---|---|
 | iOS 26 and iPadOS 26 | The main platform |
 | macOS 26 | Feature parity with iPhone and iPad, with a native video surface, sidebar, menu bar commands and Touch ID |
-| tvOS 26 | Feature parity apart from downloads, with remote and focus navigation throughout |
+| tvOS 26 | Feature parity, with remote and focus navigation throughout |
 | watchOS 26 | Music on the watch and a remote, with the iPhone app |
 | CarPlay | Music, from the iPhone app |
 
 Some features can't work on every platform:
 - **Chromecast** is iPhone and iPad only, because Google's SDK is.
+- **Pick Together**, and scanning a watch party's QR code, are iPhone and iPad only. Mac and Apple TV join a watch party with its code.
 - **Live Activities and Lock Screen widgets** are iPhone only.
-- **Downloads** aren't available on Apple TV, which has no lasting storage.
+- **Downloads** on Apple TV can be cleared by tvOS when it needs room, as it keeps no lasting storage for apps.
 - **Face ID and Touch ID** aren't available on Apple TV.
 - **The screensaver** runs inside Arcfin, because Apple TV doesn't let apps provide a system screensaver.

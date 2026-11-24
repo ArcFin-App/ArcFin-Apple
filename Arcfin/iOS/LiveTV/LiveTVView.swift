@@ -73,6 +73,7 @@ struct LiveTVView: View {
             }
         }
         .pickerStyle(.segmented)
+        .onChange(of: tab) { HapticManager.selection() }
         .labelsHidden()
         .padding(.horizontal, DT.Spacing.pagePad)
         .padding(.vertical, 8)

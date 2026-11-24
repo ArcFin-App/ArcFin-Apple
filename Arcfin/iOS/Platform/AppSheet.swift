@@ -3,6 +3,12 @@
 import SwiftUI
 
 extension View {
+    /// The PIN pad, in a sheet. Apple TV shows it full screen.
+    func pinPadSheet<Item: Identifiable, Content: View>(item: Binding<Item?>,
+                                                        @ViewBuilder content: @escaping (Item) -> Content) -> some View {
+        appSheet(item: item, content: content)
+    }
+
     /// A sheet. Apple TV draws its own panel instead, in two columns when there's a title
     /// (see its AppSheet); here `title` and `systemImage` aren't used.
     func appSheet<Content: View>(isPresented: Binding<Bool>, onDismiss: (() -> Void)? = nil,

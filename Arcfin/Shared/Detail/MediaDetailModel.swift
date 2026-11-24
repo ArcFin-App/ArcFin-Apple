@@ -620,6 +620,7 @@ final class MediaDetailModel {
     func downloadSeason(_ choice: DownloadChoice, authManager: AuthManager, downloadManager: DownloadManager) {
         guard case .authenticated(let credential) = authManager.state else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        HapticManager.success()
         for episode in seasonEpisodesToDownload(in: downloadManager) {
             Task {
                 await downloadManager.startDownload(item: episode, credential: credential, authHeader: authHeader,

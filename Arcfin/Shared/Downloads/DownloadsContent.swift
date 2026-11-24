@@ -92,6 +92,7 @@ struct DownloadsContent<Manage: View>: View {
             StorageBreakdown(items: items,
                              smartUsedBytes: downloadManager.smartDownloadsUsedBytes(of: items),
                              freeBytes: model.freeBytes)
+            DownloadAllowanceLine()
         }
         .padding(16)
         .background(cardBackground)
@@ -273,7 +274,7 @@ struct DownloadsContent<Manage: View>: View {
                                 Label("Details", systemImage: "info.circle")
                             }
                             SmartDownloadsIgnoreButton(id: group.seriesId, name: group.seriesName)
-                            Button(role: .destructive) { model.pendingDeleteSeriesId = group.seriesId } label: {
+                            Button(role: .destructive) { HapticManager.warning(); model.pendingDeleteSeriesId = group.seriesId } label: {
                                 Label("Delete All Episodes", systemImage: "trash")
                             }
                         }
@@ -312,7 +313,7 @@ struct DownloadsContent<Manage: View>: View {
                             }
                             Button { open(item) } label: { Label("Details", systemImage: "info.circle") }
                             SmartDownloadsIgnoreButton(id: item.itemId, name: item.name)
-                            Button(role: .destructive) { model.pendingDelete = item } label: {
+                            Button(role: .destructive) { HapticManager.warning(); model.pendingDelete = item } label: {
                                 Label("Delete Download", systemImage: "trash")
                             }
                         }
@@ -420,6 +421,7 @@ struct DownloadsSelectionToolbar: ToolbarContent {
             if model.isSelecting && !model.selection.isEmpty {
                 ToolbarItem(placement: .destructiveAction) {
                     Button("Delete (\(model.selection.count))", role: .destructive) {
+                        HapticManager.warning()
                         model.showBulkDeleteConfirm = true
                     }
                 }

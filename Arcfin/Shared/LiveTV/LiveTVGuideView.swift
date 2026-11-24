@@ -80,7 +80,7 @@ struct LiveTVGuideView: View {
 
     private func chip(title: String, systemImage: String, category: LiveTVCategory?) -> some View {
         let selected = model.guideCategory == category
-        return Button { model.selectCategory(category, authManager: authManager) } label: {
+        return Button { HapticManager.selection(); model.selectCategory(category, authManager: authManager) } label: {
             Label(title, systemImage: systemImage)
                 .font(.system(.subheadline, weight: .semibold))
                 .foregroundStyle(selected ? DT.Color.onAccent : DT.Color.textPrimary)

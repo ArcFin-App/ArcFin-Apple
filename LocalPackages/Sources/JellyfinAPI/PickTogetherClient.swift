@@ -216,9 +216,10 @@ public struct PickTogetherClient: Sendable {
 
     // MARK: Plumbing
 
-    private struct Empty: Decodable {}
+    struct Empty: Decodable {}
 
-    private func send<T: Decodable>(_ method: String, _ path: String, base: String = "ArcfinSync/PickTogether",
+    /// Also used by the other Arcfin Sync clients in this package: same sign-in, errors and key casing.
+    func send<T: Decodable>(_ method: String, _ path: String, base: String = "ArcfinSync/PickTogether",
                                     body: (any Encodable)? = nil,
                                     credential: ServerCredential, authHeader: String) async throws -> T {
         guard let url = URL(string: "\(base)\(path)", relativeTo: Self.directory(credential.baseURL)) else {
@@ -231,6 +232,8 @@ public struct PickTogetherClient: Sendable {
         if let body {
             req.setValue("application/json", forHTTPHeaderField: "Content-Type")
             let encoder = JSONEncoder()
+            // The plugin reads dates as ISO 8601; the default sends seconds since 2001.
+            encoder.dateEncodingStrategy = .iso8601
             encoder.keyEncodingStrategy = .custom { keys in PascalKey(keys.last!.stringValue.prefix(1).uppercased() + keys.last!.stringValue.dropFirst()) }
             req.httpBody = try encoder.encode(body)
         }
@@ -267,7 +270,7 @@ public struct PickTogetherClient: Sendable {
         return full.date(from: raw) ?? plain.date(from: raw) ?? plain.date(from: raw + "Z")
     }
 
-    private static func component(_ raw: String) -> String {
+    static func component(_ raw: String) -> String {
         var allowed = CharacterSet.urlPathAllowed
         allowed.remove(charactersIn: "/")
         return raw.addingPercentEncoding(withAllowedCharacters: allowed) ?? raw

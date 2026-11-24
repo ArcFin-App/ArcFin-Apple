@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import JellyfinAPI
 
 /// The user's own TMDB key. With it, title pages, streaming rows and Home's catalogue shelves
 /// work without Seerr, and keep working when Seerr's requests fail. Laid out like the Seerr
@@ -12,6 +13,15 @@ struct TMDBSettingsView: View {
     @State private var confirmingRemove = false
 
     var body: some View {
+        if ServerCompanion.shared.integrations.tmdb {
+            TMDBThroughServerView()
+        } else {
+            deviceKeyBody
+        }
+    }
+
+    /// The key kept on this device, when the server doesn't hold one.
+    private var deviceKeyBody: some View {
         List {
             Section {
                 SecureField("API key or read access token", text: $model.key)

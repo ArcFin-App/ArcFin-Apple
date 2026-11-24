@@ -3,6 +3,9 @@
 import SwiftUI
 
 extension View {
+    /// An announcement's X.
+    func noticeDismissButtonStyle() -> some View { buttonStyle(.plain) }
+
     /// A button with no chrome of its own: plain (or pressable) for touch and pointer, and on
     /// tvOS, where the app turns off the system focus effect, a focus ring so it shows focus.
     @ViewBuilder

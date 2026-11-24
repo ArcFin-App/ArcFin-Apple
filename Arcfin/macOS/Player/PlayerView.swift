@@ -105,6 +105,7 @@ struct PlayerView: View {
 
     var body: some View {
         bodyContent.alwaysDarkPlayer()
+            .whoIsWatchingPrompt()
     }
 
     @ViewBuilder

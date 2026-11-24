@@ -76,6 +76,11 @@ final class AppRootModel {
             guard let code = url.pathComponents.dropFirst().first else { return }
             UserDefaults.standard.set(code, forKey: "arcfin.pendingPickCode")
             NotificationCenter.default.post(name: .arcfinPickTogether, object: nil, userInfo: ["code": code])
+        case "party":
+            // arcfin://party/<code>, from a watch party's QR code. Buffered like "pick".
+            guard let code = url.pathComponents.dropFirst().first else { return }
+            UserDefaults.standard.set(code, forKey: "arcfin.pendingPartyCode")
+            NotificationCenter.default.post(name: .arcfinWatchParty, object: nil, userInfo: ["code": code])
         case "resume":
             UserDefaults.standard.set(true, forKey: "arcfin.pendingResume")
             NotificationCenter.default.post(name: .arcfinResume, object: nil)
@@ -214,7 +219,7 @@ final class AppRootModel {
     /// when that can't work does the prompt appear, asking for the password and saying why.
     func checkSeerrSetupPrompt(seerrURL: String, seerrUsername: String, seerrAuthMethod: SeerrAuthMethod) {
         guard case .authenticated(let cred) = authManager.state,
-              seerrAuthMethod == .jellyfin, !seerrURL.isEmpty, let url = URL(string: seerrURL),
+              seerrAuthMethod.isJellyfin, !seerrURL.isEmpty, let url = URL(string: seerrURL),
               seerrUsername.isEmpty, !isConnectingSeerr,
               !UserDefaults.standard.bool(forKey: seerrSetupPromptHandledKey(for: cred.id))
         else { return }
@@ -346,10 +351,31 @@ final class AppRootModel {
     }
 
     func configureSeerr(seerrURL: String, seerrUsername: String, seerrAuthMethod: SeerrAuthMethod) {
-        seerrRepo.configure(urlString: seerrURL, username: seerrUsername,
-                            password: authManager.seerrPassword, authMethod: seerrAuthMethod,
-                            authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: authManager),
-                            onSavedPasswordRejected: { [authManager] in await authManager.removeSeerrPassword() })
+        Self.connectSeerr(seerrURL: seerrURL, seerrUsername: seerrUsername, seerrAuthMethod: seerrAuthMethod,
+                          seerrRepo: seerrRepo, authManager: authManager)
+    }
+
+    /// The saved Seerr connection, read again: when the server starts or stops offering Seerr.
+    static func reconnectSeerr() {
+        let defaults = UserDefaults.standard
+        connectSeerr(seerrURL: defaults.string(forKey: "seerrURL") ?? "",
+                     seerrUsername: defaults.string(forKey: "seerrUsername") ?? "",
+                     seerrAuthMethod: defaults.string(forKey: "seerrAuthMethod").flatMap(SeerrAuthMethod.init(rawValue:)) ?? .jellyfin,
+                     seerrRepo: AppServices.seerrRepo, authManager: AppServices.authManager)
+    }
+
+    private static func connectSeerr(seerrURL: String, seerrUsername: String, seerrAuthMethod: SeerrAuthMethod,
+                                     seerrRepo: SeerrRepository, authManager: AuthManager) {
+        // The server's Arcfin Sync plugin has a Seerr key: always that, nothing to sign in to.
+        if ServerCompanion.shared.integrations.seerr, case .authenticated(let credential) = authManager.state {
+            seerrRepo.configureThroughServer(credential: credential,
+                                             authorization: authManager.authClient.authHeader(token: credential.accessToken))
+        } else {
+            seerrRepo.configure(urlString: seerrURL, username: seerrUsername,
+                                password: authManager.seerrPassword, authMethod: seerrAuthMethod,
+                                authorizeQuickConnect: SeerrSignIn.quickConnectAuthorizer(authManager: authManager),
+                                onSavedPasswordRejected: { [authManager] in await authManager.removeSeerrPassword() })
+        }
         // Warms Discover and the Browse > Your Requests sections in the background as soon
         // as Seerr is reachable, so they're already populated (no skeleton) the first time
         // the user actually taps into either.

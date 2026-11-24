@@ -69,10 +69,12 @@ private struct ProfileRemovalConfirmation: ViewModifier {
     func body(content: Content) -> some View {
         content
             .confirmationPrompt(title, isPresented: isPresented, presenting: profile) { actions($0) } message: { _ in message }
+            .onChange(of: profile?.id) { _, new in if new != nil { HapticManager.warning() } }
             .appSheet(item: $pinTarget) { target in
                 PINEntrySheet(
                     title: String(localized: "Enter PIN"),
                     subtitle: target.displayName,
+                    pinLength: PINLength.stored(target.id),
                     resetToken: pinResetToken,
                     errorMessage: pinError,
                     onCancel: { pinTarget = nil },

@@ -198,6 +198,7 @@
 				iOS/Platform/AlwaysDarkPlayer.swift = (ios, );
 				iOS/Platform/AppSheet.swift = (ios, );
 				iOS/Platform/Biometrics.swift = (ios, );
+				iOS/Platform/CompanionAdminFields.swift = (ios, );
 				iOS/Platform/ConfirmationPrompt.swift = (ios, );
 				iOS/Platform/ExitCommand.swift = (ios, );
 				iOS/Platform/ExternalApps.swift = (ios, );
@@ -258,6 +259,8 @@
 				iOS/Stats/StatsPlatform.swift = (ios, );
 				iOS/Stats/StatsShareSheet.swift = (ios, );
 				iOS/Stats/StatsView.swift = (ios, );
+				iOS/WatchParty/WatchPartyPlatform.swift = (ios, );
+				iOS/WatchParty/WatchPartyScanView.swift = (ios, );
 				macOS/App/AppRootPlatform.swift = (macos, );
 				macOS/App/ArcfinScenes.swift = (macos, );
 				macOS/App/ContentView.swift = (macos, );
@@ -305,6 +308,7 @@
 				macOS/Platform/AlwaysDarkPlayer.swift = (macos, );
 				macOS/Platform/AppSheet.swift = (macos, );
 				macOS/Platform/Biometrics.swift = (macos, );
+				macOS/Platform/CompanionAdminFields.swift = (macos, );
 				macOS/Platform/ConfirmationPrompt.swift = (macos, );
 				macOS/Platform/ExitCommand.swift = (macos, );
 				macOS/Platform/ExternalApps.swift = (macos, );
@@ -364,6 +368,7 @@
 				macOS/Stats/StatsPlatform.swift = (macos, );
 				macOS/Stats/StatsShareSheet.swift = (macos, );
 				macOS/Stats/StatsView.swift = (macos, );
+				macOS/WatchParty/WatchPartyPlatform.swift = (macos, );
 				tvOS/App/AppRootPlatform.swift = (tvos, );
 				tvOS/App/ArcfinScenes.swift = (tvos, );
 				tvOS/App/ContentView.swift = (tvos, );
@@ -412,6 +417,7 @@
 				tvOS/Platform/AlwaysDarkPlayer.swift = (tvos, );
 				tvOS/Platform/AppSheet.swift = (tvos, );
 				tvOS/Platform/Biometrics.swift = (tvos, );
+				tvOS/Platform/CompanionAdminFields.swift = (tvos, );
 				tvOS/Platform/ConfirmationPrompt.swift = (tvos, );
 				tvOS/Platform/ExitCommand.swift = (tvos, );
 				tvOS/Platform/ExternalApps.swift = (tvos, );
@@ -462,6 +468,8 @@
 				tvOS/Splash/SplashScale.swift = (tvos, );
 				tvOS/Stats/StatsPlatform.swift = (tvos, );
 				tvOS/Stats/StatsView.swift = (tvos, );
+				tvOS/WatchParty/WatchPartyHub.swift = (tvos, );
+				tvOS/WatchParty/WatchPartyPlatform.swift = (tvos, );
 			};
 			target = FAB5D7532FA79A9B002031A9 /* Arcfin */;
 		};

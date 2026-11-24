@@ -400,5 +400,7 @@ extension View {
             } message: {
                 Text(done.wrappedValue ?? "")
             }
+            .onChange(of: error.wrappedValue) { _, new in if new != nil { HapticManager.error() } }
+            .onChange(of: done.wrappedValue) { _, new in if new != nil { HapticManager.success() } }
     }
 }

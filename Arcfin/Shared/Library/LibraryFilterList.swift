@@ -42,6 +42,7 @@ struct LibraryFilterList: View {
                     }
                 }
                 .pickerStyle(.segmented)
+                .onChange(of: watchedFilter) { HapticManager.selection() }
                 Toggle("Favourites Only", isOn: $favoritesOnly)
             }
 
@@ -54,6 +55,7 @@ struct LibraryFilterList: View {
                                 Text("All").tag(true)
                             }
                             .pickerStyle(.segmented)
+                            .onChange(of: extraFilters.matchAllGenres) { HapticManager.selection() }
                         }
                         ForEach(availableGenres, id: \.self) { genre in
                             filterRow(genre, isSelected: selectedGenres.contains(genre)) {
@@ -94,6 +96,7 @@ struct LibraryFilterList: View {
                     ForEach(LibraryQualityFilter.allCases) { Text($0.label).tag($0) }
                 }
                 .pickerStyle(.segmented)
+                .onChange(of: extraFilters.quality) { HapticManager.selection() }
                 Toggle("Has Subtitles", isOn: $extraFilters.hasSubtitles)
             }
 
@@ -136,7 +139,10 @@ struct LibraryFilterList: View {
     }
 
     private func filterRow(_ label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            HapticManager.selection()
+            action()
+        } label: {
             HStack {
                 Text(label).foregroundStyle(DT.Color.textPrimary)
                 Spacer()

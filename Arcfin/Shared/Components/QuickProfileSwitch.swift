@@ -54,6 +54,7 @@ struct QuickProfileSwitchButton<Content: View>: View {
                     PINEntrySheet(
                         title: String(localized: "Switch to \(target.displayName)"),
                         subtitle: target.baseURL.host,
+                        pinLength: PINLength.stored(target.id),
                         resetToken: resetToken,
                         errorMessage: pinError,
                         onCancel: {

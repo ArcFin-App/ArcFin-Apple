@@ -186,6 +186,11 @@ extension PlayerView {
                 }
             }
             if !model.isLive, model.capabilities.sharePlay { sharePlayMenuItem }
+            if SharedAccountWatching.isAvailable {
+                Button { SharedAccountWatching.ask() } label: {
+                    Label("Who's Watching?", systemImage: "person.2.badge.gearshape")
+                }
+            }
 
             if !model.castMembers.isEmpty {
                 Button { openCastPanel() } label: {

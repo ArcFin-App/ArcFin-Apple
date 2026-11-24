@@ -32,7 +32,16 @@ struct ItemQuickActions: View {
         } label: {
             Label(played ? "Mark as Unwatched" : "Mark as Watched", systemImage: played ? "eye.slash" : "checkmark")
         }
-        if (item.userData?.playbackPositionTicks ?? 0) > 0, !played {
+        let companion = ServerCompanion.shared
+        if (item.userData?.playbackPositionTicks ?? 0) > 0, !played, companion.has("hidden") {
+            // With the Arcfin Sync plugin: hidden on every device, keeping the place.
+            Button {
+                HapticManager.impact(.light)
+                Task { _ = await companion.setHidden(true, itemID: item.id, from: .continueWatching, authManager: authManager) }
+            } label: {
+                Label("Hide from Continue Watching", systemImage: "eye.slash")
+            }
+        } else if (item.userData?.playbackPositionTicks ?? 0) > 0, !played {
             Button {
                 perform(changing: { data in
                     data.playbackPositionTicks = 0
@@ -42,6 +51,15 @@ struct ItemQuickActions: View {
                 }
             } label: {
                 Label("Remove from Continue Watching", systemImage: "xmark.circle")
+            }
+        }
+        if item.type == .episode, !played, let seriesID = item.seriesId, companion.has("hidden"),
+           !companion.isHidden(seriesID, from: .nextUp) {
+            Button {
+                HapticManager.impact(.light)
+                Task { _ = await companion.setHidden(true, itemID: seriesID, from: .nextUp, authManager: authManager) }
+            } label: {
+                Label("Hide Show from Next Up", systemImage: "forward.end")
             }
         }
         Button {

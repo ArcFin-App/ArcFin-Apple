@@ -15,3 +15,11 @@ extension View {
         buttonStyle(.plain)
     }
 }
+
+extension View {
+    /// The Mac types the PIN on its keyboard; here the keys are the pad.
+    func pinPadKeyboard(digit: @escaping (Int) -> Void, delete: @escaping () -> Void,
+                        submit: @escaping () -> Void, cancel: (() -> Void)?) -> some View {
+        self
+    }
+}

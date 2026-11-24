@@ -136,35 +136,53 @@ struct MusicDownloadsView: View {
                     Text("Storage")
                         .font(.headline)
                         .foregroundStyle(DT.Color.textPrimary)
-                    Text("\(downloads.songCount) songs")
+                    Text(downloads.albums.count == 1 ? "\(downloads.songCount) songs · 1 album" : "\(downloads.songCount) songs · \(downloads.albums.count) albums")
                         .font(.caption)
                         .foregroundStyle(DT.Color.textSecondary)
                 }
                 Spacer()
             }
-            HStack(alignment: .firstTextBaseline, spacing: 6) {
-                Text(verbatim: ByteCountFormatter.string(fromByteCount: downloads.totalBytes, countStyle: .file))
-                    .font(.title2.weight(.bold))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .contentTransition(.numericText())
-                Text("used by music")
-                    .font(.subheadline)
-                    .foregroundStyle(DT.Color.textSecondary)
-                Spacer(minLength: 8)
-                if let freeBytes {
-                    Text("\(ByteCountFormatter.string(fromByteCount: freeBytes, countStyle: .file)) free on device")
-                        .font(.caption.weight(.medium))
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .firstTextBaseline, spacing: 6) {
+                    Text(StorageManagement.formatted(downloads.totalBytes))
+                        .font(.system(.title2, weight: .bold))
+                        .foregroundStyle(DT.Color.textPrimary)
+                        .contentTransition(.numericText())
+                    Text("used by music")
+                        .font(.system(.subheadline))
                         .foregroundStyle(DT.Color.textSecondary)
-                        .multilineTextAlignment(.trailing)
+                    Spacer(minLength: 8)
+                    if let freeBytes {
+                        Text("\(StorageManagement.formatted(freeBytes)) free on device")
+                            .font(.system(.caption, weight: .medium))
+                            .foregroundStyle(DT.Color.textSecondary)
+                            .multilineTextAlignment(.trailing)
+                    }
                 }
+                StorageSegmentsBar(segments: storageSegments)
+                StorageSegmentsLegend(segments: storageSegments)
             }
             .accessibilityElement(children: .combine)
+            MusicAllowanceLine()
             if !downloads.isEmpty {
                 MusicPlayShuffleButtons(play: { MusicActions.play(allSongs) }, shuffle: { MusicActions.shuffle(allSongs) })
             }
         }
         .padding(16)
         .background(MusicDownloadsCard())
+    }
+
+    /// Shows, movies and music, the same three parts as on Downloads, so the two read the same.
+    private var storageSegments: [StorageSegment] {
+        let videos = AppServices.downloadManager.ownTitles()
+        let showIDs = AppServices.downloadManager.ownShowEpisodeIDs()
+        let shows = videos.filter { showIDs.contains($0.itemID) }.reduce(Int64(0)) { $0 + $1.bytes }
+        let movies = videos.filter { !showIDs.contains($0.itemID) }.reduce(Int64(0)) { $0 + $1.bytes }
+        return [
+            StorageSegment(id: "shows", label: String(localized: "Shows"), bytes: shows, color: StorageBreakdown.showsColor),
+            StorageSegment(id: "movies", label: String(localized: "Movies"), bytes: movies, color: StorageBreakdown.moviesColor),
+            StorageSegment(id: "music", label: String(localized: "Music"), bytes: downloads.totalBytes, color: StorageBreakdown.musicColor),
+        ]
     }
 
     // MARK: Downloading
@@ -185,6 +203,12 @@ struct MusicDownloadsView: View {
                     .font(.subheadline.weight(.semibold))
                     .buttonStyle(.plain)
                     .foregroundStyle(DT.Color.accent)
+            }
+            if let message = downloads.limitMessage, !downloads.myFailed.isEmpty {
+                Label(message, systemImage: "exclamationmark.triangle")
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.palette("f59e0b"))
+                    .fixedSize(horizontal: false, vertical: true)
             }
             // Lazy: Download All Albums can queue thousands of songs.
             LazyVStack(spacing: 0) {
@@ -351,8 +375,8 @@ private struct MusicDownloadedAlbumTile: View {
     }
 }
 
-/// One saved album, laid out like its page: the cover, Play and Shuffle, and the saved songs.
-/// Hold a song to remove it.
+/// One saved album, laid out like its page: the same hero, Play and Shuffle, songs by disc and
+/// footer, from what was saved with it, so it looks the same offline. Hold a song to remove it.
 private struct MusicDownloadedAlbumView: View {
     let album: MusicAlbum?
     let albumID: String?
@@ -360,45 +384,36 @@ private struct MusicDownloadedAlbumView: View {
     private var downloads: MusicDownloads { .shared }
     private var songs: [MusicSong] { downloads.albums.first { $0.songs.first?.albumId == albumID }?.songs ?? [] }
 
+    private var discs: [(number: Int, songs: [MusicSong])] {
+        Dictionary(grouping: songs) { $0.discNumber ?? 1 }
+            .sorted { $0.key < $1.key }
+            .map { ($0.key, $0.value) }
+    }
+
+    /// The cover saved with the songs first, so the page works offline.
+    private func cover(width: Int) -> URL? {
+        albumID.flatMap(downloads.coverURL(albumID:))
+            ?? album.flatMap { MusicAPI.artworkURL($0, width: width) }
+            ?? songs.first.flatMap { MusicAPI.artworkURL($0, width: width) }
+    }
+
+    private var albumArtist: String? { album?.albumArtist ?? songs.first?.albumArtist }
+
     var body: some View {
-        let first = songs.first
         ScrollView {
             VStack(spacing: DT.Spacing.lg) {
-                VStack(spacing: DT.Spacing.xs) {
-                    MusicArtwork(url: album.flatMap { MusicAPI.artworkURL($0, width: 800) } ?? first.flatMap { MusicAPI.artworkURL($0, width: 800) },
-                                 cornerRadius: DT.Radius.md)
-                        .frame(maxWidth: 280)
-                        .shadow(color: .black.opacity(0.25), radius: 16, y: 8)
-                        .padding(.bottom, DT.Spacing.xs)
-                    Text(verbatim: album?.name ?? first?.albumName ?? "")
-                        .font(.title2.weight(.bold))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .multilineTextAlignment(.center)
-                    if let artist = album?.albumArtist ?? first?.albumArtist {
-                        Text(verbatim: artist)
-                            .font(.title3)
-                            .foregroundStyle(DT.Color.accent)
-                            .multilineTextAlignment(.center)
-                    }
-                    Text("\(songs.count) songs · \(ByteCountFormatter.string(fromByteCount: downloads.bytes(of: songs), countStyle: .file))")
-                        .font(.footnote.weight(.medium))
-                        .foregroundStyle(DT.Color.textSecondary)
+                MusicHero(play: { MusicActions.play(songs) }, shuffle: { MusicActions.shuffle(songs) }, canPlay: !songs.isEmpty) { _ in
+                    MusicHeroImage(url: cover(width: 1200))
+                } info: {
+                    titles
                 }
-                .padding(.horizontal, DT.Spacing.pagePad)
-                .padding(.top, DT.Spacing.xs)
-                MusicPlayShuffleButtons(play: { MusicActions.play(songs) }, shuffle: { MusicActions.shuffle(songs) })
-                    .padding(.horizontal, DT.Spacing.pagePad)
-                LazyVStack(spacing: 0) {
-                    ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
-                        MusicSongRow(song: song) { MusicActions.play(songs, from: index) }
-                            .padding(.horizontal, DT.Spacing.pagePad)
-                            .padding(.vertical, 6)
-                    }
-                }
+                trackList
+                footer
             }
             .padding(.bottom, DT.Spacing.xl)
         }
-        .screenBackground()
+        .ignoresSafeArea(edges: .top)
+        .musicHeroBackground(cover(width: 300))
         .inlineNavigationTitle()
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -410,5 +425,74 @@ private struct MusicDownloadedAlbumView: View {
         .onChange(of: songs.isEmpty) { _, isEmpty in
             if isEmpty { dismiss() }
         }
+    }
+
+    private var titles: some View {
+        VStack(spacing: DT.Spacing.xs) {
+            Text(verbatim: album?.name ?? songs.first?.albumName ?? "")
+                .font(.title2.weight(.bold))
+                .foregroundStyle(DT.Color.textPrimary)
+                .multilineTextAlignment(.center)
+            if let albumArtist {
+                Text(verbatim: albumArtist)
+                    .font(.title3)
+                    .foregroundStyle(DT.Color.accent)
+                    .multilineTextAlignment(.center)
+            }
+            if let detail {
+                Text(verbatim: detail)
+                    .font(.footnote.weight(.medium))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+        }
+    }
+
+    /// Genre · year, as on the album's page.
+    private var detail: String? {
+        let parts = [album?.genres.first, album?.productionYear.map(String.init)].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private var trackList: some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            ForEach(discs, id: \.number) { disc in
+                if discs.count > 1 {
+                    Text("Disc \(disc.number)")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .padding(.horizontal, DT.Spacing.pagePad)
+                        .padding(.top, DT.Spacing.md)
+                        .padding(.bottom, DT.Spacing.xxs)
+                }
+                ForEach(Array(disc.songs.enumerated()), id: \.element.id) { position, song in
+                    MusicAlbumSongRow(song: song, number: song.trackNumber ?? position + 1, albumArtist: albumArtist) {
+                        MusicActions.play(songs, from: songs.firstIndex(of: song) ?? 0)
+                    }
+                    .contextMenu {
+                        Button("Remove Download", systemImage: "trash", role: .destructive) { downloads.remove([song]) }
+                    }
+                }
+            }
+        }
+    }
+
+    /// As on the album's page, with the space the saved songs take.
+    private var footer: some View {
+        let minutes = Int((songs.compactMap(\.duration).reduce(0, +) / 60).rounded())
+        return VStack(alignment: .leading, spacing: 2) {
+            if let released = album?.releaseDate {
+                Text(released.formatted(date: .long, time: .omitted))
+            } else if let year = album?.productionYear {
+                Text(verbatim: String(year))
+            }
+            Text("\(songs.count) songs, \(minutes) minutes · \(StorageManagement.formatted(downloads.bytes(of: songs))) downloaded")
+            if let label = album?.label {
+                Text(verbatim: "℗ \(label)")
+            }
+        }
+        .font(.footnote)
+        .foregroundStyle(DT.Color.textSecondary)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, DT.Spacing.pagePad)
     }
 }

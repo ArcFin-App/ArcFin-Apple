@@ -38,6 +38,7 @@ struct HomeView: View {
         hasDownloads = !downloadManager.ownDownloads((try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []).isEmpty
     }
     @State private var showSettings = false
+    @State private var watchParty: WatchPartyLaunch?
     @Environment(\.openWindow) private var openWindow
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
     @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
@@ -95,6 +96,7 @@ struct HomeView: View {
                             if (mediaRepo.connectionFailed && !mediaRepo.isLoading) || model.isSlowFirstLoad {
                                 HomeConnectionBanner(hasDownloads: hasDownloads)
                             }
+                            ServerNoticeBanners()
                             ForEach(orderedVisibleShelves) { shelf in
                                 if HomeModel.showsShelfSkeleton(shuffled: shuffleHomeShelves, mediaRepo: mediaRepo),
                                    !HomeShelfPrefs.pinned.contains(shelf), !shelf.isSeerr {
@@ -153,6 +155,15 @@ struct HomeView: View {
             // Home on macOS (the avatar button that opens it on iOS lives only in the
             // iOS toolbar).
             .toolbar {
+                if authManager.arcfinSyncStatus?.isOn("watchParty") == true {
+                    ToolbarItem(placement: .primaryAction) {
+                        Button { watchParty = WatchPartyLaunch(.join(code: nil)) } label: {
+                            Image(systemName: "person.2.wave.2")
+                        }
+                        .accessibilityLabel("Watch Party")
+                        .help("Watch Party")
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         Task { await loadHome(force: true) }
@@ -296,6 +307,11 @@ struct HomeView: View {
                 model.openDeepLinkItem(id: id, authManager: authManager, mediaRepo: mediaRepo)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinWatchParty)) { note in
+            openPendingParty(note.userInfo?["code"] as? String)
+        }
+        .onAppear { openPendingParty(nil) }
+        .watchPartySheet($watchParty) { model.playbackRequest = $0 }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
             model.resumeLatest(mediaRepo: mediaRepo)
         }
@@ -343,8 +359,17 @@ struct HomeView: View {
 
     private var isHeroCovered: Bool {
         model.detailItem != nil || seeAllShelf != nil || showSettings || model.seerrDetailItem != nil
+            || watchParty != nil
             || trailerLaunchItem != nil || model.playbackRequest != nil || hero.playbackRequest != nil
             || PlayerActivity.shared.isPlayerOpen
+    }
+
+    /// Opens the watch party join screen for a scanned code, or one a cold launch buffered.
+    private func openPendingParty(_ code: String?) {
+        let pending = code ?? UserDefaults.standard.string(forKey: "arcfin.pendingPartyCode")
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingPartyCode")
+        guard let pending else { return }
+        watchParty = WatchPartyLaunch(.join(code: pending))
     }
 
     private func loadHeroVideoBackdrop() {

@@ -88,6 +88,7 @@ struct AuthView: View {
                 Text("Password").tag(AuthMode.credentials)
             }
             .pickerStyle(.segmented)
+            .onChange(of: mode) { HapticManager.selection() }
 
             quickConnectOffNotice
 
@@ -355,6 +356,7 @@ struct AuthView: View {
                 baseURL: serverURL, username: username, password: password
             )
             await attemptSeerrAutoLogin(credential: credential, jellyfinPassword: password)
+            HapticManager.success()
             if let onAuthenticated {
                 onAuthenticated(credential)
             } else {
@@ -362,6 +364,7 @@ struct AuthView: View {
                 withAnimation { signedIn = true }
             }
         } catch {
+            HapticManager.error()
             authError = error.localizedDescription
         }
         signingIn = false
@@ -416,6 +419,7 @@ struct AuthView: View {
             guard approved else { continue }
             do {
                 let credential = try await authManager.authClient.authenticateWithQuickConnect(baseURL: serverURL, secret: secret)
+                HapticManager.success()
                 if let onAuthenticated {
                     onAuthenticated(credential)
                 } else {
@@ -423,6 +427,7 @@ struct AuthView: View {
                     withAnimation { signedIn = true }
                 }
             } catch {
+                HapticManager.error()
                 authError = error.localizedDescription
             }
             return

@@ -40,6 +40,7 @@ struct DownloadButton: View {
     private var button: some View {
         Button {
             if isDownloaded {
+                HapticManager.warning()
                 showDeleteConfirm = true
             } else if progress != nil || isQueued {
                 if downloadManager.smartIgnoreTarget(itemId: item.id) != nil {
@@ -125,6 +126,7 @@ struct DownloadButton: View {
     private func startDownload(_ choice: DownloadChoice) {
         guard case .authenticated(let credential) = authManager.state else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        HapticManager.success()
         Task {
             await downloadManager.startDownload(item: item, credential: credential, authHeader: authHeader,
                                                 bitrateCap: choice.bitrateCap, tracks: choice.tracks)

@@ -33,6 +33,7 @@ struct MediaDetailView: View {
     @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
     @State private var requestingSeerrItem: SeerrItem?
     @State private var openedSeerrItem: SeerrItem?
+    @State private var watchParty: WatchPartyLaunch?
 
     // A Mac window is far wider than a phone: a 260 pt strip of backdrop and a 90 pt
     // poster left the top of the page looking like a banner ad.
@@ -57,6 +58,7 @@ struct MediaDetailView: View {
                 else { detailContent }
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
+            .watchPartySheet($watchParty, play: playFromParty)
         }
         .background {
             ZStack {
@@ -116,7 +118,11 @@ struct MediaDetailView: View {
                     .help("Share")
                 }
             }
-            ToolbarItem(placement: .primaryAction) { DetailMoreMenu(model: model) { showSubtitleSearch = true }.help("More") }
+            ToolbarItem(placement: .primaryAction) {
+                DetailMoreMenu(model: model, searchSubtitles: { showSubtitleSearch = true },
+                               startWatchParty: startWatchParty)
+                    .help("More")
+            }
         }
         .sheet(isPresented: $showSubtitleSearch) {
             NavigationStack {
@@ -221,6 +227,14 @@ struct MediaDetailView: View {
                          seriesOpensOnSeasonInProgress: true)
     }
 
+    private func startWatchParty() {
+        watchParty = WatchPartyLaunch(.host(model.detail?.item ?? item, officialRating: model.detail?.officialRating))
+    }
+
+    private func playFromParty(_ request: Arcfin.PlaybackRequest) {
+        model.playbackRequest = PlaybackRequest(item: request.item, startTicks: request.startTicks)
+    }
+
     private func playerDismissed() {
         if let next = model.playerDismissed(authManager: authManager, downloadManager: downloadManager) {
             selectedEpisode = next
@@ -240,6 +254,9 @@ struct MediaDetailView: View {
     @ViewBuilder
     private var detailContent: some View {
         DetailPlayButton(model: model)
+        if [.movie, .series, .episode].contains(item.type), WatchPartyDetailButton.isAvailable(authManager) {
+            WatchPartyDetailButton(action: startWatchParty)
+        }
         if model.detailFailed {
             DetailLoadFailedRow { Task { await loadPage() } }
         }

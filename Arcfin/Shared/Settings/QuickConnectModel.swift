@@ -25,7 +25,9 @@ final class QuickConnectModel {
                 // The mark stays out of the translation: the colour is picked by it.
                 result = ok ? "✓ " + String(localized: "Device authorized") : "✗ " + String(localized: "Invalid or expired code")
                 if ok { self.code = "" }
+                if ok { HapticManager.success() } else { HapticManager.error() }
             } catch {
+                HapticManager.error()
                 result = "✗ \(error.localizedDescription)"
             }
             isAuthorizing = false
@@ -102,6 +104,7 @@ final class QuickConnectApproval {
             let approved = (try? await authManager.authClient.authorizeQuickConnect(
                 baseURL: credential.baseURL, authHeader: header, code: request.code)) ?? false
             isApproving = false
+            if approved { HapticManager.success() } else { HapticManager.error() }
             if approved {
                 outcome = Outcome(succeeded: true, message: String(localized: "The Apple TV is signing in as \(credential.displayName)."))
             } else if let server = request.server, server.host != credential.baseURL.host {

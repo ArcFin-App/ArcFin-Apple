@@ -23,6 +23,7 @@ struct MediaDetailView: View {
     @State private var showSubtitleSearch = false
     @State private var openedCollection: MediaItem?
     @State private var openedPlaylist: MediaItem?
+    @State private var watchParty: WatchPartyLaunch?
     @Namespace private var focusNamespace
     @State private var episodeScrollID: String?
     @State private var minuteTick = Date()
@@ -105,6 +106,7 @@ struct MediaDetailView: View {
             }
             .id(request.item.id)
         }
+        .watchPartyCover($watchParty) { playbackRequest = $0 }
         .navigationDestination(item: $openSeerrItem) { SeerrItemDetailView(item: $0) }
         .watchScopeConfirmation($pendingScopeChange) { change in
             model.markScopeWatched(change.scope, watched: change.watched, update: .reload, authManager: authManager)
@@ -309,6 +311,17 @@ struct MediaDetailView: View {
                 }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
+            }
+
+            if [.movie, .series, .episode].contains(item.type), WatchPartyDetailButton.isAvailable(authManager) {
+                Button {
+                    watchParty = WatchPartyLaunch(.host(model.detail?.item ?? item, officialRating: model.detail?.officialRating))
+                } label: {
+                    TVDetailButtonLabel(icon: "person.2.wave.2", text: "Watch Party")
+                }
+                .buttonStyle(TVCardButtonStyle())
+                .focusEffectDisabled()
+                .accessibilityLabel("Start a Watch Party")
             }
 
             HStack(spacing: 14) {

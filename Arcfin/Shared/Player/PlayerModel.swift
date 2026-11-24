@@ -1136,6 +1136,7 @@ final class PlayerModel {
         // Opened from the casting bar: the receiver is already playing this, so loading it
         // again would jump it back to where the local player happens to be.
         guard CastManager.shared.nowPlayingItemID != item.id else { return }
+        HapticManager.success()
         loadCast(startSeconds: Double(player.positionTicks) / 10_000_000)
     }
 

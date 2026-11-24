@@ -29,6 +29,7 @@ final class SeerrRequestReview {
                 try await seerrRepo.cancelRequest(id: request.id)
             } catch where SeerrRepository.isCancellation(error) {
             } catch {
+                HapticManager.error()
                 errorTitle = String(localized: "Couldn't Remove Request")
                 self.error = String(localized: "Seerr didn't remove “\(request.mediaTitle)”. Check your connection and try again.")
             }
@@ -48,6 +49,7 @@ final class SeerrRequestReview {
             self.error = String(localized: "“\(request.mediaTitle)” isn't waiting for approval any more. The list now shows where it stands.")
         } catch where SeerrRepository.isCancellation(error) {
         } catch {
+            HapticManager.error()
             errorTitle = approved ? String(localized: "Couldn't Approve") : String(localized: "Couldn't Decline")
             self.error = String(localized: "Seerr didn't take the change to “\(request.mediaTitle)”. Check your connection and try again.")
         }

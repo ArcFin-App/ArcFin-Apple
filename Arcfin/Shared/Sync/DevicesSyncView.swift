@@ -265,7 +265,7 @@ struct SyncDeviceDetailView: View {
                 SyncDifferencesSection(device: device, differences: differences(device))
 
                 Section {
-                    Button(role: .destructive) { confirmForget = true } label: {
+                    Button(role: .destructive) { HapticManager.warning(); confirmForget = true } label: {
                         Text("Forget Device")
                             .foregroundStyle(DT.Color.palette("F43F5E"))
                     }

@@ -39,6 +39,7 @@ struct HomeView: View {
     }
     @State private var showSettings = false
     @State private var pickTogether: PickTogetherLaunch?
+    @State private var watchParty: WatchPartyLaunch?
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
     @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
     @State private var trailerLaunchItem: MediaItem?
@@ -100,6 +101,7 @@ struct HomeView: View {
                             if (mediaRepo.connectionFailed && !mediaRepo.isLoading) || model.isSlowFirstLoad {
                                 HomeConnectionBanner(hasDownloads: hasDownloads)
                             }
+                            ServerNoticeBanners()
                             ForEach(orderedVisibleShelves) { shelf in
                                 if HomeModel.showsShelfSkeleton(shuffled: shuffleHomeShelves, mediaRepo: mediaRepo),
                                    !HomeShelfPrefs.pinned.contains(shelf), !shelf.isSeerr {
@@ -151,11 +153,17 @@ struct HomeView: View {
             .navigationTitle("")
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    if authManager.arcfinSyncStatus?.features.contains("pickTogether") == true {
+                    if authManager.arcfinSyncStatus?.isOn("pickTogether") == true {
                         Button { pickTogether = PickTogetherLaunch(code: nil) } label: {
                             Image(systemName: "rectangle.stack.badge.person.crop")
                         }
                         .accessibilityLabel("Pick Together")
+                    }
+                    if authManager.arcfinSyncStatus?.isOn("watchParty") == true {
+                        Button { watchParty = WatchPartyLaunch(.join(code: nil)) } label: {
+                            Image(systemName: "person.2.wave.2")
+                        }
+                        .accessibilityLabel("Watch Party")
                     }
                     // Was a decorative placeholder (empty action) for a notification center
                     // this app doesn't have — only local, in-the-moment alerts (download
@@ -309,6 +317,13 @@ struct HomeView: View {
         .fullScreenCover(item: $pickTogether) { launch in
             PickTogetherView(joinCode: launch.code)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinWatchParty)) { note in
+            openPendingParty(note.userInfo?["code"] as? String)
+        }
+        .onAppear { openPendingParty(nil) }
+        .fullScreenCover(item: $watchParty) { party in
+            WatchPartyView(launch: party.launch) { model.playbackRequest = $0 }
+        }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
             model.resumeLatest(mediaRepo: mediaRepo)
         }
@@ -356,7 +371,7 @@ struct HomeView: View {
 
     private var isHeroCovered: Bool {
         model.detailItem != nil || seeAllShelf != nil || showSettings || model.seerrDetailItem != nil
-            || pickTogether != nil
+            || pickTogether != nil || watchParty != nil
             || trailerLaunchItem != nil || model.playbackRequest != nil || hero.playbackRequest != nil
             || PlayerActivity.shared.isPlayerOpen
             || AppServices.music.isNowPlayingOpen || AppServices.remoteSessions.isShowingRemote
@@ -504,5 +519,13 @@ extension HomeView {
         guard let pending else { return }
         UserDefaults.standard.removeObject(forKey: "arcfin.pendingPickCode")
         pickTogether = PickTogetherLaunch(code: pending)
+    }
+
+    /// Opens the watch party join screen for a scanned code, or one a cold launch buffered.
+    fileprivate func openPendingParty(_ code: String?) {
+        let pending = code ?? UserDefaults.standard.string(forKey: "arcfin.pendingPartyCode")
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingPartyCode")
+        guard let pending else { return }
+        watchParty = WatchPartyLaunch(.join(code: pending))
     }
 }

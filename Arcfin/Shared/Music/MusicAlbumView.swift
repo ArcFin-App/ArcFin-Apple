@@ -224,7 +224,8 @@ struct MusicAlbumView: View {
 }
 
 /// One song on an album: its number (or bars while it plays), name, any guest artist, length.
-private struct MusicAlbumSongRow: View {
+/// Also the rows of a downloaded album, so the two pages look the same.
+struct MusicAlbumSongRow: View {
     let song: MusicSong
     let number: Int
     let albumArtist: String?
