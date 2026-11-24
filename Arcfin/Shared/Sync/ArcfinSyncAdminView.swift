@@ -43,14 +43,94 @@ struct ArcfinSyncAdminView: View {
                     Text("A default is what a setting starts at until someone changes it. A locked setting always has its default, and can't be changed in the app.")
                 }
 
-                if authManager.arcfinSyncStatus?.features.contains("pickTogether") == true {
+                if !features.isDisjoint(with: Self.adminFeatures) {
                     Section {
-                        NavigationLink {
-                            PickTogetherAdminView(users: model.users).tvSettingsPage()
-                        } label: {
-                            TVRowLabelText(title: "Pick Together", detail: "Who on this server can use it")
+                        if features.contains("pickTogether") {
+                            NavigationLink {
+                                FeatureAccessAdminView(feature: .pickTogether, users: model.users).tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Pick Together", detail: "Who on this server can use it")
+                            }
+                            .tvListRow()
                         }
-                        .tvListRow()
+                        if features.contains("watchParty") {
+                            NavigationLink {
+                                FeatureAccessAdminView(feature: .watchParty, users: model.users).tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Watch Parties", detail: "Who on this server can use them")
+                            }
+                            .tvListRow()
+                        }
+                        if features.contains("watchParty") || features.contains("pickTogether") {
+                            NavigationLink {
+                                LiveSessionsAdminView().tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Happening Now", detail: "Every watch party and Pick Together session on now")
+                            }
+                            .tvListRow()
+                            NavigationLink {
+                                HistoryAdminView().tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "History", detail: "Past watch parties and Pick Together sessions")
+                            }
+                            .tvListRow()
+                        }
+                        if features.contains("recommendations") {
+                            NavigationLink {
+                                ToggleFeatureAdminView(feature: .recommendations).tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Recommendations", detail: "Rows on everyone's Home picked from what they watch")
+                            }
+                            .tvListRow()
+                        }
+                        if features.contains("hidden") {
+                            NavigationLink {
+                                ToggleFeatureAdminView(feature: .hidden).tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Hide from Continue Watching and Next Up", detail: "The same hidden titles on all of someone's devices")
+                            }
+                            .tvListRow()
+                        }
+                        if features.contains("downloadLimits") {
+                            NavigationLink {
+                                DownloadLimitsAdminView(users: model.users).tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Downloads", detail: "How much each person can keep downloaded")
+                            }
+                            .tvListRow()
+                        }
+                        if !features.isDisjoint(with: Self.householdFeatures) {
+                            NavigationLink {
+                                HouseholdAdminView(users: model.users, features: features).tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Household", detail: "Shared accounts, announcements and maintenance")
+                            }
+                            .tvListRow()
+                        }
+                        if features.contains("integrations") {
+                            NavigationLink {
+                                IntegrationsAdminView(users: model.users).tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Seerr & TMDB", detail: "Keys kept on this server, and requests waiting to send")
+                            }
+                            .tvListRow()
+                        }
+                        if features.contains("signedCommands") {
+                            NavigationLink {
+                                SecurityAdminView(users: model.users).tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Security", detail: "Clear PINs, and lock or unlock profiles")
+                            }
+                            .tvListRow()
+                        }
+                        if features.contains("limits") {
+                            NavigationLink {
+                                WatchTimeAdminView(users: model.users).tvSettingsPage()
+                            } label: {
+                                TVRowLabelText(title: "Watch Time", detail: "Daily limits and bedtimes")
+                            }
+                            .tvListRow()
+                        }
                     } header: {
                         Text("Features")
                     }
@@ -61,7 +141,13 @@ struct ArcfinSyncAdminView: View {
                         NavigationLink {
                             AdminSyncUserView(model: model, userID: user.userId).tvSettingsPage()
                         } label: {
-                            TVRowLabelText(verbatim: user.name, detail: "\(userSummary(user))")
+                            HStack {
+                                TVRowLabelText(verbatim: user.name, detail: "\(userSummary(user))")
+                                if let flags = model.keyFlags(user: user) {
+                                    Spacer(minLength: DT.Spacing.xs)
+                                    AdminBadge(verbatim: flags, isProminent: true)
+                                }
+                            }
                         }
                         .tvListRow()
                     }
@@ -84,6 +170,12 @@ struct ArcfinSyncAdminView: View {
             Text(model.actionError ?? "")
         }
     }
+
+    private static let householdFeatures: Set<String> = ["sharedAccounts", "announcements", "maintenance"]
+    private static let adminFeatures: Set<String> = Self.householdFeatures.union(["downloadLimits", "pickTogether", "watchParty", "recommendations", "hidden",
+                                                                                  "integrations", "signedCommands", "limits"])
+
+    private var features: Set<String> { Set(authManager.arcfinSyncStatus?.features ?? []) }
 
     private func summary(_ settings: [SettingsSchema.Setting], user: String?) -> String {
         let locked = settings.filter { model.isLocked($0.key) }.count
@@ -255,8 +347,13 @@ struct AdminSyncUserView: View {
                     .tvListRow()
                 }
 
+                let requests = model.trustRequests(user: userID)
+                if !requests.isEmpty {
+                    TrustRequestsSection(model: model, requests: requests)
+                }
+
                 Section {
-                    if user.devices.isEmpty {
+                    if user.devices.isEmpty && model.keyOnlyRecords(user: user).isEmpty && model.leftoverOlderDevices(user: user).isEmpty {
                         Text("No devices yet.")
                             .foregroundStyle(DT.Color.textSecondary)
                             .tvReadOnlyRow()
@@ -270,6 +367,23 @@ struct AdminSyncUserView: View {
                             } icon: {
                                 Image(systemName: SettingDisplay.platformImage(device.platform))
                             }
+                        }
+                        .tvListRow()
+                        if let record = model.keyRecord(user: userID, device: device.deviceId) {
+                            DeviceKeyStatusRows(model: model, record: record)
+                        } else if model.isTooOld(user: userID, device: device.deviceId) {
+                            TooOldDeviceRow()
+                        }
+                    }
+                    ForEach(model.keyOnlyRecords(user: user)) { record in
+                        KeyOnlyDeviceRows(model: model, record: record)
+                    }
+                    let leftovers = model.leftoverOlderDevices(user: user)
+                    if !leftovers.isEmpty {
+                        NavigationLink {
+                            OlderSignInsView(model: model, userID: userID).tvSettingsPage()
+                        } label: {
+                            TVRowLabelText(title: "Other Arcfin Sign-Ins (\(leftovers.count)), Too Old for Security Features")
                         }
                         .tvListRow()
                     }
@@ -340,8 +454,12 @@ struct AdminSyncDeviceView: View {
                     .tvListRow()
                 }
 
+                if model.securityOn {
+                    WipeDeviceSection(model: model, userID: userID, deviceID: device.deviceId, name: device.name)
+                }
+
                 Section {
-                    Button(role: .destructive) { confirmForget = true } label: {
+                    Button(role: .destructive) { HapticManager.warning(); confirmForget = true } label: {
                         Text("Forget Device")
                             .foregroundStyle(DT.Color.palette("F43F5E"))
                     }
