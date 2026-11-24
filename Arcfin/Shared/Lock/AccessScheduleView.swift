@@ -106,12 +106,12 @@ struct AccessScheduleView: View {
         .padding(.horizontal, 24)
         .padding(.bottom, 24)
         .screenBackground()
-        .appSheet(item: $settingPIN) { profile in
+        .pinPadSheet(item: $settingPIN) { profile in
             PINFlowSheet(profile: profile, flow: .setNew) {
                 await ServerCompanion.shared.refreshPINState(authManager: authManager)
             }
         }
-        .appSheet(item: $changingPIN) { profile in
+        .pinPadSheet(item: $changingPIN) { profile in
             PINFlowSheet(profile: profile, flow: .changeVerifyCurrent) {
                 await ServerCompanion.shared.refreshPINState(authManager: authManager)
             }

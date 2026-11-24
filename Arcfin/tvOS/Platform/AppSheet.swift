@@ -3,6 +3,13 @@
 import SwiftUI
 
 extension View {
+    /// The PIN pad: full screen on Apple TV, where a sheet panel's focus section kept focus
+    /// off its keys; a sheet elsewhere.
+    func pinPadSheet<Item: Identifiable, Content: View>(item: Binding<Item?>,
+                                                        @ViewBuilder content: @escaping (Item) -> Content) -> some View {
+        fullScreenCover(item: item) { content($0) }
+    }
+
     /// Apple TV's own sheet is a fixed card about a third of the screen wide, whatever the
     /// content asks for: lists ran to its edges and longer content was cut off. This shows the
     /// content in a panel across the dimmed screen instead, and as TVs are landscape, in two
