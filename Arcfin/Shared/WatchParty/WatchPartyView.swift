@@ -3,8 +3,8 @@
 import SwiftUI
 import JellyfinAPI
 
-/// A watch party: the host starts one from a title's page, the others join with its QR code
-/// or code. Full screen on iPhone and iPad, with nothing presented over it.
+/// A watch party: the host starts one from Home or a title's page, the others join with its
+/// QR code or code. Full screen on iPhone, iPad and Apple TV, a sheet on the Mac.
 struct WatchPartyView: View {
     enum Launch: Equatable {
         /// Start a party for this title, now or at a time the host picks.
@@ -50,7 +50,7 @@ struct WatchPartyView: View {
                             if model.error == nil { path.removeAll() }
                         }
                         .navigationTitle("Change Time")
-                        .navigationBarTitleDisplayMode(.inline)
+                        .inlineNavigationTitle()
                     case .pick:
                         WatchPartyPickView { item in
                             path.append(item.type == .series ? .episodes(item) : .host(item))
@@ -63,7 +63,7 @@ struct WatchPartyView: View {
                             if model.state != nil { path.removeAll() }
                         }
                         .navigationTitle("Watch Party")
-                        .navigationBarTitleDisplayMode(.inline)
+                        .inlineNavigationTitle()
                     }
                 }
             }
@@ -112,17 +112,10 @@ private struct WatchPartyContent: View {
     var body: some View {
         content
             .navigationTitle("Watch Party")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                // Waiting for a scheduled start, this can close and be opened again later.
-                ToolbarItem(placement: .cancellationAction) {
-                    if let party = model.state, !party.isWaiting {
-                        Button("Leave") { HapticManager.warning(); showLeave = true }
-                    } else {
-                        Button("Close", action: close)
-                    }
-                }
-            }
+            .inlineNavigationTitle()
+            // Waiting for a scheduled start, this can close and be opened again later.
+            .watchPartyCloseButton(leaves: model.state.map { !$0.isWaiting } ?? false,
+                                   leave: { HapticManager.warning(); showLeave = true }, close: close)
             .alert("Leave This Watch Party?", isPresented: $showLeave) {
                 Button("Leave", role: .destructive) {
                     model.leave()
@@ -141,8 +134,7 @@ private struct WatchPartyContent: View {
             }
             .alert("Enter the Code", isPresented: $showEnterCode) {
                 TextField("Code", text: $code)
-                    .textInputAutocapitalization(.characters)
-                    .autocorrectionDisabled()
+                    .partyCodeInput()
                 Button("Join") { Task { await model.join(code: code) } }
                 Button("Cancel", role: .cancel) {}
             } message: {
@@ -169,10 +161,8 @@ private struct WatchPartyContent: View {
                 await model.create(itemID: hosted.item.id, scheduledFor: date)
             }
         } else {
-            WatchPartyJoinView(parties: model.myParties, start: { path.append(.pick) }, scan: { path.append(.scan) },
-                               enterCode: { code = ""; showEnterCode = true }) { party in
-                Task { await model.reopen(party) }
-            }
+            WatchPartyHub(model: model, start: { path.append(.pick) }, scan: { path.append(.scan) },
+                          enterCode: { code = ""; showEnterCode = true })
         }
     }
 }

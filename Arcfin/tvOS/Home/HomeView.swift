@@ -21,6 +21,7 @@ struct HomeView: View {
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
     @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
     @State private var model = HomeModel()
+    @State private var watchParty: WatchPartyLaunch?
 
     /// Only for putting focus on the first Continue Watching card and letting it go before the
     /// player opens. What's focused comes from `focus`, which the cards report into, so this
@@ -88,7 +89,7 @@ struct HomeView: View {
     /// Apple TV, so an open page is checked directly.
     private var heroVideoAllowed: Bool {
         isHomeShowing && homePath.isEmpty && model.detailItem == nil && model.seerrDetailItem == nil
-            && (modernHome || !isHeroScrolledAway) && model.playbackRequest == nil
+            && (modernHome || !isHeroScrolledAway) && model.playbackRequest == nil && watchParty == nil
             && !PlayerActivity.shared.isPlayerOpen && !isBehindLock
     }
 
@@ -161,6 +162,10 @@ struct HomeView: View {
             // instead of the last episode's.
             .id(request.item.id)
         }
+        .watchPartyCover($watchParty) { request in
+            focusedCard = nil
+            model.playbackRequest = request
+        }
         .task { await load() }
         .task(id: topShelfSignature) {
             guard !topShelfSignature.isEmpty else { return }
@@ -197,8 +202,15 @@ struct HomeView: View {
             if !isBehindLock { model.playPendingWatch(authManager: authManager) }
         }
         .onChange(of: isBehindLock) { _, behind in
-            if !behind { model.playPendingWatch(authManager: authManager) }
+            if !behind {
+                model.playPendingWatch(authManager: authManager)
+                openPendingParty(nil)
+            }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinWatchParty)) { note in
+            openPendingParty(note.userInfo?["code"] as? String)
+        }
+        .onAppear { openPendingParty(nil) }
         .task(id: "\(StreamingServicePrefs.decode(streamingServicesData).map(\.id))-\(seerrRepo.hasCatalog)-\(seerrRegionOverride)") {
             await model.loadServiceRows(seerrRepo: seerrRepo)
         }
@@ -390,6 +402,15 @@ struct HomeView: View {
         } else {
             brandingBlock
         }
+    }
+
+    /// Opens the watch party join screen for a scanned code, or one a cold launch buffered,
+    /// once the lock is out of the way.
+    private func openPendingParty(_ code: String?) {
+        if let code { UserDefaults.standard.set(code, forKey: "arcfin.pendingPartyCode") }
+        guard !isBehindLock, let pending = UserDefaults.standard.string(forKey: "arcfin.pendingPartyCode") else { return }
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingPartyCode")
+        watchParty = WatchPartyLaunch(.join(code: pending))
     }
 
     private var brandingBlock: some View {

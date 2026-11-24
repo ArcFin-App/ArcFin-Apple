@@ -18,29 +18,34 @@ struct WatchPartyLobbyView: View {
 
     private var party: WatchPartyState? { model.state }
 
+    /// Changes whenever the controls on offer do, so Apple TV can put focus back on the main one.
+    private var controlsKey: String {
+        guard let party else { return "" }
+        return "\(party.isLobby)-\(party.isWaiting)-\(party.isStarted)-\(model.isHost)-\(model.joinFailed)"
+    }
+
     var body: some View {
-        ScrollView {
-            VStack(spacing: DT.Spacing.lg) {
-                title
-                if let party {
-                    if let at = WatchPartyTime.upcoming(party) {
-                        schedule(party, at: at)
-                    }
-                    if party.isLobby || party.isWaiting {
-                        invite(party)
-                    } else {
-                        progress(party)
-                    }
-                    people(party)
-                    if party.isLobby { controls(party) }
-                    if party.isWaiting { waitingControls }
-                    SyncPlayNote(groupName: party.isStarted ? party.groupName : nil)
+        WatchPartyLobbyLayout(focusKey: controlsKey) {
+            title
+        } schedule: {
+            if let party, let at = WatchPartyTime.upcoming(party) {
+                schedule(party, at: at)
+            }
+        } invite: {
+            if let party {
+                if party.isLobby || party.isWaiting {
+                    invite(party)
+                } else {
+                    progress(party)
                 }
             }
-            .padding(.horizontal, DT.Spacing.pagePad)
-            .padding(.vertical, DT.Spacing.lg)
-            .frame(maxWidth: 560)
-            .frame(maxWidth: .infinity)
+        } rest: {
+            if let party {
+                people(party)
+                if party.isLobby { controls(party) }
+                if party.isWaiting { waitingControls }
+                SyncPlayNote(groupName: party.isStarted ? party.groupName : nil)
+            }
         }
         .sensoryFeedback(.success, trigger: party?.people.filter(\.ready).count ?? 0) { old, new in new > old }
         .alert("Remove \(removing?.name ?? "")?", isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
@@ -163,6 +168,7 @@ struct WatchPartyLobbyView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(model.isBusy || model.isConnecting)
+                .watchPartyPrimary()
                 Button(action: changeTime) {
                     Label("Change Time", systemImage: "calendar.badge.clock")
                         .frame(maxWidth: .infinity)
@@ -184,6 +190,7 @@ struct WatchPartyLobbyView: View {
             }
             .buttonStyle(.bordered)
             .controlSize(.large)
+            .watchPartyPrimary(!model.isHost)
         }
         .tint(DT.Color.accent)
     }
@@ -198,7 +205,7 @@ struct WatchPartyLobbyView: View {
                     .foregroundStyle(DT.Color.textSecondary)
             } else {
                 if let link = model.link {
-                    QRCodeImage(text: link.absoluteString)
+                    WatchPartyQRCode(text: link.absoluteString)
                         .frame(width: 180, height: 180)
                         .padding(DT.Spacing.sm)
                         .background(.white, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
@@ -207,7 +214,7 @@ struct WatchPartyLobbyView: View {
                 Text(party.code)
                     .font(.system(size: 40, weight: .bold, design: .monospaced))
                     .tracking(6)
-                    .textSelection(.enabled)
+                    .partyTextSelection()
                     .accessibilityLabel(Text("Code \(party.code.map(String.init).joined(separator: " "))"))
                 Text("Others on this server scan the QR code with the Camera app or in Arcfin, or enter the code.")
                     .font(DT.Font.caption)
@@ -237,12 +244,14 @@ struct WatchPartyLobbyView: View {
                     joinIfStarted()
                 }
                 .buttonStyle(.borderedProminent)
+                .watchPartyPrimary()
             } else if party.isStarted && model.isHost {
                 Text("The watch party has started.")
                     .font(DT.Font.body)
                 Button("Back to the Lobby") { Task { await model.reset() } }
                     .buttonStyle(.bordered)
                     .disabled(model.isBusy)
+                    .watchPartyPrimary()
             } else {
                 ProgressView()
                 Text(progressText(party))
@@ -294,9 +303,10 @@ struct WatchPartyLobbyView: View {
                         } label: {
                             PartyPersonRow(person: person, waiting: party.isWaiting, startsAt: WatchPartyTime.upcoming(party))
                         }
-                        .buttonStyle(.plain)
+                        .arcfinPlainButton(cornerRadius: DT.Radius.lg, prominent: false)
                     } else {
                         PartyPersonRow(person: person, waiting: party.isWaiting, startsAt: WatchPartyTime.upcoming(party))
+                            .tvFocusable(cornerRadius: DT.Radius.lg)
                     }
                     if person.id != party.people.last?.id {
                         Divider().padding(.leading, DT.Spacing.md)
@@ -325,6 +335,7 @@ struct WatchPartyLobbyView: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(model.isBusy || model.isConnecting)
+                .watchPartyPrimary()
                 if model.others.contains(where: { !$0.ready }) {
                     Text("Not everyone is ready yet. You can start anyway.")
                         .font(DT.Font.caption)
@@ -353,6 +364,7 @@ struct WatchPartyLobbyView: View {
                 .padding(DT.Spacing.md)
                 .background(DT.Color.backgroundSecondary, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
                 .disabled(model.isBusy)
+                .watchPartyPrimary()
             }
         }
         .tint(DT.Color.accent)
@@ -372,11 +384,11 @@ private struct SyncPlayNote: View {
     }
 
     var body: some View {
-        DisclosureGroup(isExpanded: $isExpanded) {
+        WatchPartyDisclosure(isExpanded: $isExpanded) {
             Text(text)
                 .font(DT.Font.caption)
                 .foregroundStyle(DT.Color.textSecondary)
-                .textSelection(.enabled)
+                .partyTextSelection()
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.top, DT.Spacing.xs)
@@ -452,5 +464,29 @@ private struct PartyPersonRow: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(person.isHost ? Text("\(name), host, \(status)") : Text("\(name), \(status)"))
         .accessibilityValue(localStart ?? "")
+    }
+}
+
+/// The lobby as one column, top to bottom: on iPhone, iPad and the Mac.
+struct StackedWatchPartyLobby<Heading: View, Schedule: View, Invite: View, Rest: View>: View {
+    var focusKey: String
+    @ViewBuilder var heading: Heading
+    @ViewBuilder var schedule: Schedule
+    @ViewBuilder var invite: Invite
+    @ViewBuilder var rest: Rest
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: DT.Spacing.lg) {
+                heading
+                schedule
+                invite
+                rest
+            }
+            .padding(.horizontal, DT.Spacing.pagePad)
+            .padding(.vertical, DT.Spacing.lg)
+            .frame(maxWidth: 560)
+            .frame(maxWidth: .infinity)
+        }
     }
 }

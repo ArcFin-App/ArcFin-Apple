@@ -5,12 +5,17 @@ import JellyfinAPI
 
 /// Starting a watch party, or joining one by its QR code or code. There are no links to share.
 struct WatchPartyJoinView: View {
-    /// The parties this device is already in, to get back to.
-    let parties: [WatchPartyState]
+    let model: WatchPartyModel
     var start: () -> Void
     var scan: () -> Void
     var enterCode: () -> Void
-    var open: (WatchPartyState) -> Void
+
+    /// The parties this device is already in, to get back to.
+    private var parties: [WatchPartyState] { model.myParties }
+
+    private func open(_ party: WatchPartyState) {
+        Task { await model.reopen(party) }
+    }
 
     var body: some View {
         ScrollView {
@@ -27,7 +32,7 @@ struct WatchPartyJoinView: View {
                     Text("Watch Together")
                         .font(DT.Font.hero)
                         .multilineTextAlignment(.center)
-                    Text("Pick something and invite people with a code, or join someone else's party by scanning its QR code or typing the code under it. When the host starts, the title plays in sync on every device.")
+                    WatchPartyPlatform.joinBlurb
                         .font(DT.Font.body)
                         .foregroundStyle(DT.Color.textSecondary)
                         .multilineTextAlignment(.center)
@@ -43,7 +48,7 @@ struct WatchPartyJoinView: View {
                         .font(DT.Font.cardTitle)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, DT.Spacing.sm)
-                    if PickScanView.isAvailable {
+                    if WatchPartyPlatform.canScan {
                         Button(action: scan) {
                             Label("Scan a Code", systemImage: "qrcode.viewfinder")
                                 .frame(maxWidth: .infinity)
@@ -80,7 +85,7 @@ struct WatchPartyJoinView: View {
                     Button { open(party) } label: {
                         PartyRow(party: party)
                     }
-                    .buttonStyle(.plain)
+                    .arcfinPlainButton(cornerRadius: DT.Radius.lg, prominent: false)
                     if party.code != parties.last?.code {
                         Divider().padding(.leading, DT.Spacing.md)
                     }
@@ -91,7 +96,7 @@ struct WatchPartyJoinView: View {
     }
 }
 
-private struct PartyRow: View {
+struct PartyRow: View {
     let party: WatchPartyState
 
     var body: some View {
@@ -137,35 +142,5 @@ enum WatchPartyTime {
         let style: Date.FormatStyle = soon ? .dateTime.weekday(.abbreviated).hour().minute()
                                            : .dateTime.weekday(.abbreviated).day().month(.abbreviated).hour().minute()
         return String(localized: "Starts \(at.formatted(style))")
-    }
-}
-
-/// Joins a watch party from its QR code, scanned with the camera.
-struct WatchPartyScanView: View {
-    @Bindable var model: WatchPartyModel
-    var joined: () -> Void
-
-    @State private var scanned = false
-
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            PickCodeScanner(parse: ArcfinCompanionClient.partyCode(from:)) { code in
-                guard !scanned else { return }
-                scanned = true
-                Task {
-                    await model.join(code: code)
-                    if model.state != nil { joined() } else { scanned = false }
-                }
-            }
-            .ignoresSafeArea()
-            Text(scanned ? "Joining…" : "Point the camera at the QR code on the host's screen.")
-                .font(DT.Font.callout)
-                .multilineTextAlignment(.center)
-                .padding(DT.Spacing.md)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: DT.Radius.lg))
-                .padding(DT.Spacing.lg)
-        }
-        .navigationTitle("Scan the Code")
-        .navigationBarTitleDisplayMode(.inline)
     }
 }

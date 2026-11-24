@@ -7,6 +7,9 @@ import SwiftUI
 enum WhatsNew {
     static var items: [WhatsNewItem] {
         [
+            WhatsNewItem(icon: "person.3.sequence",
+                         title: "Watch Parties",
+                         detail: "Watch together, in sync: invite people with a code or QR code, plan a party up to 30 days ahead and see what time it'll be for each guest. Start one from Home or a title's page. Friends in other apps can join through SyncPlay."),
             WhatsNewItem(icon: "eye.slash",
                          title: "Hide from Continue Watching",
                          detail: "Hold a title to hide it from Continue Watching or Next Up on all your devices. It comes back once you play it again."),

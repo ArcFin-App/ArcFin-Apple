@@ -26436,6 +26436,70 @@
         }
       }
     },
+    "Pick something and invite people with a code, or join someone else's party by typing the code under its QR code. When the host starts, the title plays in sync on every device." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle etwas aus und lade Leute mit einem Code ein, oder tritt der Party eines anderen bei, indem du den Code unter ihrem QR-Code eingibst. Wenn der Gastgeber startet, läuft der Titel auf allen Geräten synchron."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Elige algo e invita a otros con un código, o únete a la fiesta de otra persona escribiendo el código que aparece debajo de su código QR. Cuando el anfitrión empieza, el título se reproduce sincronizado en todos los dispositivos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez quelque chose et invitez des personnes avec un code, ou rejoignez la soirée de quelqu’un d’autre en saisissant le code affiché sous son code QR. Quand l’hôte lance la lecture, le titre est lu de façon synchronisée sur tous les appareils."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scegli qualcosa e invita altre persone con un codice, oppure unisciti alla watch party di qualcun altro digitando il codice sotto il suo codice QR. Quando l’host avvia, il titolo viene riprodotto in sincrono su tutti i dispositivi."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作品を選んでコードで招待するか、他の人のパーティのQRコードの下にあるコードを入力して参加します。ホストが開始すると、すべてのデバイスで作品が同期して再生されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작품을 골라 코드로 사람들을 초대하거나, 다른 사람의 파티 QR 코드 아래에 있는 코드를 입력해 참여하세요. 호스트가 시작하면 모든 기기에서 작품이 동기화되어 재생됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kies iets en nodig mensen uit met een code, of doe mee aan de watchparty van iemand anders door de code onder de QR-code in te voeren. Als de host begint, speelt de titel op elk apparaat synchroon af."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escolha algo e convide pessoas com um código, ou entre na watch party de outra pessoa digitando o código abaixo do código QR dela. Quando o anfitrião começar, o título é reproduzido em sincronia em todos os dispositivos."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Выберите что-нибудь и пригласите людей по коду или присоединитесь к чужому совместному просмотру, введя код под его QR-кодом. Когда ведущий начнёт, фильм будет воспроизводиться синхронно на всех устройствах."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "选择一部作品并用代码邀请他人，或输入别人派对二维码下方的代码来加入。主持人开始后，作品会在每台设备上同步播放。"
+          }
+        }
+      }
+    },
     "Pick Together · round %lld" : {
       "localizations" : {
         "de" : {

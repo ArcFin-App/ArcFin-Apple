@@ -58,8 +58,7 @@ struct WatchPartyScheduleView: View {
             }
             if later {
                 Section {
-                    DatePicker("Starts", selection: $date, in: range, displayedComponents: [.date, .hourAndMinute])
-                        .datePickerStyle(.graphical)
+                    WatchPartyStartPicker(date: $date, range: range)
                     ForEach(elsewhere, id: \.person.id) { entry in
                         LabeledContent(String(localized: "For \(entry.person.name)"),
                                        value: PartyClock.time(date, in: entry.zone))
@@ -69,18 +68,15 @@ struct WatchPartyScheduleView: View {
                 }
             }
         }
+        // The Mac's own Form style lines labels up in a narrow centred column.
+        .formStyle(.grouped)
         .frame(maxWidth: 640)
         .frame(maxWidth: .infinity)
-        .toolbar {
-            ToolbarItem(placement: .confirmationAction) {
-                Button(confirmTitle) {
-                    Task {
-                        isSaving = true
-                        await done(later ? date : nil)
-                        isSaving = false
-                    }
-                }
-                .disabled(isSaving)
+        .watchPartyConfirm(confirmTitle, disabled: isSaving) {
+            Task {
+                isSaving = true
+                await done(later ? date : nil)
+                isSaving = false
             }
         }
         .tint(DT.Color.accent)

@@ -56,7 +56,7 @@ struct WatchPartyPickView: View {
             Section {
                 ForEach(shown) { item in
                     Button { picked(item) } label: { PickRow(item: item) }
-                        .buttonStyle(.plain)
+                        .arcfinPlainButton(cornerRadius: DT.Radius.md, prominent: false)
                 }
             } header: {
                 if query.isEmpty, !shown.isEmpty { Text("Suggestions") }
@@ -67,11 +67,11 @@ struct WatchPartyPickView: View {
             }
         }
         .overlay { if isSearching && results.isEmpty { ProgressView() } }
-        .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always), prompt: "Movies and Shows")
+        .watchPartySearchable(text: $query, prompt: "Movies and Shows")
         .task(id: query) { await search() }
         .navigationTitle("Pick a Title")
-        .navigationBarTitleDisplayMode(.inline)
-        .scrollContentBackground(.hidden)
+        .inlineNavigationTitle()
+        .partyListBackground()
     }
 
     private func search() async {
@@ -154,16 +154,16 @@ struct WatchPartyEpisodePicker: View {
                     Button { picked(episode) } label: {
                         EpisodePickRow(episode: episode, isUpNext: episode.id == upNext?.id)
                     }
-                    .buttonStyle(.plain)
+                    .arcfinPlainButton(cornerRadius: DT.Radius.md, prominent: false)
                 }
             } header: {
                 Text(series.name)
             }
         }
         .overlay { if isLoading { ProgressView() } }
-        .scrollContentBackground(.hidden)
+        .partyListBackground()
         .navigationTitle("Pick an Episode")
-        .navigationBarTitleDisplayMode(.inline)
+        .inlineNavigationTitle()
         .task { await loadSeasons() }
         .task(id: season) { await loadEpisodes() }
     }
