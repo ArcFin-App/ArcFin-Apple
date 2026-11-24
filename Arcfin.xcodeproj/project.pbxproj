@@ -189,6 +189,10 @@
 				iOS/Onboarding/OnboardingView.swift = (ios, );
 				iOS/Onboarding/WhatsNew.swift = (ios, );
 				iOS/Onboarding/WhatsNewView.swift = (ios, );
+				iOS/PickTogether/PickJoin.swift = (ios, );
+				iOS/PickTogether/PickSessionView.swift = (ios, );
+				iOS/PickTogether/PickTogetherModel.swift = (ios, );
+				iOS/PickTogether/PickTogetherView.swift = (ios, );
 				iOS/Platform/AdaptiveColor.swift = (ios, );
 				iOS/Platform/AdminPlatform.swift = (ios, );
 				iOS/Platform/AlwaysDarkPlayer.swift = (ios, );
@@ -1250,7 +1254,7 @@
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan codes: the one an Apple TV shows to sign in, and a Pick Together session's code. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to find and connect to your Jellyfin server, to cast to nearby devices, and to set up an Apple TV, iPad or Mac nearby from an iPhone or iPad.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
@@ -1332,7 +1336,7 @@
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan codes: the one an Apple TV shows to sign in, and a Pick Together session's code. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to find and connect to your Jellyfin server, to cast to nearby devices, and to set up an Apple TV, iPad or Mac nearby from an iPhone or iPad.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";

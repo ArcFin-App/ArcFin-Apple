@@ -70,6 +70,12 @@ final class AppRootModel {
             // arcfin://remote/<sessionId>, from the Live Activity for another device playing.
             AppServices.remoteSessions.selectedID = url.pathComponents.dropFirst().first
             AppServices.remoteSessions.open()
+        case "pick":
+            // arcfin://pick/<code>?server=…, from a Pick Together share link. Buffered for a
+            // cold launch: Home reads it once it's up.
+            guard let code = url.pathComponents.dropFirst().first else { return }
+            UserDefaults.standard.set(code, forKey: "arcfin.pendingPickCode")
+            NotificationCenter.default.post(name: .arcfinPickTogether, object: nil, userInfo: ["code": code])
         case "resume":
             UserDefaults.standard.set(true, forKey: "arcfin.pendingResume")
             NotificationCenter.default.post(name: .arcfinResume, object: nil)

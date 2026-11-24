@@ -43,6 +43,19 @@ struct ArcfinSyncAdminView: View {
                     Text("A default is what a setting starts at until someone changes it. A locked setting always has its default, and can't be changed in the app.")
                 }
 
+                if authManager.arcfinSyncStatus?.features.contains("pickTogether") == true {
+                    Section {
+                        NavigationLink {
+                            PickTogetherAdminView(users: model.users).tvSettingsPage()
+                        } label: {
+                            TVRowLabelText(title: "Pick Together", detail: "Who on this server can use it")
+                        }
+                        .tvListRow()
+                    } header: {
+                        Text("Features")
+                    }
+                }
+
                 Section {
                     ForEach(model.users) { user in
                         NavigationLink {
