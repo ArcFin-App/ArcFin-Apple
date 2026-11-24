@@ -55,6 +55,7 @@ final class AppLockModel {
                 return
             }
             errorMessage = nil
+            HapticManager.success()
             unlock(as: target, authManager: authManager, onUnlock: onUnlock)
         }
     }

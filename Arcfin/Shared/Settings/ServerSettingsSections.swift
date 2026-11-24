@@ -94,6 +94,7 @@ struct ArcfinSyncSection: View {
     var showsAdminLink = false
 
     @Environment(AuthManager.self) private var authManager
+    @State private var syncRequested = false
 
     /// The admin's locks by name, in the schema's order.
     private var lockedSettings: [SettingsSchema.Setting] {
@@ -117,6 +118,7 @@ struct ArcfinSyncSection: View {
                         .foregroundStyle(DT.Color.textSecondary)
                         .tvReadOnlyRow()
                 }
+                ServerKeyFingerprintRow()
                 if let lastSynced = authManager.arcfinSyncLastSyncedAt {
                     LabeledContent("Last Synced") {
                         Text(lastSynced, style: .relative)
@@ -128,6 +130,7 @@ struct ArcfinSyncSection: View {
                     .tvReadOnlyRow()
             }
             Button {
+                syncRequested = true
                 authManager.syncArcfinNow()
             } label: {
                 Text(authManager.isSyncingArcfin ? "Syncing…" : "Sync Now")
@@ -145,12 +148,27 @@ struct ArcfinSyncSection: View {
                 .font(.caption)
                 .foregroundStyle(DT.Color.textSecondary)
         }
+        .onChange(of: authManager.isSyncingArcfin) { _, syncing in
+            guard syncRequested, !syncing else { return }
+            syncRequested = false
+            if authManager.arcfinSyncLastSyncedAt != nil { HapticManager.success() } else { HapticManager.error() }
+        }
 
         // Outside the status rows above, which a running sync swaps for a spinner.
+        ServerKeyChangedSection()
         if authManager.hasArcfinSyncDevices {
             Section {
                 NavigationLink { DevicesSyncView().tvSettingsPage() } label: {
                     TVRowLabelText(title: "Devices & Sync", detail: "Name this device, choose how it syncs, and see your other devices.")
+                }
+                if ServerCompanion.shared.has("hidden") {
+                    NavigationLink { HiddenTitlesView().tvSettingsPage() } label: {
+                        TVRowLabelText(title: "Hidden Titles", detail: "What you hid from Continue Watching and Next Up, on all your devices.")
+                    }
+                }
+                if let watchTime = ServerCompanion.shared.watchTime, watchTime.hasLimits {
+                    LabeledContent("Watch Time Today") { Text(WatchTimeText.summary(watchTime)) }
+                        .tvReadOnlyRow()
                 }
                 if showsAdminLink && authManager.isAdmin {
                     NavigationLink { ArcfinSyncAdminView().tvSettingsPage() } label: {
@@ -284,5 +302,23 @@ struct ServerURLField: View {
         }
         saved = text
         check = .reached(info.serverName ?? String(localized: "your server"))
+    }
+}
+
+/// "45 min left · bedtime 21:00–07:00", as the server last said.
+enum WatchTimeText {
+    static func summary(_ status: WatchTimeStatus) -> String {
+        var parts: [String] = []
+        if !status.allowed {
+            parts.append(status.isBedtime ? String(localized: "Bedtime") : String(localized: "Used up"))
+        } else if let left = status.minutesLeft {
+            parts.append(String(localized: "\(left) min left"))
+        } else {
+            parts.append(String(localized: "\(status.usedMinutes) min watched"))
+        }
+        if let start = status.bedtimeStart, let end = status.bedtimeEnd {
+            parts.append(String(localized: "bedtime \(start)–\(end)"))
+        }
+        return parts.joined(separator: " · ")
     }
 }

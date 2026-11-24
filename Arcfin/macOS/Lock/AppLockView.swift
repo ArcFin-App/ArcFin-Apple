@@ -48,6 +48,7 @@ struct AppLockView: View {
                 PINPadView(
                     title: String(localized: "Enter PIN"),
                     subtitle: target.displayName,
+                    pinLength: PINLength.stored(target.id),
                     errorMessage: model.errorMessage,
                     resetToken: model.resetToken,
                     onCancel: { model.cancelPIN() },

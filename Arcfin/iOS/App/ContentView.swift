@@ -44,8 +44,9 @@ struct ContentView: View {
             TimelineView(.periodic(from: .now, by: 60)) { context in
                 // context.date only drives the minute-by-minute check; the time compared is
                 // the trusted one.
-                if context.date > .distantPast, ProfileRules.shared.isWithinSchedule() {
+                if context.date > .distantPast, ProfileRules.shared.isWithinSchedule(), !ServerCompanion.shared.blocksActiveProfile() {
                     MainTabView()
+                        .trustRequestPrompt()
                 } else {
                     AccessScheduleView(onSwitchProfile: { model.switchProfileFromSchedule() })
                 }

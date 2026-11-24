@@ -111,6 +111,7 @@ struct UsersView: View {
             PINEntrySheet(
                 title: String(localized: "Switch to \(target.displayName)"),
                 subtitle: target.baseURL.host,
+                pinLength: PINLength.stored(target.id),
                 resetToken: switchPINResetToken,
                 errorMessage: switchPINError,
                 onCancel: {

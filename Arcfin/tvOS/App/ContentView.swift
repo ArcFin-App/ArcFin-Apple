@@ -163,7 +163,7 @@ private struct ScheduleGate: View {
     var body: some View {
         Group {
             // tick only drives the minute-by-minute check; the time compared is the trusted one.
-            if tick > .distantPast, ProfileRules.shared.isWithinSchedule() {
+            if tick > .distantPast, ProfileRules.shared.isWithinSchedule(), !ServerCompanion.shared.blocksActiveProfile() {
                 MainTabView()
             } else {
                 AccessScheduleView(onSwitchProfile: onSwitchProfile)

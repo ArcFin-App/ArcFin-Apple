@@ -81,7 +81,7 @@ struct ProfileDetailView: View {
                 Text("Security")
             } footer: {
                 Text(hasPIN
-                     ? "A 4-digit PIN is required when switching to this profile."
+                     ? "A PIN is required when switching to this profile."
                      : "Add a PIN to require verification before switching to this profile.")
                     .font(.caption)
                     .foregroundStyle(DT.Color.textSecondary)
@@ -116,7 +116,7 @@ struct ProfileDetailView: View {
 
 // MARK: - PIN flow sheet (set / change / disable)
 
-private struct PINFlowSheet: View {
+struct PINFlowSheet: View {
     let profile: ServerCredential
     let flow: ProfileDetailView.PINFlow
     var onDone: () async -> Void
@@ -154,6 +154,8 @@ private struct PINFlowSheet: View {
             PINPadView(
                 title: firstTitle,
                 subtitle: profile.displayName,
+                pinLength: PINLength.stored(profile.id),
+                lengths: flow == .setNew ? ServerPolicy.pinLengths(for: profile.id) : nil,
                 errorMessage: errorMessage,
                 resetToken: resetToken,
                 onCancel: { dismiss() },
@@ -169,6 +171,8 @@ private struct PINFlowSheet: View {
             PINPadView(
                 title: secondTitle,
                 subtitle: profile.displayName,
+                pinLength: pendingPIN?.count ?? 4,
+                lengths: flow == .changeVerifyCurrent ? ServerPolicy.pinLengths(for: profile.id) : nil,
                 errorMessage: errorMessage,
                 resetToken: resetToken,
                 onCancel: { stage = .first; errorMessage = nil },
@@ -179,6 +183,7 @@ private struct PINFlowSheet: View {
             PINPadView(
                 title: String(localized: "Confirm PIN"),
                 subtitle: profile.displayName,
+                pinLength: pendingPIN?.count ?? 4,
                 errorMessage: errorMessage,
                 resetToken: resetToken,
                 onCancel: { stage = .second; errorMessage = nil },
@@ -209,6 +214,7 @@ private struct PINFlowSheet: View {
                     stage = .second
                 } else {
                     authManager.removePin(for: profile.id)
+                    HapticManager.success()
                     await onDone()
                     dismiss()
                 }
@@ -225,6 +231,7 @@ private struct PINFlowSheet: View {
                     // changed with it.
                     if await authManager.storedPIN(for: profile.id) == .none {
                         authManager.savePin(entered, for: profile.id)
+                        HapticManager.success()
                     }
                     await onDone()
                     dismiss()
@@ -245,12 +252,14 @@ private struct PINFlowSheet: View {
 
     private func handleConfirmNew(_ entered: String) {
         guard entered == pendingPIN else {
+            HapticManager.error()
             pendingPIN = nil
             errorMessage = String(localized: "PINs don't match")
             stage = .second
             return
         }
         authManager.savePin(entered, for: profile.id)
+        HapticManager.success()
         Task { await onDone(); dismiss() }
     }
 }
@@ -260,6 +269,7 @@ private struct PINFlowSheet: View {
 struct PINEntrySheet: View {
     let title: String
     var subtitle: String? = nil
+    var pinLength: Int = 4
     var resetToken: Int
     var errorMessage: String?
     var onCancel: () -> Void
@@ -269,6 +279,7 @@ struct PINEntrySheet: View {
         PINPadView(
             title: title,
             subtitle: subtitle,
+            pinLength: pinLength,
             errorMessage: errorMessage,
             resetToken: resetToken,
             onCancel: onCancel,

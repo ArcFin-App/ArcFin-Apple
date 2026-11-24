@@ -194,6 +194,8 @@ private struct TVPINFlow: View {
         PINPadView(
             title: title,
             subtitle: task.profile.displayName,
+            pinLength: needsCurrent ? PINLength.stored(task.profile.id) : (firstEntry?.count ?? 4),
+            lengths: needsCurrent || firstEntry != nil ? nil : ServerPolicy.pinLengths(for: task.profile.id),
             errorMessage: errorMessage,
             resetToken: resetToken,
             onCancel: { onDone(false) },
