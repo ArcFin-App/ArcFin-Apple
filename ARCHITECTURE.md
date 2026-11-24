@@ -119,7 +119,8 @@ All user-facing text goes through String Catalogs (`LocalizedStringKey` or `Stri
 - **package tests:** `swift test` for `LocalPackages/`;
 - **build:** iOS, macOS and tvOS, with the String Catalog check and a warnings report;
 - **release build:** an iOS Release build;
-- **sign-off:** every commit in a pull request has a `Signed-off-by` line.
+- **sign-off:** every commit in a pull request has a `Signed-off-by` line;
+- **commit format:** every commit subject in a pull request is `<type>(scope): message` (Conventional Commits), checked by `.gitea/scripts/check-commits.py`, which `scripts/git-hooks/commit-msg` also runs locally. Merge commits and `Revert "…"` commits are skipped.
 
 Package versions are pinned in the committed `Package.resolved` files, and CI builds only those versions.
 

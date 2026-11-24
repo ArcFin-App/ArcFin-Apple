@@ -100,9 +100,39 @@ Branch from `main` and open your pull request against `main`.
 1. **One change per pull request.** Separate unrelated fixes.
 2. **Fill in the template.** Say *why* as well as *what*, link the issue (`Fixes #123`), and say how you tested it, including the platforms.
 3. **Sign off every commit** (`git commit -s`). See [License and the DCO](#license-and-the-dco).
-4. **Keep commits meaningful:** a short, plain-English subject line ("Library: remember the sort order per library"). Each commit should build.
-5. **CI must pass:** package tests, the three platform builds, the String Catalog check, the Release build, the platform folder check, the licence check and the sign-off check.
+4. **Write commit subjects as [Conventional Commits](#commit-messages):** `<type>(scope): message`, for example `feat(library): remember the sort order per library`. Each commit should build.
+5. **CI must pass:** package tests, the three platform builds, the String Catalog check, the Release build, the platform folder check, the licence check and the sign-off check and the commit message check.
 6. **Review:** the maintainer reviews and merges every pull request.
+
+## Commit messages
+
+Commit subjects follow [Conventional Commits](https://www.conventionalcommits.org): `<type>(scope): message`. The release notes are sorted by type, so it decides where your change shows up.
+
+| Type | Use it for | In the release notes |
+|---|---|---|
+| `feat` | A new feature | New |
+| `fix` | A bug fix | Fixed |
+| `perf` | Something faster or lighter | Improved |
+| `refactor` | Restructured code, no change in behaviour | Under the hood |
+| `style` | Formatting only | Under the hood |
+| `test` | Tests | Under the hood |
+| `docs` | Documentation | Under the hood |
+| `build` | The build system, packages, the project file | Under the hood |
+| `ci` | CI workflows and scripts | Under the hood |
+| `chore` | Anything else that testers won't notice, like strings or version bumps | Under the hood |
+
+- **Scope** is optional, lowercase, and names the area or platform: `library`, `player`, `music`, `seerr`, `downloads`, `settings`, or `ios`, `mac`, `tv`, `watch`, `carplay`.
+- **Message:** plain English, saying what changed for the person using Arcfin, under 100 characters in all. `fix(tv): keep the hero focused after playback`, not `fix: bug`.
+- **Breaking changes** add a `!`: `feat(sync)!: drop the version 1 settings format`.
+- **Body:** optional. Use it to say why.
+
+CI checks every commit in a pull request. Merge commits and git's own `Revert "…"` commits are skipped. To have git check your messages as you commit, turn on the project's hook once per clone:
+
+```sh
+git config core.hooksPath scripts/git-hooks
+```
+
+To fix a message you've already committed, use `git commit --amend` for the last one, or `git rebase -i` for older ones.
 
 ## AI-assisted contributions
 

@@ -33,6 +33,8 @@ body:
           required: true
         - label: "Commits are signed off (`git commit -s`) per the DCO — see CONTRIBUTING.md"
           required: true
+        - label: "Commit subjects are `<type>(scope): message` (Conventional Commits) — see CONTRIBUTING.md"
+          required: true
         - label: Tests added/updated and passing (Swift Testing, not XCTest)
         - label: Docs updated (if applicable)
 
