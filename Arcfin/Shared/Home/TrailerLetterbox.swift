@@ -5,7 +5,7 @@ import CoreVideo
 
 /// Finds black bars baked into a trailer's picture (a wide film letterboxed in a 16:9 file,
 /// say), so the hero can zoom just far enough to crop them off.
-enum TrailerLetterbox {
+nonisolated enum TrailerLetterbox {
     /// The picture inside the bars, in unit coordinates and always centred: bars only count
     /// when both sides have them, so a dark sky or a dark edge of a scene is never cropped.
     /// nil while the frame is mostly black, like the fade at a trailer's start.

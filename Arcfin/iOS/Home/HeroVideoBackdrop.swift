@@ -139,25 +139,34 @@ final class LoopingPlayerUIView: UIView {
     /// Looks at the playing picture until two frames a moment apart agree on its black bars
     /// (fades to black in between don't count), then zooms so the picture fills the view.
     private func measureLetterbox() {
-        letterboxTask = Task { [weak self] in
+        // Off the main thread, timed by the output's own clock: the item's currentTime() waits
+        // on AVFoundation's lock, which a stalling transcode can hold for seconds (#747).
+        let output = videoOutput
+        letterboxTask = Task.detached(priority: .utility) { [weak self] in
             var previous: CGRect?
+            var found: CGRect?
             for _ in 0..<20 {
                 try? await Task.sleep(for: .milliseconds(500))
-                guard !Task.isCancelled, let self, let item = self.player?.currentItem else { return }
-                guard let buffer = self.videoOutput.copyPixelBuffer(forItemTime: item.currentTime(), itemTimeForDisplay: nil),
+                guard !Task.isCancelled else { return }
+                let time = output.itemTime(forHostTime: CACurrentMediaTime())
+                guard let buffer = output.copyPixelBuffer(forItemTime: time, itemTimeForDisplay: nil),
                       let picture = TrailerLetterbox.pictureRect(in: buffer) else { continue }
                 if let previous, TrailerLetterbox.matches(previous, picture) {
-                    item.remove(self.videoOutput)
-                    self.picture = picture
-                    CATransaction.begin()
-                    CATransaction.setAnimationDuration(0.4)
-                    self.playerLayer.frame = self.videoFrame()
-                    CATransaction.commit()
-                    return
+                    found = picture
+                    break
                 }
                 previous = picture
             }
-            if let self { self.player?.currentItem?.remove(self.videoOutput) }
+            await MainActor.run { [weak self, found] in
+                guard let self else { return }
+                self.player?.currentItem?.remove(output)
+                guard let found else { return }
+                self.picture = found
+                CATransaction.begin()
+                CATransaction.setAnimationDuration(0.4)
+                self.playerLayer.frame = self.videoFrame()
+                CATransaction.commit()
+            }
         }
     }
 
