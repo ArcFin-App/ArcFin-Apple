@@ -39,7 +39,7 @@ New builds reach a small internal beta first, every night something has changed,
 - **Browsing:** a Home you arrange, live updates from your other devices, library filters, title pages with cast, scores and trailers, and search.
 - **Downloads:** fast offline playback with your progress synced back, and Smart Downloads that keep your next episodes ready.
 - **Pick Together:** can't decide what to watch? Everyone swipes through titles on their own iPhone or iPad until you all like the same one.
-- **Watch parties:** watch together in sync, invited by a code or QR code, now or planned ahead.
+- **Watch parties:** watch together in sync on iPhone, iPad, Mac or Apple TV, joined with a code (or a QR code on iPhone and iPad), now or planned ahead.
 - **Household controls:** signed admin commands (clear a PIN, lock a profile, wipe a lost device), watch time and bedtime, download limits, Who's Watching? on shared accounts, and announcements.
 - **Profiles and admin:** profile locks, signing in a nearby device from your iPhone, settings that follow you, and an Admin tab for running the server.
 

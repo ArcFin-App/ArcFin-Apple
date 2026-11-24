@@ -91,7 +91,7 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 
 | Feature | What it does | Needs |
 |---|---|---|
-| **Watch parties** (iPhone and iPad) | Watch together in sync over SyncPlay. Invite people with a code or a QR code, plan a party up to 30 days ahead and see what time it'll be for each guest. Start one from Home or a title's page. People in other SyncPlay apps can join; the host needs Arcfin. | 0.6 or later |
+| **Watch parties** | Watch together in sync over SyncPlay, hosting or joining on iPhone, iPad, Mac or Apple TV. Invite people with a code, which guests type in or, on iPhone and iPad, scan as a QR code; plan a party up to 30 days ahead and see what time it'll be for each guest. Start one from Home or a title's page. People in other SyncPlay apps can join; the host needs Arcfin. | 0.6 or later |
 | **Seerr and TMDB through the server** | The admin keeps the Seerr and TMDB keys on the server, encrypted, and they never reach a device. Requests are made as you, with your own Seerr limits, and one made while Seerr is down is sent once it's back. | 0.6 or later |
 | **Signed commands** | Your admin can clear a forgotten PIN, lock or unlock a profile and wipe a lost device. Commands are signed with the server's key, so nothing else can send them. Also PIN rules, approving new devices from a trusted iPhone or iPad, HTTPS away from home, and signing out devices that fall behind. | 0.6 or later |
 | **Watch time and bedtime** | Daily limits and a bedtime per person, counted across every app, with warnings 10 and 5 minutes before. | 0.6 or later |
@@ -118,6 +118,7 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 
 Some features can't work on every platform:
 - **Chromecast** is iPhone and iPad only, because Google's SDK is.
+- **Pick Together**, and scanning a watch party's QR code, are iPhone and iPad only. Mac and Apple TV join a watch party with its code.
 - **Live Activities and Lock Screen widgets** are iPhone only.
 - **Downloads** aren't available on Apple TV, which has no lasting storage.
 - **Face ID and Touch ID** aren't available on Apple TV.
