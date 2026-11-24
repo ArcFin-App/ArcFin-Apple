@@ -13,8 +13,58 @@ concurrency:
 # Jobs that need Xcode or Apple's SDKs (building, the String Catalog check, which reads the
 # build's extracted strings, and the package tests) run on the Mac runner. The rest only need
 # git and Python and run on Ubuntu, keeping the Mac free.
+#
+# The Mac jobs only run when a change can affect the app: a pull request or push that touches
+# only docs, images, store metadata or the release workflows skips them. A skipped job counts
+# as passed, so it never blocks a merge. The Ubuntu checks always run.
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.diff.outputs.app }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Does this change the app?
+        id: diff
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT" = pull_request ]; then
+            range="$(git merge-base "origin/$BASE_REF" "$HEAD_SHA")..$HEAD_SHA"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            range="$BEFORE..$HEAD_SHA"
+          else
+            echo "No earlier commit to compare with: building."
+            echo "app=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Everything outside these builds: docs, images, store metadata, issue templates, and
+          # the release-only workflows and scripts, which the build never uses.
+          app=$(git diff --name-only "$range" | grep -vE \
+            -e '\.md$' \
+            -e '^(docs|assets|fastlane|scripts)/' \
+            -e '^(LICENSE|\.gitignore)$' \
+            -e '^\.gitea/(issue_template/|pull_request_template\.yml$)' \
+            -e '^\.gitea/workflows/(nightly|screenshots)\.yml$' \
+            -e '^\.gitea/scripts/(nightly-[a-z]+\.(sh|py)|testflight-nightly\.py|release-screenshots\.sh)$' \
+            || true)
+          if [ -n "$app" ]; then
+            echo "Builds run; app files changed:"
+            echo "$app" | head -n 20
+            echo "app=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Nothing here changes the app: the Mac builds and package tests are skipped."
+            echo "app=false" >> "$GITHUB_OUTPUT"
+          fi
+
   package-tests:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: macos
     steps:
       - uses: actions/checkout@v4
@@ -23,6 +73,8 @@ jobs:
         run: swift test --force-resolved-versions
 
   build:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: macos
     strategy:
       fail-fast: false
@@ -57,6 +109,8 @@ jobs:
 
   # TestFlight builds are Release; this catches code that only breaks with optimisation on.
   release-build:
+    needs: changes
+    if: needs.changes.outputs.app == 'true'
     runs-on: macos
     steps:
       - uses: actions/checkout@v4
