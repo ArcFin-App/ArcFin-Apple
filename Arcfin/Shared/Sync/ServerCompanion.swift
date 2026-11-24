@@ -515,13 +515,14 @@ final class ServerCompanion {
     // MARK: Household
 
     private(set) var sharedAccount: SharedAccountInfo?
-    /// Shown as the player opens on a shared account: who's watching.
+    /// On a shared account: who's watching, asked once a session.
     var askWhoIsWatching = false
     private(set) var downloadAllowance: DownloadAllowance?
     private(set) var notices: CachedNotices?
 
     private func refreshHousehold(credential: ServerCredential, header: String) async {
         sharedAccount = has("sharedAccounts") ? try? await client.sharedAccount(credential: credential, authHeader: header) : nil
+        askIfNewSession(profile: credential.id)
         // This device's totals with each sync, so downloads made before the limits (or while
         // the server was away) count too; the answer is the allowance across all devices.
         if has("downloadLimits") {
@@ -552,21 +553,30 @@ final class ServerCompanion {
 
     // MARK: Shared accounts
 
-    private static func askedKey(_ profile: UUID) -> String { "arcfin.whoIsWatchingAsked.\(profile.uuidString)" }
+    /// The profile already asked this session. A session starts when a shared account becomes
+    /// the profile in use, and again when Arcfin comes back after 30 minutes or more away.
+    @ObservationIgnored private var askedProfile: UUID?
+    @ObservationIgnored private var leftAt: Date?
 
-    /// A shared account asks who's watching as the player opens, at most every 12 hours.
-    func playerOpened() {
+    private func askIfNewSession(profile: UUID) {
         guard has("sharedAccounts"), let shared = sharedAccount, shared.isShared, !shared.members.isEmpty,
-              let id = AppServices.authManager.state.credential?.id else { return }
-        let last = UserDefaults.standard.double(forKey: Self.askedKey(id))
-        guard Date.now.timeIntervalSince1970 - last > 12 * 3600 else { return }
+              askedProfile != profile else { return }
+        askedProfile = profile
         askWhoIsWatching = true
+    }
+
+    func appLeft() {
+        leftAt = .now
+    }
+
+    func appReturned() {
+        if let leftAt, Date.now.timeIntervalSince(leftAt) >= 30 * 60 { askedProfile = nil }
+        leftAt = nil
     }
 
     /// Nobody picked copies nothing.
     func setWatching(_ memberIDs: [String], authManager: AuthManager) async {
         guard case .authenticated(let credential) = authManager.state else { return }
-        UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: Self.askedKey(credential.id))
         do {
             sharedAccount = try await client.setWatching(memberIDs, credential: credential,
                                                          authHeader: authManager.authClient.authHeader(token: credential.accessToken))

@@ -130,6 +130,7 @@ struct ContentView: View {
                 .zIndex(20)
             }
         }
+        .whoIsWatchingPrompt(locked: model.isAppLocked || phase != .main)
         .animation(DT.Animation.standard, value: phase)
         .animation(DT.Animation.standard, value: model.isAppLocked)
         .animation(DT.Animation.standard, value: model.introduction.presentation)

@@ -279,6 +279,7 @@ final class AppRootModel {
     /// in front they stop.
     func scenePhaseChanged(to newPhase: ScenePhase) {
         if newPhase == .active {
+            ServerCompanion.shared.appReturned()
             Task { await authManager.checkSignInStillValid() }
             startHeartbeat()
             startArcfinSyncLoop()
@@ -292,6 +293,7 @@ final class AppRootModel {
                 Task { await MusicDownloads.shared.refreshSmartDownloads() }
             }
         } else if !AppServices.scenes.anyActive {
+            ServerCompanion.shared.appLeft()
             Self.heartbeatTask?.cancel()
             Self.arcfinSyncTask?.cancel()
             Self.seerrPollTask?.cancel()
