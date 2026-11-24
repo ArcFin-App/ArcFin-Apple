@@ -112,7 +112,7 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 |---|---|
 | iOS 26 and iPadOS 26 | The main platform |
 | macOS 26 | Feature parity with iPhone and iPad, with a native video surface, sidebar, menu bar commands and Touch ID |
-| tvOS 26 | Feature parity apart from downloads, with remote and focus navigation throughout |
+| tvOS 26 | Feature parity, with remote and focus navigation throughout |
 | watchOS 26 | Music on the watch and a remote, with the iPhone app |
 | CarPlay | Music, from the iPhone app |
 
@@ -120,6 +120,6 @@ Some features can't work on every platform:
 - **Chromecast** is iPhone and iPad only, because Google's SDK is.
 - **Pick Together**, and scanning a watch party's QR code, are iPhone and iPad only. Mac and Apple TV join a watch party with its code.
 - **Live Activities and Lock Screen widgets** are iPhone only.
-- **Downloads** aren't available on Apple TV, which has no lasting storage.
+- **Downloads** on Apple TV can be cleared by tvOS when it needs room, as it keeps no lasting storage for apps.
 - **Face ID and Touch ID** aren't available on Apple TV.
 - **The screensaver** runs inside Arcfin, because Apple TV doesn't let apps provide a system screensaver.
