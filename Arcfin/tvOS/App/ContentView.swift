@@ -69,6 +69,7 @@ struct ContentView: View {
                     .zIndex(10)
             }
         }
+        .whoIsWatchingPrompt(locked: model.isAppLocked || phase != .main)
         .focusScope(rootFocus)
         // The focus engine doesn't reliably move to the screens just enabled under the lock,
         // and could leave nothing focused.
