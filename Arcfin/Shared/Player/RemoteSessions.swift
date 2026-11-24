@@ -149,8 +149,9 @@ final class RemoteSessions {
         let start = item.userData.flatMap { $0.played ? nil : $0.playbackPositionTicks }
         AppServices.music.yieldToVideo()
         Task {
-            try? await client.play(itemIds: [item.id], startTicks: start, sessionId: session.id,
-                                   credential: credential, authHeader: header)
+            let sent: Void? = try? await client.play(itemIds: [item.id], startTicks: start, sessionId: session.id,
+                                                     credential: credential, authHeader: header)
+            if sent != nil { HapticManager.success() } else { HapticManager.error() }
             try? await Task.sleep(for: .seconds(2))
             open(session)
         }

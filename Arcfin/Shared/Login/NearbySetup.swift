@@ -582,10 +582,12 @@ final class NearbySetupGuide {
                 case .code(let index, let code):
                     approve(index: index, code: code, authManager: authManager)
                 case .done(let count):
+                    HapticManager.success()
                     phase = .done(count == 1
                         ? String(localized: "It's signed in as \(sending.first?.displayName ?? "").")
                         : String(localized: "It's signed in with \(count) profiles."))
                 case .failed(let failure):
+                    HapticManager.error()
                     phase = .failed(Self.explanation(failure))
                 default:
                     break

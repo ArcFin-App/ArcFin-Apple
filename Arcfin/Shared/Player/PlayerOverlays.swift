@@ -63,6 +63,7 @@ struct PlayerScrubber: View {
                 model.scrubTicks = Double(model.player.durationTicks) * fraction
                 model.updateScrubThumbnail()
             }, ended: {
+                HapticManager.impact(.light)
                 model.performSeek(to: Int64(model.scrubTicks))
                 model.isScrubbing = false
                 model.scrubThumbnail = nil

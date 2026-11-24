@@ -156,10 +156,10 @@ struct AdminView: View {
                 Text("Server Settings")
             }
             Section {
-                Button { confirmRestart = true } label: {
+                Button { HapticManager.warning(); confirmRestart = true } label: {
                     Label("Restart Server", systemImage: "arrow.clockwise")
                 }
-                Button(role: .destructive) { confirmShutDown = true } label: {
+                Button(role: .destructive) { HapticManager.warning(); confirmShutDown = true } label: {
                     Label("Shut Down Server", systemImage: "power")
                         .foregroundStyle(DT.Color.palette("F43F5E"))
                 }

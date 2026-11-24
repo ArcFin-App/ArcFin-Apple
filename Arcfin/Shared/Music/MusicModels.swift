@@ -337,12 +337,12 @@ struct MusicRatingButtons: View {
                 }
                 .accessibilityLabel(isFavorite ? "Remove from Favorites" : "Add to Favorites")
             }
-            Button { MusicRatings.shared.set(song.id, likes: true, server: song.likes) } label: {
+            Button { HapticManager.selection(); MusicRatings.shared.set(song.id, likes: true, server: song.likes) } label: {
                 Image(systemName: likes == true ? "hand.thumbsup.fill" : "hand.thumbsup")
             }
             .accessibilityLabel("Like")
             .accessibilityAddTraits(likes == true ? .isSelected : [])
-            Button { MusicRatings.shared.set(song.id, likes: false, server: song.likes) } label: {
+            Button { HapticManager.selection(); MusicRatings.shared.set(song.id, likes: false, server: song.likes) } label: {
                 Image(systemName: likes == false ? "hand.thumbsdown.fill" : "hand.thumbsdown")
             }
             .accessibilityLabel("Dislike")

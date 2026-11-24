@@ -87,6 +87,7 @@ extension PlayerView {
             .onEnded { _ in
                 if dragAxis == .seek {
                     dragAxis = nil
+                    HapticManager.impact(.light)
                     model.performSeek(to: Int64(model.scrubTicks))
                     model.isScrubbing = false
                     model.scrubThumbnail = nil

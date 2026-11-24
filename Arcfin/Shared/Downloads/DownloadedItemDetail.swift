@@ -90,7 +90,7 @@ struct DownloadedItemDetailPage: View {
                         }
                         if !item.castNames.isEmpty { castSection }
                         detailsSection
-                        Button(role: .destructive) { model.showDeleteConfirm = true } label: {
+                        Button(role: .destructive) { HapticManager.warning(); model.showDeleteConfirm = true } label: {
                             Label("Delete Download", systemImage: "trash")
                                 .font(.system(.subheadline, weight: .semibold))
                                 .frame(maxWidth: .infinity, minHeight: 44)

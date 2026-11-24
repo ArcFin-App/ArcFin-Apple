@@ -5,6 +5,10 @@ import SwiftUI
 struct PINPadView: View {
     let title: String
     var subtitle: String? = nil
+    /// The PIN's digits: entry completes once this many are typed.
+    var pinLength: Int = 4
+    /// For a new PIN of any length in this range: a Done key finishes it once it's long enough.
+    var lengths: ClosedRange<Int>? = nil
     var errorMessage: String? = nil
     // Increment to trigger a shake + digit reset
     var resetToken: Int = 0
@@ -15,8 +19,11 @@ struct PINPadView: View {
     @State private var digits: [Int] = []
     @State private var shakeOffset: CGFloat = 0
 
-    private let pinLength = 4
     private let keySize = PINPadView.keySize
+
+    private var maxLength: Int { lengths?.upperBound ?? pinLength }
+    private var choosesLength: Bool { (lengths?.count ?? 1) > 1 }
+    private var dotCount: Int { choosesLength ? max(lengths?.lowerBound ?? pinLength, digits.count) : maxLength }
 
     var body: some View {
         ZStack {
@@ -60,7 +67,7 @@ struct PINPadView: View {
                     }
 
                     HStack(spacing: 22) {
-                        ForEach(0..<pinLength, id: \.self) { i in
+                        ForEach(0..<dotCount, id: \.self) { i in
                             Circle()
                                 .fill(i < digits.count ? DT.Color.accent : Color.clear)
                                 .overlay(
@@ -99,7 +106,20 @@ struct PINPadView: View {
                         }
                     }
                     HStack(spacing: 20) {
-                        Color.clear.frame(width: keySize, height: keySize)
+                        if choosesLength {
+                            Button { finish() } label: {
+                                PadKey(size: keySize, filled: false) {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(.title3, weight: .medium))
+                                        .foregroundStyle(canFinish ? DT.Color.accent : DT.Color.textSecondary.opacity(0.3))
+                                }
+                            }
+                            .accessibilityLabel("Done")
+                            .modifier(PadButtonStyle())
+                            .disabled(!canFinish)
+                        } else {
+                            Color.clear.frame(width: keySize, height: keySize)
+                        }
                         padButton(label: "0") { append(0) }
                         Button { removeLast() } label: {
                             PadKey(size: keySize, filled: false) {
@@ -136,24 +156,31 @@ struct PINPadView: View {
 
     // MARK: - Actions
 
+    private var canFinish: Bool { lengths.map { $0.contains(digits.count) } ?? false }
+
     private func append(_ digit: Int) {
-        guard digits.count < pinLength else { return }
+        guard digits.count < maxLength else { return }
+        HapticManager.impact(.light)
         digits.append(digit)
-        if digits.count == pinLength {
-            let pin = digits.map { "\($0)" }.joined()
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(120))
-                onComplete(pin)
-            }
+        if digits.count == maxLength { finish() }
+    }
+
+    private func finish() {
+        let pin = digits.map { "\($0)" }.joined()
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(120))
+            onComplete(pin)
         }
     }
 
     private func removeLast() {
         guard !digits.isEmpty else { return }
+        HapticManager.impact(.light)
         digits.removeLast()
     }
 
     private func triggerShake() {
+        HapticManager.error()
         digits = []
         let duration = 0.07
         withAnimation(DT.Animation.motion(.easeInOut(duration: duration))) { shakeOffset = -10 }

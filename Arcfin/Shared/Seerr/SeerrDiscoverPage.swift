@@ -207,6 +207,7 @@ struct SeerrDiscoverPage: View {
                     Text("TV Shows").tag(RequestMediaType.tv)
                 }
                 .pickerStyle(.segmented)
+                .onChange(of: model.mediaType) { HapticManager.selection() }
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.bottom, DT.Spacing.sm)
 
@@ -231,7 +232,10 @@ struct SeerrDiscoverPage: View {
     }
 
     private func genreChip(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
+        Button {
+            HapticManager.selection()
+            action()
+        } label: {
             Text(label)
                 .font(.system(.footnote, weight: isSelected ? .semibold : .regular))
                 .foregroundStyle(isSelected ? DT.Color.onAccent : DT.Color.textPrimary)

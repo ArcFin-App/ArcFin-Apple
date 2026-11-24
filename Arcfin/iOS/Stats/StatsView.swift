@@ -107,6 +107,7 @@ struct StatsView: View {
             ForEach(StatsKind.allCases) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
+        .onChange(of: kind) { HapticManager.selection() }
     }
 
     /// The period's name and heading, from whichever stats the tab shows.
@@ -119,6 +120,7 @@ struct StatsView: View {
             ForEach(StatsPeriod.allCases) { Text($0.label).tag($0) }
         }
         .pickerStyle(.segmented)
+        .onChange(of: period) { HapticManager.selection() }
         .syncLocked("statsPeriod", authManager)
     }
 
