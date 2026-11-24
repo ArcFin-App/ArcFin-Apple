@@ -27,12 +27,15 @@ enum NotificationManager {
         case item(String)
         case downloads
         case discover
+        /// An arcfin:// link, opened the way the system would open it.
+        case link(URL)
 
         fileprivate var userInfo: [String: String] {
             switch self {
             case .item(let id): ["route": "item", "itemID": id]
             case .downloads: ["route": "downloads"]
             case .discover: ["route": "discover"]
+            case .link(let url): ["route": "link", "url": url.absoluteString]
             }
         }
     }
@@ -174,6 +177,36 @@ enum NotificationManager {
         #endif
     }
 
+    // MARK: - Watch parties
+
+    private static let partyPrefix = "watch-party."
+
+    /// A notification when a scheduled watch party's lobby opens; tapping it opens the party.
+    /// One per code, so a new time replaces the old one. Skipped when notifications aren't allowed.
+    static func remindParty(code: String, title: String, lobbyOpens: Date, link: URL) async {
+        #if !os(tvOS)
+        guard lobbyOpens > .now, await ensureAuthorized() else { return }
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "Watch Party")
+        content.body = String(localized: "\(title) starts in 15 minutes. Tap to join.")
+        content.sound = QuietHours.isNow ? nil : .default
+        content.userInfo = Route.link(link).userInfo
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(lobbyOpens.timeIntervalSinceNow, 1), repeats: false)
+        let request = UNNotificationRequest(identifier: partyPrefix + code, content: content, trigger: trigger)
+        try? await UNUserNotificationCenter.current().add(request)
+        #endif
+    }
+
+    static func cancelPartyReminder(code: String) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [partyPrefix + code])
+    }
+
+    /// The parties with a notification still to come.
+    static func partyReminderCodes() async -> Set<String> {
+        let pending = await UNUserNotificationCenter.current().pendingNotificationRequests()
+        return Set(pending.map(\.identifier).filter { $0.hasPrefix(partyPrefix) }.map { String($0.dropFirst(partyPrefix.count)) })
+    }
+
     static func cancelReminder(programID: String) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [reminderPrefix + programID])
     }
@@ -202,8 +235,12 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate, @unc
         let info = response.notification.request.content.userInfo
         let route = info["route"] as? String
         let itemID = info["itemID"] as? String
+        let link = info["url"] as? String
         await MainActor.run {
             switch route {
+            case "link":
+                // Through the app's own link handling, buffered for a cold launch and the app lock.
+                if let link { ControlRoute.open(link) }
             case "item":
                 if let itemID { ArcfinRouting.openItem(id: itemID) }
             case "downloads":

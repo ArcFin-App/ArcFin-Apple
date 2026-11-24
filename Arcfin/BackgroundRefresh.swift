@@ -229,7 +229,7 @@ nonisolated enum BackgroundRefresh {
         let method = defaults.string(forKey: "seerrAuthMethod").flatMap(SeerrAuthMethod.init(rawValue:)) ?? .jellyfin
         // No saved password: a Jellyfin account connected through Quick Connect.
         let authorizer = IntentSession.credential().map(SeerrSignIn.quickConnectAuthorizer(credential:))
-        guard !password.isEmpty || (method == .jellyfin && authorizer != nil) else { return }
+        guard !password.isEmpty || (method.isJellyfin && authorizer != nil) else { return }
         let client = SeerrHTTPClient(baseURL: url, username: username, password: password, authMethod: method,
                                      authorizeQuickConnect: authorizer,
                                      onSavedPasswordRejected: { try? KeychainStore().deleteSeerrPassword() })

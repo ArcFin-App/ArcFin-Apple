@@ -55,6 +55,24 @@ final class MediaRepository {
     var continueWatching: [MediaItem] = []
     var recentlyAdded: [MediaItem] = []
     var nextUp: [MediaItem] = []
+
+    /// Leaves out what the person hid with the Arcfin Sync plugin: a movie or episode from
+    /// Continue Watching, a show from Next Up.
+    static func withoutHidden(_ items: [MediaItem], from row: HiddenRow) -> [MediaItem] {
+        let companion = ServerCompanion.shared
+        return items.filter { item in
+            let id = row == .nextUp ? (item.seriesId ?? item.id) : item.id
+            return !companion.isHidden(id, from: row)
+        }
+    }
+
+    /// The rows again without what was just hidden, before the next load.
+    func applyHidden() {
+        let cw = Self.withoutHidden(continueWatching, from: .continueWatching)
+        let up = Self.withoutHidden(nextUp, from: .nextUp)
+        if cw != continueWatching { continueWatching = cw }
+        if up != nextUp { nextUp = up }
+    }
     var recentlyAddedMovies: [MediaItem] = []
     var recentlyAddedShows: [MediaItem] = []
     var recentlyReleasedMovies: [MediaItem] = []
@@ -170,6 +188,34 @@ final class MediaRepository {
     @ObservationIgnored private var loadingUserID: String?
     @ObservationIgnored private var pendingLoad: (credential: ServerCredential, authClient: JellyfinAuthClient)?
 
+    /// The plugin's rows, asked once per load for the three shelves that use them.
+    @ObservationIgnored private var serverRows: (userID: String, task: Task<[RecommendationRow]?, Never>)?
+
+    private func serverRecommendations(credential: ServerCredential, header: String) async -> [RecommendationRow]? {
+        guard ServerCompanion.shared.has("recommendations") else { return nil }
+        if let serverRows, serverRows.userID == credential.userID { return await serverRows.task.value }
+        let task = Task { try? await ArcfinCompanionClient().recommendations(credential: credential, authHeader: header).rows }
+        serverRows = (credential.userID, task)
+        return await task.value
+    }
+
+    /// The plugin's second "Because You Watched" and its "Popular on This Server", as rows of
+    /// the Recommended shelf.
+    private func serverRecommendationCategories(credential: ServerCredential, header: String) async -> [MovieRecommendationCategory] {
+        guard let rows = await serverRecommendations(credential: credential, header: header) else { return [] }
+        var categories: [MovieRecommendationCategory] = []
+        for row in rows.filter({ $0.kind == "becauseYouWatched" }).dropFirst() + rows.filter({ $0.kind == "popularOnServer" }) {
+            let items = (try? await client.getItems(credential: credential, authHeader: header, ids: row.itemIds)) ?? []
+            guard items.count >= 3 else { continue }
+            categories.append(MovieRecommendationCategory(
+                id: "arcfin-" + row.id,
+                recommendationType: row.kind == "popularOnServer" ? "ArcfinPopularOnServer" : "SimilarToRecentlyPlayed",
+                baselineItemName: row.kind == "popularOnServer" ? nil : row.seedName,
+                items: items))
+        }
+        return categories
+    }
+
     /// Seeded from the latest finished title; unwatched results only, since a "recommendation"
     /// the user has already seen isn't one.
     private func loadBecauseYouWatched(credential: ServerCredential, header: String) async -> (source: MediaItem, items: [MediaItem])? {
@@ -193,6 +239,7 @@ final class MediaRepository {
 
         // A load for another profile, or a refresh, starts the rows over.
         rowsTask?.cancel()
+        serverRows = nil
 
         // First, together: what the hero and the first rows are made of. These also decide
         // whether the server answered at all.
@@ -238,8 +285,8 @@ final class MediaRepository {
             favorites = []; topRatedUnwatched = []; suggestions = []; recommendations = []
             promotedCollections = []
         }
-        continueWatching = cwResult
-        nextUp           = nUpResult
+        continueWatching = Self.withoutHidden(cwResult, from: .continueWatching)
+        nextUp           = Self.withoutHidden(nUpResult, from: .nextUp)
         recentlyAdded    = laResult
         libraries        = libsResult
         if featuredResult != nil || featuredTitlesResult != nil {
@@ -295,6 +342,14 @@ final class MediaRepository {
             if watchAgain.isEmpty, let r = try? await client.getWatchAgain(credential: credential, authHeader: header), current() {
                 watchAgain = r
             }
+            // The Arcfin Sync plugin's, when it has one: picked from more than one title's likeness.
+            if let rows = await serverRecommendations(credential: credential, header: header),
+               let row = rows.first(where: { $0.kind == "becauseYouWatched" }), let seedID = row.seedId,
+               let seed = try? await client.getItems(credential: credential, authHeader: header, ids: [seedID]).first,
+               let items = try? await client.getItems(credential: credential, authHeader: header, ids: row.itemIds), !items.isEmpty {
+                if current() { becauseYouWatched = (seed, items) }
+                return
+            }
             let r = await loadBecauseYouWatched(credential: credential, header: header)
             if current() { becauseYouWatched = r }
         case .genreShelves:
@@ -307,11 +362,18 @@ final class MediaRepository {
             let r = (try? await client.getTopRatedUnwatched(credential: credential, authHeader: header)) ?? []
             if current() { topRatedUnwatched = r }
         case .suggested:
+            // The Arcfin Sync plugin's picks, from this person's history, likes and favourites.
+            if let row = await serverRecommendations(credential: credential, header: header)?.first(where: { $0.kind == "forYou" }),
+               let items = try? await client.getItems(credential: credential, authHeader: header, ids: row.itemIds), !items.isEmpty {
+                if current() { suggestions = items }
+                return
+            }
             let r = (try? await client.getSuggestions(credential: credential, authHeader: header)) ?? []
             if current() { suggestions = r }
         case .recommendations:
+            let server = await serverRecommendationCategories(credential: credential, header: header)
             let r = (try? await client.getMovieRecommendations(credential: credential, authHeader: header, categoryLimit: 4, itemLimit: 12)) ?? []
-            if current() { recommendations = r.filter { $0.items.count >= 3 } }
+            if current() { recommendations = server + r.filter { $0.items.count >= 3 } }
         case .serverPicks:
             if let r = try? await client.getTaggedCollections(credential: credential, authHeader: header, tag: "arcfin-promoted"), current() {
                 promotedCollections = r
@@ -352,8 +414,8 @@ final class MediaRepository {
         guard credential.userID == lastLoadedUserID, !isLoading else { return }
         // Only what changed: this runs every few seconds while anything plays, and each
         // assignment re-renders Home behind the player.
-        if let cwValue, cwValue != continueWatching { continueWatching = cwValue }
-        if let nUpValue, nUpValue != nextUp { nextUp = nUpValue }
+        if let cwValue = cwValue.map({ Self.withoutHidden($0, from: .continueWatching) }), cwValue != continueWatching { continueWatching = cwValue }
+        if let nUpValue = nUpValue.map({ Self.withoutHidden($0, from: .nextUp) }), nUpValue != nextUp { nextUp = nUpValue }
         if let wAgainValue, wAgainValue != watchAgain { watchAgain = wAgainValue }
         if let favsValue, favsValue != favorites { favorites = favsValue }
     }
