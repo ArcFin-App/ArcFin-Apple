@@ -7,6 +7,9 @@ import SwiftUI
 enum WhatsNew {
     static var items: [WhatsNewItem] {
         [
+            WhatsNewItem(icon: "rectangle.stack.badge.person.crop",
+                         title: "Pick Together",
+                         detail: "Can't decide what to watch? Everyone swipes through titles on their own iPhone or iPad until you all like the same one, then watch it here, on another device or together with SyncPlay. Needs Arcfin Sync 0.5 on your server."),
             WhatsNewItem(icon: "music.note",
                          title: "Your Music",
                          detail: "Albums, artists, songs, playlists and genres, with Made for You, lyrics, a visualizer, crossfade, an equalizer and a sleep timer. Every section has its own search."),
