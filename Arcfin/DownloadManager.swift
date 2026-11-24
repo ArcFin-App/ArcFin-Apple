@@ -147,6 +147,8 @@ final class DownloadManager: NSObject {
     @ObservationIgnored private var isOnMobileData = false
     @ObservationIgnored private var isOnLowDataMode = false
     @ObservationIgnored private var isRunningSmartDownloads = false
+    /// A run is still working out what to download and hasn't queued its titles yet.
+    @ObservationIgnored private var isSmartDownloadsLookingUp = false
     @ObservationIgnored private var smartDownloadsRerunRequested = false
 
     /// Why the queue is waiting instead of starting the next title.
@@ -470,20 +472,24 @@ final class DownloadManager: NSObject {
         guard wifiPathMonitor == nil else { return }
         let monitor = NWPathMonitor()
         monitor.pathUpdateHandler = { [weak self] path in
-            // isExpensive covers a personal hotspot too, which bills the same mobile data. A Mac
-            // has no mobile data settings of its own, so a phone's synced ones never hold it;
-            // Low Data Mode, which a hotspot usually has on, still does.
-            #if os(macOS)
-            let onMobileData = false
-            #else
-            let onMobileData = path.status == .satisfied && path.isExpensive
-            #endif
-            let lowDataMode = path.status == .satisfied && path.isConstrained
+            let state = Self.networkState(of: path)
             guard let self else { return }
-            Task { @MainActor in self.networkChanged(onMobileData: onMobileData, lowDataMode: lowDataMode) }
+            Task { @MainActor in self.networkChanged(onMobileData: state.onMobileData, lowDataMode: state.lowDataMode) }
         }
         monitor.start(queue: DispatchQueue(label: "arcfin.downloads.pathMonitor"))
         wifiPathMonitor = monitor
+    }
+
+    private nonisolated static func networkState(of path: NWPath) -> (onMobileData: Bool, lowDataMode: Bool) {
+        // isExpensive covers a personal hotspot too, which bills the same mobile data. A Mac
+        // has no mobile data settings of its own, so a phone's synced ones never hold it;
+        // Low Data Mode, which a hotspot usually has on, still does.
+        #if os(macOS)
+        let onMobileData = false
+        #else
+        let onMobileData = path.status == .satisfied && path.isExpensive
+        #endif
+        return (onMobileData, path.status == .satisfied && path.isConstrained)
     }
 
     /// For the player's Quality on Mobile Data, read as it opens.
@@ -528,6 +534,64 @@ final class DownloadManager: NSObject {
             purgeWatchedDownloads()
         }
     }
+
+    #if os(iOS)
+    /// Background refresh (#580): sends progress watched offline, then lets Smart Downloads
+    /// queue what's next with the same rules as in the foreground. Returns once those titles
+    /// are with the background session, which carries them on without the app, not once
+    /// they've finished.
+    func refreshInBackground() async {
+        // iOS gives a refresh about 30 seconds; the hand-off below needs to fit inside it.
+        let deadline = ContinuousClock.now + .seconds(20)
+        guard let authManager else { return }
+        await authManager.checkStoredAuthOnce()
+        guard !Task.isCancelled, let signedIn = authManager.state.credential else { return }
+        // Nothing has loaded the profile's permissions on a launch with no window, and the
+        // default allows downloading.
+        if ProfileRules.shared.profile == nil {
+            await ProfileRules.shared.load(credential: signedIn, authHeader: authManager.authClient.authHeader(token: signedIn.accessToken))
+        }
+        await authManager.reresolveBaseURLIfNeeded()
+        // The long-running monitor can miss a change while the app is suspended, and until it
+        // first reports, mobile data reads as Wi-Fi.
+        let path = await Self.readNetworkPath()
+        networkChanged(onMobileData: path.onMobileData, lowDataMode: path.lowDataMode)
+        await reconcileWatchedState()
+        guard !Task.isCancelled, ProfileRules.shared.profile != nil, let credential = authManager.state.credential else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        Task { await runSmartDownloadsIfNeeded(credential: credential, authHeader: authHeader) }
+        while !Task.isCancelled, ContinuousClock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(500))
+            if isWithBackgroundSession { break }
+        }
+        handOffQueue()
+    }
+
+    /// Smart Downloads has queued what it's going to, and every title under way is
+    /// transferring, or the queue is held or paused.
+    private var isWithBackgroundSession: Bool {
+        if isSmartDownloadsLookingUp { return false }
+        if queueHold != nil || isQueuePaused { return true }
+        if activeItemIds.isEmpty { return pendingQueue.isEmpty && !isProcessingQueue && !isRunningSmartDownloads }
+        return activeItemIds.allSatisfy { downloadTasks[$0] != nil || partTasks[$0] != nil }
+    }
+
+    private nonisolated static func readNetworkPath() async -> (onMobileData: Bool, lowDataMode: Bool) {
+        let monitor = NWPathMonitor()
+        let queue = DispatchQueue(label: "arcfin.downloads.pathRead")
+        return await withCheckedContinuation { continuation in
+            // Only touched on `queue`, which delivers the updates one at a time.
+            nonisolated(unsafe) var resumed = false
+            monitor.pathUpdateHandler = { path in
+                guard !resumed else { return }
+                resumed = true
+                monitor.cancel()
+                continuation.resume(returning: networkState(of: path))
+            }
+            monitor.start(queue: queue)
+        }
+    }
+    #endif
 
     #if canImport(ActivityKit) && os(iOS)
     /// A Live Activity survives independently of this (fresh, per-launch) DownloadManager
@@ -2203,8 +2267,10 @@ final class DownloadManager: NSObject {
             return
         }
         isRunningSmartDownloads = true
+        isSmartDownloadsLookingUp = true
         defer {
             isRunningSmartDownloads = false
+            isSmartDownloadsLookingUp = false
             if smartDownloadsRerunRequested {
                 smartDownloadsRerunRequested = false
                 Task {
@@ -2304,6 +2370,7 @@ final class DownloadManager: NSObject {
             smart.append(contentsOf: nextUp)
         }
         smart.append(contentsOf: movies)
+        isSmartDownloadsLookingUp = false
 
         // Downloads at Once titles at a time, each batch finishing before the budget is checked
         // again, so it can go over by at most one batch less one title.
