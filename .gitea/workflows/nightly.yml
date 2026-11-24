@@ -105,7 +105,7 @@ jobs:
           key="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
           (umask 077; echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$key")
           echo "ASC_KEY_PATH=$key" >> "$GITHUB_ENV"
-          git log --no-merges -n 60 --format='%s%x09%h' "${PREVIOUS:+$PREVIOUS..}$SHA" > "$RUNNER_TEMP/changes.txt"
+          git log --no-merges --format='%s%x09%h' "${PREVIOUS:+$PREVIOUS..}$SHA" > "$RUNNER_TEMP/changes.txt"
           echo "CHANGES=$RUNNER_TEMP/changes.txt" >> "$GITHUB_ENV"
 
       - name: Archive and upload
@@ -158,7 +158,7 @@ jobs:
           echo "UPLOADED=$uploaded" >> "$GITHUB_ENV"
           [ -n "$uploaded" ] || { echo "::error::No platform uploaded $VERSION ($BUILD)"; exit 1; }
           echo "On App Store Connect: $uploaded"
-          git log --no-merges -n 60 --format='%s%x09%h' "${PREVIOUS:+$PREVIOUS..}$SHA" > "$RUNNER_TEMP/changes.txt"
+          git log --no-merges --format='%s%x09%h' "${PREVIOUS:+$PREVIOUS..}$SHA" > "$RUNNER_TEMP/changes.txt"
           echo "CHANGES=$RUNNER_TEMP/changes.txt" >> "$GITHUB_ENV"
 
       # Tags are protected: only arcfin-bot may make them, and it signs them with its CI key.

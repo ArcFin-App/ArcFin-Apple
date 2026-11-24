@@ -24,8 +24,25 @@ import urllib.request
 API = "https://api.appstoreconnect.apple.com/v1"
 PLATFORMS = {"iOS": "IOS", "macOS": "MAC_OS", "tvOS": "TV_OS"}
 SUBMITTED_STATES = {"WAITING_FOR_BETA_REVIEW", "IN_BETA_REVIEW", "BETA_APPROVED", "IN_BETA_TESTING"}
-# Commits testers can't see: CI, docs, the project file, strings, tests and build numbers.
+# Commit subjects are <type>(scope): message (CONTRIBUTING.md › Commit messages). Testers see
+# feat, fix and perf; older subjects in the earlier "Area: message" style are kept unless
+# their area is one testers can't see.
+COMMIT = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[a-z0-9-]+)\))?!?: (?P<message>.+)$")
+FOR_TESTERS = {"feat", "fix", "perf"}
+SCOPES = {"ios": "iPhone & iPad", "mac": "Mac", "tv": "Apple TV", "watch": "Apple Watch", "carplay": "CarPlay",
+          "livetv": "Live TV", "seerr": "Seerr", "listenbrainz": "ListenBrainz"}
 UNDER_THE_HOOD = re.compile(r"^(CI|Docs?|Project|Strings?|String Catalogs?|Translations?|Tests?|README|ARCHITECTURE|Build \d+|Release|Merge)\b", re.I)
+
+
+def for_testers(subject: str) -> str | None:
+    match = COMMIT.match(subject)
+    if match:
+        if match["type"] not in FOR_TESTERS:
+            return None
+        message = match["message"][:1].upper() + match["message"][1:]
+        scope = match["scope"]
+        return f"{SCOPES.get(scope, scope.replace('-', ' ').capitalize())}: {message}" if scope else message
+    return None if UNDER_THE_HOOD.match(subject) else subject
 FOOTER = """Found a problem? Open an issue: https://git.psmattas.com/ArcFin/ArcFin/issues
 Please include your device and OS version, your Jellyfin server version (Settings › Server), and what you did right before it happened. Screen recordings help a lot for anything visual.
 
@@ -84,8 +101,9 @@ def what_to_test() -> str:
     with open(os.environ["CHANGES"], encoding="utf-8") as changes:
         for line in changes:
             subject = line.rstrip("\n").split("\t")[0].strip()
-            if subject and not UNDER_THE_HOOD.match(subject):
-                lines.append(f"• {subject}.")
+            shown = for_testers(subject) if subject else None
+            if shown:
+                lines.append(f"• {shown.rstrip('.')}.")
     intro = (f"Nightly build {os.environ['VERSION']} ({os.environ['BUILD']}). Nightlies are built from "
              "everything finished so far and haven't been tested like a release, so expect the odd rough edge. "
              "One that holds up goes on to the public beta and the App Store.\n\n"

@@ -9,6 +9,7 @@ can be repeated.
 
 import json
 import os
+import re
 import subprocess
 import sys
 import urllib.error
@@ -23,6 +24,12 @@ UPLOADED = os.environ["UPLOADED"].split()
 TITLES = {"iOS": "iOS & iPadOS", "macOS": "macOS", "tvOS": "tvOS"}
 BADGES = {"iOS": "iOS%20%7C%20iPadOS", "macOS": "macOS", "tvOS": "tvOS"}
 PRUNED = ("v", "nightly-")
+# Commit subjects are <type>(scope): message (CONTRIBUTING.md › Commit messages).
+COMMIT = re.compile(r"^(?P<type>[a-z]+)(?:\((?P<scope>[a-z0-9-]+)\))?!?: (?P<message>.+)$")
+SECTIONS = {"feat": "New", "perf": "Improved", "fix": "Fixed"}
+UNDER_THE_HOOD = {"refactor", "style", "test", "docs", "build", "ci", "chore"}
+SCOPES = {"ios": "iPhone & iPad", "mac": "Mac", "tv": "Apple TV", "watch": "Apple Watch", "carplay": "CarPlay",
+          "livetv": "Live TV", "seerr": "Seerr", "listenbrainz": "ListenBrainz", "ci": "CI"}
 
 
 def call(method: str, path: str, body: dict | None = None):
@@ -49,14 +56,36 @@ def exists(path: str) -> bool:
         raise
 
 
+def entry(subject: str, sha: str) -> tuple[str, str]:
+    """The section a commit goes in, and its line: "- **Scope:** Message (sha)"."""
+    match = COMMIT.match(subject)
+    if not match or match["type"] not in SECTIONS.keys() | UNDER_THE_HOOD:
+        return "Other changes", f"- {subject} ({sha})"
+    message = match["message"][:1].upper() + match["message"][1:]
+    scope = match["scope"]
+    if scope:
+        message = f"**{SCOPES.get(scope, scope.replace('-', ' ').capitalize())}:** {message}"
+    return SECTIONS.get(match["type"], "Under the hood"), f"- {message} ({sha})"
+
+
 def changes() -> list[str]:
-    lines = []
+    """The changes, under New, Improved and Fixed, then older-style commits, with the ones
+    testers won't notice folded away at the end."""
+    sections: dict[str, list[str]] = {}
     with open(os.environ["CHANGES"], encoding="utf-8") as log:
         for line in log:
             subject, _, sha = line.rstrip("\n").partition("\t")
             if subject:
-                lines.append(f"- {subject} ({sha})")
-    return lines or ["- Small fixes and changes under the hood."]
+                section, text = entry(subject, sha)
+                sections.setdefault(section, []).append(text)
+    out = []
+    for title in ("New", "Improved", "Fixed", "Other changes"):
+        if title in sections:
+            out += [f"## {title}", *sections[title], ""]
+    hood = sections.get("Under the hood", [])
+    if hood:
+        out += ["<details>", f"<summary>Under the hood ({len(hood)})</summary>", "", *hood, "", "</details>", ""]
+    return out or ["## Changes", "- Small fixes and changes under the hood.", ""]
 
 
 def first_of_version() -> bool:
@@ -95,9 +124,7 @@ def body() -> str:
         ">",
         "> Thanks for your patience.",
         "",
-        "## Changes",
         *changes(),
-        "",
         f"**Full changes:** [{PREVIOUS}...{TAG}]({REPO}/compare/{PREVIOUS}...{TAG})" if PREVIOUS
         else f"**Commit:** [{SHA[:8]}]({REPO}/commit/{SHA})",
     ])
