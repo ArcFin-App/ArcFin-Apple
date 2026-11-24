@@ -7,7 +7,7 @@
 > **Not yet on the App Store.** Arcfin is in beta on [TestFlight](https://testflight.apple.com/join/kkC58n2w). Version 0.5.1, the last beta, goes to Apple for review and becomes the first App Store release. See [Testing Arcfin](docs/TESTING.md#how-releases-work).
 
 [![Build](https://git.psmattas.com/ArcFin/ArcFin/actions/workflows/build.yml/badge.svg?branch=main)](https://git.psmattas.com/ArcFin/ArcFin/actions?workflow=build.yml)
-[![Version](https://arcfin.psmattas.com/badges/version.svg)](https://git.psmattas.com/ArcFin/ArcFin/releases)
+[![Version](https://arcfin.psmattas.com/badges/version.svg?v=1)](https://git.psmattas.com/ArcFin/ArcFin/releases)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS%20%7C%20macOS%20%7C%20tvOS-lightgrey?logo=apple&logoColor=white)
 ![Minimum OS](https://img.shields.io/badge/OS-26%2B-black?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
