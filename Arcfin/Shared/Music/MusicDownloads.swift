@@ -229,7 +229,33 @@ final class MusicDownloads {
 
     // MARK: Changing what's saved
 
+    /// The server admin's download caps turned the last download down: the server's words.
+    private(set) var limitMessage: String?
+
+    /// Under the admin's caps, the songs not already here are checked with the server first;
+    /// ones it turns down go to the failed list with its reason.
     func download(_ songs: [MusicSong], album: MusicAlbum? = nil) {
+        let new = songs.filter { !isDownloaded($0.id) && !queuedIDs.contains($0.id) }
+        guard ServerCompanion.shared.has("downloadLimits"), !new.isEmpty else { return enqueue(songs, album: album) }
+        Task {
+            let request = new.map { DownloadedSong(itemId: $0.id, albumId: $0.albumId, bytes: 0) }
+            if let refusal = await ServerCompanion.shared.musicDownloadRefusal(request) {
+                limitMessage = refusal
+                let user = userID
+                for song in new where !failed.contains(where: { $0.id == song.id }) {
+                    owners[song.id] = user
+                    failed.append(song)
+                }
+                saveQueue()
+                log.notice("The server's download caps turned down \(new.count, privacy: .public) songs")
+                return
+            }
+            limitMessage = nil
+            enqueue(songs, album: album)
+        }
+    }
+
+    private func enqueue(_ songs: [MusicSong], album: MusicAlbum?) {
         if let album { index.albums[album.id] = album }
         let ids = Set(songs.map(\.id))
         failed.removeAll { ids.contains($0.id) }
@@ -316,6 +342,12 @@ final class MusicDownloads {
         }
         dropUnusedAlbums()
         saveIndex()
+        ServerCompanion.shared.reportDownloads()
+    }
+
+    /// This profile's saved songs on this device, for the server's download caps.
+    func ownSongs() -> [DownloadedSong] {
+        mine.map { DownloadedSong(itemId: $0.song.id, albumId: $0.song.albumId, bytes: $0.bytes) }
     }
 
     /// Stops songs that haven't finished; one halfway through is thrown away.
@@ -498,6 +530,7 @@ final class MusicDownloads {
         let size = (try? destination.resourceValues(forKeys: [.fileSizeKey]).fileSize).map(Int64.init) ?? 0
         index.songs[Self.key(userID, song.id)] = Saved(song: song, file: name, userID: userID, bytes: size, savedAt: .now)
         saveIndex()
+        ServerCompanion.shared.reportDownloads()
         savedThisRun.insert(song.id)
         await saveCover(for: song)
         if let lyrics = await MusicLyricsSource.shared.lyricsToSave(for: song),

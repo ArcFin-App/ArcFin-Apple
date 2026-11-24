@@ -21,9 +21,13 @@ import ActivityKit
 enum DownloadError: LocalizedError {
     case permissionDenied
     case noVideoStream
+    /// Over the caps the server's admin set; the server's own words.
+    case overLimit(String)
 
     var errorDescription: String? {
         switch self {
+        case .overLimit(let message):
+            return message
         case .permissionDenied:
             return String(localized: "This account doesn't have permission to download media. Ask your Jellyfin admin to enable \"Allow media downloading\" for your user.")
         case .noVideoStream:
@@ -1148,6 +1152,11 @@ final class DownloadManager: NSObject {
                 expectedBytes[item.id] = expected
                 estimatedStreamBytes[item.id] = Self.expectedSize(of: info, bitrateCap: conversionBitrate)
             }
+            if !skipVideoDownload, !handedOffItemIds.contains(item.id),
+               let refusal = await ServerCompanion.shared.downloadRefusal(itemID: item.id, bytes: expectedBytes[item.id] ?? 0,
+                                                                         credential: credential, authHeader: authHeader) {
+                throw DownloadError.overLimit(refusal)
+            }
 
             #if canImport(ActivityKit) && os(iOS)
             var posterItem = item
@@ -1316,6 +1325,7 @@ final class DownloadManager: NSObject {
             if !cancelled, !keptForRetry {
                 let reason = (error as? DownloadError)?.errorDescription ?? String(localized: "Download failed: \(error.localizedDescription)")
                 if currentProfile?.owns(profile) == true { errors[item.id] = reason }
+                if !Self.smartItemIds.contains(item.id) { HapticManager.error() }
                 failedDownloads.removeAll { $0.id == item.id }
                 failedDownloads.append(FailedDownload(item: item, title: activeItemTitles[item.id] ?? item.name, reason: reason,
                                                       profile: profile, bitrateCap: bitrateCap, tracks: tracks))
@@ -1339,7 +1349,11 @@ final class DownloadManager: NSObject {
         stats[item.id] = nil
         speedSamples[item.id] = nil
         endBackgroundTaskIfIdle()
-        if let savedTitle { noteFinishedForNotice(savedTitle) }
+        if let savedTitle {
+            if !Self.smartItemIds.contains(item.id) { HapticManager.success() }
+            noteFinishedForNotice(savedTitle)
+            ServerCompanion.shared.reportDownloads()
+        }
         sendDownloadNoticeIfIdle()
         #if canImport(ActivityKit) && os(iOS)
         liveActivityItemMeta[item.id] = nil
@@ -1935,6 +1949,29 @@ final class DownloadManager: NSObject {
             deleteSeriesMetadataIfNoEpisodesRemain(seriesId: seriesId)
         }
         if queueHold == .storage { recheckQueueHold() }
+        ServerCompanion.shared.reportDownloads()
+    }
+
+    /// Every download of the profile's on this device, for a wipe the server's admin sent.
+    func deleteAllDownloads(of credential: ServerCredential) {
+        let profile = DownloadProfile(credential)
+        for (itemId, owner) in inFlightProfiles where profile.owns(owner) {
+            cancelledItemIds.insert(itemId)
+            downloadTasks[itemId]?.cancel()
+        }
+        pendingQueue.removeAll { profile.owns(DownloadProfile($0.credential)) }
+        let all = (try? modelContext?.fetch(FetchDescriptor<DownloadedItem>())) ?? []
+        deleteDownloads(all.filter { $0.belongs(to: profile) })
+    }
+
+    /// The profile in use's downloaded episodes, so storage can split shows from movies.
+    func ownShowEpisodeIDs() -> Set<String> {
+        Set(ownDownloads((try? modelContext?.fetch(FetchDescriptor<DownloadedItem>())) ?? []).filter { $0.seriesId != nil }.map(\.itemId))
+    }
+
+    /// Each title the profile in use keeps on this device, with the room it takes.
+    func ownTitles() -> [(itemID: String, bytes: Int64)] {
+        ownDownloads((try? modelContext?.fetch(FetchDescriptor<DownloadedItem>())) ?? []).map { ($0.itemId, $0.fileSizeBytes) }
     }
 
     /// The profile in use's download of the title.

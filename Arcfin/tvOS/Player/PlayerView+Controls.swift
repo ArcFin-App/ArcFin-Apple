@@ -363,6 +363,11 @@ extension PlayerView {
             })
         }
         if !model.isLive, let sharePlayEntry { entries.append(sharePlayEntry) }
+        if SharedAccountWatching.isAvailable {
+            entries.append(TVMenuEntry(title: String(localized: "Who's Watching?"), systemImage: "person.2.badge.gearshape") {
+                SharedAccountWatching.ask()
+            })
+        }
         entries.append(TVMenuEntry(title: audioOnly ? String(localized: "Show Video") : String(localized: "Audio Only"),
                                    systemImage: audioOnly ? "video" : "waveform") {
             withAnimation { audioOnly.toggle() }
