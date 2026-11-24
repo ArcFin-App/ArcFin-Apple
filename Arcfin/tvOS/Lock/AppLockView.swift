@@ -88,8 +88,10 @@ struct AppLockView: View {
                     }
                     .buttonStyle(TVCardButtonStyle())
                     .focusEffectDisabled()
-                    .tvFocusRing(cornerRadius: DT.Radius.lg, prominent: true)
                     .focused($focusedProfile, equals: profile.id)
+                    // The grow alone shows focus: a ring boxed the round picture and its name.
+                    .scaleEffect(focusedProfile == profile.id ? 1.12 : 1)
+                    .animation(DT.Animation.motion(.spring(response: 0.18, dampingFraction: 0.8)), value: focusedProfile)
                 }
             }
             .frame(maxWidth: gridMaxWidth)
