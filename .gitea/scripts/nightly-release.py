@@ -22,6 +22,8 @@ import urllib.request
 API = os.environ["API"]
 REPO = f"{os.environ['SERVER_URL']}/{os.environ['REPOSITORY']}"
 VERSION, BUILD, SHA = os.environ["VERSION"], os.environ["BUILD"], os.environ["SHA"]
+# The project's build number, N in the release tags; BUILD is what TestFlight shows, N.<unix time>.
+BASE = os.environ.get("BASE_BUILD") or BUILD.split(".")[0]
 LABELS = {"iOS": "iOS/iPadOS", "macOS": "macOS", "tvOS": "tvOS"}
 TITLES = {"iOS": "iOS & iPadOS", "macOS": "macOS", "tvOS": "tvOS"}
 BADGES = {"iOS": "iOS%20%7C%20iPadOS", "macOS": "macOS", "tvOS": "tvOS"}
@@ -97,17 +99,17 @@ def previous_tag(platform: str) -> str:
 
 
 def release(platform: str) -> None:
-    tag = f"{platform}-{VERSION}-build-{BUILD}"
+    tag = f"{platform}-{VERSION}-build-{BASE}"
     previous = previous_tag(platform)
     wait = ("This is a new version, so Apple's TestFlight review usually takes **1 to 3 days** before it "
-            "reaches testers." if BUILD == "1" else
+            "reaches testers." if BASE == "1" else
             "This is a new build of an existing version, so Apple's TestFlight review is usually done "
             "**within 24 hours**, though it can take as long as a new version (up to 3 days).")
     body = "\n".join([
         '[<img src="https://git.psmattas.com/ArcFin/ArcFin/media/branch/main/assets/badges/testflight-badge.png" '
         'alt="Available on TestFlight" height="48">](https://testflight.apple.com/join/kkC58n2w)',
         "",
-        f"![Version](https://img.shields.io/badge/version-{VERSION}%20(build%20{BUILD})-blue) "
+        f"![Version](https://img.shields.io/badge/version-{VERSION}%20(build%20{BASE})-blue) "
         f"![Platform](https://img.shields.io/badge/platform-{BADGES[platform]}-lightgrey?logo=apple&logoColor=white)",
         "",
         "> **When will I get this build?**",
@@ -128,12 +130,12 @@ def release(platform: str) -> None:
     ])
     quoted = urllib.parse.quote(tag, safe="")
     if not exists(f"/tags/{quoted}"):
-        call("POST", "/tags", {"tag_name": tag, "target": SHA, "message": f"{LABELS[platform]} {VERSION} build {BUILD}"})
+        call("POST", "/tags", {"tag_name": tag, "target": SHA, "message": f"{LABELS[platform]} {VERSION} build {BASE} (TestFlight {BUILD})"})
     if exists(f"/releases/tags/{quoted}"):
         print(f"{tag} already has a release")
         return
     call("POST", "/releases", {
-        "tag_name": tag, "name": f"Arcfin {VERSION} (Build {BUILD}) · {TITLES[platform]}",
+        "tag_name": tag, "name": f"Arcfin {VERSION} (Build {BASE}) · {TITLES[platform]}",
         "body": body, "draft": False, "prerelease": True,
     })
     print(f"Tagged {tag} and published its release")
