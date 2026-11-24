@@ -141,6 +141,7 @@ struct PINPadView: View {
             }
         }
         .onChange(of: resetToken) { _, _ in triggerShake() }
+        .pinPadKeyboard(digit: append, delete: removeLast, submit: { if canFinish { finish() } }, cancel: onCancel)
         .tvExitCommand { onCancel?() }
         .animation(DT.Animation.fast, value: errorMessage)
     }
