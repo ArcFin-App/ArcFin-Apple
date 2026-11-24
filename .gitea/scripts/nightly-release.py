@@ -3,9 +3,9 @@
 
 - Nightly: an unsigned nightly-<date>-<unix time> tag and a published pre-release; nightlies
   past the last KEEP are removed.
-- Release: an unsigned <Platform>-<version>-build-<N> tag and a draft pre-release for each
-  platform that uploaded, in the release notes' usual layout, for sorting into New, Improved
-  and Fixed before publishing.
+- Release: an unsigned <Platform>-<version>-build-<N> tag and a published pre-release for each
+  platform that uploaded, in the release notes' usual layout, its changes under one heading.
+  A tag or release that's already there is left as it is, so a run can be repeated.
 
 CI has no signing key, so the tags aren't signed. testflight.yml skips tags CI made, so a tag
 from here never starts a second upload.
@@ -31,9 +31,24 @@ def call(method: str, path: str, body: dict | None = None):
     request = urllib.request.Request(API + path, method=method, data=json.dumps(body).encode() if body else None,
                                      headers={"Authorization": f"token {os.environ['TOKEN']}",
                                               "Content-Type": "application/json"})
-    with urllib.request.urlopen(request, timeout=60) as response:
-        text = response.read()
-        return json.loads(text) if text else None
+    try:
+        with urllib.request.urlopen(request, timeout=60) as response:
+            text = response.read()
+            return json.loads(text) if text else None
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode(errors="replace")[:300]
+        sys.exit(f"::error::{method} {path}: {error.code} {detail}")
+
+
+def exists(path: str) -> bool:
+    request = urllib.request.Request(API + path, headers={"Authorization": f"token {os.environ['TOKEN']}"})
+    try:
+        urllib.request.urlopen(request, timeout=60).close()
+        return True
+    except urllib.error.HTTPError as error:
+        if error.code == 404:
+            return False
+        raise
 
 
 def changes() -> list[str]:
@@ -105,20 +120,23 @@ def release(platform: str) -> None:
         ">",
         "> Thanks for your patience.",
         "",
-        "<!-- Made at midnight by the nightly workflow. Sort these into ## New, ## Improved, ## Fixed, "
-        "## Removed and ## Under the hood, keep only what affects this platform, then publish. -->",
         "## Changes",
         *changes(),
         "",
         f"**Full changes:** [{previous}...{tag}]({REPO}/compare/{previous}...{tag})" if previous
         else f"**Commit:** [{SHA[:8]}]({REPO}/commit/{SHA})",
     ])
-    call("POST", "/tags", {"tag_name": tag, "target": SHA, "message": f"{LABELS[platform]} {VERSION} build {BUILD}"})
+    quoted = urllib.parse.quote(tag, safe="")
+    if not exists(f"/tags/{quoted}"):
+        call("POST", "/tags", {"tag_name": tag, "target": SHA, "message": f"{LABELS[platform]} {VERSION} build {BUILD}"})
+    if exists(f"/releases/tags/{quoted}"):
+        print(f"{tag} already has a release")
+        return
     call("POST", "/releases", {
         "tag_name": tag, "name": f"Arcfin {VERSION} (Build {BUILD}) · {TITLES[platform]}",
-        "body": body, "draft": True, "prerelease": True,
+        "body": body, "draft": False, "prerelease": True,
     })
-    print(f"Tagged {tag} and drafted its release")
+    print(f"Tagged {tag} and published its release")
 
 
 def prune(keep: int) -> None:

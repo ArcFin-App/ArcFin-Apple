@@ -24,6 +24,12 @@ auth=(-allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY_PATH"
 uploaded=()
 for platform in ${PLATFORMS:-iOS macOS tvOS}; do
   echo "== $platform $VERSION ($BUILD)"
+  # Uploaded by an earlier run that stopped before tagging: Apple won't take the number again.
+  if [ "${MODE:-}" = release ] && EXISTS_FOR=$platform python3 -I .gitea/scripts/testflight-nightly.py; then
+    echo "$platform $VERSION ($BUILD) is already on App Store Connect"
+    uploaded+=("$platform")
+    continue
+  fi
   archive="$RUNNER_TEMP/Arcfin-$platform.xcarchive"
   log="$RUNNER_TEMP/archive-$platform.log"
   if ! xcodebuild -scheme Arcfin -configuration Release -destination "generic/platform=$platform" \

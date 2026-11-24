@@ -92,7 +92,9 @@ jobs:
       - name: Tag and release
         if: always() && env.RUN == 'true' && env.UPLOADED != ''
         env:
-          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Release tags are protected. RELEASE_TOKEN is a bot allowed on that rule; without it,
+          # the workflow's own token, which works when the rule allows it.
+          TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
           API: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}
           SERVER_URL: ${{ github.server_url }}
           REPOSITORY: ${{ github.repository }}

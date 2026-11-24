@@ -104,8 +104,9 @@ def what_to_test() -> str:
     return intro + "\n".join(shown) + "\n\n" + FOOTER
 
 
-def find_build(app_id: str, platform: str) -> dict | None:
-    """Waits up to 90 minutes for the upload to show up and finish processing."""
+def find_build(app_id: str, platform: str, quiet: bool = False) -> dict | None:
+    """Waits up to 90 minutes for the upload to show up and finish processing. Quiet: looks
+    once, for a build of this number in any state, and says nothing."""
     deadline = time.time() + 90 * 60
     while time.time() < deadline:
         status, reply = call("GET", "/builds", query={
@@ -116,6 +117,8 @@ def find_build(app_id: str, platform: str) -> dict | None:
             "limit": "1",
         })
         builds = reply.get("data") or []
+        if quiet:
+            return builds[0] if status == 200 and builds else None
         if status == 200 and builds:
             state = builds[0]["attributes"].get("processingState")
             if state == "VALID":
@@ -159,7 +162,8 @@ def distribute(app_id: str, locale: str, group_id: str, platform: str, notes: st
 
     status, reply = call("POST", f"/betaGroups/{group_id}/relationships/builds",
                          {"data": [{"type": "builds", "id": build_id}]})
-    if status >= 300:
+    # 409: already in the group, from a run that stopped after this.
+    if status >= 300 and status != 409:
         print(f"::error::{platform}: couldn't add the build to the group: {first_error(reply)}")
         return False
 
@@ -222,6 +226,8 @@ def main() -> int:
         return 1
     app_id = apps[0]["id"]
     locale = apps[0]["attributes"].get("primaryLocale") or "en-US"
+    if os.environ.get("EXISTS_FOR"):
+        return 0 if find_build(app_id, os.environ["EXISTS_FOR"], quiet=True) else 1
 
     _, reply = call("GET", f"/apps/{app_id}/betaGroups", query={"limit": "200"})
     group = next((g for g in reply.get("data") or [] if g["attributes"]["name"] == os.environ["GROUP"]), None)
