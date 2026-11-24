@@ -153,7 +153,7 @@ struct MediaDetailView: View {
                 .presentationBackground(.ultraThinMaterial)
         }
         .sheet(isPresented: $model.isSeasonDownloadSheetShown) {
-            DownloadConfirmSheet(item: model.selectedSeason ?? item) {
+            DownloadConfirmSheet(item: model.selectedSeason ?? item, episodes: model.episodes) {
                 await model.seasonPreview(authManager: authManager, downloadManager: downloadManager)
             } onConfirm: { choice in
                 model.downloadSeason(choice, authManager: authManager, downloadManager: downloadManager)

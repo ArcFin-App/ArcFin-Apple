@@ -583,49 +583,41 @@ final class MediaDetailModel {
                                     episodeCount: count == 0 ? nil : count)
     }
 
-    /// Every episode in the current season already downloaded — the "Download Season"
-    /// button should be inert then, not just silently no-op every episode it loops over.
+    /// Nothing left in the current season to download: the "Download Season" button should be
+    /// inert then, not open a sheet with nothing to tick.
     func isSeasonFullyDownloaded(in downloadManager: DownloadManager) -> Bool {
-        !episodes.isEmpty && seasonEpisodesToDownload(in: downloadManager).isEmpty
+        !episodes.isEmpty && SeasonEpisodePicks.selectable(episodes, taken: takenEpisodeIds(in: downloadManager)).isEmpty
     }
 
-    /// Settings › Downloads › Season Downloads can leave out episodes already watched.
-    private func seasonEpisodesToDownload(in downloadManager: DownloadManager) -> [MediaItem] {
-        let unwatchedOnly = UserDefaults.standard.bool(forKey: "seasonDownloadUnwatchedOnly")
-        return episodes.filter { !$0.isVirtual && !downloadManager.isDownloaded($0.id) && !(unwatchedOnly && $0.userData?.played == true) }
+    private func takenEpisodeIds(in downloadManager: DownloadManager) -> Set<String> {
+        Set(episodes.map(\.id).filter { downloadManager.isDownloaded($0) || downloadManager.isInProgress($0) })
     }
 
     /// Opens the download sheet for the season at once; it fills in from `seasonPreview`.
     func openSeasonDownload(downloadManager: DownloadManager) {
-        guard !seasonEpisodesToDownload(in: downloadManager).isEmpty else { return }
+        guard !isSeasonFullyDownloaded(in: downloadManager) else { return }
         isSeasonDownloadSheetShown = true
     }
 
-    /// One representative preview (the first episode not downloaded yet), scaled to every
-    /// episode still to download rather than a playback-info round trip per episode.
+    /// One episode's preview (the first one that can still be downloaded), which the sheet
+    /// scales to the episodes ticked rather than a playback-info round trip per episode.
     func seasonPreview(authManager: AuthManager, downloadManager: DownloadManager) async -> DownloadManager.DownloadPreview? {
-        guard case .authenticated(let credential) = authManager.state else { return nil }
-        let pending = seasonEpisodesToDownload(in: downloadManager)
-        guard let firstPending = pending.first else { return nil }
+        guard case .authenticated(let credential) = authManager.state,
+              let first = SeasonEpisodePicks.selectable(episodes, taken: takenEpisodeIds(in: downloadManager)).first
+        else { return nil }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
-        guard var preview = await downloadManager.preview(for: firstPending, credential: credential, authHeader: authHeader) else { return nil }
-        let count = Int64(pending.count)
-        preview.estimatedSizeBytes = preview.estimatedSizeBytes.map { $0 * count }
+        guard var preview = await downloadManager.preview(for: first, credential: credential, authHeader: authHeader) else { return nil }
         preview.estimatedSizeIsApproximate = true
-        preview.runtimeTicks = preview.runtimeTicks.map { $0 * count }
-        preview.episodeCount = pending.count
         return preview
     }
 
     func downloadSeason(_ choice: DownloadChoice, authManager: AuthManager, downloadManager: DownloadManager) {
-        guard case .authenticated(let credential) = authManager.state else { return }
+        guard case .authenticated(let credential) = authManager.state, !choice.episodes.isEmpty else { return }
         let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
         HapticManager.success()
-        for episode in seasonEpisodesToDownload(in: downloadManager) {
-            Task {
-                await downloadManager.startDownload(item: episode, credential: credential, authHeader: authHeader,
-                                                    bitrateCap: choice.bitrateCap, tracks: choice.tracks)
-            }
+        Task {
+            await downloadManager.startDownloads(items: choice.episodes, credential: credential, authHeader: authHeader,
+                                                 bitrateCap: choice.bitrateCap, tracks: choice.tracks)
         }
     }
 
