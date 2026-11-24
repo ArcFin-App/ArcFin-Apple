@@ -236,6 +236,30 @@ public struct JellyfinMediaClient: Sendable {
         return try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
     }
 
+    /// Titles by ID, in the order given; ones this user can't see are left out.
+    public func getItems(
+        credential: ServerCredential,
+        authHeader: String,
+        ids: [String]
+    ) async throws -> [MediaItem] {
+        guard !ids.isEmpty else { return [] }
+        var comps = URLComponents(
+            url: credential.baseURL.appendingPathComponent("Users/\(credential.userID)/Items"),
+            resolvingAgainstBaseURL: false)!
+        comps.queryItems = [
+            .init(name: "Ids", value: ids.joined(separator: ",")),
+            .init(name: "Fields", value: "Overview,UserData,PrimaryImageTags,BackdropImageTags,ThumbImageTags,ProductionYear,CommunityRating,RunTimeTicks,Genres,ProviderIds"),
+            .init(name: "EnableUserData", value: "true"),
+        ]
+        var req = URLRequest(url: comps.url!)
+        req.setValue(authHeader, forHTTPHeaderField: "Authorization")
+        req.timeoutInterval = 15
+        let (data, _) = try await URLSession.arcfin.data(for: req)
+        let found = try JSONDecoder().decode(ItemsPage.self, from: data).items.map { $0.toMediaItem() }
+        let byID = Dictionary(found.map { ($0.id.replacingOccurrences(of: "-", with: "").lowercased(), $0) }, uniquingKeysWith: { a, _ in a })
+        return ids.compactMap { byID[$0.replacingOccurrences(of: "-", with: "").lowercased()] }
+    }
+
     /// Collections a server admin has tagged for Home (`arcfin-featured` for the hero,
     /// `arcfin-promoted` for rows), each with its titles in the collection's own order.
     /// Only collections this user can see come back, so library access still applies.
