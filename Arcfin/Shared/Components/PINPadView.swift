@@ -133,8 +133,9 @@ struct PINPadView: View {
                         .disabled(digits.isEmpty)
                     }
                 }
-                // Cancel sits at the top left, so the remote finds nothing straight below it
-                // without a section around the keys.
+                // Cancel sits at the top left: a section across the full width, under it, is
+                // what lets the remote move down from it to the keys.
+                .frame(maxWidth: .infinity)
                 .tvFocusSection()
                 .padding(.bottom, 52)
             }
