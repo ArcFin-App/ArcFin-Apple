@@ -39,9 +39,11 @@ New builds reach a small internal beta first, every night something has changed,
 - **Browsing:** a Home you arrange, live updates from your other devices, library filters, title pages with cast, scores and trailers, and search.
 - **Downloads:** fast offline playback with your progress synced back, and Smart Downloads that keep your next episodes ready.
 - **Pick Together:** can't decide what to watch? Everyone swipes through titles on their own iPhone or iPad until you all like the same one.
+- **Watch parties:** watch together in sync, invited by a code or QR code, now or planned ahead.
+- **Household controls:** signed admin commands (clear a PIN, lock a profile, wipe a lost device), watch time and bedtime, download limits, Who's Watching? on shared accounts, and announcements.
 - **Profiles and admin:** profile locks, signing in a nearby device from your iPhone, settings that follow you, and an Admin tab for running the server.
 
-Pick Together, Devices & Sync and a few download extras need the free [Arcfin Sync plugin](https://arcfin.psmattas.com/plugin/) on your server; [Features](docs/FEATURES.md#with-the-arcfin-sync-plugin) lists what needs which version.
+Pick Together, watch parties, the household controls, Seerr through the server, Devices & Sync and a few download extras need the free [Arcfin Sync plugin](https://arcfin.psmattas.com/plugin/) on your server; [Features](docs/FEATURES.md#with-the-arcfin-sync-plugin) lists what needs which version.
 - **Add-ons:** Seerr requests, TMDB scores and where to watch, and ListenBrainz.
 
 The full list, and which platform has what, is in **[Features](docs/FEATURES.md)**.
