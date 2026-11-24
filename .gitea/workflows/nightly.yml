@@ -1,15 +1,12 @@
 name: Nightly
 
-# Every night at midnight Irish time, main goes to the internal testers' TestFlight group on all
-# three platforms.
-# - When a version or build bump has reached main (no <Platform>-X.Y.Z-build-N tag for the
-#   project's version yet), it uploads that build and tags it <Platform>-X.Y.Z-build-N, with a
-#   draft release for each platform.
-# - Otherwise, when main has commits since the last nightly or release, it uploads a nightly.
-#   Its build number is the project's with the Unix time after it (2.1764028800), so nothing
-#   is committed, it never takes a number a release needs, and a second run the same day (a
-#   hotfix) still works. It gets an unsigned nightly-<date>-<unix time> tag and a
-#   pre-release; the last 14 are kept.
+# Every night at midnight Irish time, when main has changed, it goes to the internal testers'
+# TestFlight group on all three platforms, built side by side. Its build number is the
+# project's with the Unix time after it (2.1764028800), so nothing is committed and a second
+# run the same day still works. The night gets one tag, v<version>-build-<build number>,
+# signed by arcfin-bot, and a pre-release; the last 14 are kept. A build goes on to the public
+# beta and the App Store from App Store Connect, and its release is then made a full release,
+# which keeps it and takes its screenshots (screenshots.yml).
 on:
   schedule:
     # 23:00 and 00:00 UTC: one of them is midnight in Dublin, winter or summer.
@@ -17,7 +14,7 @@ on:
   workflow_dispatch:
     inputs:
       force:
-        description: Build even if main hasn't changed since the last nightly
+        description: Build even if main hasn't changed since the last build
         type: boolean
         default: false
 
@@ -25,15 +22,23 @@ concurrency:
   group: nightly
   cancel-in-progress: false
 
+env:
+  GROUP: Arcfin Nightly Builds
+
 jobs:
-  nightly:
+  plan:
     runs-on: macos
     defaults:
       run:
         shell: bash
-    env:
-      GROUP: Arcfin Nightly Builds
-      KEEP: '14'
+    outputs:
+      run: ${{ steps.plan.outputs.run }}
+      version: ${{ steps.plan.outputs.version }}
+      build: ${{ steps.plan.outputs.build }}
+      bundle: ${{ steps.plan.outputs.bundle }}
+      tag: ${{ steps.plan.outputs.tag }}
+      previous: ${{ steps.plan.outputs.previous }}
+      sha: ${{ steps.plan.outputs.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,6 +46,7 @@ jobs:
           fetch-depth: 0
 
       - name: Plan
+        id: plan
         env:
           EVENT: ${{ github.event_name }}
           FORCE: ${{ github.event.inputs.force }}
@@ -48,64 +54,130 @@ jobs:
           git fetch --force --tags origin
           .gitea/scripts/nightly-plan.sh
 
-      # Also on nights with nothing new: the sweep below needs it.
-      - name: App Store Connect key
+      # A build Apple wouldn't take for review while another of its version was in review is
+      # still in the group, ready: on a night with nothing new, the newest one on each
+      # platform goes for review.
+      - name: Submit builds waiting for review
+        if: steps.plan.outputs.run != 'true'
+        continue-on-error: true
         env:
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+          BUNDLE_ID: com.psmattas.Arcfin
+          SWEEP_ONLY: '1'
+        run: |
+          export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          trap 'rm -f "$ASC_KEY_PATH"' EXIT
+          (umask 077; echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$ASC_KEY_PATH")
+          python3 -I .gitea/scripts/testflight-nightly.py
+
+  upload:
+    needs: plan
+    if: needs.plan.outputs.run == 'true'
+    runs-on: macos
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [iOS, macOS, tvOS]
+    defaults:
+      run:
+        shell: bash
+    env:
+      PLATFORMS: ${{ matrix.platform }}
+      VERSION: ${{ needs.plan.outputs.version }}
+      BUILD: ${{ needs.plan.outputs.build }}
+      BUNDLE_ID: ${{ needs.plan.outputs.bundle }}
+      PREVIOUS: ${{ needs.plan.outputs.previous }}
+      SHA: ${{ needs.plan.outputs.sha }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+          fetch-depth: 0
+
+      - name: App Store Connect key
+        env:
           ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
         run: |
           key="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
-          echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$key"
-          chmod 600 "$key"
+          (umask 077; echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$key")
           echo "ASC_KEY_PATH=$key" >> "$GITHUB_ENV"
-
-      # A build Apple wouldn't take for review while another of its version was in review is
-      # still in the group, ready: the newest one on each platform goes for review now.
-      - name: Submit builds waiting for review
-        if: env.RUN != 'true'
-        continue-on-error: true
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
-          BUNDLE_ID: com.psmattas.Arcfin
-          SWEEP_ONLY: '1'
-        run: python3 -I .gitea/scripts/testflight-nightly.py
+          git log --no-merges -n 60 --format='%s%x09%h' "${PREVIOUS:+$PREVIOUS..}$SHA" > "$RUNNER_TEMP/changes.txt"
+          echo "CHANGES=$RUNNER_TEMP/changes.txt" >> "$GITHUB_ENV"
 
       - name: Archive and upload
-        if: env.RUN == 'true'
         env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           DEVELOPMENT_TEAM: ${{ vars.DEVELOPMENT_TEAM }}
         run: .gitea/scripts/nightly-upload.sh
 
-      # The uploads that made it still get their tag and release if this step fails.
       - name: Send to the nightly group
-        id: distribute
-        if: always() && env.RUN == 'true' && env.UPLOADED != ''
-        continue-on-error: true
-        env:
-          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
-          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        if: env.UPLOADED != ''
         run: python3 -I .gitea/scripts/testflight-nightly.py
-
-      - name: Tag and release
-        if: always() && env.RUN == 'true' && env.UPLOADED != ''
-        env:
-          # Release tags are protected. RELEASE_TOKEN is a bot allowed on that rule; without it,
-          # the workflow's own token, which works when the rule allows it.
-          TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
-          API: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}
-          SERVER_URL: ${{ github.server_url }}
-          REPOSITORY: ${{ github.repository }}
-        run: SHA=$(git rev-parse HEAD) python3 -I .gitea/scripts/nightly-release.py
-
-      - name: The group step failed
-        if: always() && steps.distribute.outcome == 'failure'
-        run: |
-          echo "::error::The builds uploaded, but sending them to $GROUP failed; see that step. Add them by hand in App Store Connect."
-          exit 1
 
       - name: Remove the key
         if: always()
         run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
+
+  # Runs once the platforms are done, whether or not each made it, and tags the ones that did.
+  release:
+    needs: [plan, upload]
+    if: always() && needs.plan.outputs.run == 'true'
+    runs-on: macos
+    defaults:
+      run:
+        shell: bash
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+      BUILD: ${{ needs.plan.outputs.build }}
+      BUNDLE_ID: ${{ needs.plan.outputs.bundle }}
+      TAG: ${{ needs.plan.outputs.tag }}
+      PREVIOUS: ${{ needs.plan.outputs.previous }}
+      SHA: ${{ needs.plan.outputs.sha }}
+      KEEP: '14'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.plan.outputs.sha }}
+          fetch-depth: 0
+          # The tag is pushed as arcfin-bot, never with the workflow's own token.
+          persist-credentials: false
+
+      - name: What made it
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8_BASE64: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          export ASC_KEY_PATH="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          trap 'rm -f "$ASC_KEY_PATH"' EXIT
+          (umask 077; echo "$ASC_KEY_P8_BASE64" | base64 --decode > "$ASC_KEY_PATH")
+          uploaded=$(UPLOADED_CHECK=1 python3 -I .gitea/scripts/testflight-nightly.py)
+          echo "UPLOADED=$uploaded" >> "$GITHUB_ENV"
+          [ -n "$uploaded" ] || { echo "::error::No platform uploaded $VERSION ($BUILD)"; exit 1; }
+          echo "On App Store Connect: $uploaded"
+          git log --no-merges -n 60 --format='%s%x09%h' "${PREVIOUS:+$PREVIOUS..}$SHA" > "$RUNNER_TEMP/changes.txt"
+          echo "CHANGES=$RUNNER_TEMP/changes.txt" >> "$GITHUB_ENV"
+
+      # Tags are protected: only arcfin-bot may make them, and it signs them with its CI key.
+      - name: Tag
+        env:
+          TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          BOT_GPG_KEY: ${{ secrets.ARCFIN_BOT_GPG_KEY }}
+        run: .gitea/scripts/nightly-tag.sh
+
+      - name: Release
+        env:
+          TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          API: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+          REPOSITORY: ${{ github.repository }}
+        run: python3 -I .gitea/scripts/nightly-release.py
+
+      - name: Upload failed
+        if: needs.upload.result != 'success'
+        run: |
+          echo "::error::$UPLOADED made it and is tagged; the other platforms failed, see their upload jobs."
+          exit 1

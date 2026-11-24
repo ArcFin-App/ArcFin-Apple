@@ -1,0 +1,73 @@
+name: Screenshots
+
+# A build's App Store screenshots, which the website also shows, attached to its release as
+# screenshots-<platform>.zip. It runs when a release is made a full release (the build went to
+# the App Store), all three platforms side by side, or by hand for any release. Nightly
+# pre-releases don't start it, and a platform whose zip is already attached is skipped.
+on:
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag, e.g. v0.5.1-build-3.1764028800
+        required: true
+
+jobs:
+  screenshots:
+    if: github.event_name == 'workflow_dispatch' || (!github.event.release.prerelease && !github.event.release.draft)
+    runs-on: macos
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [iOS, macOS, tvOS]
+    concurrency:
+      group: screenshots-${{ github.event.release.tag_name || github.event.inputs.tag }}-${{ matrix.platform }}
+      cancel-in-progress: false
+    defaults:
+      run:
+        shell: bash
+    env:
+      TAG: ${{ github.event.release.tag_name || github.event.inputs.tag }}
+      PLATFORM: ${{ matrix.platform }}
+      TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      API: ${{ github.server_url }}/api/v1/repos/${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ github.event.release.tag_name || github.event.inputs.tag }}
+
+      - name: Release
+        run: |
+          auth="Authorization: token $TOKEN"
+          tag=$(python3 -I -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.argv[1], safe=""))' "$TAG")
+          id=$(curl -fsS -H "$auth" "$API/releases/tags/$tag" | python3 -I -c 'import json, sys; print(json.load(sys.stdin)["id"])')
+          echo "RELEASE_ID=$id" >> "$GITHUB_ENV"
+          # An edit to a release that already has this platform's zip (a typo fix, say) does nothing.
+          has=$(curl -fsS -H "$auth" "$API/releases/$id/assets" | python3 -I -c '
+          import json, sys
+          print(any(a["name"] == sys.argv[1] for a in json.load(sys.stdin)))' "screenshots-$PLATFORM.zip")
+          if [ "$has" = True ] && [ "$GITHUB_EVENT_NAME" != workflow_dispatch ]; then
+            echo "SKIP=true" >> "$GITHUB_ENV"
+            echo "$TAG already has screenshots-$PLATFORM.zip"
+          fi
+
+      # The Mac's run needs an unlocked, logged-in session, so it only happens when the
+      # MAC_SCREENSHOTS repository variable is true.
+      - name: Screenshots
+        if: env.SKIP != 'true' && (env.PLATFORM != 'macOS' || vars.MAC_SCREENSHOTS == 'true')
+        run: .gitea/scripts/release-screenshots.sh "$PLATFORM" "$RUNNER_TEMP/screenshots-$PLATFORM.zip"
+
+      - name: Attach
+        if: env.SKIP != 'true' && (env.PLATFORM != 'macOS' || vars.MAC_SCREENSHOTS == 'true')
+        run: |
+          auth="Authorization: token $TOKEN"
+          name="screenshots-$PLATFORM.zip"
+          # A run by hand replaces the zip rather than adding a second one.
+          for old in $(curl -fsS -H "$auth" "$API/releases/$RELEASE_ID/assets" | python3 -I -c '
+          import json, sys
+          print(" ".join(str(a["id"]) for a in json.load(sys.stdin) if a["name"] == sys.argv[1]))' "$name"); do
+            curl -fsS -X DELETE -H "$auth" "$API/releases/$RELEASE_ID/assets/$old"
+          done
+          curl -fsS -H "$auth" -F "attachment=@$RUNNER_TEMP/$name" "$API/releases/$RELEASE_ID/assets?name=$name" > /dev/null
+          echo "Attached $name to $TAG"

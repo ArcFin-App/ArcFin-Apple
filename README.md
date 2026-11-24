@@ -61,6 +61,8 @@ Arcfin moves to a rolling cycle. New features and improvements go through three 
 2. **Approved nightlies** go to the [public beta](#public-beta) on TestFlight, once the internal testers have used a nightly and approved it. It's the same invite link, so nothing changes if you've already joined.
 3. **App Store updates** reach everyone once both beta groups have used a build without problems.
 
+Every build has a pre-release on the [Releases](https://git.psmattas.com/ArcFin/ArcFin/releases) page with what changed, and a build that reached the App Store is a full release there.
+
 **Security fixes** skip the wait. They go out as fast as the targets in [SECURITY.md](SECURITY.md#what-happens-next), on TestFlight and on the App Store.
 
 ### Thank you, testers
