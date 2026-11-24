@@ -159,6 +159,18 @@ jobs:
           [ "$missing" -eq 0 ] && echo "All commits are signed off."
           exit "$missing"
 
+  # Commit subjects follow Conventional Commits, <type>(scope): message; the release notes are
+  # sorted by type. Merge commits and git's "Revert ..." commits are skipped.
+  commit-format:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every commit subject is <type>(scope) message
+        run: python3 -I .gitea/scripts/check-commits.py "origin/${{ github.base_ref }}..${{ github.event.pull_request.head.sha }}"
+
   # Everything Arcfin ships has its licence on the Legal & Licenses screen, at the pinned
   # version. Fetches each pinned package's source, so it fails when a dependency is added,
   # removed or bumped without running .gitea/scripts/update-licenses.py. A change on the
