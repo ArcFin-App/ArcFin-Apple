@@ -384,6 +384,7 @@ struct SeerrRequestConfirmSheet: View {
         let interactive = partialRequestsEnabled && !row.locked && !blocked
 
         return Button {
+            HapticManager.selection()
             selectedSeasons = SeerrSeasonSelection.toggle(selectedSeasons, season: row.seasonNumber, unrequested: unrequested, quota: quota)
         } label: {
             HStack(spacing: 12) {
@@ -507,15 +508,22 @@ struct SeerrRequestConfirmSheet: View {
             let seasons = isSeries ? seasonsToRequest : []
             Task {
                 do {
-                    try await seerrRepo.createRequest(mediaType: captured.mediaType, mediaId: captured.id, seasons: seasons)
-                    requestingItem = nil
+                    if try await seerrRepo.createRequest(mediaType: captured.mediaType, mediaId: captured.id, seasons: seasons) {
+                        isSubmitting = false
+                        submitError = String(localized: "Seerr can't be reached right now. Your server will send this request as soon as it can.")
+                    } else {
+                        HapticManager.success()
+                        requestingItem = nil
+                    }
                 } catch is SeerrRepository.AlreadyRequested {
                     isSubmitting = false
                     alreadyRequested = true
                 } catch SeerrError.requestFailed(status: 403, body: _) {
+                    HapticManager.error()
                     isSubmitting = false
                     submitError = String(localized: "Your Seerr account can't request this. Ask your Seerr admin for request permission, or check your request limit.")
                 } catch {
+                    HapticManager.error()
                     isSubmitting = false
                     submitError = String(localized: "Couldn't send request: \(error.localizedDescription)")
                 }

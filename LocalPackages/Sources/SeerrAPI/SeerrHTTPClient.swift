@@ -15,11 +15,19 @@ import os
 public enum SeerrAuthMethod: String, Sendable, CaseIterable {
     case jellyfin = "jellyfin"   // Jellyfin-imported account — POST /api/v1/auth/jellyfin
     case local    = "local"      // Local Seerr account  — POST /api/v1/auth/local
+    /// A Jellyfin account through Quick Connect only, never a password: what an admin can pick
+    /// for everyone in Arcfin for Everyone. Signing in here otherwise picks it as Jellyfin with
+    /// no password saved.
+    case quickConnect = "quickConnect"
+
+    /// The two shown in Settings' Account Type picker; Quick Connect has its own button there.
+    public static let accountTypes: [SeerrAuthMethod] = [.jellyfin, .local]
 
     public var label: String {
         switch self {
         case .jellyfin: "Jellyfin Account"
         case .local:    "Local Account"
+        case .quickConnect: "Quick Connect"
         }
     }
 
@@ -27,11 +35,20 @@ public enum SeerrAuthMethod: String, Sendable, CaseIterable {
         switch self {
         case .jellyfin: "Sign in with your Jellyfin username and password."
         case .local:    "Sign in with a local Seerr account."
+        case .quickConnect: "Sign in with your Jellyfin account through Quick Connect, with nothing to type."
         }
     }
 
+    /// Seerr's Jellyfin sign-in, with a password or through Quick Connect.
+    public var isJellyfin: Bool { self != .local }
+
+    /// Quick Connect without a password: always for `.quickConnect`, and for a Jellyfin account with none saved.
+    public func usesQuickConnect(password: String) -> Bool {
+        self == .quickConnect || (self == .jellyfin && password.isEmpty)
+    }
+
     public var apiPath: String {
-        "api/v1/auth/\(rawValue)"
+        self == .local ? "api/v1/auth/local" : "api/v1/auth/jellyfin"
     }
 }
 
@@ -90,6 +107,12 @@ public actor SeerrHTTPClient {
     /// Quick Connect sign-in existed.
     private let onSavedPasswordRejected: (@Sendable () async -> Void)?
 
+    /// Through the Arcfin Sync plugin, which holds the Seerr key and calls Seerr as this
+    /// Jellyfin user: no Seerr sign-in at all, just the Jellyfin session.
+    public let throughServer: Bool
+    /// The Jellyfin session's Authorization header, through the server only.
+    private let jellyfinAuthorization: String?
+
     private var isAuthenticated = false
     private var authPermanentlyFailed = false
     /// Why the last sign-in failed, so the requests stopped after it report the same reason.
@@ -129,6 +152,29 @@ public actor SeerrHTTPClient {
         // Per user as well as per server: one profile's refused password mustn't lock out
         // another profile signing in to the same Seerr.
         self.authFailedKey = "arcfin.seerr.authFailedUntil.\(baseURL.host ?? "unknown").\(username.lowercased())"
+        self.throughServer = false
+        self.jellyfinAuthorization = nil
+    }
+
+    /// Seerr through the server: `proxyBase` is the plugin's Seerr path, and every call carries
+    /// the Jellyfin session.
+    public init(serverProxy proxyBase: URL, jellyfinAuthorization: String) {
+        self.baseURL = proxyBase
+        self.username = ""
+        self.password = ""
+        self.authMethod = .jellyfin
+        self.authorizeQuickConnect = nil
+        self.onSavedPasswordRejected = nil
+        self.throughServer = true
+        self.isAuthenticated = true
+        let config = URLSessionConfiguration.ephemeral
+        config.httpCookieAcceptPolicy = .never
+        config.httpShouldSetCookies = false
+        config.waitsForConnectivity = true
+        config.timeoutIntervalForResource = 30
+        self.session = URLSession(configuration: config)
+        self.jellyfinAuthorization = jellyfinAuthorization
+        self.authFailedKey = "arcfin.seerr.authFailedUntil.server.\(proxyBase.host ?? "unknown")"
     }
 
     /// Lets the next request try signing in again, for an automatic retry. A refused
@@ -171,12 +217,13 @@ public actor SeerrHTTPClient {
     /// a request, the app approves its code with the Jellyfin session it already has, and Seerr
     /// finishes the sign-in. Nothing is typed, and it can run again whenever the session ends.
     public var usesQuickConnect: Bool {
-        authMethod == .jellyfin && password.isEmpty && authorizeQuickConnect != nil
+        authMethod.usesQuickConnect(password: password) && authorizeQuickConnect != nil
     }
 
     public func login() async throws {
         await Self.waitForNetworkPath()
-        let canQuickConnect = authMethod == .jellyfin && authorizeQuickConnect != nil
+        if throughServer { return }
+        let canQuickConnect = authMethod.isJellyfin && authorizeQuickConnect != nil
         // No saved password, or one Seerr already refused: straight to Quick Connect, so the
         // stale password isn't checked against Jellyfin (and logged as a failed sign-in) again.
         if usesQuickConnect || (canQuickConnect && savedPasswordWasRejected) {
@@ -265,9 +312,10 @@ public actor SeerrHTTPClient {
     }
 
     private func ensureAuthenticated() async throws {
+        if throughServer { return }
         guard !authPermanentlyFailed else { throw lastSignInError ?? SeerrError.authFailed }
         // The cooldown guards Jellyfin against repeated wrong passwords; Quick Connect sends none.
-        if authorizeQuickConnect == nil || authMethod != .jellyfin,
+        if authorizeQuickConnect == nil || !authMethod.isJellyfin,
            let until = UserDefaults.standard.object(forKey: authFailedKey) as? Date,
            until > Date() {
             authPermanentlyFailed = true
@@ -779,7 +827,9 @@ public actor SeerrHTTPClient {
         return SeerrSeasonQuota(limit: tv.limit, remaining: tv.remaining, days: tv.days, restricted: tv.restricted ?? false)
     }
 
-    public func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws {
+    /// True when the server couldn't reach Seerr and kept the request to send later (202).
+    @discardableResult
+    public func createRequest(mediaType: RequestMediaType, mediaId: Int, seasons: [Int] = []) async throws -> Bool {
         try await ensureAuthenticated()
         let url = baseURL.appendingPathComponent("api/v1/request")
         var req = URLRequest(url: url)
@@ -796,6 +846,7 @@ public actor SeerrHTTPClient {
         guard (200...299).contains(status) else {
             throw SeerrError.requestFailed(status: status, body: Self.message(in: data))
         }
+        return status == 202 && throughServer
     }
 
     public func addToWatchlist(tmdbId: Int, mediaType: RequestMediaType, title: String) async throws {
@@ -881,6 +932,12 @@ public actor SeerrHTTPClient {
     /// as the XSRF-TOKEN header. Seerr uses the double-submit cookie pattern —
     /// the cookie alone is not enough; the value must also appear as a header.
     private func applyXSRF(to request: inout URLRequest) {
+        // Through the server, every call carries the Jellyfin session: Jellyfin 10.11 and later
+        // ignore the old X-Emby-Authorization header, so it goes in Authorization, set per request.
+        if let jellyfinAuthorization {
+            request.setValue(jellyfinAuthorization, forHTTPHeaderField: "Authorization")
+            return
+        }
         guard let token = session.configuration.httpCookieStorage?
             .cookies(for: baseURL)?
             .first(where: { $0.name == "XSRF-TOKEN" })?

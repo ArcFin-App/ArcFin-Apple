@@ -25,9 +25,11 @@ struct SeerrPluginView: View {
 
     var body: some View {
         List {
-            if isConfigured && !form.isEditing {
+            if seerrRepo.isThroughServer {
+                SeerrThroughServerSection()
+            } else if isConfigured && !form.isEditing {
                 SeerrConnectionSummary(url: seerrURL, authMethod: seerrAuthMethod, username: seerrUsername,
-                                       usesQuickConnect: seerrAuthMethod == .jellyfin && authManager.seerrPassword.isEmpty,
+                                       usesQuickConnect: seerrAuthMethod.usesQuickConnect(password: authManager.seerrPassword),
                                        isManagedByServer: isLocked) {
                     showRemoveConfirm = true
                 }
@@ -40,7 +42,9 @@ struct SeerrPluginView: View {
         .arcfinNavTitleLarge("Seerr")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                if form.isEditing || !isConfigured {
+                if seerrRepo.isThroughServer {
+                    EmptyView()
+                } else if form.isEditing || !isConfigured {
                     Button("Save") { save() }
                         .disabled(!form.isComplete)
                 } else {
@@ -57,7 +61,7 @@ struct SeerrPluginView: View {
                 }
             }
         }
-        .onAppear { if !isConfigured { beginEditing() } }
+        .onAppear { if !isConfigured && !seerrRepo.isThroughServer { beginEditing() } }
         .alert(
             "Remove Seerr connection?",
             isPresented: $showRemoveConfirm
