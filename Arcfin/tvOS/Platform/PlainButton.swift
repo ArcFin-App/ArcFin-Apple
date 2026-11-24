@@ -29,6 +29,15 @@ struct TVCardButtonStyle: ButtonStyle {
 }
 
 extension View {
+    /// An announcement's X: a round button sized for the remote, its ring inside the banner.
+    func noticeDismissButtonStyle() -> some View {
+        frame(width: 56, height: 56)
+            .background(DT.Color.textPrimary.opacity(0.08), in: Circle())
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: 28)
+    }
+
     /// A form row's action. The list row is already the button here.
     func formRowButton() -> some View { self }
 }

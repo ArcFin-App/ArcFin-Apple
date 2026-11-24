@@ -113,7 +113,7 @@ private struct NoticeBanner: View {
     private var tint: Color { isWarning ? DT.Color.palette("f59e0b") : DT.Color.palette("60A5FA") }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             Image(systemName: systemImage)
                 .contentFont(.title3)
                 .foregroundStyle(tint)
@@ -138,12 +138,11 @@ private struct NoticeBanner: View {
                     .foregroundStyle(DT.Color.textSecondary)
                     .padding(4)
             }
-            .buttonStyle(.plain)
+            .noticeDismissButtonStyle()
             .accessibilityLabel("Dismiss")
         }
         .padding(12)
-        .background(tint.opacity(0.1))
-        .clipShape(RoundedRectangle(cornerRadius: DT.Radius.lg))
+        .background(tint.opacity(0.1), in: RoundedRectangle(cornerRadius: DT.Radius.lg))
         .overlay(RoundedRectangle(cornerRadius: DT.Radius.lg).stroke(tint.opacity(0.25), lineWidth: 1))
         .accessibilityElement(children: .combine)
     }
