@@ -4,11 +4,12 @@ import SwiftUI
 import JellyfinAPI
 import AuthCore
 
-/// What the download sheet hands back: the quality tier (nil is the original file) and the
-/// tracks to keep.
+/// What the download sheet hands back: the quality tier (nil is the original file), the
+/// tracks to keep and, for a season, the episodes ticked in episode order.
 struct DownloadChoice {
     let bitrateCap: Int?
     let tracks: DownloadTracks
+    var episodes: [MediaItem] = []
 }
 
 /// A quality the sheet offers. `tier` is what H.264 needs for its picture; `videoBitrate` is
@@ -24,13 +25,18 @@ private struct DownloadQualityOption: Identifiable, Hashable {
 /// (size, tracks, qualities) once `load` has them from the server.
 struct DownloadConfirmSheet: View {
     let item: MediaItem
+    /// A season's episodes, listed to tick; `load` then previews one of them.
+    var episodes: [MediaItem] = []
     let load: () async -> DownloadManager.DownloadPreview?
     let onConfirm: (DownloadChoice) -> Void
 
     @Environment(\.dismiss) private var dismiss
     @Environment(DownloadManager.self) private var downloadManager
     @Environment(AuthManager.self) private var authManager
-    @State private var preview: DownloadManager.DownloadPreview?
+    @AppStorage("seasonDownloadUnwatchedOnly") private var unwatchedOnly = false
+    @State private var loadedPreview: DownloadManager.DownloadPreview?
+    @State private var picked: Set<String> = []
+    @State private var hasPicked = false
     @State private var isLoading = true
     /// The server didn't answer for the file (offline, an error, no permission).
     @State private var loadFailed = false
@@ -42,6 +48,28 @@ struct DownloadConfirmSheet: View {
     /// Read once the details are in: working it out reads the running downloads' progress and
     /// the volume's capacity, which on every render redrew the sheet with each progress tick.
     @State private var room: Int64?
+
+    private var isSeason: Bool { !SeasonEpisodePicks.listed(episodes).isEmpty }
+
+    private var taken: Set<String> {
+        Set(episodes.map(\.id).filter { downloadManager.isDownloaded($0) || downloadManager.isInProgress($0) })
+    }
+
+    private var pickedEpisodes: [MediaItem] {
+        SeasonEpisodePicks.ordered(episodes, picked: picked, taken: taken)
+    }
+
+    /// For a season, the one episode's figures scaled to the episodes ticked.
+    private var preview: DownloadManager.DownloadPreview? {
+        guard var preview = loadedPreview, isSeason else { return loadedPreview }
+        let picks = pickedEpisodes
+        let count = Int64(picks.count)
+        let runtimes = picks.compactMap(\.runTimeTicks)
+        preview.estimatedSizeBytes = preview.estimatedSizeBytes.map { $0 * count }
+        preview.runtimeTicks = runtimes.count == picks.count ? runtimes.reduce(0, +) : preview.runtimeTicks.map { $0 * count }
+        preview.episodeCount = picks.count
+        return preview
+    }
 
     private var options: [DownloadQualityOption] {
         guard let preview else { return [DownloadQualityOption(quality: .original, tier: nil, videoBitrate: nil)] }
@@ -99,10 +127,12 @@ struct DownloadConfirmSheet: View {
         let allAudio = Set(preview?.audioStreams.map(DownloadTracks.key) ?? [])
         let audio: [String]? = !isConverted || audioKeys == allAudio ? nil : preview?.audioStreams.map(DownloadTracks.key).filter(audioKeys.contains)
         let subtitles = preview?.subtitleStreams.map(DownloadTracks.key).filter(subtitleKeys.contains) ?? []
-        return DownloadChoice(bitrateCap: selected.tier, tracks: DownloadTracks(audio: audio, subtitles: subtitles))
+        return DownloadChoice(bitrateCap: selected.tier, tracks: DownloadTracks(audio: audio, subtitles: subtitles), episodes: pickedEpisodes)
     }
 
-    private var blocksDownload: Bool { isLoading || loadFailed || space?.blocks == true }
+    private var blocksDownload: Bool {
+        isLoading || loadFailed || space?.blocks == true || (isSeason && pickedEpisodes.isEmpty)
+    }
 
     var body: some View {
         NavigationStack {
@@ -167,7 +197,13 @@ struct DownloadConfirmSheet: View {
                 }
             }
         }
-        .task { await loadPreview() }
+        .task {
+            if !hasPicked {
+                picked = SeasonEpisodePicks.defaults(episodes, taken: taken, unwatchedOnly: unwatchedOnly)
+                hasPicked = true
+            }
+            await loadPreview()
+        }
     }
 
     private var loadFailedNotice: some View {
@@ -195,7 +231,7 @@ struct DownloadConfirmSheet: View {
             isLoading = false
             return
         }
-        preview = loaded
+        loadedPreview = loaded
         room = downloadManager.roomForDownloads()
         audioKeys = Set(loaded.audioStreams.map(DownloadTracks.key))
         subtitleKeys = Set(DownloadManager.subtitlesFromSettings(loaded.subtitleStreams).map(DownloadTracks.key))
@@ -305,6 +341,10 @@ struct DownloadConfirmSheet: View {
                 }
             }
 
+            if isSeason {
+                episodeSection
+            }
+
             if let video = videoLines(preview) , !video.isEmpty {
                 section("Video") {
                     card {
@@ -327,6 +367,79 @@ struct DownloadConfirmSheet: View {
                     .foregroundStyle(DT.Color.textSecondary)
             }
         }
+    }
+
+    private var episodeSection: some View {
+        let taken = taken
+        let listed = SeasonEpisodePicks.listed(episodes)
+        return section("Episodes") {
+            HStack(spacing: DT.Spacing.md) {
+                Button("Select All") { picked = Set(SeasonEpisodePicks.selectable(episodes, taken: taken).map(\.id)) }
+                Button("Select None") { picked = [] }
+                Button("Next 3 Unwatched") { picked = SeasonEpisodePicks.nextUnwatched(episodes, taken: taken) }
+            }
+            .font(.system(.caption, design: .default, weight: .semibold))
+            .foregroundStyle(DT.Color.accent)
+            .buttonStyle(.plain)
+            .padding(.horizontal, 4)
+            card {
+                ForEach(Array(listed.enumerated()), id: \.element.id) { index, episode in
+                    if index > 0 { divider }
+                    episodeRow(episode, isTaken: taken.contains(episode.id))
+                }
+            }
+        }
+    }
+
+    private func episodeRow(_ episode: MediaItem, isTaken: Bool) -> some View {
+        let isOn = isTaken || picked.contains(episode.id)
+        return Button {
+            if picked.contains(episode.id) { picked.remove(episode.id) } else { picked.insert(episode.id) }
+        } label: {
+            HStack(spacing: 10) {
+                Image(systemName: isOn ? "checkmark.circle.fill" : "circle")
+                    .font(.system(.body))
+                    .foregroundStyle(isOn && !isTaken ? DT.Color.accent : DT.Color.textSecondary)
+                    .accessibilityHidden(true)
+                if let number = episode.indexNumber {
+                    Text(verbatim: "\(number)")
+                        .font(.system(.footnote, design: .default, weight: .semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(DT.Color.textSecondary)
+                        .frame(minWidth: 20, alignment: .trailing)
+                }
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: episode.name)
+                        .font(.system(.footnote, design: .default, weight: .medium))
+                        .foregroundStyle(isTaken ? DT.Color.textSecondary : DT.Color.textPrimary)
+                        .lineLimit(1)
+                    if let detail = episodeDetail(episode, isTaken: isTaken) {
+                        Text(verbatim: detail)
+                            .font(.system(.caption2))
+                            .foregroundStyle(DT.Color.textSecondary)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .disabled(isTaken)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(isOn ? .isSelected : [])
+    }
+
+    private func episodeDetail(_ episode: MediaItem, isTaken: Bool) -> String? {
+        var parts: [String] = []
+        if isTaken {
+            parts.append(downloadManager.isDownloaded(episode.id) ? String(localized: "Downloaded") : String(localized: "Downloading"))
+        } else if episode.userData?.played == true {
+            parts.append(String(localized: "Watched"))
+        }
+        if let ticks = episode.runTimeTicks, ticks > 0 { parts.append(Self.runtimeLabel(ticks: ticks)) }
+        return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     private func qualityLabel(_ option: DownloadQualityOption) -> String {

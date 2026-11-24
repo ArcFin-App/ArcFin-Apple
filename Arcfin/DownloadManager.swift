@@ -1049,6 +1049,20 @@ final class DownloadManager: NSObject {
         await processQueue()
     }
 
+    /// Queues every title first, in this order, then runs the queue once: awaiting
+    /// `startDownload` for each would wait for the queue to drain before adding the next.
+    func startDownloads(items: [MediaItem], credential: ServerCredential, authHeader: String, bitrateCap: Int? = nil,
+                        tracks: DownloadTracks = .all) async {
+        var queuedAny = false
+        for item in items {
+            if addToQueue(item: item, credential: credential, authHeader: authHeader, bitrateCap: bitrateCap, tracks: tracks, viaSmart: false) {
+                queuedAny = true
+            }
+        }
+        guard queuedAny else { return }
+        await processQueue()
+    }
+
     /// Queues without waiting for the queue to run. False when it's already downloaded or queued.
     @discardableResult
     private func addToQueue(item: MediaItem, credential: ServerCredential, authHeader: String, bitrateCap: Int?,
