@@ -1867,6 +1867,24 @@ final class PlayerModel {
         }
     }
 
+    // MARK: - Paused under a question
+
+    @ObservationIgnored private var pausedForQuestion = false
+
+    /// Paused while a sheet asks something over the player, like who's watching.
+    func pauseForQuestion() {
+        guard !reportedIsPaused else { return }
+        pausedForQuestion = true
+        if isCasting { CastManager.shared.pause() } else { Task { await player.pause() } }
+    }
+
+    /// Plays on once it's answered, only if the question paused it.
+    func resumeAfterQuestion() {
+        guard pausedForQuestion else { return }
+        pausedForQuestion = false
+        if isCasting { CastManager.shared.play() } else { Task { await player.play() } }
+    }
+
     private func pauseForSleepTimer() {
         if isCasting { CastManager.shared.pause() }
         Task { await player.pause() }

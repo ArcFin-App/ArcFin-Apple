@@ -4,20 +4,39 @@ import SwiftUI
 import JellyfinAPI
 
 extension View {
-    /// On a shared account: who's watching, asked as the player opens (at most every 12 hours)
-    /// or when the player's control for it is used, so each person's own progress follows along.
-    func whoIsWatchingPrompt() -> some View {
-        modifier(WhoIsWatchingPrompt())
+    /// On a shared account, who's watching: asked once a session over the app, once the lock is
+    /// out of the way, so each person's progress follows along for everything played.
+    func whoIsWatchingPrompt(locked: Bool) -> some View {
+        modifier(WhoIsWatchingPrompt(inPlayer: nil, locked: locked))
+    }
+
+    /// The same question over the player, asked from its control or when a session starts with
+    /// it open. Playback pauses while it's asked.
+    func whoIsWatchingPrompt(pausing player: PlayerModel) -> some View {
+        modifier(WhoIsWatchingPrompt(inPlayer: player, locked: false))
     }
 }
 
 private struct WhoIsWatchingPrompt: ViewModifier {
+    let inPlayer: PlayerModel?
+    let locked: Bool
     @Bindable private var companion = ServerCompanion.shared
+
+    /// The player asks while it's open, the app the rest of the time, so only one shows it.
+    private var isShown: Binding<Bool> {
+        Binding {
+            companion.askWhoIsWatching && !locked && (inPlayer != nil) == PlayerActivity.shared.isPlayerOpen
+        } set: {
+            companion.askWhoIsWatching = $0
+        }
+    }
 
     func body(content: Content) -> some View {
         content
-            .onAppear { companion.playerOpened() }
-            .appSheet(isPresented: $companion.askWhoIsWatching, title: "Who's Watching?", systemImage: "person.2") {
+            .onChange(of: isShown.wrappedValue) { _, shown in
+                if shown { inPlayer?.pauseForQuestion() } else { inPlayer?.resumeAfterQuestion() }
+            }
+            .appSheet(isPresented: isShown, title: "Who's Watching?", systemImage: "person.2") {
                 if let shared = companion.sharedAccount {
                     NavigationStack {
                         WhoIsWatchingView(members: shared.members, watching: Set(shared.watching))
