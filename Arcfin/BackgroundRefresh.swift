@@ -9,6 +9,7 @@ import BackgroundTasks
 import Foundation
 import JellyfinAPI
 import SeerrAPI
+import SwiftData
 import Telemetry
 import os
 
@@ -30,9 +31,23 @@ nonisolated enum BackgroundRefresh {
     private static let announcedWatchlistKey = "arcfin.notify.announcedWatchlistIDs"
 
     #if os(iOS)
-    /// BGTask isn't Sendable, but it is only touched from the launch handler and the one
-    /// task that finishes it.
-    private struct TaskBox: @unchecked Sendable { let task: BGAppRefreshTask }
+    /// BGTask isn't Sendable. The work and the expiration handler can both finish it, so the
+    /// lock keeps that to once.
+    private final class TaskBox: @unchecked Sendable {
+        let task: BGAppRefreshTask
+        private let lock = NSLock()
+        private var completed = false
+
+        init(task: BGAppRefreshTask) { self.task = task }
+
+        func complete(success: Bool) {
+            lock.lock()
+            defer { lock.unlock() }
+            guard !completed else { return }
+            completed = true
+            task.setTaskCompleted(success: success)
+        }
+    }
     #endif
 
     /// Forgets what earlier checks saw, so the next account's first run only records state
@@ -116,10 +131,25 @@ nonisolated enum BackgroundRefresh {
     private static func handle(_ box: TaskBox) {
         schedule()
         let work = Task {
+            async let downloads: Void = queueDownloads()
             await check()
-            box.task.setTaskCompleted(success: !Task.isCancelled)
+            await downloads
+            box.complete(success: !Task.isCancelled)
         }
-        box.task.expirationHandler = { work.cancel() }
+        // Signing in can wait on the device being unlocked, which cancelling doesn't cut short.
+        box.task.expirationHandler = {
+            work.cancel()
+            box.complete(success: false)
+        }
+    }
+
+    /// Progress watched offline goes to the server, and Smart Downloads queues the next
+    /// episodes, whose transfers carry on in the background download session.
+    @MainActor private static func queueDownloads() async {
+        let manager = AppServices.downloadManager
+        // A background launch connects no window to set the manager up.
+        manager.configure(modelContext: AppServices.modelContainer.mainContext, authManager: AppServices.authManager)
+        await manager.refreshInBackground()
     }
     #endif
 
