@@ -95,6 +95,7 @@ struct HomeView: View {
                             if (mediaRepo.connectionFailed && !mediaRepo.isLoading) || model.isSlowFirstLoad {
                                 HomeConnectionBanner(hasDownloads: hasDownloads)
                             }
+                            ServerNoticeBanners()
                             ForEach(orderedVisibleShelves) { shelf in
                                 if HomeModel.showsShelfSkeleton(shuffled: shuffleHomeShelves, mediaRepo: mediaRepo),
                                    !HomeShelfPrefs.pinned.contains(shelf), !shelf.isSeerr {

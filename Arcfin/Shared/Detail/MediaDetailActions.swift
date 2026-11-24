@@ -324,6 +324,8 @@ struct DetailMoreMenu: View {
     @Environment(AuthManager.self) private var authManager
     let model: MediaDetailModel
     let searchSubtitles: () -> Void
+    /// Where the platform has watch parties; shown when the server's Arcfin Sync plugin offers them.
+    var startWatchParty: (() -> Void)? = nil
 
     var body: some View {
         let item = model.item
@@ -332,6 +334,12 @@ struct DetailMoreMenu: View {
             if item.type == .movie || item.type == .episode {
                 Button { model.markWatched(!isWatched, authManager: authManager) } label: {
                     Label(isWatched ? "Mark as Unwatched" : "Mark as Watched", systemImage: isWatched ? "eye.slash" : "checkmark")
+                }
+                if let startWatchParty, authManager.arcfinSyncStatus?.isOn("watchParty") == true,
+                   ProfileRules.shared.canUseSyncPlay {
+                    Button(action: startWatchParty) {
+                        Label("Start a Watch Party", systemImage: "person.2.wave.2")
+                    }
                 }
                 Divider()
             }

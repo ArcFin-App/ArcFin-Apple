@@ -83,6 +83,14 @@ final class SyncPlayManager {
         }
     }
 
+    /// Leaves once the server has taken it, so a group made or joined straight after isn't left too.
+    func leaveGroupAndWait(credential: ServerCredential, authHeader: String) async {
+        try? await client.syncPlayLeaveGroup(credential: credential, authHeader: authHeader)
+        disconnectSocket()
+        currentGroupId = nil
+        groupName = nil
+    }
+
     func leaveGroup(credential: ServerCredential, authHeader: String) {
         Task { try? await client.syncPlayLeaveGroup(credential: credential, authHeader: authHeader) }
         disconnectSocket()

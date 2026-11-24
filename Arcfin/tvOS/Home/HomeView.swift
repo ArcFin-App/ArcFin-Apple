@@ -130,6 +130,12 @@ struct HomeView: View {
                     }
                 }
             }
+            .overlay(alignment: .top) {
+                ServerNoticeBanners()
+                    .frame(maxWidth: 1100)
+                    .padding(.top, 40)
+                    .focusSection()
+            }
             .screenBackground()
             .onAppear { isHomeShowing = true }
             .onDisappear { isHomeShowing = false }

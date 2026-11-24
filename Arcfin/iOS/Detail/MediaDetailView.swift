@@ -32,6 +32,7 @@ struct MediaDetailView: View {
     @AppStorage("youtubeTrailersEnabled") private var youtubeTrailersEnabled = true
     @State private var requestingSeerrItem: SeerrItem?
     @State private var openedSeerrItem: SeerrItem?
+    @State private var watchParty: WatchPartyLaunch?
 
     private let headerMetrics = DetailHeaderMetrics(
         heroHeight: 260, posterSize: CGSize(width: 90, height: 132), titleStyle: .title3,
@@ -115,7 +116,15 @@ struct MediaDetailView: View {
                     .accessibilityLabel("Share")
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) { DetailMoreMenu(model: model) { showSubtitleSearch = true } }
+            ToolbarItem(placement: .topBarTrailing) {
+                DetailMoreMenu(model: model, searchSubtitles: { showSubtitleSearch = true },
+                               startWatchParty: { watchParty = WatchPartyLaunch(.host(model.detail?.item ?? item, officialRating: model.detail?.officialRating)) })
+            }
+        }
+        .fullScreenCover(item: $watchParty) { party in
+            WatchPartyView(launch: party.launch) { request in
+                model.playbackRequest = MediaDetailView.PlaybackRequest(item: request.item, startTicks: request.startTicks)
+            }
         }
         .sheet(isPresented: $showSubtitleSearch) {
             NavigationStack {
@@ -235,6 +244,9 @@ struct MediaDetailView: View {
     @ViewBuilder
     private var detailContent: some View {
         DetailPlayButton(model: model)
+        if [.movie, .series, .episode].contains(item.type), WatchPartyDetailButton.isAvailable(authManager) {
+            WatchPartyDetailButton { watchParty = WatchPartyLaunch(.host(model.detail?.item ?? item, officialRating: model.detail?.officialRating)) }
+        }
         if model.detailFailed {
             DetailLoadFailedRow { Task { await loadPage() } }
         }

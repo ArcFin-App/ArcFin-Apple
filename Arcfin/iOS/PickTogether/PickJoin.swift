@@ -67,8 +67,10 @@ struct PickScanView: View {
     }
 }
 
-/// The camera, looking for a Pick Together QR code: arcfin://pick/<code>, or just a code.
-private struct PickCodeScanner: UIViewControllerRepresentable {
+/// The camera, looking for a QR code with a code in it: a Pick Together one by default
+/// (arcfin://pick/<code>, or just a code), or whatever `parse` reads.
+struct PickCodeScanner: UIViewControllerRepresentable {
+    var parse: (String) -> String? = PickTogetherClient.code(from:)
     let onFound: (String) -> Void
 
     func makeUIViewController(context: Context) -> DataScannerViewController {
@@ -85,17 +87,21 @@ private struct PickCodeScanner: UIViewControllerRepresentable {
         scanner.stopScanning()
     }
 
-    func makeCoordinator() -> Coordinator { Coordinator(onFound: onFound) }
+    func makeCoordinator() -> Coordinator { Coordinator(parse: parse, onFound: onFound) }
 
     @MainActor
     final class Coordinator: NSObject, DataScannerViewControllerDelegate {
+        let parse: (String) -> String?
         let onFound: (String) -> Void
 
-        init(onFound: @escaping (String) -> Void) { self.onFound = onFound }
+        init(parse: @escaping (String) -> String?, onFound: @escaping (String) -> Void) {
+            self.parse = parse
+            self.onFound = onFound
+        }
 
         func dataScanner(_ scanner: DataScannerViewController, didAdd items: [RecognizedItem], allItems: [RecognizedItem]) {
             for case .barcode(let barcode) in items {
-                guard let text = barcode.payloadStringValue, let code = PickTogetherClient.code(from: text) else { continue }
+                guard let text = barcode.payloadStringValue, let code = parse(text) else { continue }
                 onFound(code)
                 return
             }
