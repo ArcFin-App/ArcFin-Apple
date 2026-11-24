@@ -18,7 +18,7 @@ We want taking part in Arcfin to be a welcoming, harassment-free experience for 
 - use sexualised language or imagery, or make unwelcome advances;
 - troll, or deliberately derail discussions;
 - publish someone's private information, such as a home address, email or server address, without their permission;
-- discuss piracy, ask for help with pirated content, or share piracy tools or sites (see the [Disclaimer](README.md#disclaimer));
+- discuss piracy, ask for help with pirated content, or share piracy tools or sites (see the [Disclaimer](docs/ABOUT.md#disclaimer));
 - do anything else that would reasonably be considered inappropriate in a professional setting.
 
 ## Scope
