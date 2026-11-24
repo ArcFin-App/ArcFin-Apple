@@ -38,6 +38,7 @@ struct HomeView: View {
         hasDownloads = !downloadManager.ownDownloads((try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? []).isEmpty
     }
     @State private var showSettings = false
+    @State private var pickTogether: PickTogetherLaunch?
     @AppStorage(StreamingServicePrefs.key) private var streamingServicesData = Data()
     @AppStorage(SeerrRepository.regionOverrideKey) private var seerrRegionOverride = ""
     @State private var trailerLaunchItem: MediaItem?
@@ -150,6 +151,12 @@ struct HomeView: View {
             .navigationTitle("")
             .toolbar {
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    if authManager.arcfinSyncStatus?.features.contains("pickTogether") == true {
+                        Button { pickTogether = PickTogetherLaunch(code: nil) } label: {
+                            Image(systemName: "rectangle.stack.badge.person.crop")
+                        }
+                        .accessibilityLabel("Pick Together")
+                    }
                     // Was a decorative placeholder (empty action) for a notification center
                     // this app doesn't have — only local, in-the-moment alerts (download
                     // complete, Seerr request status) exist, with no server-side feed and
@@ -295,6 +302,13 @@ struct HomeView: View {
                 model.openDeepLinkItem(id: id, authManager: authManager, mediaRepo: mediaRepo)
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinPickTogether)) { note in
+            openPendingPick(note.userInfo?["code"] as? String)
+        }
+        .onAppear { openPendingPick(nil) }
+        .fullScreenCover(item: $pickTogether) { launch in
+            PickTogetherView(joinCode: launch.code)
+        }
         .onReceive(NotificationCenter.default.publisher(for: .arcfinResume)) { _ in
             model.resumeLatest(mediaRepo: mediaRepo)
         }
@@ -342,6 +356,7 @@ struct HomeView: View {
 
     private var isHeroCovered: Bool {
         model.detailItem != nil || seeAllShelf != nil || showSettings || model.seerrDetailItem != nil
+            || pickTogether != nil
             || trailerLaunchItem != nil || model.playbackRequest != nil || hero.playbackRequest != nil
             || PlayerActivity.shared.isPlayerOpen
             || AppServices.music.isNowPlayingOpen || AppServices.remoteSessions.isShowingRemote
@@ -473,5 +488,21 @@ struct HomeView: View {
             }
         }
         HomeQuickLookMenu(item: item, playTrailer: { trailerLaunchItem = item })
+    }
+}
+
+/// A Pick Together sheet to open, joining a session straight away when it came from a link.
+struct PickTogetherLaunch: Identifiable {
+    let id = UUID()
+    let code: String?
+}
+
+extension HomeView {
+    /// Opens Pick Together for a link's code, or one a cold launch buffered.
+    fileprivate func openPendingPick(_ code: String?) {
+        let pending = code ?? UserDefaults.standard.string(forKey: "arcfin.pendingPickCode")
+        guard let pending else { return }
+        UserDefaults.standard.removeObject(forKey: "arcfin.pendingPickCode")
+        pickTogether = PickTogetherLaunch(code: pending)
     }
 }

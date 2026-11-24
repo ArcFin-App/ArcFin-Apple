@@ -11,6 +11,7 @@ Everything Arcfin does, by area. For which platform has what, see [Platform diff
 - [Profiles, settings and help](#profiles-settings-and-help)
 - [Across the system](#across-the-system)
 - [Add-ons](#add-ons)
+- [With the Arcfin Sync plugin](#with-the-arcfin-sync-plugin)
 - [Platform differences](#platform-differences)
 
 ## Watching
@@ -60,6 +61,7 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 ## Profiles, settings and help
 - **Profiles** with a picker, Face ID, Touch ID or PIN lock, and the server's parental controls and access schedule.
 - **Set Up Nearby Device:** sign in an Apple TV, iPad or Mac from your iPhone or iPad, with every profile you pick and their Seerr and ListenBrainz, over your own network. Both screens show a code to compare, nothing is sent until you allow it on the new device, and passwords are never sent.
+- **Pick Together** (iPhone and iPad) with the Arcfin Sync server plugin: swipe through titles with the people you're with until you all like the same one, then watch it here, on another device or together over SyncPlay.
 - **Devices & Sync** with the Arcfin Sync server plugin: your settings follow you to your other devices, automatically, after asking first, or not at all, and you can send one device's settings to all the others.
 - **Admin tab** for server admins:
   - the server dashboard, Active Sessions (see who's watching and why a stream transcodes, then pause, stop or message them), scheduled tasks and activity;
@@ -82,6 +84,18 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 - **[Seerr](https://github.com/seerr-team/seerr):** browse, request and keep a watchlist, signed in per profile.
 - **[TMDB](https://www.themoviedb.org):** an optional key for review scores, where to watch and what's popular.
 - **[ListenBrainz](https://listenbrainz.org):** an optional token per profile. Arcfin sends your listens and loves to it, and Stats and Year in Music can count from it. On a Jellyfin 12.4 server, Jellyfin's own ListenBrainz similarity provider also feeds Similar Artists.
+
+## With the Arcfin Sync plugin
+
+[Arcfin Sync](https://arcfin.psmattas.com/plugin/) is a free plugin for your Jellyfin server. Everything above works without it; these need it, from the version shown:
+
+| Feature | What it does | Needs |
+|---|---|---|
+| **Pick Together** (iPhone and iPad) | Everyone swipes through titles on their own device until you all like the same one, then watches it here, on another device or together over SyncPlay. Join with a code or a QR code; the device that starts it can lock the session and remove people. | 0.5 or later |
+| **Devices & Sync** | Your settings follow you to your other devices: automatically, after asking first, or not at all. Send one device's settings to all the others. | 0.4 or later |
+| **Arcfin for Everyone** | Server admins give any setting a default or lock it, for everyone or for one person, and choose who can use Pick Together. | 0.4 or later |
+| **Every audio track in a converted download** | A smaller download keeps each audio language you pick. | 0.3.1 or later |
+| **AV1 downloads** | Lower-quality downloads use AV1, about half the size of H.264, when the server's hardware can really encode it. | 0.3 or later |
 
 ## Platform differences
 

@@ -189,6 +189,10 @@
 				iOS/Onboarding/OnboardingView.swift = (ios, );
 				iOS/Onboarding/WhatsNew.swift = (ios, );
 				iOS/Onboarding/WhatsNewView.swift = (ios, );
+				iOS/PickTogether/PickJoin.swift = (ios, );
+				iOS/PickTogether/PickSessionView.swift = (ios, );
+				iOS/PickTogether/PickTogetherModel.swift = (ios, );
+				iOS/PickTogether/PickTogetherView.swift = (ios, );
 				iOS/Platform/AdaptiveColor.swift = (ios, );
 				iOS/Platform/AdminPlatform.swift = (ios, );
 				iOS/Platform/AlwaysDarkPlayer.swift = (ios, );
@@ -1010,7 +1014,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ArcfinWidgets/ArcfinWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1054,7 +1058,7 @@
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_ENTITLEMENTS = ArcfinWidgets/ArcfinWidgets.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -1225,7 +1229,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_APP_SANDBOX = YES;
@@ -1250,7 +1254,7 @@
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan codes: the one an Apple TV shows to sign in, and a Pick Together session's code. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to find and connect to your Jellyfin server, to cast to nearby devices, and to set up an Apple TV, iPad or Mac nearby from an iPhone or iPad.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
@@ -1305,7 +1309,7 @@
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				"CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]" = Arcfin/iOS/ArcfiniOS.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
@@ -1332,7 +1336,7 @@
 				INFOPLIST_KEY_LSSupportsOpeningDocumentsInPlace = YES;
 				INFOPLIST_KEY_NSAppleMusicUsageDescription = "Arcfin finds and plays Apple Music songs that aren't on your server, once you turn this on in Settings.";
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "Arcfin's Chromecast support can use Bluetooth to help discover nearby Cast devices.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan the code an Apple TV shows to sign in. Nothing is recorded or sent anywhere.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Arcfin uses the camera only to scan codes: the one an Apple TV shows to sign in, and a Pick Together session's code. Nothing is recorded or sent anywhere.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Face ID is used to unlock Arcfin when App Lock is enabled for your profile.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "Arcfin uses your local network to find and connect to your Jellyfin server, to cast to nearby devices, and to set up an Apple TV, iPad or Mac nearby from an iPhone or iPad.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Arcfin uses your Wi-Fi network name to automatically switch between your server's local and remote address when you're home versus away. Your location is never stored, tracked, or shared — it's only used to read the current Wi-Fi name.";
@@ -1380,7 +1384,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1407,7 +1411,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1433,7 +1437,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1460,7 +1464,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1489,7 +1493,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinTopShelf/ArcfinTopShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;
@@ -1522,7 +1526,7 @@
 				CODE_SIGN_ENTITLEMENTS = ArcfinTopShelf/ArcfinTopShelf.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ArcfinTopShelf/Info.plist;
@@ -1556,7 +1560,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -1590,7 +1594,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = CW6GQT9SK5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;

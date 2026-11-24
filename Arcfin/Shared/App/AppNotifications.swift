@@ -5,6 +5,8 @@ import Foundation
 // Posted by onOpenURL when the Top Shelf launches a play deep link.
 extension Notification.Name {
     static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
+    /// arcfin://pick/<code>, from a Pick Together share link; userInfo["code"].
+    static let arcfinPickTogether = Notification.Name("arcfinPickTogether")
     /// Posted by onOpenURL for arcfin://downloads — tapping the download Live Activity.
     static let arcfinShowDownloads = Notification.Name("arcfinShowDownloads")
     /// Browse to the front, for an album or artist opened from Now Playing.
