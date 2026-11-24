@@ -89,11 +89,11 @@ Each screen has its own view per platform over shared logic ([#198](https://git.
 |---|---|
 | `main` | The only long-lived branch. Everything merges here through pull requests, and it should always build and run |
 | `feat/…`, `fix/…`, `docs/…`, `ci/…`, `l10n/…` | Your work, branched from an up-to-date `main` |
-| `hotfix/…` | An urgent fix for a build already on TestFlight, branched from that build's tag |
+| `hotfix/…` | An urgent fix for a build already on TestFlight, branched from that build's tag (`v0.5.1-build-3.1764028800`) |
 
 Branch from `main` and open your pull request against `main`.
 
-**Releases** aren't branches. A release is a small pull request that sets the version and build number, followed by signed tags on the merged commit, one per platform (for example `iOS-0.3.0-build-1`). The tags mark exactly what shipped.
+**Releases** aren't branches, and nobody tags by hand. A version or build bump is a small pull request that sets the version and build number. Every night `main` has changed, CI builds it for all three platforms and tags the commit it built, signed by the Arcfin bot, for example `v0.5.1-build-3.1764028800`: the version, the project's build number and the Unix time of that night's build, which is also the build number on TestFlight. Each tag has a pre-release on the Releases page. A build that goes to the App Store becomes a full release, so the full releases mark exactly what shipped.
 
 ## Pull requests
 
