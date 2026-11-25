@@ -69,6 +69,8 @@ struct SeerrItemDetailContent: View {
 
                     TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .ratings)
 
+                    TitleIssuesSection(tmdbId: item.id, mediaType: item.mediaType)
+
                     if let cast = detail?.cast, !cast.isEmpty {
                         castRow(cast)
                     }

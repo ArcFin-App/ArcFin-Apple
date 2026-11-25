@@ -162,6 +162,15 @@ struct SeerrView: View {
             .buttonStyle(TVCardButtonStyle())
             .focusEffectDisabled()
             .tvFocusRing(cornerRadius: DT.Radius.pill)
+
+            NavigationLink {
+                SeerrIssuesListView()
+            } label: {
+                pillLabel(String(localized: "Issues"), systemImage: "exclamationmark.bubble")
+            }
+            .buttonStyle(TVCardButtonStyle())
+            .focusEffectDisabled()
+            .tvFocusRing(cornerRadius: DT.Radius.pill)
         }
     }
 
