@@ -28,6 +28,9 @@ enum NotificationManager {
         case item(String)
         case downloads
         case discover
+        /// Discover's Requests list, for a request to approve or one that failed.
+        case seerrRequests
+        case seerrIssue(Int)
         /// An arcfin:// link, opened the way the system would open it.
         case link(URL)
 
@@ -36,6 +39,8 @@ enum NotificationManager {
             case .item(let id): ["route": "item", "itemID": id]
             case .downloads: ["route": "downloads"]
             case .discover: ["route": "discover"]
+            case .seerrRequests: ["route": "seerrRequests"]
+            case .seerrIssue(let id): ["route": "seerrIssue", "issueID": String(id)]
             case .link(let url): ["route": "link", "url": url.absoluteString]
             }
         }
@@ -117,7 +122,7 @@ enum NotificationManager {
         default: String(localized: "Request Failed")
         }
         let body = !hidingDetails && event.kind != "seerr-failed" ? event.actor.map { String(localized: "\($0) asked for \(title)") } ?? title : title
-        await send(title: heading, body: body, identifier: event.id, route: .discover)
+        await send(title: heading, body: body, identifier: event.id, route: .seerrRequests)
     }
 
     /// A Seerr issue reported, commented on, resolved or reopened.
@@ -143,7 +148,7 @@ enum NotificationManager {
         } else {
             body = event.actor.map { String(localized: "\(kind) · \($0)") } ?? kind
         }
-        await send(title: heading, body: body, identifier: event.id, route: .discover)
+        await send(title: heading, body: body, identifier: event.id, route: event.issueId.map(Route.seerrIssue) ?? .discover)
     }
 
     /// The app icon's badge; 0 clears it. Not on Apple TV.
@@ -301,6 +306,10 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate, @unc
                 ArcfinRouting.showDownloads()
             case "discover":
                 ArcfinRouting.showDiscover()
+            case "seerrRequests":
+                ArcfinRouting.showSeerrRequests()
+            case "seerrIssue":
+                if let id = (info["issueID"] as? String).flatMap(Int.init) { ArcfinRouting.openSeerrIssue(id: id) }
             default:
                 break
             }

@@ -18,6 +18,8 @@ struct SeerrDiscoverPage: View {
     @State private var searchText = ""
     @State private var requestingItem: SeerrItem? = nil
     @State private var openedItem: SeerrItem?
+    @State private var showingRequests = false
+    @State private var linkedIssue: SeerrIssueLink?
     @State private var pageSize: CGSize = .zero
     @AppStorage(StreamingServicePrefs.key) private var servicesData = Data()
 
@@ -48,6 +50,13 @@ struct SeerrDiscoverPage: View {
                             Label("Requests", systemImage: "text.badge.checkmark")
                         }
                     }
+                    ToolbarItem(placement: .primaryAction) {
+                        NavigationLink {
+                            SeerrIssuesListView()
+                        } label: {
+                            Label("Issues", systemImage: "exclamationmark.bubble")
+                        }
+                    }
                 }
             }
             .navigationDestination(for: SeerrItem.self) { item in
@@ -57,7 +66,16 @@ struct SeerrDiscoverPage: View {
             .navigationDestination(item: $openedItem) { item in
                 SeerrItemDetailView(item: item)
             }
+            .navigationDestination(isPresented: $showingRequests) {
+                SeerrRequestsListView(filter: nil, title: "Requests")
+            }
+            .navigationDestination(item: $linkedIssue) { link in
+                SeerrIssueDetailView(issueID: link.id)
+            }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinShowSeerrRequests)) { _ in takePendingLinks() }
+        .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenSeerrIssue)) { _ in takePendingLinks() }
+        .onAppear { takePendingLinks() }
         .task(id: seerrRepo.isConfigured) {
             guard seerrRepo.isConfigured else { return }
             await model.load(seerrRepo: seerrRepo)
@@ -76,6 +94,19 @@ struct SeerrDiscoverPage: View {
                 .presentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
                 .presentationBackground(.ultraThinMaterial)
+        }
+    }
+
+    /// A notification tap's Requests list or issue, also after a cold launch.
+    private func takePendingLinks() {
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: SeerrLinks.pendingRequestsKey) {
+            defaults.removeObject(forKey: SeerrLinks.pendingRequestsKey)
+            showingRequests = true
+        }
+        if let id = defaults.object(forKey: SeerrLinks.pendingIssueKey) as? Int {
+            defaults.removeObject(forKey: SeerrLinks.pendingIssueKey)
+            linkedIssue = SeerrIssueLink(id: id)
         }
     }
 

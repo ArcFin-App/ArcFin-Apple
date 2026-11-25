@@ -19,6 +19,10 @@ extension Notification.Name {
     static let arcfinResume = Notification.Name("arcfinResume")
     /// Posted when a notification about a Seerr request or watchlist item is tapped.
     static let arcfinShowDiscover = Notification.Name("arcfinShowDiscover")
+    /// After `arcfinShowDiscover`: Discover opens its Requests list.
+    static let arcfinShowSeerrRequests = Notification.Name("arcfinShowSeerrRequests")
+    /// After `arcfinShowDiscover`: Discover opens the issue in `SeerrLinks.pendingIssueKey`.
+    static let arcfinOpenSeerrIssue = Notification.Name("arcfinOpenSeerrIssue")
     /// Posted with a "term" in userInfo to show in-app search results (Siri / Shortcuts).
     static let arcfinSearch = Notification.Name("arcfinSearch")
     /// Posted with an "id" (Seerr entry id) to open that title's Seerr page.

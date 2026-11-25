@@ -438,6 +438,28 @@ enum ArcfinRouting {
         }
     }
 
+    /// Discover, then its Requests list, for a request waiting for approval or one that failed.
+    @MainActor
+    static func showSeerrRequests() {
+        UserDefaults.standard.set(true, forKey: SeerrLinks.pendingRequestsKey)
+        showDiscover()
+        Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            NotificationCenter.default.post(name: .arcfinShowSeerrRequests, object: nil)
+        }
+    }
+
+    /// Discover, then the Seerr issue a notification was about.
+    @MainActor
+    static func openSeerrIssue(id: Int) {
+        UserDefaults.standard.set(id, forKey: SeerrLinks.pendingIssueKey)
+        showDiscover()
+        Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            NotificationCenter.default.post(name: .arcfinOpenSeerrIssue, object: nil)
+        }
+    }
+
     @MainActor
     static func showDiscover() {
         // Read by the tab bar when it first appears, for a cold launch.
