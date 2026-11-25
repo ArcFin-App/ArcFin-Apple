@@ -15,9 +15,10 @@ VERSION and BUILD (as the nightly sets them) go in the file's "app"; without the
 made from the Xcode project. It fails when a pinned package has no licence file, or when the
 two Package.resolved files pin a package differently.
 
-Each text has a "format": "markdown" for Markdown files, "text" for the rest. Plain licence
-files are hard-wrapped; their wrapped lines are joined back into paragraphs, and anything
-laid out by hand (short lines, indented blocks, lists) keeps its line breaks.
+Every text is Markdown ("format": "markdown"), so the app draws them all alike. Markdown files
+stay as they are. Plain licence files are hard-wrapped: their wrapped lines are joined back
+into paragraphs, titles become headings and clause numbers bold, and anything laid out by
+hand keeps its line breaks. The words themselves never change.
 
 Components that aren't Swift packages (the libraries inside FFmpegBuild, LibDovi and the
 Google Cast SDK, Anime4K's kernels inside AetherEngine, libVLC, and code ported from
@@ -120,8 +121,12 @@ def unwrap(text):
     the next only when it's long enough to have been wrapped, so titles, copyright lists,
     addresses and hand-made layouts keep their breaks, and a list item always starts a line."""
     out = []
-    for block in re.split(r"\n[ \t]*\n", text.strip("\n")):
-        lines = block.rstrip().split("\n")
+    # Blank lines may hold spaces or a form feed (the GNU licences' page breaks).
+    for block in re.split(r"\n[ \t\f\v]*\n", text.replace("\r\n", "\n").strip("\n")):
+        block = block.strip("\n\f").rstrip()
+        if not block.strip():
+            continue
+        lines = block.split("\n")
         indent = min(len(l) - len(l.lstrip()) for l in lines if l.strip())
         lines = [l[indent:].rstrip() for l in lines]
         if any(re.search(r"\S {3,}\S", l) for l in lines) or (len(lines) > 1 and indent >= 8):
@@ -139,10 +144,65 @@ def unwrap(text):
     return "\n\n".join(out) + "\n"
 
 
+def escape(text):
+    """Plain text that Markdown shows exactly as written."""
+    text = re.sub(r"([\\`*_\[\]<>#|~&])", r"\\\1", text)
+    text = re.sub(r"(?m)^(\s*)([+\-=])", r"\1\\\2", text)
+    return re.sub(r"(?m)^(\s*)(\d+)\.(\s)", r"\1\2\\.\3", text)
+
+
+MARKER = re.compile(r"^(?P<marker>[-*•]|[0-9]{1,2}[.)]|\(?[a-z]\)|\([ivx]{1,4}\)|[a-z]\.)\s+(?P<rest>.*)$", re.S)
+TITLE = re.compile(r"^(preamble|appendix\b.*|how to apply.*|terms and conditions\b.*|"
+                   r"end of terms and conditions|no warranty|definitions)$", re.I)
+FENCE = "`" * 3
+
+
+def is_heading(line):
+    line = line.strip()
+    if not line or len(line) > 72 or line[-1] in ".,;:" or line.startswith(("(", "[")):
+        return False
+    letters = [c for c in line if c.isalpha()]
+    return bool(TITLE.match(line)) or (len(letters) >= 4 and all(c.isupper() for c in letters))
+
+
+def to_markdown(text):
+    """An unwrapped plain licence as Markdown: titles as headings, clause numbers in bold,
+    bullets as lists, hand-made tables as code, and every other line break kept. The words
+    never change."""
+    out = []
+    for block in text.strip("\n").split("\n\n"):
+        block = block.strip("\n")
+        if not block.strip():
+            continue
+        lines = block.split("\n")
+        if len(lines) == 2 and lines[0].strip() and re.fullmatch(r"\s*(=+|-+)\s*", lines[1]):
+            out.append("## " + escape(lines[0].strip()))
+            continue
+        if any(re.search(r"\S {3,}\S", line) for line in lines):
+            out.append(f"{FENCE}\n{block.replace(FENCE, '')}\n{FENCE}")
+            continue
+        if is_heading(lines[0]):
+            out.append("## " + escape(lines[0].strip()))
+            lines = lines[1:]
+            if not lines:
+                continue
+        first = lines[0].strip()
+        match = MARKER.match(first)
+        if match and match["marker"] in "-*•":
+            body = "- " + escape(match["rest"])
+        elif match:
+            body = f"**{escape(match['marker'])}** " + escape(match["rest"])
+        else:
+            body = escape(first)
+        # A backslash at the end of a line is a Markdown line break.
+        out.append("\\\n".join([body] + [escape(line.strip()) for line in lines[1:]]))
+    return "\n\n".join(out) + "\n"
+
+
 def licence_text(title, text):
     if title.lower().endswith(".md"):
         return {"title": title, "format": "markdown", "text": text}
-    return {"title": title, "format": "text", "text": unwrap(text)}
+    return {"title": title, "format": "markdown", "text": to_markdown(unwrap(text))}
 
 
 def arcfin_entries():
