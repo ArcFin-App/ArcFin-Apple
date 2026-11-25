@@ -140,6 +140,8 @@ struct LegalDocumentView: View {
 /// wrote them, in English, and never go through the String Catalog.
 struct LicenseDetailView: View {
     let entry: ThirdPartyLicense
+    /// Each Markdown text's blocks, parsed once when the page opens: some texts are long.
+    @State private var parsed: [ThirdPartyLicense.LicenseText: [MarkdownBlock]] = [:]
 
     var body: some View {
         List {
@@ -164,7 +166,7 @@ struct LicenseDetailView: View {
             }
             ForEach(entry.texts, id: \.self) { text in
                 Section {
-                    LicenseTextRows(text: text)
+                    LicenseTextRows(text: text, blocks: parsed[text] ?? [])
                 } header: {
                     Text(verbatim: text.title)
                 }
@@ -175,16 +177,21 @@ struct LicenseDetailView: View {
         .navigationTitle(Text(verbatim: entry.displayName))
         .inlineNavigationTitle()
         .tvSettingsPage()
+        .task(id: entry) {
+            parsed = Dictionary(entry.texts.filter(\.isMarkdown).map { ($0, MarkdownBlock.parse($0.text)) },
+                                uniquingKeysWith: { first, _ in first })
+        }
     }
 }
 
-/// One licence text: Markdown files drawn as Markdown, plain ones paragraph by paragraph.
+/// One licence text, drawn like the legal pages.
 private struct LicenseTextRows: View {
     let text: ThirdPartyLicense.LicenseText
+    let blocks: [MarkdownBlock]
 
     var body: some View {
         if text.isMarkdown {
-            ForEach(MarkdownBlock.parse(text.text)) { block in
+            ForEach(blocks) { block in
                 MarkdownBlockView(block: block)
                     .tvReadOnlyRow()
             }
