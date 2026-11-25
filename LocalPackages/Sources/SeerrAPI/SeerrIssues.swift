@@ -81,10 +81,24 @@ public struct SeerrIssue: Sendable, Identifiable, Equatable, Hashable {
 public struct SeerrTitleIssues: Sendable, Equatable {
     public let mediaID: Int?
     public let issues: [SeerrIssue]
+    /// A show's seasons and how many episodes each has, for picking where the problem is.
+    public let seasons: [Season]
 
-    public init(mediaID: Int?, issues: [SeerrIssue]) {
+    public struct Season: Sendable, Equatable, Hashable, Identifiable {
+        public let number: Int
+        public let episodeCount: Int
+        public var id: Int { number }
+
+        public init(number: Int, episodeCount: Int) {
+            self.number = number
+            self.episodeCount = episodeCount
+        }
+    }
+
+    public init(mediaID: Int?, issues: [SeerrIssue], seasons: [Season] = []) {
         self.mediaID = mediaID
         self.issues = issues
+        self.seasons = seasons
     }
 }
 

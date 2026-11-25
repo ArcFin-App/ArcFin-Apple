@@ -939,6 +939,16 @@ public actor SeerrHTTPClient {
         return try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!)).results.map { $0.toIssue() }
     }
 
+    /// A title's name and poster for an issue row, kept a while like the ones requests show.
+    public func titleItem(mediaType: RequestMediaType, tmdbId: Int) async throws -> SeerrItem? {
+        try await ensureAuthenticated()
+        let key = "\(mediaType.rawValue):\(tmdbId)"
+        if let cached = titleDetails[key], Date().timeIntervalSince(cached.fetched) < Self.titleDetailLifetime { return cached.item }
+        let item = try await mediaDetail(tmdbId: tmdbId, mediaType: mediaType.rawValue)
+        if let item { titleDetails[key] = (item, Date()) }
+        return item
+    }
+
     /// One issue with its comments.
     public func issue(id: Int) async throws -> SeerrIssue {
         try await ensureAuthenticated()
@@ -956,11 +966,21 @@ public actor SeerrHTTPClient {
                 let id: Int?
                 let issues: [SeerrIssueResponse]?
             }
+            struct Season: Decodable {
+                let seasonNumber: Int?
+                let episodeCount: Int?
+            }
             let mediaInfo: MediaInfo?
+            let seasons: [Season]?
         }
-        let info = try JSONDecoder().decode(Response.self, from: data).mediaInfo
+        let response = try JSONDecoder().decode(Response.self, from: data)
+        let info = response.mediaInfo
         let media = SeerrIssueResponse.MediaResponse(id: info?.id, tmdbId: tmdbId, mediaType: mediaType.rawValue)
-        return SeerrTitleIssues(mediaID: info?.id, issues: (info?.issues ?? []).map { $0.toIssue(media: media) })
+        let seasons = (response.seasons ?? []).compactMap { season -> SeerrTitleIssues.Season? in
+            guard let number = season.seasonNumber, number > 0 else { return nil }
+            return SeerrTitleIssues.Season(number: number, episodeCount: season.episodeCount ?? 0)
+        }
+        return SeerrTitleIssues(mediaID: info?.id, issues: (info?.issues ?? []).map { $0.toIssue(media: media) }, seasons: seasons)
     }
 
     /// Reports a problem with a title. A season and episode narrow it down on a show.
