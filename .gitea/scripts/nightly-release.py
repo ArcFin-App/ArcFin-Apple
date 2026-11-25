@@ -146,6 +146,30 @@ def prune(keep: int) -> None:
         print(f"Removed {old['tag_name']}")
 
 
+def attach_licences() -> None:
+    """Adds the build's licenses.json, which the website publishes for the app to show."""
+    path = os.environ.get("LICENSES")
+    if not path:
+        return
+    release = call("GET", f"/releases/tags/{urllib.parse.quote(TAG, safe='')}")
+    if any(a.get("name") == "licenses.json" for a in release.get("assets", [])):
+        print("licenses.json is already attached")
+        return
+    boundary = "arcfin-licences"
+    with open(path, "rb") as f:
+        payload = f.read()
+    data = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"attachment\"; filename=\"licenses.json\"\r\n"
+            f"Content-Type: application/json\r\n\r\n").encode() + payload + f"\r\n--{boundary}--\r\n".encode()
+    request = urllib.request.Request(f"{API}/releases/{release['id']}/assets?name=licenses.json", method="POST",
+                                     data=data, headers={"Authorization": f"token {os.environ['TOKEN']}",
+                                                         "Content-Type": f"multipart/form-data; boundary={boundary}"})
+    try:
+        urllib.request.urlopen(request, timeout=120).close()
+    except urllib.error.HTTPError as error:
+        sys.exit(f"::error::Attaching licenses.json: {error.code} {error.read().decode(errors='replace')[:300]}")
+    print("Attached licenses.json")
+
+
 def main() -> int:
     if exists(f"/releases/tags/{urllib.parse.quote(TAG, safe='')}"):
         print(f"{TAG} already has a release")
@@ -156,6 +180,7 @@ def main() -> int:
             "body": body(), "draft": False, "prerelease": True,
         })
         print(f"Published {TAG}")
+    attach_licences()
     prune(int(os.environ.get("KEEP", "14")))
     return 0
 

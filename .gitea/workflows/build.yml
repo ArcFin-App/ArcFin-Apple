@@ -171,13 +171,13 @@ jobs:
       - name: Every commit subject is <type>(scope) message
         run: python3 -I .gitea/scripts/check-commits.py "origin/${{ github.base_ref }}..${{ github.event.pull_request.head.sha }}"
 
-  # Everything Arcfin ships has its licence on the Legal & Licenses screen, at the pinned
-  # version. Fetches each pinned package's source, so it fails when a dependency is added,
-  # removed or bumped without running .gitea/scripts/update-licenses.py. A change on the
-  # website's legal pages is only a warning.
+  # Every component Arcfin ships needs its licence in the licenses.json the nightly makes for
+  # each build (the app downloads it from the website). Fetches each pinned package's source,
+  # so it fails when a new dependency has no licence file the script can find, before the
+  # nightly does.
   licenses:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Every bundled component has its current licence
-        run: python3 .gitea/scripts/update-licenses.py --check
+      - name: Every component Arcfin ships has a licence
+        run: python3 .gitea/scripts/update-licenses.py --out "$RUNNER_TEMP/licenses.json"

@@ -168,6 +168,18 @@ jobs:
           BOT_GPG_KEY: ${{ secrets.ARCFIN_BOT_GPG_KEY }}
         run: .gitea/scripts/nightly-tag.sh
 
+      # The app downloads its licences from the website, which publishes this file from the
+      # release (arcfin-site scripts/legal.py).
+      - name: Licences
+        run: |
+          # The build is on TestFlight either way, so a failure here doesn't hold back its release;
+          # the website then shows the newest licences it has for this build.
+          if python3 -I .gitea/scripts/update-licenses.py --out "$RUNNER_TEMP/licenses.json"; then
+            echo "LICENSES=$RUNNER_TEMP/licenses.json" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Couldn't make licenses.json for $VERSION ($BUILD)"
+          fi
+
       - name: Release
         env:
           TOKEN: ${{ secrets.RELEASE_TOKEN }}

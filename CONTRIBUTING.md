@@ -38,7 +38,7 @@ For anything bigger than a small fix, **open an issue first** and say what you'd
 2. Choose the **Arcfin** scheme and an iPhone, iPad, Mac or Apple TV destination.
 3. To run on a device, set your own team and bundle identifier under **Signing & Capabilities**.
 
-The packages in `LocalPackages/` are already part of the project, and dependencies resolve on the first build. Package versions are pinned in the committed `Package.resolved` files. Don't update them in an unrelated pull request. When you add, remove or update a dependency, run `python3 .gitea/scripts/update-licenses.py` and commit the regenerated `Arcfin/Shared/Settings/ThirdPartyLicenses.json`: it holds every bundled licence shown under Settings › About › Legal & Licenses, and CI fails while it's out of date.
+The packages in `LocalPackages/` are already part of the project, and dependencies resolve on the first build. Package versions are pinned in the committed `Package.resolved` files. Don't update them in an unrelated pull request. The licences shown under Settings › About › Legal & Licenses aren't in the app: the nightly makes them for each build from the pinned packages (`.gitea/scripts/update-licenses.py`) and the website publishes them, with the Privacy Policy, Terms of Use and Data Protection notice. CI fails when a new dependency has no licence file the script can find.
 
 **To run the package tests:**
 
