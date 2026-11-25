@@ -164,5 +164,6 @@ let package = Package(
         .testTarget(name: "PersistenceTests", dependencies: ["Persistence"]),
         .testTarget(name: "MediaEngineTests", dependencies: ["MediaEngine"]),
         .testTarget(name: "SyncEngineTests",  dependencies: ["SyncEngine"]),
+        .testTarget(name: "SeerrAPITests",    dependencies: ["SeerrAPI"]),
     ]
 )

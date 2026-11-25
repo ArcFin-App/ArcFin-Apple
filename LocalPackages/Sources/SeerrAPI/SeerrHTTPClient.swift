@@ -926,6 +926,94 @@ public actor SeerrHTTPClient {
         }
     }
 
+    // MARK: - Issues
+
+    /// Seerr's newest-changed issues. It shows everyone their own, and everyone's to people with
+    /// View or Manage Issues. Lists come without comments.
+    public func issues(filter: SeerrIssueFilter, take: Int = 50, skip: Int = 0) async throws -> [SeerrIssue] {
+        try await ensureAuthenticated()
+        var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/issue"), resolvingAgainstBaseURL: false)!
+        comps.queryItems = [URLQueryItem(name: "take", value: String(take)), URLQueryItem(name: "skip", value: String(skip)),
+                            URLQueryItem(name: "sort", value: "modified"), URLQueryItem(name: "filter", value: filter.rawValue)]
+        struct Page: Decodable { let results: [SeerrIssueResponse] }
+        return try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!)).results.map { $0.toIssue() }
+    }
+
+    /// One issue with its comments.
+    public func issue(id: Int) async throws -> SeerrIssue {
+        try await ensureAuthenticated()
+        let data = try await fetch(baseURL.appendingPathComponent("api/v1/issue/\(id)"))
+        return try JSONDecoder().decode(SeerrIssueResponse.self, from: data).toIssue()
+    }
+
+    /// The title's Seerr id and its issues, from Seerr's own page for it. No id means Seerr
+    /// hasn't seen the title yet (never requested or scanned), so it can't take an issue.
+    public func titleIssues(mediaType: RequestMediaType, tmdbId: Int) async throws -> SeerrTitleIssues {
+        try await ensureAuthenticated()
+        let data = try await fetch(baseURL.appendingPathComponent("api/v1/\(mediaType.rawValue)/\(tmdbId)"))
+        struct Response: Decodable {
+            struct MediaInfo: Decodable {
+                let id: Int?
+                let issues: [SeerrIssueResponse]?
+            }
+            let mediaInfo: MediaInfo?
+        }
+        let info = try JSONDecoder().decode(Response.self, from: data).mediaInfo
+        let media = SeerrIssueResponse.MediaResponse(id: info?.id, tmdbId: tmdbId, mediaType: mediaType.rawValue)
+        return SeerrTitleIssues(mediaID: info?.id, issues: (info?.issues ?? []).map { $0.toIssue(media: media) })
+    }
+
+    /// Reports a problem with a title. A season and episode narrow it down on a show.
+    @discardableResult
+    public func reportIssue(type: SeerrIssueType, message: String, mediaID: Int, season: Int?, episode: Int?) async throws -> SeerrIssue? {
+        try await ensureAuthenticated()
+        var body: [String: Any] = ["issueType": type.rawValue, "message": message, "mediaId": mediaID]
+        if let season { body["problemSeason"] = season }
+        if let episode { body["problemEpisode"] = episode }
+        return try await sendIssueWrite("POST", path: "api/v1/issue", body: body)
+    }
+
+    @discardableResult
+    public func commentOnIssue(id: Int, message: String) async throws -> SeerrIssue? {
+        try await ensureAuthenticated()
+        return try await sendIssueWrite("POST", path: "api/v1/issue/\(id)/comment", body: ["message": message])
+    }
+
+    @discardableResult
+    public func setIssueResolved(id: Int, resolved: Bool) async throws -> SeerrIssue? {
+        try await ensureAuthenticated()
+        return try await sendIssueWrite("POST", path: "api/v1/issue/\(id)/\(resolved ? "resolved" : "open")", body: nil)
+    }
+
+    public func deleteIssue(id: Int) async throws {
+        try await ensureAuthenticated()
+        var req = URLRequest(url: baseURL.appendingPathComponent("api/v1/issue/\(id)"))
+        req.httpMethod = "DELETE"
+        applyXSRF(to: &req)
+        req.timeoutInterval = 15
+        let (data, status) = try await sendWrite(req)
+        guard (200...299).contains(status) || status == 404 else {
+            throw SeerrError.requestFailed(status: status, body: Self.message(in: data))
+        }
+    }
+
+    /// The issue as Seerr answers with it; nil when the answer isn't one, though the change went through.
+    private func sendIssueWrite(_ method: String, path: String, body: [String: Any]?) async throws -> SeerrIssue? {
+        var req = URLRequest(url: baseURL.appendingPathComponent(path))
+        req.httpMethod = method
+        applyXSRF(to: &req)
+        if let body {
+            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            req.httpBody = try JSONSerialization.data(withJSONObject: body)
+        }
+        req.timeoutInterval = 15
+        let (data, status) = try await sendWrite(req)
+        guard (200...299).contains(status) else {
+            throw SeerrError.requestFailed(status: status, body: Self.message(in: data))
+        }
+        return (try? JSONDecoder().decode(SeerrIssueResponse.self, from: data))?.toIssue()
+    }
+
     // MARK: - Private helpers
 
     /// Reads the XSRF-TOKEN cookie from the session's cookie jar and injects it
