@@ -12208,6 +12208,70 @@
         }
       }
     },
+    "Checked with the website %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Zuletzt mit der Website abgeglichen: %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Comprobado con el sitio web: %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vérifié auprès du site web : %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verificato con il sito web: %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ウェブサイトで確認済み：%@"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "웹사이트에서 확인함: %@"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gecontroleerd bij de website: %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Verificado com o site: %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Проверено на сайте: %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "已与网站核对：%@。"
+          }
+        }
+      }
+    },
     "Chinese" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -15473,6 +15537,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "编辑维护"
+          }
+        }
+      }
+    },
+    "Effective" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Gültig ab"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Vigente desde"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "En vigueur depuis"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "In vigore dal"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "発効日"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "시행일"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Van kracht sinds"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Em vigor desde"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Действует с"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "生效日期"
           }
         }
       }
@@ -22524,6 +22652,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "限制"
+          }
+        }
+      }
+    },
+    "Loading the legal texts and licences from the website…" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Rechtstexte und Lizenzen werden von der Website geladen …"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Cargando los textos legales y las licencias desde el sitio web…"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Chargement des textes juridiques et des licences depuis le site web…"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Caricamento dei testi legali e delle licenze dal sito web…"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ウェブサイトから法的文書とライセンスを読み込んでいます…"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "웹사이트에서 법적 문서와 라이선스를 불러오는 중…"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Juridische teksten en licenties worden van de website geladen…"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Carregando os textos legais e as licenças do site…"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Загрузка юридических текстов и лицензий с сайта…"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "正在从网站载入法律文本和许可证…"
           }
         }
       }
@@ -42837,6 +43029,70 @@
         }
       }
     },
+    "Couldn't load the legal texts and licences from the website. Check your connection and try again." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die Rechtstexte und Lizenzen konnten nicht von der Website geladen werden. Prüfe deine Verbindung und versuche es erneut."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudieron cargar los textos legales y las licencias desde el sitio web. Comprueba tu conexión e inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible de charger les textes juridiques et les licences depuis le site web. Vérifiez votre connexion et réessayez."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile caricare i testi legali e le licenze dal sito web. Controlla la connessione e riprova."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ウェブサイトから法的文書とライセンスを読み込めませんでした。接続を確認してもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "웹사이트에서 법적 문서와 라이선스를 불러올 수 없습니다. 연결을 확인한 후 다시 시도하세요."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Kan de juridische teksten en licenties niet van de website laden. Controleer je verbinding en probeer het opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível carregar os textos legais e as licenças do site. Verifique sua conexão e tente novamente."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось загрузить юридические тексты и лицензии с сайта. Проверьте подключение и повторите попытку."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法从网站载入法律文本和许可证。请检查网络连接后重试。"
+          }
+        }
+      }
+    },
     "Couldn't load the seasons." : {
       "localizations" : {
         "de" : {
@@ -43345,6 +43601,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "无法连接服务器以获取其公开信息。"
+          }
+        }
+      }
+    },
+    "Couldn't reach the website, so this is the copy from %@." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Die Website ist nicht erreichbar, daher siehst du die Fassung vom %@."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "No se pudo acceder al sitio web, así que esta es la copia del %@."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossible de joindre le site web : voici la copie du %@."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Impossibile raggiungere il sito web, quindi questa è la copia del %@."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "ウェブサイトに接続できないため、%@時点のコピーを表示しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "웹사이트에 연결할 수 없어 %@ 기준 사본을 표시합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "De website is niet bereikbaar, dus dit is de kopie van %@."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Não foi possível acessar o site, então esta é a cópia de %@."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "Не удалось подключиться к сайту, поэтому показана копия от %@."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "needs_review",
+            "value" : "无法连接网站，因此显示的是 %@ 的副本。"
           }
         }
       }
@@ -86684,66 +87004,66 @@
         }
       }
     },
-    "Arcfin's own licence, trademark policy and legal terms. The website has the current, binding version of each." : {
+    "Arcfin's own licence, trademark policy and legal terms, as the website publishes them now." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfins eigene Lizenz, Markenrichtlinie und Rechtstexte. Die aktuelle, verbindliche Fassung steht jeweils auf der Website."
+            "value" : "Arcfins eigene Lizenz, Markenrichtlinie und Rechtstexte, so wie die Website sie aktuell veröffentlicht."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "La licencia, la política de marca y los términos legales de Arcfin. La versión vigente y vinculante de cada uno está en el sitio web."
+            "value" : "La licencia, la política de marca y los términos legales de Arcfin, tal como los publica ahora el sitio web."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "La licence, la politique de marque et les conditions juridiques d’Arcfin. La version en vigueur, qui fait foi, de chacun se trouve sur le site web."
+            "value" : "La licence, la politique de marque et les conditions juridiques d’Arcfin, telles que le site web les publie actuellement."
           }
         },
         "it" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "La licenza, la politica sul marchio e i termini legali di Arcfin. La versione attuale e vincolante di ciascuno è sul sito web."
+            "value" : "La licenza, la politica sul marchio e i termini legali di Arcfin, come li pubblica ora il sito web."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin自身のライセンス、商標ポリシー、法的条項です。それぞれの最新かつ正式な版はウェブサイトにあります。"
+            "value" : "Arcfin自身のライセンス、商標ポリシー、法的条項です。ウェブサイトで現在公開されている内容です。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin 자체의 라이선스, 상표 정책 및 법적 약관입니다. 각 문서의 현재 구속력 있는 버전은 웹사이트에 있습니다."
+            "value" : "Arcfin 자체의 라이선스, 상표 정책 및 법적 약관으로, 현재 웹사이트에 게시된 내용입니다."
           }
         },
         "nl" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "De eigen licentie, het merkbeleid en de juridische voorwaarden van Arcfin. De actuele, bindende versie van elk staat op de website."
+            "value" : "De eigen licentie, het merkbeleid en de juridische voorwaarden van Arcfin, zoals de website ze nu publiceert."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "A licença, a política de marca e os termos legais do próprio Arcfin. A versão atual e vinculante de cada um está no site."
+            "value" : "A licença, a política de marca e os termos legais do próprio Arcfin, como o site os publica agora."
           }
         },
         "ru" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Собственная лицензия Arcfin, политика в отношении товарного знака и юридические условия. Действующая обязательная версия каждого документа — на сайте."
+            "value" : "Собственная лицензия Arcfin, политика использования товарного знака и юридические условия в том виде, в каком они сейчас опубликованы на сайте."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "needs_review",
-            "value" : "Arcfin 自己的许可、商标政策和法律条款。每份文件的现行有效版本以网站为准。"
+            "value" : "Arcfin 自身的许可证、商标政策和法律条款，与网站当前发布的版本一致。"
           }
         }
       }

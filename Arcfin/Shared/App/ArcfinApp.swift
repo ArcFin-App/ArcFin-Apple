@@ -44,6 +44,8 @@ enum AppServices {
     /// Music, playing behind every screen (#386).
     static let music = MusicPlayback(authManager: authManager)
     static let introduction = AppIntroduction()
+    /// The legal texts and licences, from the website (Settings › Legal & Licenses).
+    static let legal = LegalLibrary()
     static let scenes = ScenePresence()
     /// Past the app lock (or there's none) this launch. A player window brought back on
     /// relaunch closes rather than play ahead of the lock.
