@@ -32,6 +32,15 @@ struct TitleInsights: View {
     @State private var info: SeerrRelatedInfo?
     @State private var ratings: SeerrRatings?
     @State private var region = ""
+    @State private var issues: SeerrTitleIssues?
+    @State private var issuePermissions = SeerrIssuePermissions.none
+    @State private var reporting = false
+    @State private var showingIssues = false
+
+    private var openIssues: [SeerrIssue] { issues?.issues.filter(\.isOpen) ?? [] }
+    private var canReport: Bool { issuePermissions.canCreate && issues?.mediaID != nil }
+    /// Report a Problem and the title's open issues, as pills beside the links.
+    private var showsIssuePills: Bool { Self.showsLinks && (canReport || !openIssues.isEmpty) }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DT.Spacing.lg) {
@@ -42,19 +51,45 @@ struct TitleInsights: View {
                     whereToWatch(watch)
                 }
                 if !detailRows.isEmpty { detailsList }
-                if Self.showsLinks, !links.isEmpty { linksRow }
+                if Self.showsLinks, !links.isEmpty || showsIssuePills { linksRow }
             }
         }
         .padding(.top, hasContent ? spacingAbove : 0)
         .padding(.bottom, hasContent ? spacingBelow : 0)
         .task(id: tmdbId) { await load() }
+        .appSheet(isPresented: $reporting, title: "Report a Problem", systemImage: "exclamationmark.bubble") {
+            if let mediaID = issues?.mediaID, let mediaType {
+                NavigationStack {
+                    SeerrReportIssueView(mediaID: mediaID, mediaType: mediaType, seasons: issues?.seasons ?? []) {
+                        Task { await loadIssues() }
+                    }
+                }
+            }
+        }
+        .appSheet(isPresented: $showingIssues, title: "Open Issues", systemImage: "exclamationmark.bubble.fill") {
+            NavigationStack {
+                List(openIssues) { issue in
+                    NavigationLink {
+                        SeerrIssueDetailView(issueID: issue.id, onChange: { Task { await loadIssues() } })
+                    } label: {
+                        SeerrIssueRow(issue: issue, showsTitle: false)
+                    }
+                }
+                .navigationTitle("Open Issues")
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Done") { showingIssues = false }
+                    }
+                }
+            }
+        }
     }
 
     private var hasContent: Bool {
         let showsRatings = part != .details && !(ratings?.isEmpty ?? true)
         guard part != .ratings else { return showsRatings }
         let showsDetails = info?.nextEpisode != nil || !(info?.watch?.isEmpty ?? true) || !detailRows.isEmpty
-            || (Self.showsLinks && !links.isEmpty)
+            || (Self.showsLinks && !links.isEmpty) || showsIssuePills
         return showsRatings || showsDetails
     }
 
@@ -66,7 +101,14 @@ struct TitleInsights: View {
         if part != .ratings {
             region = await seerrRepo.region()
             info = await seerrRepo.relatedInfo(mediaType: mediaType, tmdbId: tmdbId)
+            if Self.showsLinks { await loadIssues() }
         }
+    }
+
+    private func loadIssues() async {
+        guard seerrRepo.isConfigured, let tmdbId, let mediaType else { return }
+        issuePermissions = await seerrRepo.issuePermissions()
+        issues = await seerrRepo.titleIssues(mediaType: mediaType, tmdbId: tmdbId)
     }
 
     // MARK: - Ratings
@@ -303,19 +345,29 @@ struct TitleInsights: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(links) { link in
-                    Button { openURL(link.url) } label: {
-                        Label(link.name, systemImage: "arrow.up.right.square")
-                            .font(.footnote.weight(.semibold))
-                            .padding(.horizontal, 12)
-                            .frame(minHeight: 36)
-                            .background(DT.Color.textPrimary.opacity(0.08), in: Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(DT.Color.textPrimary)
+                    pill(Text(link.name), systemImage: "arrow.up.right.square") { openURL(link.url) }
+                }
+                if !openIssues.isEmpty {
+                    pill(Text("Open Issues · \(openIssues.count)"), systemImage: "exclamationmark.bubble.fill") { showingIssues = true }
+                }
+                if canReport {
+                    pill(Text("Report a Problem"), systemImage: "exclamationmark.bubble") { reporting = true }
                 }
             }
         }
         .shelfScrollButtons()
+    }
+
+    private func pill(_ title: Text, systemImage: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label { title } icon: { Image(systemName: systemImage) }
+                .font(.footnote.weight(.semibold))
+                .padding(.horizontal, 12)
+                .frame(minHeight: 36)
+                .background(DT.Color.textPrimary.opacity(0.08), in: Capsule())
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(DT.Color.textPrimary)
     }
 
     private func money(_ amount: Int) -> String {

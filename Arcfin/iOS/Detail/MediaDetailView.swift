@@ -267,8 +267,6 @@ struct MediaDetailView: View {
         // Review scores sit with the description, ahead of the cast.
         TitleInsights(tmdbId: model.insightsTmdbId, mediaType: MediaDetailModel.seerrMediaType(for: item), part: .ratings)
             .padding(.horizontal, DT.Spacing.pagePad)
-        TitleIssuesSection(tmdbId: model.insightsTmdbId, mediaType: MediaDetailModel.seerrMediaType(for: item))
-            .padding(.horizontal, DT.Spacing.pagePad)
 
         if let d = model.detail, !d.cast.isEmpty { DetailCastSection(cast: d.cast) { selectedPerson = $0 } }
 
