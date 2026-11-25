@@ -8,6 +8,7 @@
 
 [![Build](https://git.psmattas.com/ArcFin/ArcFin/actions/workflows/build.yml/badge.svg?branch=main)](https://git.psmattas.com/ArcFin/ArcFin/actions?workflow=build.yml)
 [![Version](https://arcfin.psmattas.com/badges/version.svg?v=1)](https://git.psmattas.com/ArcFin/ArcFin/releases)
+[![Arcfin Sync plugin](https://arcfin.psmattas.com/badges/plugin.svg)](https://git.psmattas.com/ArcFin/Arcfin-Sync/releases)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS%20%7C%20macOS%20%7C%20tvOS-lightgrey?logo=apple&logoColor=white)
 ![Minimum OS](https://img.shields.io/badge/OS-26%2B-black?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
