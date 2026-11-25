@@ -23,6 +23,8 @@ Each platform gets an interface of its own rather than a stretched phone app: Li
 
 > Arcfin is an independent project. It isn't affiliated with or endorsed by the Jellyfin project. See [About the project](docs/ABOUT.md#not-affiliated-with-jellyfin).
 
+> **Where Arcfin lives:** the code, issues, pull requests and releases are on [git.psmattas.com/ArcFin/ArcFin](https://git.psmattas.com/ArcFin/ArcFin). The copy on GitHub is a read-only mirror, so please open issues and pull requests on git.psmattas.com.
+
 ---
 
 ## Get Arcfin
