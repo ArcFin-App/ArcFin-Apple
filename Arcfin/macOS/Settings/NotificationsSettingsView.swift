@@ -15,6 +15,8 @@ struct NotificationsSettingsView: View {
     @AppStorage("notifyRequestUpdates") private var notifyRequestUpdates = true
     @AppStorage("notifyWatchlistAvailable") private var notifyWatchlistAvailable = true
     @AppStorage(BackgroundRefresh.announcementsKey) private var notifyAnnouncements = true
+    @AppStorage(BackgroundRefresh.requestsToApproveKey) private var notifyRequestsToApprove = true
+    @AppStorage(BackgroundRefresh.issuesKey) private var notifyIssues = true
     @AppStorage(QuietHours.enabledKey) private var quietHoursEnabled = false
     @AppStorage(QuietHours.startKey) private var quietStart = QuietHours.defaultStart
     @AppStorage(QuietHours.endKey) private var quietEnd = QuietHours.defaultEnd
@@ -92,6 +94,14 @@ struct NotificationsSettingsView: View {
                     TVRowLabelText(title: "Announcements", detail: "Messages from your server's admin, and a day before planned maintenance. Needs the Arcfin Sync plugin.")
                 }
                 .syncLocked(BackgroundRefresh.announcementsKey, authManager)
+                Toggle(isOn: $notifyIssues) {
+                    TVRowLabelText(title: "Issues", detail: "When an issue you reported gets a comment or is resolved, and new issues if you manage them in Seerr. Needs the Arcfin Sync plugin.")
+                }
+                .syncLocked(BackgroundRefresh.issuesKey, authManager)
+                Toggle(isOn: $notifyRequestsToApprove) {
+                    TVRowLabelText(title: "Requests to Approve", detail: "If you can approve requests in Seerr: new ones waiting, ones approved automatically, and ones that failed. Needs the Arcfin Sync plugin.")
+                }
+                .syncLocked(BackgroundRefresh.requestsToApproveKey, authManager)
                 Toggle(isOn: $notifyDownload) {
                     TVRowLabelText(title: "Download Complete", detail: "When a download finishes.")
                 }

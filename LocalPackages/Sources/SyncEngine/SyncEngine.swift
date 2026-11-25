@@ -401,6 +401,8 @@ public enum SettingsSyncRegistry {
         .init("notifyNewFilms", .bool),
         .init("notifyServerEvents", .bool),
         .init("notifyAnnouncements", .bool),
+        .init("notifyIssues", .bool),
+        .init("notifyRequestsToApprove", .bool),
         .init("showStreamsOnAppIcon", .bool),
         .init("animationUpscaling", .bool),
         .init("subtitleReachLater", .int),

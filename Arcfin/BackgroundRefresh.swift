@@ -34,6 +34,8 @@ nonisolated enum BackgroundRefresh {
     private static let feedSeenKey = "arcfin.notify.serverFeedSeen"
     private static let lastFeedCheckKey = "arcfin.notify.lastFeedCheck"
     static let announcementsKey = "notifyAnnouncements"
+    static let requestsToApproveKey = "notifyRequestsToApprove"
+    static let issuesKey = "notifyIssues"
 
     #if os(iOS)
     /// BGTask isn't Sendable. The work and the expiration handler can both finish it, so the
@@ -291,6 +293,8 @@ nonisolated enum BackgroundRefresh {
         guard cursor != nil else { return }
 
         let announcements = defaults.object(forKey: announcementsKey) as? Bool ?? true
+        let toApprove = defaults.object(forKey: requestsToApproveKey) as? Bool ?? true
+        let issues = defaults.object(forKey: issuesKey) as? Bool ?? true
         for event in feed.events {
             let title = event.title.isEmpty || pinLocked ? String(localized: "One of your requests") : event.title
             switch event.kind {
@@ -304,6 +308,10 @@ nonisolated enum BackgroundRefresh {
                 let window = MaintenanceWindow(id: event.id, starts: starts, ends: ends, message: event.body ?? "")
                 await NotificationManager.notifyMaintenance(id: event.id, summary: await MainActor.run { window.summary })
             case "test": await NotificationManager.notifyServerTest(id: event.id)
+            case "seerr-pending", "seerr-auto-approved", "seerr-failed" where toApprove:
+                await NotificationManager.notifyRequestToManage(event, title: title, hidingDetails: pinLocked)
+            case "issue-reported", "issue-comment", "issue-resolved", "issue-reopened" where issues:
+                await NotificationManager.notifyIssue(event, hidingDetails: pinLocked)
             default: continue
             }
         }

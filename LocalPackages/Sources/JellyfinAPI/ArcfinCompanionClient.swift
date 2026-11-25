@@ -182,20 +182,35 @@ public struct ServerEventFeed: Sendable, Decodable, Equatable {
 public struct ServerEvent: Sendable, Decodable, Equatable, Identifiable {
     /// The same on every device for the same news, e.g. "seerr-approved.42".
     public let id: String
-    /// seerr-approved, seerr-declined, seerr-available, announcement, maintenance or test.
+    /// seerr-approved, -declined, -available, -pending, -auto-approved or -failed; issue-reported,
+    /// -comment, -resolved or -reopened; announcement, maintenance or test.
     public let kind: String
     public let title: String
     public let body: String?
     public let requestId: Int?
+    public let issueId: Int?
+    /// Seerr's: 1 video, 2 audio, 3 subtitles, 4 other.
+    public let issueType: Int?
+    public let problemSeason: Int?
+    public let problemEpisode: Int?
+    /// Seerr's name for whoever asked, commented or changed it.
+    public let actor: String?
     public let starts: Date?
     public let ends: Date?
 
-    public init(id: String, kind: String, title: String = "", body: String? = nil, requestId: Int? = nil, starts: Date? = nil, ends: Date? = nil) {
+    public init(id: String, kind: String, title: String = "", body: String? = nil, requestId: Int? = nil, issueId: Int? = nil,
+                issueType: Int? = nil, problemSeason: Int? = nil, problemEpisode: Int? = nil, actor: String? = nil,
+                starts: Date? = nil, ends: Date? = nil) {
         self.id = id
         self.kind = kind
         self.title = title
         self.body = body
         self.requestId = requestId
+        self.issueId = issueId
+        self.issueType = issueType
+        self.problemSeason = problemSeason
+        self.problemEpisode = problemEpisode
+        self.actor = actor
         self.starts = starts
         self.ends = ends
     }

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Foundation
+import JellyfinAPI
 import UserNotifications
 
 /// Local-only notifications — no push entitlement, no server round trip. Authorization is
@@ -106,6 +107,43 @@ enum NotificationManager {
     static func notifyServerTest(id: String) async {
         await send(title: String(localized: "Test Notification"),
                    body: String(localized: "Your server's notifications reach this device."), identifier: id)
+    }
+
+    /// For people who can approve requests in Seerr: one waiting, approved by itself, or failed.
+    static func notifyRequestToManage(_ event: ServerEvent, title: String, hidingDetails: Bool) async {
+        let heading = switch event.kind {
+        case "seerr-pending": String(localized: "Request to Approve")
+        case "seerr-auto-approved": String(localized: "Request Approved Automatically")
+        default: String(localized: "Request Failed")
+        }
+        let body = !hidingDetails && event.kind != "seerr-failed" ? event.actor.map { String(localized: "\($0) asked for \(title)") } ?? title : title
+        await send(title: heading, body: body, identifier: event.id, route: .discover)
+    }
+
+    /// A Seerr issue reported, commented on, resolved or reopened.
+    static func notifyIssue(_ event: ServerEvent, hidingDetails: Bool) async {
+        let subject = hidingDetails || event.title.isEmpty ? String(localized: "An issue") : event.title
+        let heading = switch event.kind {
+        case "issue-reported": String(localized: "New Issue: \(subject)")
+        case "issue-comment": String(localized: "New Comment: \(subject)")
+        case "issue-resolved": String(localized: "Issue Resolved: \(subject)")
+        default: String(localized: "Issue Reopened: \(subject)")
+        }
+        let kind = switch event.issueType {
+        case 1: String(localized: "Video")
+        case 2: String(localized: "Audio")
+        case 3: String(localized: "Subtitles")
+        default: String(localized: "Other")
+        }
+        let body: String
+        if hidingDetails {
+            body = ""
+        } else if let text = event.body, !text.isEmpty {
+            body = event.actor.map { "\($0): \(text)" } ?? text
+        } else {
+            body = event.actor.map { String(localized: "\(kind) · \($0)") } ?? kind
+        }
+        await send(title: heading, body: body, identifier: event.id, route: .discover)
     }
 
     /// The app icon's badge; 0 clears it. Not on Apple TV.
