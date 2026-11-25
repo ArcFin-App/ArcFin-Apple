@@ -70,16 +70,11 @@ struct CollectionContent: View {
             HStack(alignment: .bottom, spacing: 14) {
                 posterStack
                 VStack(alignment: .leading, spacing: 6) {
+                    titleOrLogo
                     Text("COLLECTION")
                         .font(.system(.caption2, weight: .bold))
                         .tracking(1.5)
                         .foregroundStyle(DT.Color.accent)
-                    Text(collection.name)
-                        .font(.system(.title2, design: .default, weight: .heavy))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .tracking(-0.5)
-                        .lineLimit(3)
-                        .minimumScaleFactor(0.8)
                     Text(metaLine)
                         .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
@@ -89,6 +84,28 @@ struct CollectionContent: View {
             }
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.top, -96)
+        }
+    }
+
+    /// The collection's logo when the server has one, else its name.
+    private var titleOrLogo: some View {
+        CachedAsyncImage(url: mediaRepo.logoURL(itemID: collection.id, fillWidth: 600)) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().scaledToFit()
+                    .frame(maxWidth: 240, maxHeight: 80, alignment: .leading)
+                    .accessibilityLabel(Text(verbatim: collection.name))
+            case .empty:
+                // Still loading: keep the space, so the name doesn't flash up before the logo.
+                Color.clear.frame(height: 56)
+            default:
+                Text(collection.name)
+                    .font(.system(.title2, design: .default, weight: .heavy))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .tracking(-0.5)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.8)
+            }
         }
     }
 
@@ -228,7 +245,7 @@ struct CollectionContent: View {
                     .frame(width: 26, alignment: .trailing)
                     .padding(.top, 22)
             }
-            CachedAsyncImage(url: mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 360)) { phase in
+            CachedAsyncImage(url: rowArtworkURL(item)) { phase in
                 switch phase {
                 case .success(let image): image.resizable().scaledToFill()
                 default: DT.Color.backgroundSecondary
@@ -273,6 +290,23 @@ struct CollectionContent: View {
             Spacer(minLength: 0)
         }
         .contentShape(Rectangle())
+    }
+
+    /// Landscape art for a row. Seasons and episodes rarely have a thumb or backdrop of their
+    /// own: an episode shows its screenshot, a season its show's backdrop, and either falls
+    /// back to its own poster.
+    private func rowArtworkURL(_ item: MediaItem) -> URL? {
+        switch item.type {
+        case .episode:
+            mediaRepo.episodeThumbnailURL(for: item, fillWidth: 360)
+                ?? mediaRepo.seriesBackdropURL(for: item, fillWidth: 360)
+        case .season:
+            mediaRepo.seriesBackdropURL(for: item, fillWidth: 360)
+                ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 360)
+        default:
+            mediaRepo.imageURL(for: item, type: .thumb, fillWidth: 360)
+                ?? mediaRepo.imageURL(for: item, type: .primary, fillWidth: 360)
+        }
     }
 
     @ViewBuilder
