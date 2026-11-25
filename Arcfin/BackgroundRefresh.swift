@@ -32,6 +32,7 @@ nonisolated enum BackgroundRefresh {
     private static let announcedWatchlistKey = "arcfin.notify.announcedWatchlistIDs"
     private static let feedCursorKey = "arcfin.notify.serverFeedCursor"
     private static let feedSeenKey = "arcfin.notify.serverFeedSeen"
+    private static let lastFeedCheckKey = "arcfin.notify.lastFeedCheck"
     static let announcementsKey = "notifyAnnouncements"
 
     #if os(iOS)
@@ -111,6 +112,7 @@ nonisolated enum BackgroundRefresh {
     /// Each window calls this as it becomes active; one already running carries on, so a
     /// check in progress isn't cut short after it has recorded what it saw.
     @MainActor static func startWhileOpen() {
+        checkFeedOnOpen()
         guard whileOpen == nil else { return }
         whileOpen = Task {
             let last = UserDefaults.standard.object(forKey: lastOpenCheckKey) as? Date ?? .distantPast
@@ -251,6 +253,15 @@ nonisolated enum BackgroundRefresh {
     }
 
     // MARK: - Arcfin Sync
+
+    /// The server's feed is one small request, so it's read every time Arcfin comes to the
+    /// front (at most every half minute), not only with the full check every few minutes.
+    @MainActor static func checkFeedOnOpen() {
+        let defaults = UserDefaults.standard
+        guard Date().timeIntervalSince(defaults.object(forKey: lastFeedCheckKey) as? Date ?? .distantPast) > 30 else { return }
+        defaults.set(Date(), forKey: lastFeedCheckKey)
+        Task { await checkServerFeed() }
+    }
 
     /// The plugin's feed. It overlaps the device's own Seerr check when both look at the same
     /// Seerr; each request change has one identifier, so it's announced once either way.
