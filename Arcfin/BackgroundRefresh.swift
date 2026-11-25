@@ -14,8 +14,9 @@ import Telemetry
 import os
 
 /// Periodic background check that turns server-side changes into local notifications: new
-/// titles in the Jellyfin library, Seerr request updates, and watchlist items that became
-/// available. iOS decides when a refresh actually runs (typically a few times a day, and
+/// titles in the Jellyfin library, Seerr request updates, watchlist items that became
+/// available, and with Arcfin Sync 0.7 the server's own feed of request changes, announcements
+/// and planned maintenance. iOS decides when a refresh actually runs (typically a few times a day, and
 /// less if the app is rarely opened), so these are best-effort rather than instant. The Mac
 /// runs the same check every half hour or so while Arcfin is open.
 ///
@@ -29,6 +30,12 @@ nonisolated enum BackgroundRefresh {
     private static let lastActivityKey = "arcfin.notify.lastActivityID"
     private static let seerrStatusKey = "arcfin.notify.seerrRequestStatus"
     private static let announcedWatchlistKey = "arcfin.notify.announcedWatchlistIDs"
+    private static let feedCursorKey = "arcfin.notify.serverFeedCursor"
+    private static let feedSeenKey = "arcfin.notify.serverFeedSeen"
+    private static let lastFeedCheckKey = "arcfin.notify.lastFeedCheck"
+    static let announcementsKey = "notifyAnnouncements"
+    static let requestsToApproveKey = "notifyRequestsToApprove"
+    static let issuesKey = "notifyIssues"
 
     #if os(iOS)
     /// BGTask isn't Sendable. The work and the expiration handler can both finish it, so the
@@ -55,7 +62,7 @@ nonisolated enum BackgroundRefresh {
     static func resetState() {
         let defaults = UserDefaults.standard
         for key in [seenFilmsKey, seenEpisodesKey, lastActivityKey, seerrStatusKey, announcedWatchlistKey,
-                    NotificationManager.sentRequestNoticesKey] {
+                    feedCursorKey, feedSeenKey, NotificationManager.sentRequestNoticesKey] {
             defaults.removeObject(forKey: key)
         }
     }
@@ -107,6 +114,7 @@ nonisolated enum BackgroundRefresh {
     /// Each window calls this as it becomes active; one already running carries on, so a
     /// check in progress isn't cut short after it has recorded what it saw.
     @MainActor static func startWhileOpen() {
+        checkFeedOnOpen()
         guard whileOpen == nil else { return }
         whileOpen = Task {
             let last = UserDefaults.standard.object(forKey: lastOpenCheckKey) as? Date ?? .distantPast
@@ -172,6 +180,8 @@ nonisolated enum BackgroundRefresh {
         if let credential = IntentSession.credential() {
             await WidgetSnapshotUpdater.refreshProgress(credential: credential, authHeader: IntentSession.authHeader(for: credential))
         }
+        guard !Task.isCancelled else { return }
+        await checkServerFeed()
         guard !Task.isCancelled else { return }
         await checkSeerr(
             requestUpdates: defaults.object(forKey: "notifyRequestUpdates") as? Bool ?? true,
@@ -241,6 +251,79 @@ nonisolated enum BackgroundRefresh {
         }
         for entry in notable.sorted(by: { $0.id < $1.id }).prefix(3) {
             await NotificationManager.notifyServerEvent(title: entry.name, detail: entry.overview)
+        }
+    }
+
+    // MARK: - Arcfin Sync
+
+    /// The server's feed is one small request, so it's read every time Arcfin comes to the
+    /// front (at most every half minute), not only with the full check every few minutes.
+    /// When Arcfin Sync says there's news, over the live connection: read it now.
+    @MainActor static func listenForServerNews() {
+        NotificationCenter.default.addObserver(forName: .arcfinServerFeedChanged, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated {
+                UserDefaults.standard.set(Date(), forKey: lastFeedCheckKey)
+                Task { await checkServerFeed() }
+            }
+        }
+    }
+
+    @MainActor static func checkFeedOnOpen() {
+        let defaults = UserDefaults.standard
+        guard Date().timeIntervalSince(defaults.object(forKey: lastFeedCheckKey) as? Date ?? .distantPast) > 30 else { return }
+        defaults.set(Date(), forKey: lastFeedCheckKey)
+        Task { await checkServerFeed() }
+    }
+
+    /// The plugin's feed. It overlaps the device's own Seerr check when both look at the same
+    /// Seerr; each request change has one identifier, so it's announced once either way.
+    /// A profile with an app-lock PIN still gets it, with request titles left out, as the other
+    /// checks give it nothing at all.
+    private static func checkServerFeed() async {
+        guard let (credential, pinLocked) = IntentSession.profile() else { return }
+        let defaults = UserDefaults.standard
+        let cursor = (defaults.object(forKey: feedCursorKey) as? NSNumber)?.int64Value
+        let feed: ServerEventFeed
+        do {
+            guard let answer = try await ArcfinCompanionClient().events(
+                since: cursor, credential: credential, authHeader: IntentSession.authHeader(for: credential))
+            else { return }
+            feed = answer
+        } catch {
+            log.error("Server feed failed: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        log.notice("Server feed: \(feed.events.count, privacy: .public) events after \(cursor.map(String.init) ?? "none", privacy: .public), now at \(feed.cursor, privacy: .public)")
+        defaults.set(NSNumber(value: feed.cursor), forKey: feedCursorKey)
+        let seen = defaults.stringArray(forKey: feedSeenKey)
+        var kept: [String] = []
+        for id in feed.events.filter({ $0.kind == "announcement" || $0.kind == "maintenance" }).map(\.id) + (seen ?? [])
+        where !kept.contains(id) { kept.append(id) }
+        defaults.set(Array(kept.prefix(200)), forKey: feedSeenKey)
+        guard cursor != nil else { return }
+
+        let announcements = defaults.object(forKey: announcementsKey) as? Bool ?? true
+        let toApprove = defaults.object(forKey: requestsToApproveKey) as? Bool ?? true
+        let issues = defaults.object(forKey: issuesKey) as? Bool ?? true
+        for event in feed.events {
+            let title = event.title.isEmpty || pinLocked ? String(localized: "One of your requests") : event.title
+            switch event.kind {
+            case "seerr-approved": await NotificationManager.notifyRequestApproved(title: title, requestID: event.requestId)
+            case "seerr-declined": await NotificationManager.notifyRequestDeclined(title: title, requestID: event.requestId)
+            case "seerr-available": await NotificationManager.notifyRequestAvailable(title: title, requestID: event.requestId)
+            case "announcement" where announcements && seen?.contains(event.id) == false:
+                await NotificationManager.notifyAnnouncement(id: event.id, title: event.title, message: event.body ?? "")
+            case "maintenance" where announcements && seen?.contains(event.id) == false:
+                guard let starts = event.starts, let ends = event.ends else { continue }
+                let window = MaintenanceWindow(id: event.id, starts: starts, ends: ends, message: event.body ?? "")
+                await NotificationManager.notifyMaintenance(id: event.id, summary: await MainActor.run { window.summary })
+            case "test": await NotificationManager.notifyServerTest(id: event.id)
+            case "seerr-pending", "seerr-auto-approved", "seerr-failed" where toApprove:
+                await NotificationManager.notifyRequestToManage(event, title: title, hidingDetails: pinLocked)
+            case "issue-reported", "issue-comment", "issue-resolved", "issue-reopened" where issues:
+                await NotificationManager.notifyIssue(event, hidingDetails: pinLocked)
+            default: continue
+            }
         }
     }
 

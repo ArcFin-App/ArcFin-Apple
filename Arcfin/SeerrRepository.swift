@@ -463,6 +463,58 @@ final class SeerrRepository {
 
     var pendingRequestCount: Int { requests.count { $0.status == .pending } }
 
+    // MARK: - Issues
+
+    /// What the signed-in Seerr user may do with issues; nothing until Seerr answers.
+    func issuePermissions() async -> SeerrIssuePermissions {
+        guard let user = await ensureCurrentUser() else { return .none }
+        return SeerrIssuePermissions(userID: user.id, permissions: user.permissions)
+    }
+
+    func issues(filter: SeerrIssueFilter) async throws -> [SeerrIssue] {
+        guard let client else { throw URLError(.badURL) }
+        return try await client.issues(filter: filter)
+    }
+
+    /// The title an issue is about, for its row and page.
+    func title(of issue: SeerrIssue) async -> SeerrItem? {
+        guard let client, let tmdbId = issue.tmdbId, let mediaType = issue.mediaType else { return nil }
+        return try? await client.titleItem(mediaType: mediaType, tmdbId: tmdbId)
+    }
+
+    func issue(id: Int) async throws -> SeerrIssue {
+        guard let client else { throw URLError(.badURL) }
+        return try await client.issue(id: id)
+    }
+
+    /// Nil when Seerr isn't set up or can't be reached, so a title page just leaves issues out.
+    func titleIssues(mediaType: RequestMediaType, tmdbId: Int) async -> SeerrTitleIssues? {
+        guard let client else { return nil }
+        return try? await client.titleIssues(mediaType: mediaType, tmdbId: tmdbId)
+    }
+
+    func reportIssue(type: SeerrIssueType, message: String, mediaID: Int, season: Int?, episode: Int?) async throws {
+        guard let client else { throw URLError(.badURL) }
+        try await client.reportIssue(type: type, message: message, mediaID: mediaID, season: season, episode: episode)
+    }
+
+    func comment(on issueID: Int, message: String) async throws -> SeerrIssue {
+        guard let client else { throw URLError(.badURL) }
+        try await client.commentOnIssue(id: issueID, message: message)
+        return try await client.issue(id: issueID)
+    }
+
+    func setIssueResolved(_ issueID: Int, resolved: Bool) async throws -> SeerrIssue {
+        guard let client else { throw URLError(.badURL) }
+        try await client.setIssueResolved(id: issueID, resolved: resolved)
+        return try await client.issue(id: issueID)
+    }
+
+    func deleteIssue(_ issueID: Int) async throws {
+        guard let client else { throw URLError(.badURL) }
+        try await client.deleteIssue(id: issueID)
+    }
+
     func cancelRequest(id: Int) async throws {
         guard let client else { throw URLError(.badURL) }
         try await client.cancelRequest(requestID: id)

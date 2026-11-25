@@ -5,6 +5,8 @@ import Foundation
 // Posted by onOpenURL when the Top Shelf launches a play deep link.
 extension Notification.Name {
     static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
+    /// Arcfin Sync said over the live connection that the server's feed has news for us.
+    static let arcfinServerFeedChanged = Notification.Name("arcfinServerFeedChanged")
     /// arcfin://pick/<code>, from a Pick Together share link; userInfo["code"].
     static let arcfinPickTogether = Notification.Name("arcfinPickTogether")
     /// arcfin://party/<code>, from a scanned watch party QR code; userInfo["code"].
@@ -17,6 +19,10 @@ extension Notification.Name {
     static let arcfinResume = Notification.Name("arcfinResume")
     /// Posted when a notification about a Seerr request or watchlist item is tapped.
     static let arcfinShowDiscover = Notification.Name("arcfinShowDiscover")
+    /// After `arcfinShowDiscover`: Discover opens its Requests list.
+    static let arcfinShowSeerrRequests = Notification.Name("arcfinShowSeerrRequests")
+    /// After `arcfinShowDiscover`: Discover opens the issue in `SeerrLinks.pendingIssueKey`.
+    static let arcfinOpenSeerrIssue = Notification.Name("arcfinOpenSeerrIssue")
     /// Posted with a "term" in userInfo to show in-app search results (Siri / Shortcuts).
     static let arcfinSearch = Notification.Name("arcfinSearch")
     /// Posted with an "id" (Seerr entry id) to open that title's Seerr page.

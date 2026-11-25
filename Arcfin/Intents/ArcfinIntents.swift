@@ -22,17 +22,24 @@ import VisualIntelligence
 /// library the lock screen is meant to protect.
 nonisolated enum IntentSession {
     static func credential() -> ServerCredential? {
+        profile().flatMap { $0.pinLocked ? nil : $0.credential }
+    }
+
+    /// The active profile even when it has an app-lock PIN, for news that shows nothing from the
+    /// library, or hides its titles when `pinLocked`.
+    static func profile() -> (credential: ServerCredential, pinLocked: Bool)? {
         let store = KeychainStore()
         guard let all = try? store.allServers(), !all.isEmpty else { return nil }
         let storedID = UserDefaults.standard.string(forKey: "arcfin.activeProfileID").flatMap { UUID(uuidString: $0) }
         guard let credential = all.first(where: { $0.id == storedID }) ?? all.first else { return nil }
         // While the device is locked the PIN can't be read yet, and that counts as one.
         do {
-            guard try store.loadPin(for: credential.id) == nil else { return nil }
+            return (credential, try store.loadPin(for: credential.id) != nil)
         } catch KeychainError.unexpectedStatus(let status) where status == errSecInteractionNotAllowed {
-            return nil
-        } catch {}
-        return credential
+            return (credential, true)
+        } catch {
+            return (credential, false)
+        }
     }
 
     static func authHeader(for credential: ServerCredential) -> String {
@@ -428,6 +435,28 @@ enum ArcfinRouting {
         Task {
             try? await Task.sleep(for: .seconds(0.6))
             NotificationCenter.default.post(name: .arcfinOpenSeerrTitle, object: nil, userInfo: ["id": id])
+        }
+    }
+
+    /// Discover, then its Requests list, for a request waiting for approval or one that failed.
+    @MainActor
+    static func showSeerrRequests() {
+        UserDefaults.standard.set(true, forKey: SeerrLinks.pendingRequestsKey)
+        showDiscover()
+        Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            NotificationCenter.default.post(name: .arcfinShowSeerrRequests, object: nil)
+        }
+    }
+
+    /// Discover, then the Seerr issue a notification was about.
+    @MainActor
+    static func openSeerrIssue(id: Int) {
+        UserDefaults.standard.set(id, forKey: SeerrLinks.pendingIssueKey)
+        showDiscover()
+        Task {
+            try? await Task.sleep(for: .seconds(1.8))
+            NotificationCenter.default.post(name: .arcfinOpenSeerrIssue, object: nil)
         }
     }
 

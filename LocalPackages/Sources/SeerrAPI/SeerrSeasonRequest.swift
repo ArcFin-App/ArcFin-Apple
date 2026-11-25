@@ -115,6 +115,9 @@ public struct SeerrPermission: OptionSet, Sendable {
     public static let autoApproveTV = SeerrPermission(rawValue: 512)
     public static let requestMovie = SeerrPermission(rawValue: 262_144)
     public static let requestTV = SeerrPermission(rawValue: 524_288)
+    public static let manageIssues = SeerrPermission(rawValue: 1_048_576)
+    public static let viewIssues = SeerrPermission(rawValue: 2_097_152)
+    public static let createIssues = SeerrPermission(rawValue: 4_194_304)
 
     /// True if the admin bit is set (which Seerr treats as "can do anything") or any of
     /// `permissions` is present in `value`.

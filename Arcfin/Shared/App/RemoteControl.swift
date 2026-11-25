@@ -81,6 +81,8 @@ final class RemoteControl {
 
     private func general(_ name: String, _ arguments: [String: String]) {
         switch name {
+        case "DisplayMessage" where arguments["Header"] == "ArcfinSync.Events":
+            NotificationCenter.default.post(name: .arcfinServerFeedChanged, object: nil)
         case "DisplayMessage":
             let text = arguments["Text"] ?? ""
             let header = arguments["Header"] ?? ""

@@ -15,6 +15,10 @@ final class MacAppDelegate: NSObject, NSApplicationDelegate {
         // Taps on a notification open the title, Discover or Downloads, as on iOS.
         UNUserNotificationCenter.current().delegate = NotificationRouter.shared
         BackgroundRefresh.register()
+        BackgroundRefresh.listenForServerNews()
+        NotificationCenter.default.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { BackgroundRefresh.checkFeedOnOpen() }
+        }
         Diagnostics.shared.start()
         MusicWidgetPublisher.start()
     }
