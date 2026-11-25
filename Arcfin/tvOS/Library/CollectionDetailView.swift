@@ -139,10 +139,29 @@ struct CollectionDetailView: View {
             }
 
             VStack(alignment: .leading, spacing: 28) {
-                Text(collection.name)
-                    .font(.system(size: 44, weight: .heavy))
-                    .foregroundStyle(.white)
-                    .shadow(color: .black.opacity(0.9), radius: 12)
+                VStack(alignment: .leading, spacing: 10) {
+                    // The collection's logo when the server has one, else its name.
+                    CachedAsyncImage(url: mediaRepo.logoURL(itemID: collection.id, fillWidth: 900)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable().scaledToFit()
+                                .frame(maxWidth: 560, maxHeight: 150, alignment: .leading)
+                                .shadow(color: .black.opacity(0.7), radius: 12)
+                                .accessibilityLabel(Text(verbatim: collection.name))
+                        case .empty:
+                            Color.clear.frame(height: 110)
+                        default:
+                            Text(collection.name)
+                                .font(.system(size: 44, weight: .heavy))
+                                .foregroundStyle(.white)
+                                .shadow(color: .black.opacity(0.9), radius: 12)
+                        }
+                    }
+                    Text("COLLECTION")
+                        .font(.system(size: 20, weight: .bold))
+                        .tracking(2)
+                        .foregroundStyle(DT.Color.accent)
+                }
 
                 if !items.isEmpty {
                     Text(metaLine)

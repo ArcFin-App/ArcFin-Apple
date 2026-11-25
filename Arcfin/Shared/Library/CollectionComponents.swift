@@ -70,16 +70,11 @@ struct CollectionContent: View {
             HStack(alignment: .bottom, spacing: 14) {
                 posterStack
                 VStack(alignment: .leading, spacing: 6) {
+                    titleOrLogo
                     Text("COLLECTION")
                         .font(.system(.caption2, weight: .bold))
                         .tracking(1.5)
                         .foregroundStyle(DT.Color.accent)
-                    Text(collection.name)
-                        .font(.system(.title2, design: .default, weight: .heavy))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .tracking(-0.5)
-                        .lineLimit(3)
-                        .minimumScaleFactor(0.8)
                     Text(metaLine)
                         .font(.system(.caption))
                         .foregroundStyle(DT.Color.textSecondary)
@@ -89,6 +84,28 @@ struct CollectionContent: View {
             }
             .padding(.horizontal, DT.Spacing.pagePad)
             .padding(.top, -96)
+        }
+    }
+
+    /// The collection's logo when the server has one, else its name.
+    private var titleOrLogo: some View {
+        CachedAsyncImage(url: mediaRepo.logoURL(itemID: collection.id, fillWidth: 600)) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().scaledToFit()
+                    .frame(maxWidth: 240, maxHeight: 80, alignment: .leading)
+                    .accessibilityLabel(Text(verbatim: collection.name))
+            case .empty:
+                // Still loading: keep the space, so the name doesn't flash up before the logo.
+                Color.clear.frame(height: 56)
+            default:
+                Text(collection.name)
+                    .font(.system(.title2, design: .default, weight: .heavy))
+                    .foregroundStyle(DT.Color.textPrimary)
+                    .tracking(-0.5)
+                    .lineLimit(3)
+                    .minimumScaleFactor(0.8)
+            }
         }
     }
 
