@@ -2,32 +2,21 @@
 
 import SwiftUI
 
-/// Settings › Legal & Licenses. Everything on it but the data sources comes from the website
-/// through `LegalLibrary`; the app carries no copy of its own.
+/// Settings › Legal & Licenses. Everything on it comes from the website through
+/// `LegalLibrary`; the app carries no copy of its own.
 struct LicensesView: View {
     private let library = AppServices.legal
 
     var body: some View {
         List {
-            Section("Data Sources") {
-                Text("This product uses the TMDB API but is not endorsed or certified by TMDB.")
-                    .tvReadOnlyRow()
-                Text("Streaming availability is provided by JustWatch.")
-                    .tvReadOnlyRow()
-                Text("Awards come from Wikidata.")
-                    .tvReadOnlyRow()
-                Text("Lyrics not on your server come from LRCLIB.")
-                    .tvReadOnlyRow()
-                Text("Listening history, loves and Year in Music use ListenBrainz, a MetaBrainz Foundation project.")
-                    .tvReadOnlyRow()
-                // Only where the features are: on iPhone and iPad.
-                if PlatformMetrics.identifiesSongs {
-                    Text("Song recognition in What's Playing? is provided by Shazam.")
-                        .tvReadOnlyRow()
-                }
-                if PlatformMetrics.playsAppleMusic {
-                    Text("Songs not on your server can play from Apple Music, with a subscription.")
-                        .tvReadOnlyRow()
+            if let sources = library.sources {
+                Section {
+                    ForEach(sources.shown) { item in
+                        Text(verbatim: LegalSources.localized(item.text))
+                            .tvReadOnlyRow()
+                    }
+                } header: {
+                    Text(verbatim: LegalSources.localized(sources.title))
                 }
             }
             if library.hasContent {

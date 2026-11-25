@@ -20,6 +20,7 @@ final class LegalLibrary {
     }
 
     private(set) var documents: [LegalDocument] = []
+    private(set) var sources: LegalSources?
     private(set) var licenses: [ThirdPartyLicense] = []
     /// When the copy shown was last checked against the website.
     private(set) var checked: Date?
@@ -27,7 +28,7 @@ final class LegalLibrary {
     /// A download got through this launch, so opening the screen needn't ask again.
     private(set) var isCurrent = false
 
-    var hasContent: Bool { !documents.isEmpty || !licenses.isEmpty }
+    var hasContent: Bool { !documents.isEmpty || !licenses.isEmpty || sources != nil }
 
     static let site = URL(string: "https://arcfin.psmattas.com/legal/v1/")!
     /// The v1 files say which shape they have; a newer one this build can't read is skipped.
@@ -68,7 +69,7 @@ final class LegalLibrary {
             let index: LegalIndex? = try await fetch(Self.site.appending(path: "index.json"), into: "index.json",
                                                      shown: !documents.isEmpty, meta: &meta)
             let licenceFile = try await fetchLicences(meta: &meta)
-            if let index, index.schema == Self.schema { documents = index.documents }
+            if let index, index.schema == Self.schema { show(index) }
             if let licenceFile, licenceFile.schema == Self.schema { licenses = Self.forThisPlatform(licenceFile.components) }
             meta.checked = .now
             meta.write(to: folder)
@@ -116,13 +117,18 @@ final class LegalLibrary {
         let decoder = JSONDecoder()
         if let data = try? Data(contentsOf: folder.appending(path: "index.json")),
            let index = try? decoder.decode(LegalIndex.self, from: data), index.schema == Self.schema {
-            documents = index.documents
+            show(index)
         }
         if let data = try? Data(contentsOf: folder.appending(path: "licenses.json")),
            let file = try? decoder.decode(LicenseFile.self, from: data), file.schema == Self.schema {
             licenses = Self.forThisPlatform(file.components)
         }
         checked = Meta.read(from: folder).checked
+    }
+
+    private func show(_ index: LegalIndex) {
+        documents = index.documents
+        sources = index.sources
     }
 
     private static func forThisPlatform(_ all: [ThirdPartyLicense]) -> [ThirdPartyLicense] {
@@ -172,6 +178,33 @@ enum LegalDownloadError: Error {
 struct LegalIndex: Decodable {
     let schema: Int
     let documents: [LegalDocument]
+    let sources: LegalSources?
+}
+
+/// The services Arcfin credits for its data, each in every language the app has.
+struct LegalSources: Decodable, Hashable {
+    struct Item: Decodable, Hashable, Identifiable {
+        let id: String
+        let text: [String: String]
+        let platforms: [String]?
+    }
+
+    let title: [String: String]
+    let items: [Item]
+
+    /// The items that apply on this platform.
+    var shown: [Item] {
+        items.filter { $0.platforms?.contains(PlatformMetrics.licensePlatform) ?? true }
+    }
+
+    /// The app's language (Settings › Language follows the bundle's choice), else English.
+    static func localized(_ text: [String: String]) -> String {
+        for code in Bundle.main.preferredLocalizations {
+            if let value = text[code] { return value }
+            if let base = code.split(separator: "-").first, let value = text[String(base)] { return value }
+        }
+        return text["en"] ?? text.values.first ?? ""
+    }
 }
 
 /// The Privacy Policy, Terms of Use or Data Protection notice, as Markdown.
