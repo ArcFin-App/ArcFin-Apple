@@ -7,6 +7,12 @@ import SwiftUI
 enum WhatsNew {
     static var items: [WhatsNewItem] {
         [
+            WhatsNewItem(icon: "bell.badge",
+                         title: "Notifications from Your Server",
+                         detail: "Hear when a request is approved, declined or available, about issues, and about announcements and maintenance, without signing in to Seerr on this device. If you manage requests, also when one is waiting for you. Needs Arcfin Sync 0.7 on your server."),
+            WhatsNewItem(icon: "exclamationmark.bubble",
+                         title: "Report a Problem",
+                         detail: "Something wrong with a title? Report it from its page, beside the IMDb and TMDB links, then follow and reply to it in Issues in Discover. If you manage issues, resolve or reopen them there."),
             WhatsNewItem(icon: "person.3.sequence",
                          title: "Watch Parties",
                          detail: "Watch together, in sync: invite people with a code or QR code, plan a party up to 30 days ahead and see what time it'll be for each guest. Start one from Home or a title's page. Friends in other apps can join through SyncPlay."),

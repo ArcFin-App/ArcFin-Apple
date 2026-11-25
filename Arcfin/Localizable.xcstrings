@@ -17848,6 +17848,70 @@
         }
       }
     },
+    "Hear when a request is approved, declined or available, about issues, and about announcements and maintenance, without signing in to Seerr on this device. If you manage requests, also when one is waiting for you. Needs Arcfin Sync 0.7 on your server." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erfahre, wenn eine Anfrage genehmigt, abgelehnt oder verfügbar ist, von Problemen sowie von Ankündigungen und Wartungen, ohne dich auf diesem Gerät bei Seerr anzumelden. Wenn du Anfragen verwaltest, auch wenn eine auf dich wartet. Benötigt Arcfin Sync 0.7 auf deinem Server."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entérate cuando una solicitud se aprueba, se rechaza o está disponible, de las incidencias y de los anuncios y el mantenimiento, sin iniciar sesión en Seerr en este dispositivo. Si gestionas solicitudes, también cuando una te espera. Necesita Arcfin Sync 0.7 en tu servidor."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Soyez prévenu quand une demande est approuvée, refusée ou disponible, des problèmes, des annonces et des maintenances, sans vous connecter à Seerr sur cet appareil. Si vous gérez les demandes, aussi quand l’une vous attend. Nécessite Arcfin Sync 0.7 sur votre serveur."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Scopri quando una richiesta viene approvata, rifiutata o è disponibile, delle segnalazioni, degli annunci e delle manutenzioni, senza accedere a Seerr su questo dispositivo. Se gestisci le richieste, anche quando una ti aspetta. Richiede Arcfin Sync 0.7 sul tuo server."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "リクエストの承認・却下・視聴可能、問題、お知らせやメンテナンスを、このデバイスでSeerrにサインインしなくても受け取れます。リクエストを管理している場合は、承認待ちのものも。サーバにArcfin Sync 0.7が必要です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "요청의 승인, 거절, 시청 가능 여부와 문제, 공지, 유지보수 소식을 이 기기에서 Seerr에 로그인하지 않아도 받을 수 있습니다. 요청을 관리한다면 승인을 기다리는 요청도 알려 줍니다. 서버에 Arcfin Sync 0.7이 필요합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hoor wanneer een verzoek is goedgekeurd, geweigerd of beschikbaar is, over problemen en over mededelingen en onderhoud, zonder op dit apparaat bij Seerr in te loggen. Beheer je verzoeken, dan ook wanneer er een op je wacht. Vereist Arcfin Sync 0.7 op je server."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Saiba quando uma solicitação é aprovada, recusada ou fica disponível, sobre problemas, avisos e manutenções, sem entrar no Seerr neste dispositivo. Se você gerencia solicitações, também quando uma está esperando por você. Requer o Arcfin Sync 0.7 no seu servidor."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Узнавайте, когда запрос одобрен, отклонён или доступен, о проблемах, объявлениях и техработах, не входя в Seerr на этом устройстве. Если вы управляете запросами, ещё и когда запрос ждёт вас. Нужен Arcfin Sync 0.7 на сервере."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无需在此设备上登录 Seerr，即可得知请求被批准、拒绝或可用，以及问题、公告和维护。如果你管理请求，还会在有请求等待你处理时通知你。需要服务器上安装 Arcfin Sync 0.7。"
+          }
+        }
+      }
+    },
     "Hidden Libraries" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -26559,6 +26623,70 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "暂无内容。"
+          }
+        }
+      }
+    },
+    "Notifications from Your Server" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mitteilungen von deinem Server"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notificaciones de tu servidor"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications de votre serveur"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifiche dal tuo server"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "サーバからの通知"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "서버 알림"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meldingen van je server"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notificações do seu servidor"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Уведомления с вашего сервера"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "来自服务器的通知"
           }
         }
       }
@@ -35849,6 +35977,134 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "有人选择一部作品并分享代码；其他人用代码加入，大家一起通过 SyncPlay 观看。只有能看到该作品的人才能加入。不使用链接。"
+          }
+        }
+      }
+    },
+    "Something wrong with a title? Report it from its page, beside the IMDb and TMDB links, then follow and reply to it in Issues in Discover. If you manage issues, resolve or reopen them there." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stimmt mit einem Titel etwas nicht? Melde es auf seiner Seite neben den IMDb- und TMDB-Links und verfolge und beantworte es dann unter „Probleme“ in „Entdecken“. Wenn du Probleme verwaltest, löse oder öffne sie dort wieder."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Algo va mal con un título? Infórmalo desde su página, junto a los enlaces de IMDb y TMDB, y síguelo y respóndelo en Incidencias, en Descubrir. Si gestionas incidencias, resuélvelas o reábrelas allí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un problème avec un titre ? Signalez-le depuis sa page, à côté des liens IMDb et TMDB, puis suivez-le et répondez dans Problèmes, dans Découvrir. Si vous gérez les problèmes, résolvez-les ou rouvrez-les là."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualcosa non va con un titolo? Segnalalo dalla sua pagina, accanto ai link di IMDb e TMDB, poi seguilo e rispondi in Segnalazioni, in Scopri. Se gestisci le segnalazioni, risolvile o riaprile lì."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作品に問題がありますか？作品のページのIMDbやTMDBのリンクの横から報告し、「見つける」の「問題」で確認や返信ができます。問題を管理している場合は、そこで解決や再開もできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작품에 문제가 있나요? 작품 페이지의 IMDb, TMDB 링크 옆에서 신고하고, 탐색의 문제에서 확인하고 답할 수 있습니다. 문제를 관리한다면 그곳에서 해결하거나 다시 열 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klopt er iets niet aan een titel? Meld het op de pagina, naast de IMDb- en TMDB-links, en volg en beantwoord het in Problemen in Ontdek. Beheer je problemen, los ze daar dan op of open ze opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Algo errado com um título? Relate na página dele, ao lado dos links do IMDb e do TMDB, e acompanhe e responda em Problemas, em Descobrir. Se você gerencia problemas, resolva ou reabra por lá."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Что-то не так с фильмом или сериалом? Сообщите об этом на его странице, рядом со ссылками IMDb и TMDB, а затем следите и отвечайте в разделе «Проблемы» в «Обзоре». Если вы управляете проблемами, решайте или открывайте их снова там же."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作品有问题？在作品页面的 IMDb 和 TMDB 链接旁报告，然后在“发现”的“问题”中跟进和回复。如果你管理问题，可以在那里解决或重新打开。"
+          }
+        }
+      }
+    },
+    "Something wrong with a title? Report it from its page, then follow it in Issues on the Seerr screen. If you manage issues, resolve or reopen them there." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stimmt mit einem Titel etwas nicht? Melde es auf seiner Seite und verfolge es dann unter „Probleme“ im Seerr-Bildschirm. Wenn du Probleme verwaltest, löse oder öffne sie dort wieder."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Algo va mal con un título? Infórmalo desde su página y síguelo en Incidencias, en la pantalla de Seerr. Si gestionas incidencias, resuélvelas o reábrelas allí."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un problème avec un titre ? Signalez-le depuis sa page, puis suivez-le dans Problèmes, sur l’écran Seerr. Si vous gérez les problèmes, résolvez-les ou rouvrez-les là."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Qualcosa non va con un titolo? Segnalalo dalla sua pagina, poi seguilo in Segnalazioni nella schermata di Seerr. Se gestisci le segnalazioni, risolvile o riaprile lì."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作品に問題がありますか？作品のページから報告し、Seerr画面の「問題」で確認できます。問題を管理している場合は、そこで解決や再開もできます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "작품에 문제가 있나요? 작품 페이지에서 신고하고 Seerr 화면의 문제에서 확인할 수 있습니다. 문제를 관리한다면 그곳에서 해결하거나 다시 열 수 있습니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Klopt er iets niet aan een titel? Meld het op de pagina en volg het in Problemen op het Seerr-scherm. Beheer je problemen, los ze daar dan op of open ze opnieuw."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Algo errado com um título? Relate na página dele e acompanhe em Problemas, na tela do Seerr. Se você gerencia problemas, resolva ou reabra por lá."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Что-то не так с фильмом или сериалом? Сообщите об этом на его странице и следите в разделе «Проблемы» на экране Seerr. Если вы управляете проблемами, решайте или открывайте их снова там же."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作品有问题？在作品页面报告，然后在 Seerr 界面的“问题”中跟进。如果你管理问题，可以在那里解决或重新打开。"
           }
         }
       }
