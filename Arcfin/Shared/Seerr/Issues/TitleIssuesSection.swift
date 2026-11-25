@@ -20,7 +20,8 @@ struct TitleIssuesSection: View {
     private var canReport: Bool { permissions.canCreate && title?.mediaID != nil }
 
     var body: some View {
-        Group {
+        // Not a Group: an empty one has nothing to run `.task` on, so nothing would ever load.
+        VStack(alignment: .leading, spacing: 0) {
             if canReport || !openIssues.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("Issues")
