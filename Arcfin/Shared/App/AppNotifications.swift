@@ -5,6 +5,8 @@ import Foundation
 // Posted by onOpenURL when the Top Shelf launches a play deep link.
 extension Notification.Name {
     static let arcfinPlayItem = Notification.Name("arcfinPlayItem")
+    /// Arcfin Sync said over the live connection that the server's feed has news for us.
+    static let arcfinServerFeedChanged = Notification.Name("arcfinServerFeedChanged")
     /// arcfin://pick/<code>, from a Pick Together share link; userInfo["code"].
     static let arcfinPickTogether = Notification.Name("arcfinPickTogether")
     /// arcfin://party/<code>, from a scanned watch party QR code; userInfo["code"].

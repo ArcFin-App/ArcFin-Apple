@@ -258,6 +258,16 @@ nonisolated enum BackgroundRefresh {
 
     /// The server's feed is one small request, so it's read every time Arcfin comes to the
     /// front (at most every half minute), not only with the full check every few minutes.
+    /// When Arcfin Sync says there's news, over the live connection: read it now.
+    @MainActor static func listenForServerNews() {
+        NotificationCenter.default.addObserver(forName: .arcfinServerFeedChanged, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated {
+                UserDefaults.standard.set(Date(), forKey: lastFeedCheckKey)
+                Task { await checkServerFeed() }
+            }
+        }
+    }
+
     @MainActor static func checkFeedOnOpen() {
         let defaults = UserDefaults.standard
         guard Date().timeIntervalSince(defaults.object(forKey: lastFeedCheckKey) as? Date ?? .distantPast) > 30 else { return }
@@ -283,7 +293,7 @@ nonisolated enum BackgroundRefresh {
             log.error("Server feed failed: \(error.localizedDescription, privacy: .public)")
             return
         }
-        log.info("Server feed: \(feed.events.count, privacy: .public) events after \(cursor.map(String.init) ?? "none", privacy: .public), now at \(feed.cursor, privacy: .public)")
+        log.notice("Server feed: \(feed.events.count, privacy: .public) events after \(cursor.map(String.init) ?? "none", privacy: .public), now at \(feed.cursor, privacy: .public)")
         defaults.set(NSNumber(value: feed.cursor), forKey: feedCursorKey)
         let seen = defaults.stringArray(forKey: feedSeenKey)
         var kept: [String] = []
