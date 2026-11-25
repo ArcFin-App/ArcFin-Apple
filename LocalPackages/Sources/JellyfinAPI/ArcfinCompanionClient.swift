@@ -167,6 +167,40 @@ public struct ServerNotices: Sendable, Decodable, Equatable {
     public let maintenance: [MaintenanceWindow]
 }
 
+/// The plugin's news since `cursor`: Seerr request changes it saw, plus the announcements and
+/// maintenance showing now.
+public struct ServerEventFeed: Sendable, Decodable, Equatable {
+    public let cursor: Int64
+    public let events: [ServerEvent]
+
+    public init(cursor: Int64, events: [ServerEvent]) {
+        self.cursor = cursor
+        self.events = events
+    }
+}
+
+public struct ServerEvent: Sendable, Decodable, Equatable, Identifiable {
+    /// The same on every device for the same news, e.g. "seerr-approved.42".
+    public let id: String
+    /// seerr-approved, seerr-declined, seerr-available, announcement or maintenance.
+    public let kind: String
+    public let title: String
+    public let body: String?
+    public let requestId: Int?
+    public let starts: Date?
+    public let ends: Date?
+
+    public init(id: String, kind: String, title: String = "", body: String? = nil, requestId: Int? = nil, starts: Date? = nil, ends: Date? = nil) {
+        self.id = id
+        self.kind = kind
+        self.title = title
+        self.body = body
+        self.requestId = requestId
+        self.starts = starts
+        self.ends = ends
+    }
+}
+
 public struct DownloadLimitSettings: Sendable, Codable, Equatable {
     public struct UserOverride: Sendable, Codable, Equatable, Identifiable {
         public var userId: String
@@ -785,6 +819,19 @@ public struct ArcfinCompanionClient: Sendable {
     public func recommendations(refresh: Bool = false, credential: ServerCredential, authHeader: String) async throws -> Recommendations {
         try await http.send("GET", "ArcfinSync/Recommendations" + (refresh ? "?refresh=true" : ""), base: "",
                             credential: credential, authHeader: authHeader)
+    }
+
+    // MARK: Notifications
+
+    /// Events after `since`, or nil when the server's notifications are off or its plugin is
+    /// older than 0.7. Without `since`, only the cursor and what's showing now.
+    public func events(since: Int64?, credential: ServerCredential, authHeader: String) async throws -> ServerEventFeed? {
+        do {
+            return try await http.send("GET", "ArcfinSync/Notifications/Events" + (since.map { "?since=\($0)" } ?? ""), base: "",
+                                       credential: credential, authHeader: authHeader)
+        } catch let error as PickTogetherError where error.status == 404 {
+            return nil
+        }
     }
 
     // MARK: Integrations
