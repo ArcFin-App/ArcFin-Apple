@@ -265,13 +265,23 @@ nonisolated enum BackgroundRefresh {
 
     /// The plugin's feed. It overlaps the device's own Seerr check when both look at the same
     /// Seerr; each request change has one identifier, so it's announced once either way.
+    /// A profile with an app-lock PIN still gets it, with request titles left out, as the other
+    /// checks give it nothing at all.
     private static func checkServerFeed() async {
-        guard let credential = IntentSession.credential() else { return }
+        guard let (credential, pinLocked) = IntentSession.profile() else { return }
         let defaults = UserDefaults.standard
         let cursor = (defaults.object(forKey: feedCursorKey) as? NSNumber)?.int64Value
-        guard let feed = try? await ArcfinCompanionClient().events(
-            since: cursor, credential: credential, authHeader: IntentSession.authHeader(for: credential))
-        else { return }
+        let feed: ServerEventFeed
+        do {
+            guard let answer = try await ArcfinCompanionClient().events(
+                since: cursor, credential: credential, authHeader: IntentSession.authHeader(for: credential))
+            else { return }
+            feed = answer
+        } catch {
+            log.error("Server feed failed: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        log.info("Server feed: \(feed.events.count, privacy: .public) events after \(cursor.map(String.init) ?? "none", privacy: .public), now at \(feed.cursor, privacy: .public)")
         defaults.set(NSNumber(value: feed.cursor), forKey: feedCursorKey)
         let seen = defaults.stringArray(forKey: feedSeenKey)
         var kept: [String] = []
@@ -282,7 +292,7 @@ nonisolated enum BackgroundRefresh {
 
         let announcements = defaults.object(forKey: announcementsKey) as? Bool ?? true
         for event in feed.events {
-            let title = event.title.isEmpty ? String(localized: "One of your requests") : event.title
+            let title = event.title.isEmpty || pinLocked ? String(localized: "One of your requests") : event.title
             switch event.kind {
             case "seerr-approved": await NotificationManager.notifyRequestApproved(title: title, requestID: event.requestId)
             case "seerr-declined": await NotificationManager.notifyRequestDeclined(title: title, requestID: event.requestId)
