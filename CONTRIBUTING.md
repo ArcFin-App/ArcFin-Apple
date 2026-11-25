@@ -2,6 +2,8 @@
 
 Thanks for helping. Arcfin is maintained by one person, so replies can take a few days, but issues and pull requests from anyone are welcome.
 
+Arcfin's home is [git.psmattas.com/ArcFin/ArcFin](https://git.psmattas.com/ArcFin/ArcFin). The copy on GitHub is a read-only mirror: pull requests and issues opened there aren't seen, so please open them on git.psmattas.com. You can sign in there with your GitHub or GitLab account.
+
 - [Ways to help](#ways-to-help)
 - [Before you start](#before-you-start)
 - [Building Arcfin](#building-arcfin)

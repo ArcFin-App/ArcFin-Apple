@@ -8,6 +8,7 @@
 
 [![Build](https://git.psmattas.com/ArcFin/ArcFin/actions/workflows/build.yml/badge.svg?branch=main)](https://git.psmattas.com/ArcFin/ArcFin/actions?workflow=build.yml)
 [![Version](https://arcfin.psmattas.com/badges/version.svg?v=1)](https://git.psmattas.com/ArcFin/ArcFin/releases)
+[![Arcfin Sync plugin](https://arcfin.psmattas.com/badges/plugin.svg)](https://git.psmattas.com/ArcFin/Arcfin-Sync/releases)
 ![Platform](https://img.shields.io/badge/platform-iOS%20%7C%20iPadOS%20%7C%20macOS%20%7C%20tvOS-lightgrey?logo=apple&logoColor=white)
 ![Minimum OS](https://img.shields.io/badge/OS-26%2B-black?logo=apple&logoColor=white)
 ![Swift](https://img.shields.io/badge/Swift-6.0-F05138?logo=swift&logoColor=white)
@@ -22,6 +23,8 @@ Arcfin plays the movies, shows, music and live TV on your own Jellyfin server. I
 Each platform gets an interface of its own rather than a stretched phone app: Liquid Glass on iPhone and iPad, a sidebar, menu bar and keyboard shortcuts on the Mac, and a focus-driven layout for the Siri Remote on Apple TV.
 
 > Arcfin is an independent project. It isn't affiliated with or endorsed by the Jellyfin project. See [About the project](docs/ABOUT.md#not-affiliated-with-jellyfin).
+
+> **Where Arcfin lives:** the code, issues, pull requests and releases are on [git.psmattas.com/ArcFin/ArcFin](https://git.psmattas.com/ArcFin/ArcFin). The copy on GitHub is a read-only mirror, so please open issues and pull requests on git.psmattas.com.
 
 ---
 
