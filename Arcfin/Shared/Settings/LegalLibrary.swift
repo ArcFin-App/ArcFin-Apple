@@ -25,8 +25,6 @@ final class LegalLibrary {
     /// When the copy shown was last checked against the website.
     private(set) var checked: Date?
     private(set) var status: Status = .idle
-    /// A download got through this launch, so opening the screen needn't ask again.
-    private(set) var isCurrent = false
 
     var hasContent: Bool { !documents.isEmpty || !licenses.isEmpty || sources != nil }
 
@@ -74,7 +72,6 @@ final class LegalLibrary {
             meta.checked = .now
             meta.write(to: folder)
             checked = meta.checked
-            isCurrent = true
             status = .idle
         } catch {
             log.notice("Couldn't download the legal texts: \(error.localizedDescription, privacy: .public)")

@@ -43,19 +43,25 @@ struct LicensesView: View {
                         row(entry)
                     }
                 } footer: {
-                    Text("Open-source and third-party components Arcfin includes. Each shows its full licence, as written, and the exact version Arcfin is built with.")
-                        .font(.caption)
-                        .foregroundStyle(DT.Color.textSecondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Open-source and third-party components Arcfin includes. Each shows its full licence, as written, and the exact version Arcfin is built with.")
+                        if let checked = library.checked {
+                            Text("Last updated \(checked.formatted(date: .abbreviated, time: .shortened)).")
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(DT.Color.textSecondary)
                 }
+            } else {
+                LegalLoadingSection(library: library)
             }
-            LegalStatusSection(library: library)
         }
         .arcfinListStyle()
         .screenBackground()
         .navigationTitle("Legal & Licenses")
         .inlineNavigationTitle()
-        .refreshable { await library.refresh() }
-        .task { if !library.isCurrent { await library.refresh() } }
+        // Kept from the last download; each time the page opens it asks for a newer copy.
+        .task { await library.refresh() }
     }
 
     private func row(_ entry: ThirdPartyLicense) -> some View {
@@ -67,41 +73,25 @@ struct LicensesView: View {
     }
 }
 
-/// Whether the texts above are current, and a way to ask again.
-private struct LegalStatusSection: View {
+/// Shown until the first download arrives: it's loading, or it couldn't, and opening the
+/// page again tries again.
+private struct LegalLoadingSection: View {
     let library: LegalLibrary
 
     var body: some View {
         Section {
-            Button {
-                Task { await library.refresh() }
-            } label: {
-                HStack {
-                    Text(library.status == .failed && !library.hasContent ? "Try Again" : "Refresh")
+            HStack(spacing: 12) {
+                if library.status == .failed {
+                    Text("Couldn't load the legal texts and licences from the website. Check your connection and open this page again.")
+                } else {
+                    Text("Loading the legal texts and licences from the website…")
                     Spacer()
-                    if library.status == .loading {
-                        ProgressView()
-                    }
+                    ProgressView()
                 }
             }
-            .disabled(library.status == .loading)
-        } footer: {
-            footer
-                .font(.caption)
-                .foregroundStyle(DT.Color.textSecondary)
-        }
-    }
-
-    @ViewBuilder
-    private var footer: some View {
-        if library.status == .failed && !library.hasContent {
-            Text("Couldn't load the legal texts and licences from the website. Check your connection and try again.")
-        } else if library.status == .failed, let checked = library.checked {
-            Text("Couldn't reach the website, so this is the copy from \(checked.formatted(date: .abbreviated, time: .shortened)).")
-        } else if library.status == .loading && !library.hasContent {
-            Text("Loading the legal texts and licences from the website…")
-        } else if let checked = library.checked {
-            Text("Checked with the website \(checked.formatted(date: .abbreviated, time: .shortened)).")
+            .font(.callout)
+            .foregroundStyle(DT.Color.textSecondary)
+            .tvReadOnlyRow()
         }
     }
 }
