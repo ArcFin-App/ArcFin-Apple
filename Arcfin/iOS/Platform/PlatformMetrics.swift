@@ -35,6 +35,8 @@ enum PlatformMetrics {
     /// Always Ask Who's Watching (#688) is for a TV shared by several people.
     static let asksWhoIsWatching = false
     static let licensePlatform = "iOS"
+    /// Where the downloaded legal texts and licences are kept between launches.
+    static let keptFilesDirectory: FileManager.SearchPathDirectory = .applicationSupportDirectory
     static let descriptionMaxWidth: CGFloat = 720
     static let pagePad: CGFloat = 20
     static let shelfGap: CGFloat = 12

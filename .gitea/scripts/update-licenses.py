@@ -1,33 +1,31 @@
 #!/usr/bin/env python3
-"""Rebuild Arcfin/Shared/Settings/ThirdPartyLicenses.json, the licences the app shows in
-Settings › Licenses & Third-Party Notices.
+"""Makes licenses.json: every component Arcfin ships, with its licence, for Settings ›
+Licenses & Third-Party Notices.
 
-Every package comes from the resolved pins, with its licence files copied verbatim from
-its checkout and a link to the exact version built against. Run it after any dependency
-bump:
+The app carries no copy. The nightly runs this for each build and attaches the file to the
+build's release; the website's deploy (arcfin-site scripts/legal.py) publishes it at
+/legal/v1/licenses/<version>-<build>.json, where the app looks for its own version and build,
+and as latest.json. The Privacy Policy, Terms of Use and Data Protection notice come from
+the website's /legal/v1/index.json, made from the pages themselves.
 
-    python3 .gitea/scripts/update-licenses.py                 fetch the pinned sources and rewrite the file
-    python3 .gitea/scripts/update-licenses.py <SourcePackages> use a build's SourcePackages folder instead
-    python3 .gitea/scripts/update-licenses.py --check         fail if the file is missing a component,
-                                                              lists one Arcfin no longer ships, or is out of date
+    python3 .gitea/scripts/update-licenses.py --out licenses.json                  fetch the pinned sources
+    python3 .gitea/scripts/update-licenses.py <SourcePackages> --out licenses.json use a build's SourcePackages
 
-ARCFIN_LEGAL_SITE=http://localhost:8000 reads the legal pages from there instead of the live
-site, so a site branch that isn't deployed yet can be copied into the app in the same release.
-The stored links still point at the live site.
+VERSION and BUILD (as the nightly sets them) go in the file's "app"; without them it's
+made from the Xcode project. It fails when a pinned package has no licence file, or when the
+two Package.resolved files pin a package differently.
 
---check is what CI runs. It needs only git, Python and the network, so it runs on Linux. A
-change on the website's legal pages is reported as a warning, since the website, not the app,
-holds their binding text.
+Every text is Markdown ("format": "markdown"), so the app draws them all alike. Markdown files
+stay as they are. Plain licence files are hard-wrapped: their wrapped lines are joined back
+into paragraphs, titles become headings and clause numbers bold, and anything laid out by
+hand keeps its line breaks. The words themselves never change.
 
 Components that aren't Swift packages (the libraries inside FFmpegBuild, LibDovi and the
 Google Cast SDK, Anime4K's kernels inside AetherEngine, libVLC, and code ported from
-Seerr) are added from their own files below. Arcfin's own licence, trademark policy and
-legal pages come first: the licence and policy from this repository, the Privacy Policy,
-Terms of Use and Data Protection notice from the live website (the binding English text).
-The texts are never translated.
+Seerr) are added from their own files below. Arcfin's own licence and trademark policy come
+first, from this repository. The texts are never translated.
 """
 
-import html
 import json
 import os
 import plistlib
@@ -38,16 +36,15 @@ import tempfile
 import time
 import urllib.request
 import zipfile
-from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 RESOLVED = ROOT / "Arcfin.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved"
 PACKAGE_RESOLVED = ROOT / "LocalPackages/Package.resolved"
 EXTRA = ROOT / ".gitea/licenses"
-OUT = ROOT / "Arcfin/Shared/Settings/ThirdPartyLicenses.json"
+PBXPROJ = ROOT / "Arcfin.xcodeproj/project.pbxproj"
+SCHEMA = 1
 
-SITE = "https://arcfin.psmattas.com"
 REPO = "https://git.psmattas.com/ArcFin/ArcFin"
 
 # Build tools that never reach the app.
@@ -112,93 +109,115 @@ def package_texts(checkout):
     texts = []
     for f in sorted(checkout.iterdir()):
         if re.match(r"(?i)^(licen[cs]e|copying|notice)(\.(txt|md))?$", f.name) and f.is_file():
-            texts.append({"title": f.name, "text": read(f)})
+            texts.append(licence_text(f.name, read(f)))
     return texts
 
 
-class ProseText(HTMLParser):
-    """Plain text of a legal page's <article class="prose">: headings, paragraphs, list
-    items and table rows, each on its own, with links kept as their text."""
+LIST_ITEM = re.compile(r"^\s*(?:[-*\u2022]|[0-9]{1,2}[.)]|\(?[a-z]\)|\([ivx]{1,4}\)|[a-z]\.)\s")
 
-    BLOCKS = {"h2", "h3", "p", "li", "tr"}
 
-    def __init__(self):
-        super().__init__(convert_charrefs=True)
-        self.depth = 0
-        self.blocks, self.current, self.cells = [], None, None
-
-    def handle_starttag(self, tag, attrs):
-        if tag == "article" and ("class", "prose") in attrs:
-            self.depth = 1
-        elif self.depth:
-            if tag == "article":
-                self.depth += 1
-            if tag in self.BLOCKS and self.current is None:
-                self.current, self.kind = [], tag
-            if tag in ("td", "th") and self.current is not None:
-                self.current.append("\u0000")
-            if tag == "br" and self.current is not None:
-                self.current.append("\n")
-
-    def handle_endtag(self, tag):
-        if not self.depth:
-            return
-        if tag == "article":
-            self.depth -= 1
-        if tag == getattr(self, "kind", None) and self.current is not None:
-            text = re.sub(r"[ \t\r\n]+", " ", "".join(self.current)).strip()
-            if self.kind == "tr":
-                text = " | ".join(c.strip() for c in text.split("\u0000") if c.strip())
-            if text:
-                prefix = {"li": "• ", "h2": "", "h3": ""}.get(self.kind, "")
-                self.blocks.append((self.kind, prefix + text.replace("\u0000", " ")))
-            self.current = None
-
-    def handle_data(self, data):
-        if self.depth and self.current is not None:
-            self.current.append(data)
-
-    def text(self):
-        out = []
-        for kind, block in self.blocks:
-            if kind in ("h2", "h3"):
-                out.append(("\n" if out else "") + block.upper() if kind == "h2" else block)
+def unwrap(text):
+    """Joins a hard-wrapped plain licence's lines back into paragraphs. A line is joined to
+    the next only when it's long enough to have been wrapped, so titles, copyright lists,
+    addresses and hand-made layouts keep their breaks, and a list item always starts a line."""
+    out = []
+    # Blank lines may hold spaces or a form feed (the GNU licences' page breaks).
+    for block in re.split(r"\n[ \t\f\v]*\n", text.replace("\r\n", "\n").strip("\n")):
+        block = block.strip("\n\f").rstrip()
+        if not block.strip():
+            continue
+        lines = block.split("\n")
+        indent = min(len(l) - len(l.lstrip()) for l in lines if l.strip())
+        lines = [l[indent:].rstrip() for l in lines]
+        if any(re.search(r"\S {3,}\S", l) for l in lines) or (len(lines) > 1 and indent >= 8):
+            out.append("\n".join(lines))
+            continue
+        joined = [lines[0]]
+        for line in lines[1:]:
+            previous = joined[-1].split("\n")[-1]
+            if len(previous) >= 60 and not LIST_ITEM.match(line):
+                joined[-1] += " " + line.lstrip()
             else:
-                out.append(block)
-        return "\n\n".join(out).strip() + "\n"
+                joined.append(line)
+        # A paragraph that became one line loses the indent that marked its start.
+        out.append(joined[0].lstrip() if len(joined) == 1 else "\n".join(joined))
+    return "\n\n".join(out) + "\n"
 
 
-def legal_page(path):
-    """The page's text and its effective date, from the live site."""
-    base = os.environ.get("ARCFIN_LEGAL_SITE", SITE).rstrip("/")
-    req = urllib.request.Request(f"{base}/{path}/", headers={"User-Agent": "arcfin-licenses-script"})
-    page = urllib.request.urlopen(req, timeout=30).read().decode("utf-8")
-    parser = ProseText()
-    parser.feed(page)
-    effective = re.search(r"Effective ([0-9]{1,2} [A-Z][a-z]+ [0-9]{4})", page)
-    return parser.text(), effective.group(1) if effective else "Current"
+def escape(text):
+    """Plain text that Markdown shows exactly as written."""
+    text = re.sub(r"([\\`*_\[\]<>#|~&])", r"\\\1", text)
+    text = re.sub(r"(?m)^(\s*)([+\-=])", r"\1\\\2", text)
+    return re.sub(r"(?m)^(\s*)(\d+)\.(\s)", r"\1\2\\.\3", text)
+
+
+MARKER = re.compile(r"^(?P<marker>[-*•]|[0-9]{1,2}[.)]|\(?[a-z]\)|\([ivx]{1,4}\)|[a-z]\.)\s+(?P<rest>.*)$", re.S)
+TITLE = re.compile(r"^(preamble|appendix\b.*|how to apply.*|terms and conditions\b.*|"
+                   r"end of terms and conditions|no warranty|definitions)$", re.I)
+FENCE = "`" * 3
+
+
+def is_heading(line):
+    line = line.strip()
+    if not line or len(line) > 72 or line[-1] in ".,;:" or line.startswith(("(", "[")):
+        return False
+    letters = [c for c in line if c.isalpha()]
+    return bool(TITLE.match(line)) or (len(letters) >= 4 and all(c.isupper() for c in letters))
+
+
+def to_markdown(text):
+    """An unwrapped plain licence as Markdown: titles as headings, clause numbers in bold,
+    bullets as lists, hand-made tables as code, and every other line break kept. The words
+    never change."""
+    out = []
+    for block in text.strip("\n").split("\n\n"):
+        block = block.strip("\n")
+        if not block.strip():
+            continue
+        lines = block.split("\n")
+        if len(lines) == 2 and lines[0].strip() and re.fullmatch(r"\s*(=+|-+)\s*", lines[1]):
+            out.append("## " + escape(lines[0].strip()))
+            continue
+        if any(re.search(r"\S {3,}\S", line) for line in lines):
+            out.append(f"{FENCE}\n{block.replace(FENCE, '')}\n{FENCE}")
+            continue
+        if is_heading(lines[0]):
+            out.append("## " + escape(lines[0].strip()))
+            lines = lines[1:]
+            if not lines:
+                continue
+        first = lines[0].strip()
+        match = MARKER.match(first)
+        if match and match["marker"] in "-*•":
+            body = "- " + escape(match["rest"])
+        elif match:
+            body = f"**{escape(match['marker'])}** " + escape(match["rest"])
+        else:
+            body = escape(first)
+        # A backslash at the end of a line is a Markdown line break.
+        out.append("\\\n".join([body] + [escape(line.strip()) for line in lines[1:]]))
+    return "\n\n".join(out) + "\n"
+
+
+def licence_text(title, text):
+    if title.lower().endswith(".md"):
+        return {"title": title, "format": "markdown", "text": text}
+    return {"title": title, "format": "markdown", "text": to_markdown(unwrap(text))}
 
 
 def arcfin_entries():
-    # No version here: the app shows its own, so a version bump doesn't make this file stale.
-    entries = [
+    # No version here: the app shows its own.
+    return [
         {"id": "arcfin", "group": "arcfin", "name": "Arcfin", "version": "", "license": "AGPL-3.0-or-later",
-         "url": REPO, "texts": [{"title": "LICENSE", "text": read(ROOT / "LICENSE")}]},
+         "url": REPO, "texts": [licence_text("LICENSE", read(ROOT / "LICENSE"))]},
         {"id": "arcfin-trademark", "group": "arcfin", "name": "Arcfin Name and Logo", "version": "",
          "license": "Trademark policy", "url": f"{REPO}/src/branch/main/TRADEMARK.md",
-         "texts": [{"title": "TRADEMARK.md", "text": read(ROOT / "TRADEMARK.md")}]},
+         "texts": [licence_text("TRADEMARK.md", read(ROOT / "TRADEMARK.md"))]},
+        {"id": "apple-eula", "group": "arcfin", "name": "Apple Standard EULA", "version": "Apple",
+         "license": "Licensed Application End User License Agreement",
+         "url": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
+         "note": "Arcfin's Terms of Use apply alongside Apple's standard licence for apps.", "texts": []},
     ]
-    for ident, name, path in [("arcfin-privacy", "Privacy Policy", "privacy"),
-                              ("arcfin-terms", "Terms of Use", "terms"),
-                              ("arcfin-data-protection", "Data Protection", "data-protection")]:
-        text, effective = legal_page(path)
-        entries.append({"id": ident, "group": "arcfin", "name": name, "version": effective, "license": "Arcfin",
-                        "url": f"{SITE}/{path}/", "texts": [{"title": name, "text": text}]})
-    entries.append({"id": "apple-eula", "group": "arcfin", "name": "Apple Standard EULA", "version": "Apple",
-                    "license": "Licensed Application End User License Agreement",
-                    "url": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/",
-                    "note": "Arcfin's Terms of Use apply alongside Apple's standard licence for apps.", "texts": []})
-    return entries
 
 
 def pins():
@@ -261,14 +280,14 @@ def build(packages):
         texts = package_texts(checkout)
         if ident == "ffmpegbuild":
             lic = checkout / "LICENSES"
-            texts += [{"title": f.name, "text": read(f)} for f in sorted(lic.glob("*.txt"))]
+            texts += [licence_text(f.name, read(f)) for f in sorted(lic.glob("*.txt"))]
         if ident == "google-cast-sdk":
             oss = next(artifacts.rglob("OpenSourceLicenses"))
             index = plistlib.load(open(oss / "oss_licenses_index.plist", "rb"))
             blob = (oss / "oss_licenses.bin").read_bytes()
             for item in sorted(index, key=lambda i: i["name"].lower()):
                 body = blob[item["offset"]:item["offset"] + item["size"]].decode("utf-8", "replace").strip()
-                texts.append({"title": item["name"], "text": body + "\n"})
+                texts.append(licence_text(item["name"], body + "\n"))
         if not texts:
             sys.exit(f"No licence file in {checkout}")
         entries[ident] = {
@@ -295,7 +314,7 @@ def build(packages):
         "id": "anime4k", "name": "Anime4K", "version": "Upscale CNN x2 (S)", "license": "MIT",
         "url": "https://github.com/bloc97/Anime4K",
         "note": "Its line-art upscaling kernels are compiled into AetherEngine.",
-        "platforms": None, "texts": [{"title": "LICENSE", "text": "\n".join(notice).strip() + "\n"}],
+        "platforms": None, "texts": [licence_text("LICENSE", "\n".join(notice).strip() + "\n")],
     }
 
     # libVLC is a static library inside SwiftVLC, built from VLC with VLC's contrib libraries.
@@ -306,7 +325,7 @@ def build(packages):
         "note": "Arcfin's fallback player. Statically linked; Arcfin's own source is public under the AGPL-3.0, "
                 "so it can be rebuilt against a modified libVLC. libVLC includes VLC's contrib libraries, "
                 "each under its own licence; see VLC's contrib sources.",
-        "platforms": None, "texts": [{"title": "COPYING.LIB", "text": read(EXTRA / "libvlc-COPYING.LIB.txt")}],
+        "platforms": None, "texts": [licence_text("COPYING.LIB", read(EXTRA / "libvlc-COPYING.LIB.txt"))],
     }
 
     # Request rules ported from Seerr (LocalPackages/Sources/SeerrAPI/SeerrSeasonRequest.swift).
@@ -314,7 +333,7 @@ def build(packages):
         "id": "seerr", "name": "Seerr", "version": "Request and permission rules", "license": "MIT",
         "url": "https://github.com/seerr-team/seerr",
         "note": "Arcfin's season request and permission rules are ported from Seerr's own code.",
-        "platforms": None, "texts": [{"title": "LICENSE", "text": read(EXTRA / "seerr-LICENSE.txt")}],
+        "platforms": None, "texts": [licence_text("LICENSE", read(EXTRA / "seerr-LICENSE.txt"))],
     }
 
     # Terms for the embedded YouTube player (trailers), not an open-source licence.
@@ -329,65 +348,45 @@ def build(packages):
     return arcfin_entries() + [{k: v for k, v in entries[i].items() if v is not None} for i in order]
 
 
-LEGAL_PAGES = {"arcfin-privacy", "arcfin-terms", "arcfin-data-protection"}
-
-
-def check(expected):
-    """Compares the committed file with what the pins and sources say it should hold."""
-    errors, warnings = [], []
-    # Both package lists must agree, or the app and the packages build different versions.
+def consistent():
+    """Both package lists must agree, or the app and the packages build different versions."""
     app = {p["identity"]: p["state"] for p in pins()}
-    for pin in json.load(open(PACKAGE_RESOLVED))["pins"]:
-        if pin["identity"] in app and app[pin["identity"]] != pin["state"]:
-            errors.append(f"{pin['identity']} is pinned differently in LocalPackages/Package.resolved and the Xcode project's Package.resolved")
-    try:
-        committed = {e["id"]: e for e in json.loads(OUT.read_text(encoding="utf-8"))}
-    except (OSError, ValueError) as error:
-        return [f"{OUT.relative_to(ROOT)} can't be read: {error}"], []
-    wanted = {e["id"]: e for e in expected}
-    for ident, entry in wanted.items():
-        have = committed.get(ident)
-        if have is None:
-            errors.append(f"{entry['name']} ships in Arcfin but isn't on the Legal & Licenses screen")
-            continue
-        changed = [k for k in ("name", "version", "license", "url", "platforms", "group", "note") if have.get(k) != entry.get(k)]
-        if have.get("texts") != entry.get("texts"):
-            changed.append("licence text")
-        if not changed:
-            continue
-        message = f"{entry['name']}: {', '.join(changed)} out of date"
-        if ident in LEGAL_PAGES:
-            warnings.append(message + " (the website's page changed since the app's copy was made)")
-        else:
-            errors.append(message)
-    for ident, entry in committed.items():
-        if ident not in wanted:
-            errors.append(f"{entry['name']} is on the Legal & Licenses screen but Arcfin no longer ships it")
-    return errors, warnings
+    wrong = [pin["identity"] for pin in json.load(open(PACKAGE_RESOLVED))["pins"]
+             if pin["identity"] in app and app[pin["identity"]] != pin["state"]]
+    for ident in wrong:
+        print(f"::error::{ident} is pinned differently in LocalPackages/Package.resolved and the Xcode project's Package.resolved")
+    if wrong:
+        sys.exit(1)
+
+
+def app_version():
+    """The version and build this file is for: the nightly's, or the Xcode project's."""
+    if os.environ.get("VERSION") and os.environ.get("BUILD"):
+        return os.environ["VERSION"], os.environ["BUILD"]
+    project = PBXPROJ.read_text(encoding="utf-8")
+    version = re.search(r"MARKETING_VERSION = ([0-9.]+);", project).group(1)
+    build = re.search(r"CURRENT_PROJECT_VERSION = ([0-9.]+);", project).group(1)
+    return version, build
 
 
 def main():
-    args = [a for a in sys.argv[1:] if a != "--check"]
-    checking = "--check" in sys.argv[1:]
-    if len(args) > 1:
+    args = sys.argv[1:]
+    if "--out" not in args or args.index("--out") == len(args) - 1:
         sys.exit(__doc__)
+    i = args.index("--out")
+    out = Path(args[i + 1])
+    rest = args[:i] + args[i + 2:]
+    if len(rest) > 1:
+        sys.exit(__doc__)
+    consistent()
     with tempfile.TemporaryDirectory() as temp:
-        packages = Path(args[0]) if args else fetch_sources(Path(temp) / "SourcePackages")
-        expected = build(packages)
-    if checking:
-        errors, warnings = check(expected)
-        for w in warnings:
-            print(f"::warning file={OUT.relative_to(ROOT)}::{w}")
-        for e in errors:
-            print(f"::error file={OUT.relative_to(ROOT)}::{e}")
-        if errors:
-            print(f"{len(errors)} licence problem(s). Run python3 .gitea/scripts/update-licenses.py and commit the result.")
-            sys.exit(1)
-        print(f"All {len(expected)} components and their licences are on the Legal & Licenses screen and up to date.")
-        return
-    OUT.write_text(json.dumps(expected, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
-    size = OUT.stat().st_size
-    print(f"{len(expected)} components, {sum(len(e['texts']) for e in expected)} texts, {size // 1024} KB -> {OUT.relative_to(ROOT)}")
+        packages = Path(rest[0]) if rest else fetch_sources(Path(temp) / "SourcePackages")
+        components = build(packages)
+    version, build_number = app_version()
+    data = {"schema": SCHEMA, "app": {"version": version, "build": build_number}, "components": components}
+    out.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
+    print(f"{len(components)} components, {sum(len(e['texts']) for e in components)} texts, "
+          f"{out.stat().st_size // 1024} KB for {version} ({build_number}) -> {out}")
 
 
 if __name__ == "__main__":

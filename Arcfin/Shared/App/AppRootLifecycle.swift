@@ -62,6 +62,7 @@ struct AppRootLifecycle: ViewModifier {
                 Text(model.sharePlayManager.notice ?? "")
             }
             .task { model.seerrRepo.reloadTMDB() }
+            .task { await AppServices.legal.refresh() }
             .onChange(of: model.mediaRepo.connectionFailed) { _, failed in
                 if failed { Task { await model.authManager.checkSignInStillValid() } }
             }

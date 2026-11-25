@@ -33,6 +33,9 @@ enum PlatformMetrics {
     /// Settings › Profiles › Always Ask Who's Watching (#688), for a TV shared by several people.
     static let asksWhoIsWatching = true
     static let licensePlatform = "tvOS"
+    /// Where the downloaded legal texts and licences are kept between launches. Apple TV keeps
+    /// nothing else on disk for long, so the system may clear it; the app then downloads it again.
+    static let keptFilesDirectory: FileManager.SearchPathDirectory = .cachesDirectory
     static let descriptionMaxWidth: CGFloat = 720
     static let pagePad: CGFloat = 20
     static let shelfGap: CGFloat = 12
