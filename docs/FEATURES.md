@@ -74,7 +74,7 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 
 ## Across the system
 - **Siri and Shortcuts:** play a title, play a random movie, download the next episode of a show, open Discover.
-- **Widgets** for Continue Watching and Recently Added, Control Center controls, Spotlight, Handoff, and notifications for new episodes with Quiet Hours.
+- **Widgets** for Continue Watching and Recently Added, Control Center controls, Spotlight, Handoff, and notifications for new episodes and films, Seerr requests and your watchlist, with Quiet Hours. They come when Arcfin checks, not as instant push ([#757](https://git.psmattas.com/ArcFin/ArcFin-Apple/issues/757)).
 - **Apple TV:** Top Shelf with trailers from the server, Spotlight Home with the title you're on full screen and its trailer, Always Ask Who's Watching, and a library screensaver made from your artwork.
 - **CarPlay:** your music in the car, laid out like the system's music app, with Home, New, Radio and Library, rows of covers, A–Z artists and album pages. Search has its own tab, with voice search and quick buttons, and Now Playing shows whether Shuffle and Repeat are on. It starts signed in from the car, keeps your profile's PIN, and has a widget on the CarPlay dashboard.
 - **Apple Watch:** your music on the watch, with playlists kept on it to play without the phone, and a remote for Arcfin playing on another device, with the Digital Crown for volume.
@@ -91,6 +91,7 @@ An optional tab with **All**, **Movies & Shows** and **Music**, by week, month, 
 
 | Feature | What it does | Needs |
 |---|---|---|
+| **Notifications** | Told when a Seerr request of yours is approved, declined or available, about announcements, and a day before planned maintenance. The server watches Seerr, so it works without signing in to Seerr on each device. Arcfin checks when it opens and when the system lets it run in the background, so notifications aren't instant. | 0.7 or later |
 | **Watch parties** | Watch together in sync over SyncPlay, hosting or joining on iPhone, iPad, Mac or Apple TV. Invite people with a code, which guests type in or, on iPhone and iPad, scan as a QR code; plan a party up to 30 days ahead and see what time it'll be for each guest. Start one from Home or a title's page. People in other SyncPlay apps can join; the host needs Arcfin. | 0.6 or later |
 | **Seerr and TMDB through the server** | The admin keeps the Seerr and TMDB keys on the server, encrypted, and they never reach a device. Requests are made as you, with your own Seerr limits, and one made while Seerr is down is sent once it's back. | 0.6 or later |
 | **Signed commands** | Your admin can clear a forgotten PIN, lock or unlock a profile and wipe a lost device. Commands are signed with the server's key, so nothing else can send them. Also PIN rules, approving new devices from a trusted iPhone or iPad, HTTPS away from home, and signing out devices that fall behind. | 0.6 or later |
