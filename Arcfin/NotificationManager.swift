@@ -92,6 +92,16 @@ enum NotificationManager {
                    identifier: "server-event.\(UUID().uuidString)")
     }
 
+    /// From the server's admin, through Arcfin Sync.
+    static func notifyAnnouncement(id: String, title: String, message: String) async {
+        await send(title: title.isEmpty ? String(localized: "Announcement") : title, body: message, identifier: id)
+    }
+
+    /// A day or less before maintenance the server's admin planned.
+    static func notifyMaintenance(id: String, summary: String) async {
+        await send(title: String(localized: "Maintenance Coming Up"), body: summary, identifier: id)
+    }
+
     /// The app icon's badge; 0 clears it. Not on Apple TV.
     static func setBadge(_ count: Int) async {
         #if !os(tvOS)

@@ -14,8 +14,9 @@ import Telemetry
 import os
 
 /// Periodic background check that turns server-side changes into local notifications: new
-/// titles in the Jellyfin library, Seerr request updates, and watchlist items that became
-/// available. iOS decides when a refresh actually runs (typically a few times a day, and
+/// titles in the Jellyfin library, Seerr request updates, watchlist items that became
+/// available, and with Arcfin Sync 0.7 the server's own feed of request changes, announcements
+/// and planned maintenance. iOS decides when a refresh actually runs (typically a few times a day, and
 /// less if the app is rarely opened), so these are best-effort rather than instant. The Mac
 /// runs the same check every half hour or so while Arcfin is open.
 ///
@@ -29,6 +30,9 @@ nonisolated enum BackgroundRefresh {
     private static let lastActivityKey = "arcfin.notify.lastActivityID"
     private static let seerrStatusKey = "arcfin.notify.seerrRequestStatus"
     private static let announcedWatchlistKey = "arcfin.notify.announcedWatchlistIDs"
+    private static let feedCursorKey = "arcfin.notify.serverFeedCursor"
+    private static let feedSeenKey = "arcfin.notify.serverFeedSeen"
+    static let announcementsKey = "notifyAnnouncements"
 
     #if os(iOS)
     /// BGTask isn't Sendable. The work and the expiration handler can both finish it, so the
@@ -55,7 +59,7 @@ nonisolated enum BackgroundRefresh {
     static func resetState() {
         let defaults = UserDefaults.standard
         for key in [seenFilmsKey, seenEpisodesKey, lastActivityKey, seerrStatusKey, announcedWatchlistKey,
-                    NotificationManager.sentRequestNoticesKey] {
+                    feedCursorKey, feedSeenKey, NotificationManager.sentRequestNoticesKey] {
             defaults.removeObject(forKey: key)
         }
     }
@@ -173,6 +177,8 @@ nonisolated enum BackgroundRefresh {
             await WidgetSnapshotUpdater.refreshProgress(credential: credential, authHeader: IntentSession.authHeader(for: credential))
         }
         guard !Task.isCancelled else { return }
+        await checkServerFeed()
+        guard !Task.isCancelled else { return }
         await checkSeerr(
             requestUpdates: defaults.object(forKey: "notifyRequestUpdates") as? Bool ?? true,
             watchlist: defaults.object(forKey: "notifyWatchlistAvailable") as? Bool ?? true)
@@ -241,6 +247,43 @@ nonisolated enum BackgroundRefresh {
         }
         for entry in notable.sorted(by: { $0.id < $1.id }).prefix(3) {
             await NotificationManager.notifyServerEvent(title: entry.name, detail: entry.overview)
+        }
+    }
+
+    // MARK: - Arcfin Sync
+
+    /// The plugin's feed. It overlaps the device's own Seerr check when both look at the same
+    /// Seerr; each request change has one identifier, so it's announced once either way.
+    private static func checkServerFeed() async {
+        guard let credential = IntentSession.credential() else { return }
+        let defaults = UserDefaults.standard
+        let cursor = (defaults.object(forKey: feedCursorKey) as? NSNumber)?.int64Value
+        guard let feed = try? await ArcfinCompanionClient().events(
+            since: cursor, credential: credential, authHeader: IntentSession.authHeader(for: credential))
+        else { return }
+        defaults.set(NSNumber(value: feed.cursor), forKey: feedCursorKey)
+        let seen = defaults.stringArray(forKey: feedSeenKey)
+        var kept: [String] = []
+        for id in feed.events.filter({ $0.kind == "announcement" || $0.kind == "maintenance" }).map(\.id) + (seen ?? [])
+        where !kept.contains(id) { kept.append(id) }
+        defaults.set(Array(kept.prefix(200)), forKey: feedSeenKey)
+        guard cursor != nil else { return }
+
+        let announcements = defaults.object(forKey: announcementsKey) as? Bool ?? true
+        for event in feed.events {
+            let title = event.title.isEmpty ? String(localized: "One of your requests") : event.title
+            switch event.kind {
+            case "seerr-approved": await NotificationManager.notifyRequestApproved(title: title, requestID: event.requestId)
+            case "seerr-declined": await NotificationManager.notifyRequestDeclined(title: title, requestID: event.requestId)
+            case "seerr-available": await NotificationManager.notifyRequestAvailable(title: title, requestID: event.requestId)
+            case "announcement" where announcements && seen?.contains(event.id) == false:
+                await NotificationManager.notifyAnnouncement(id: event.id, title: event.title, message: event.body ?? "")
+            case "maintenance" where announcements && seen?.contains(event.id) == false:
+                guard let starts = event.starts, let ends = event.ends else { continue }
+                let window = MaintenanceWindow(id: event.id, starts: starts, ends: ends, message: event.body ?? "")
+                await NotificationManager.notifyMaintenance(id: event.id, summary: await MainActor.run { window.summary })
+            default: continue
+            }
         }
     }
 

@@ -14,6 +14,7 @@ struct NotificationsSettingsView: View {
     @AppStorage(MusicSettings.notifyDownloadsKey) private var notifyMusicDownloads = true
     @AppStorage("notifyRequestUpdates") private var notifyRequestUpdates = true
     @AppStorage("notifyWatchlistAvailable") private var notifyWatchlistAvailable = true
+    @AppStorage(BackgroundRefresh.announcementsKey) private var notifyAnnouncements = true
     @AppStorage(QuietHours.enabledKey) private var quietHoursEnabled = false
     @AppStorage(QuietHours.startKey) private var quietStart = QuietHours.defaultStart
     @AppStorage(QuietHours.endKey) private var quietEnd = QuietHours.defaultEnd
@@ -87,6 +88,10 @@ struct NotificationsSettingsView: View {
                     TVRowLabelText(title: "Watchlist Available", detail: "When a title on your watchlist arrives in your library.")
                 }
                 .syncLocked("notifyWatchlistAvailable", authManager)
+                Toggle(isOn: $notifyAnnouncements) {
+                    TVRowLabelText(title: "Announcements", detail: "Messages from your server's admin, and a day before planned maintenance. Needs the Arcfin Sync plugin.")
+                }
+                .syncLocked(BackgroundRefresh.announcementsKey, authManager)
                 Toggle(isOn: $notifyDownload) {
                     TVRowLabelText(title: "Download Complete", detail: "When a download finishes.")
                 }
