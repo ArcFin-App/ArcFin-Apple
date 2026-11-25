@@ -182,7 +182,7 @@ public struct ServerEventFeed: Sendable, Decodable, Equatable {
 public struct ServerEvent: Sendable, Decodable, Equatable, Identifiable {
     /// The same on every device for the same news, e.g. "seerr-approved.42".
     public let id: String
-    /// seerr-approved, seerr-declined, seerr-available, announcement or maintenance.
+    /// seerr-approved, seerr-declined, seerr-available, announcement, maintenance or test.
     public let kind: String
     public let title: String
     public let body: String?

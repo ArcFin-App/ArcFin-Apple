@@ -282,6 +282,7 @@ nonisolated enum BackgroundRefresh {
                 guard let starts = event.starts, let ends = event.ends else { continue }
                 let window = MaintenanceWindow(id: event.id, starts: starts, ends: ends, message: event.body ?? "")
                 await NotificationManager.notifyMaintenance(id: event.id, summary: await MainActor.run { window.summary })
+            case "test": await NotificationManager.notifyServerTest(id: event.id)
             default: continue
             }
         }

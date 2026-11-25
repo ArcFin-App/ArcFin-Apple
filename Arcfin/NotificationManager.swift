@@ -102,6 +102,12 @@ enum NotificationManager {
         await send(title: String(localized: "Maintenance Coming Up"), body: summary, identifier: id)
     }
 
+    /// Sent from the Arcfin Sync dashboard to check that notifications reach this person.
+    static func notifyServerTest(id: String) async {
+        await send(title: String(localized: "Test Notification"),
+                   body: String(localized: "Your server's notifications reach this device."), identifier: id)
+    }
+
     /// The app icon's badge; 0 clears it. Not on Apple TV.
     static func setBadge(_ count: Int) async {
         #if !os(tvOS)
