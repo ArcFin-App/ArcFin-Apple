@@ -123,21 +123,26 @@ struct MusicDownloadSettingsSection: View {
 struct MusicAppearanceSection: View {
     @Environment(AuthManager.self) private var authManager
     @AppStorage(MusicSettings.visualizerKey) private var visualizer = true
-    @AppStorage(MusicSettings.visualizerTintKey) private var tint = true
+    @AppStorage(MusicSettings.visualizerStyleKey) private var style = MusicVisualizerStyle.bars
+    @AppStorage(MusicSettings.visualizerPlacementKey) private var placement = MusicVisualizerPlacement.cover
+    @AppStorage(MusicSettings.visualizerColorKey) private var color = MusicVisualizerColor.cover
 
     var body: some View {
         Section {
             Toggle(isOn: $visualizer) {
-                TVRowLabelText(title: "Visualizer", detail: "Glass bars that move with the music along the bottom of the cover in Now Playing. Hidden when Reduce Motion is on.")
+                TVRowLabelText(title: "Visualizer", detail: "Glass shapes that move with the music in Now Playing. Hidden when Reduce Motion is on.")
             }
             .tvListRow()
             .syncLocked(MusicSettings.visualizerKey, authManager)
             if visualizer {
-                Toggle(isOn: $tint) {
-                    TVRowLabelText(title: "Colour from Cover", detail: "Tints the bars with a colour from the cover, dark over light covers and light over dark ones, so they stand out. Off, they're white glass.")
-                }
-                .tvListRow()
-                .syncLocked(MusicSettings.visualizerTintKey, authManager)
+                SettingsPicker("Style", selection: $style, options: MusicVisualizerStyle.allCases) { Text($0.label) }
+                    .syncLocked(MusicSettings.visualizerStyleKey, authManager)
+                SettingsPicker("Placement", detail: "On the cover, along its bottom edge, or across the bottom of Now Playing.",
+                               selection: $placement, options: MusicVisualizerPlacement.allCases) { Text($0.label) }
+                    .syncLocked(MusicSettings.visualizerPlacementKey, authManager)
+                SettingsPicker("Colour", detail: "From the Cover picks one colour that stands out from it. Cover Colours gives each bar one of the cover's colours, and Spectrum runs through the rainbow from the low notes to the high ones.",
+                               selection: $color, options: MusicVisualizerColor.allCases) { Text($0.label) }
+                    .syncLocked(MusicSettings.visualizerColorKey, authManager)
             }
         } header: {
             Text("Appearance")

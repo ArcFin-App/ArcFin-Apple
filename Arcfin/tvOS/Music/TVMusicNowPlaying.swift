@@ -54,6 +54,13 @@ struct TVMusicNowPlaying: View {
                 .padding(.top, 150)
                 .padding(.bottom, 60)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                // Across the foot of the screen, behind the controls, when it's set to show there.
+                .background(alignment: .bottom) {
+                    MusicArtworkVisualizer(bars: 72, spacing: 6, cornerRadius: 0, placement: .bottom)
+                        .frame(height: 300)
+                        .mask(LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.45)))
+                        .ignoresSafeArea()
+                }
                 .background { backdrop(MusicAPI.artworkURL(song, width: 600)) }
                 .task(id: "\(song.id) \(lyricsAttempt)") {
                     lyrics = nil
