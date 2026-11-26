@@ -5,65 +5,66 @@ import JellyfinAPI
 import Persistence
 import SwiftData
 
+/// The top of a title's page: its artwork from the top of the screen (the poster on a phone,
+/// the backdrops in turn on a wider screen) with its logo or name, details and badges at the
+/// foot, as Home's hero and an artist's page open.
 struct MediaDetailHero: View {
     @Environment(MediaRepository.self) private var mediaRepo
     let item: MediaItem
+    let detail: MediaItemDetail?
+    let awards: [WikidataAward]
     let metrics: DetailHeaderMetrics
+    /// A narrow page, where the standing poster fills the top better than a strip of backdrop.
+    let isNarrow: Bool
+    /// The artwork shown first, for the page to take its tint from.
+    var onArtwork: (URL?) -> Void = { _ in }
 
-    var body: some View {
-        // Sized by the page, not the artwork: a fill-scaled backdrop is wider than its column,
-        // and as an overlay it can't push the page out past the edges or make the page's
-        // width depend on the window's.
-        Color.clear
-            .frame(maxWidth: .infinity)
-            .frame(height: metrics.heroHeight)
-            .overlay {
-                ZStack(alignment: .bottom) {
-                    if let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: metrics.backdropFillWidth) {
-                        RetryingAsyncImage(
-                            url: url,
-                            logCategory: "MediaDetailView",
-                            logContext: "backdrop item=\(item.name)",
-                            content: { img in
-                                img
-                                    .resizable()
-                                    .scaledToFill()
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                            },
-                            placeholder: { DetailFallbackHero(item: item) }
-                        )
-                    } else { DetailFallbackHero(item: item) }
-
-                    // Progressive blur: the material only shows toward the bottom edge, so the
-                    // image softens as it leaves the frame rather than being covered by a flat band.
-                    Rectangle()
-                        .fill(.ultraThinMaterial)
-                        .mask(
-                            LinearGradient(
-                                stops: [
-                                    .init(color: .clear, location: 0.35),
-                                    .init(color: .black, location: 1),
-                                ],
-                                startPoint: .top, endPoint: .bottom
-                            )
-                        )
-                }
-            }
-        // Fading the artwork's own opacity (instead of painting the page color over it)
-        // blends into whatever is behind, including the artwork-tinted page background.
-        .mask(
-            LinearGradient(
-                stops: [
-                    .init(color: .black, location: 0),
-                    .init(color: .black, location: 0.5),
-                    .init(color: .clear, location: 1),
-                ],
-                startPoint: .top, endPoint: .bottom
-            )
-        )
-        .clipped()
+    private var showsPoster: Bool {
+        isNarrow && [.movie, .series, .season, .boxSet].contains(item.type) && item.primaryImageTag != nil
     }
 
+    private var urls: [URL] {
+        if showsPoster {
+            return [mediaRepo.imageURL(for: item, type: .primary, fillWidth: metrics.posterFillWidth)].compactMap { $0 }
+        }
+        let backdrops = mediaRepo.backdropURLs(for: detail?.item ?? item, fillWidth: metrics.backdropFillWidth)
+        return backdrops.isEmpty
+            ? [mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: metrics.backdropFillWidth)].compactMap { $0 }
+            : backdrops
+    }
+
+    /// A season's or an episode's show, whose logo stands in for theirs.
+    private var titleName: String {
+        item.type == .episode || item.type == .season ? (item.seriesName ?? item.name) : item.name
+    }
+
+    private var subtitle: String? {
+        switch item.type {
+        case .episode: [HomeText.episodeLabel(item), item.name].compactMap { $0 }.joined(separator: " · ")
+        case .season: item.name
+        default: nil
+        }
+    }
+
+    var body: some View {
+        ShowcaseHero(urls: urls, portrait: showsPoster, landscapeHeight: metrics.heroHeight) {
+            DetailFallbackHero(item: item)
+        } content: {
+            ShowcaseTitle(logoURL: mediaRepo.logoURL(for: item, fillWidth: 600), name: titleName,
+                          nameStyle: metrics.titleStyle)
+            if let subtitle {
+                Text(verbatim: subtitle)
+                    .contentFont(.headline, design: .default, weight: .semibold)
+                    .foregroundStyle(.white.opacity(0.9))
+                    .lineLimit(2)
+            }
+            DetailMetaRow(item: item, detail: detail)
+            DetailQualityRow(detail: detail)
+            if !awards.isEmpty { DetailAwardsRow(awards: awards) }
+        }
+        .task(id: urls) { mediaRepo.prefetch(urls: urls) }
+        .task(id: urls.first) { onArtwork(urls.first) }
+    }
 }
 
 private struct DetailFallbackHero: View {
@@ -106,60 +107,6 @@ private struct SavedDownloadArtwork: View {
             }
         }
     }
-}
-
-/// Poster, name, year, rating, runtime, scores, quality and awards, overlapping the hero.
-struct MediaDetailTitleBlock: View {
-    @Environment(MediaRepository.self) private var mediaRepo
-    let item: MediaItem
-    let detail: MediaItemDetail?
-    let awards: [WikidataAward]
-    let metrics: DetailHeaderMetrics
-
-    var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            // Portrait poster
-            if let url = mediaRepo.imageURL(for: item, type: .primary, fillWidth: metrics.posterFillWidth) {
-                RetryingAsyncImage(
-                    url: url,
-                    logCategory: "MediaDetailView",
-                    logContext: "poster item=\(item.name)",
-                    content: { img in img.resizable().scaledToFill() },
-                    placeholder: {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
-                            SavedDownloadArtwork(item: item, fileName: "poster.jpg")
-                        }
-                    }
-                )
-                .frame(width: metrics.posterSize.width, height: metrics.posterSize.height)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
-                .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
-            } else {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(DT.Color.backgroundSecondary)
-                    .frame(width: metrics.posterSize.width, height: metrics.posterSize.height)
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(item.name)
-                    .contentFont(metrics.titleStyle, design: .default, weight: .heavy)
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .tracking(-0.5)
-                    .lineLimit(3)
-
-                DetailMetaRow(item: item, detail: detail)
-                DetailQualityRow(detail: detail)
-                if !awards.isEmpty { DetailAwardsRow(awards: awards) }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, -metrics.posterSize.height * 0.38)
-        .padding(.bottom, DT.Spacing.md)
-    }
-
 }
 
 private struct DetailMetaRow: View {
@@ -256,10 +203,8 @@ private struct DetailAwardsRow: View {
             Text(label)
                 .contentFont(.caption2, design: .default, weight: .semibold)
                 .lineLimit(2)
-                .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .foregroundStyle(DT.Color.palette("f59e0b"))
     }
 
@@ -281,10 +226,9 @@ private struct DetailQualityBadge: View {
     }
 }
 
-/// Sizes of the hero and the title block, set by each platform's title page.
+/// Sizes of the hero, set by each platform's title page.
 struct DetailHeaderMetrics {
     let heroHeight: CGFloat
-    let posterSize: CGSize
     let titleStyle: Font.TextStyle
     let backdropFillWidth: Int
     let posterFillWidth: Int

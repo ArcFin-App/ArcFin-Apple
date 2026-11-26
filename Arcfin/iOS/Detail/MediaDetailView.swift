@@ -35,8 +35,8 @@ struct MediaDetailView: View {
     @State private var watchParty: WatchPartyLaunch?
 
     private let headerMetrics = DetailHeaderMetrics(
-        heroHeight: 260, posterSize: CGSize(width: 90, height: 132), titleStyle: .title3,
-        backdropFillWidth: 900, posterFillWidth: 200
+        heroHeight: 440, titleStyle: .largeTitle,
+        backdropFillWidth: 1600, posterFillWidth: 900
     )
 
     init(item: MediaItem, zoomNamespace: Namespace.ID? = nil) {
@@ -53,8 +53,8 @@ struct MediaDetailView: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    MediaDetailHero(item: item, metrics: headerMetrics)
-                    MediaDetailTitleBlock(item: item, detail: model.detail, awards: model.awards, metrics: headerMetrics)
+                    MediaDetailHero(item: item, detail: model.detail, awards: model.awards, metrics: headerMetrics,
+                                    isNarrow: proxy.size.width < 600) { url in Task { await model.loadHeroTint(from: url) } }
                     if model.isLoading { loadingContent }
                     else { detailContent }
                     Spacer().frame(height: DT.Size.tabBarHeight + 24)
@@ -75,7 +75,6 @@ struct MediaDetailView: View {
         .ignoresSafeArea(edges: .top)
         .task(id: item.id) {
             model.readKeptEpisodeCount()
-            await model.loadHeroTint(mediaRepo: mediaRepo)
         }
         // Pull down to pick up changes made elsewhere (another device, the web UI): watched
         // state, resume position, the next episode and the season's progress.
