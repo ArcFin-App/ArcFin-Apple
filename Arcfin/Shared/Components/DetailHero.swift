@@ -19,24 +19,32 @@ struct DetailHeroBackdrop<Fallback: View>: View {
             .frame(maxWidth: .infinity)
             .frame(height: height)
             .overlay {
-                ZStack {
-                    fallback
-                    if let url {
-                        // Sharp at the top, melting into a blurred copy of itself at the foot,
-                        // as a title's page does.
-                        image(url).scaleEffect(1.25).blur(radius: 30)
-                        image(url)
-                            .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.45),
-                                                         .init(color: .clear, location: 0.9)],
-                                                 startPoint: .top, endPoint: .bottom))
+                GeometryReader { proxy in
+                    ZStack(alignment: .top) {
+                        fallback
+                        if let url {
+                            // Sharp over the top three quarters, its end dissolving into a
+                            // blurred copy of itself that carries on below, as a title's page does.
+                            image(url)
+                                .frame(width: proxy.size.width, height: proxy.size.height)
+                                .scaleEffect(1.35)
+                                .blur(radius: 40)
+                            image(url)
+                                .frame(width: proxy.size.width, height: proxy.size.height * 0.78)
+                                .clipped()
+                                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.55),
+                                                             .init(color: .clear, location: 1)],
+                                                     startPoint: .top, endPoint: .bottom))
+                        }
                     }
+                    .frame(width: proxy.size.width, height: proxy.size.height)
                 }
             }
         .mask(
             LinearGradient(
                 stops: [
                     .init(color: .black, location: 0),
-                    .init(color: .black, location: 0.6),
+                    .init(color: .black, location: 0.68),
                     .init(color: .clear, location: 1),
                 ],
                 startPoint: .top, endPoint: .bottom
@@ -88,22 +96,32 @@ struct ShowcaseHero<Fallback: View, Content: View>: View {
         // and as an overlay it can't push the page past the edges (#325, #345).
         sized
             .frame(maxWidth: .infinity)
-            .overlay { artwork }
+            // The blur carries on below the hero's own space, under whatever the page shows
+            // next, instead of pushing it down.
+            .overlay(alignment: .top) {
+                GeometryReader { proxy in
+                    artwork.frame(width: proxy.size.width, height: proxy.size.height * extent)
+                }
+                .allowsHitTesting(false)
+            }
             .overlay {
                 GeometryReader { proxy in
                     VStack(spacing: 10) { content }
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, DT.Spacing.pagePad)
-                        .padding(.bottom, proxy.size.height * 0.1)
+                        .padding(.bottom, proxy.size.height * 0.04)
                         .frame(height: proxy.size.height, alignment: .bottom)
                 }
                 // White over the scrim in light mode too.
                 .environment(\.colorScheme, .dark)
             }
-            .clipped()
             .task(id: urls) { await rotate() }
     }
+
+    /// How far the blurred copy carries on below the artwork's end, as an artist's page does,
+    /// so the artwork's own edge is never seen.
+    private let extent: CGFloat = 1.3
 
     @ViewBuilder
     private var sized: some View {
@@ -114,32 +132,39 @@ struct ShowcaseHero<Fallback: View, Content: View>: View {
         }
     }
 
-    /// The artwork sharp at the top, melting into a blurred copy of itself toward the foot,
-    /// as an artist's page and Now Playing do, then fading into the page.
+    /// The artwork sharp at the top, its end dissolving into a blurred copy of itself that
+    /// carries on below it and fades into the page, as an artist's page and Now Playing do.
     private var artwork: some View {
-        ZStack {
-            fallback
-            if urls.indices.contains(index) {
-                let url = urls[index]
-                ZStack {
-                    image(url)
-                        .scaleEffect(1.25)
-                        .blur(radius: 36)
-                    image(url)
-                        .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.5),
-                                                     .init(color: .clear, location: 0.86)],
-                                             startPoint: .top, endPoint: .bottom))
+        GeometryReader { proxy in
+            let artHeight = proxy.size.height / extent
+            ZStack(alignment: .top) {
+                fallback
+                if urls.indices.contains(index) {
+                    let url = urls[index]
+                    ZStack(alignment: .top) {
+                        image(url)
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                            .scaleEffect(1.35)
+                            .blur(radius: 44)
+                        image(url)
+                            .frame(width: proxy.size.width, height: artHeight)
+                            .clipped()
+                            .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.55),
+                                                         .init(color: .clear, location: 1)],
+                                                 startPoint: .top, endPoint: .bottom))
+                    }
+                    .id(url)
+                    .transition(.opacity)
                 }
-                .id(url)
-                .transition(.opacity)
+                // Enough to read white text on a light image, without hiding the blur.
+                LinearGradient(stops: [.init(color: .clear, location: 0.35),
+                                       .init(color: .black.opacity(0.35), location: 0.68),
+                                       .init(color: .black.opacity(0.5), location: 0.88)],
+                               startPoint: .top, endPoint: .bottom)
             }
-            // Enough to read white text on a light image, without hiding the blur.
-            LinearGradient(stops: [.init(color: .clear, location: 0.4),
-                                   .init(color: .black.opacity(0.35), location: 0.75),
-                                   .init(color: .black.opacity(0.55), location: 0.95)],
-                           startPoint: .top, endPoint: .bottom)
+            .frame(width: proxy.size.width, height: proxy.size.height)
         }
-        .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.86),
+        .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.72),
                                      .init(color: .clear, location: 1)],
                              startPoint: .top, endPoint: .bottom))
         .clipped()
