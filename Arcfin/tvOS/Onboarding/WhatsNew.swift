@@ -7,6 +7,9 @@ import SwiftUI
 enum WhatsNew {
     static var items: [WhatsNewItem] {
         [
+            WhatsNewItem(icon: "photo.on.rectangle",
+                         title: "A New Look for People",
+                         detail: "A person's page opens with their photo across the screen and the page tinted to match, and the titles they're also in sit in a grid."),
             WhatsNewItem(icon: "exclamationmark.bubble",
                          title: "Report a Problem",
                          detail: "Something wrong with a title? Report it from its page, then follow it in Issues on the Seerr screen. If you manage issues, resolve or reopen them there."),
@@ -34,9 +37,6 @@ enum WhatsNew {
             WhatsNewItem(icon: "moon.zzz",
                          title: "Watch Time and Bedtime",
                          detail: "Daily limits and a bedtime from your admin, with a warning 10 and 5 minutes before."),
-            WhatsNewItem(icon: "internaldrive",
-                         title: "Download Limits",
-                         detail: "Your admin can cap how much you keep downloaded, for videos and music, counted once across all your devices. Downloads and Downloaded Music show how much you've used."),
             WhatsNewItem(icon: "puzzlepiece.extension",
                          title: "Arcfin Sync 0.6",
                          detail: "Everything above comes with Arcfin Sync 0.6 on your server, and each feature stays off until your admin turns it on."),

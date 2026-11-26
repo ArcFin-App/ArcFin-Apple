@@ -7,6 +7,9 @@ import SwiftUI
 enum WhatsNew {
     static var items: [WhatsNewItem] {
         [
+            WhatsNewItem(icon: "photo.on.rectangle",
+                         title: "A New Look for Titles",
+                         detail: "Movies, shows, people and Seerr titles open with their artwork across the screen, the logo at its foot and the page tinted to match. Downloads look the same, and the ones you already have update to the new artwork."),
             WhatsNewItem(icon: "bell.badge",
                          title: "Notifications from Your Server",
                          detail: "Hear when a request is approved, declined or available, about issues, and about announcements and maintenance, without signing in to Seerr on this device. If you manage requests, also when one is waiting for you. Needs Arcfin Sync 0.7 on your server."),
