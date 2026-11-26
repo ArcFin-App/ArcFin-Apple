@@ -106,35 +106,15 @@ struct DownloadedSeriesHeader: View {
         }
     }
 
-    /// The same hero and poster-and-title block as a show's page online.
+    /// As a show's page opens online, from what was saved with its episodes.
     private var backdrop: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            DetailHeroBackdrop(url: DownloadedSeriesDetailModel.heroURL(seriesId: seriesId, series: series))
-            HStack(alignment: .bottom, spacing: 14) {
-                CachedAsyncImage(url: DownloadedSeriesDetailModel.fileURL(series?.posterFileName, seriesId: seriesId)) { phase in
-                    switch phase {
-                    case .success(let image): image.resizable().scaledToFill()
-                    default: DT.Color.backgroundSecondary
-                    }
-                }
-                .frame(width: 90, height: 132)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
-                .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
-
-                VStack(alignment: .leading, spacing: 5) {
-                    Text(series?.name ?? episodes.first?.seriesName ?? "Show")
-                        .font(.system(.title3, weight: .heavy))
-                        .foregroundStyle(DT.Color.textPrimary)
-                        .lineLimit(3)
-                    Label(episodes.count == 1 ? "1 episode downloaded" : "\(episodes.count) episodes downloaded", systemImage: "arrow.down.circle.fill")
-                        .font(.system(.caption2, weight: .semibold))
-                        .foregroundStyle(DT.Color.accent)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .padding(.horizontal, DT.Spacing.pagePad)
-            .padding(.top, -60)
+        ShowcaseHero(urls: [DownloadedSeriesDetailModel.heroURL(seriesId: seriesId, series: series)].compactMap { $0 },
+                     landscapeHeight: 380) {
+            ShowcaseTitle(logoURL: nil, name: series?.name ?? episodes.first?.seriesName ?? String(localized: "Show"),
+                          nameStyle: .title)
+            Label(episodes.count == 1 ? "1 episode downloaded" : "\(episodes.count) episodes downloaded", systemImage: "arrow.down.circle.fill")
+                .font(.system(.caption2, weight: .semibold))
+                .foregroundStyle(DT.Color.accent)
         }
     }
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Foundation
+import ImageCache
 import Network
 import Observation
 import SwiftData
@@ -1491,9 +1492,9 @@ final class DownloadManager: NSObject {
         async let subtitles = Self.saveSubtitles(info: info, picked: picked, credential: credential, to: dir)
         async let tiles = Self.saveTrickplayTiles(itemId: itemId, trickplay: trickplay, client: client,
                                                   credential: credential, authHeader: authHeader, to: dir)
-        async let poster = Self.saveImage(itemId: itemId, tag: detail.item.primaryImageTag, type: .primary, width: 400,
+        async let poster = Self.saveImage(itemId: itemId, tag: detail.item.primaryImageTag, type: .primary, width: Self.posterWidth,
                                           credential: credential, as: "poster.jpg", in: dir)
-        async let backdrop = Self.saveImage(itemId: itemId, tag: detail.item.backdropImageTags.first, type: .backdrop, width: 800,
+        async let backdrop = Self.saveImage(itemId: itemId, tag: detail.item.backdropImageTags.first, type: .backdrop, width: Self.backdropWidth,
                                             credential: credential, as: "backdrop.jpg", in: dir)
         async let segments = client.getSkipSegments(credential: credential, authHeader: authHeader, itemId: itemId)
         async let castPhotos = Self.saveCastPhotos(Array(detail.cast.prefix(10)), credential: credential, to: dir)
@@ -1620,7 +1621,7 @@ final class DownloadManager: NSObject {
 
         var posterFileName: String?
         if let tag = detail.item.primaryImageTag {
-            let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .primary, fillWidth: 400, token: credential.accessToken)
+            let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .primary, fillWidth: Self.posterWidth, token: credential.accessToken)
             if let data = await URLSession.arcfin.imageData(from: url) {
                 posterFileName = "poster.jpg"
                 try? data.write(to: dir.appendingPathComponent("poster.jpg"))
@@ -1628,7 +1629,7 @@ final class DownloadManager: NSObject {
         }
         var backdropFileName: String?
         if let tag = detail.item.backdropImageTags.first {
-            let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .backdrop, fillWidth: 800, token: credential.accessToken)
+            let url = JellyfinMediaClient.imageURL(baseURL: credential.baseURL, itemID: seriesId, tag: tag, type: .backdrop, fillWidth: Self.backdropWidth, token: credential.accessToken)
             if let data = await URLSession.arcfin.imageData(from: url) {
                 backdropFileName = "backdrop.jpg"
                 try? data.write(to: dir.appendingPathComponent("backdrop.jpg"))
@@ -1675,6 +1676,52 @@ final class DownloadManager: NSObject {
             else { continue }
             try? data.write(to: url)
         }
+    }
+
+    /// The saved poster and backdrop, at the size a title's full-width hero shows them.
+    private static let posterWidth = 1000
+    private static let backdropWidth = 1600
+    private static let artworkUpgradedKey = "arcfin.downloadArtworkUpgraded"
+
+    /// Downloads made before the title pages' full-width hero kept small artwork: theirs, and
+    /// their show's, is fetched again at the hero's size, once each, the next time Downloads
+    /// is open with a connection. Nothing needs downloading again.
+    func upgradeSavedArtwork() async {
+        guard let modelContext, let authManager, let credential = authManager.state.credential else { return }
+        let authHeader = authManager.authClient.authHeader(token: credential.accessToken)
+        var upgraded = Set(UserDefaults.standard.stringArray(forKey: Self.artworkUpgradedKey) ?? [])
+        let items = ownDownloads((try? modelContext.fetch(FetchDescriptor<DownloadedItem>())) ?? [])
+        let shows = (try? modelContext.fetch(FetchDescriptor<DownloadedSeries>())) ?? []
+        // Each folder and the title it's for: a download's own, and its show's.
+        let folders = Dictionary(items.map { ($0.storedFolderName, $0.itemId) } + items.compactMap { $0.seriesId.map { ($0, $0) } },
+                                 uniquingKeysWith: { first, _ in first })
+        for (folder, id) in folders where !upgraded.contains(folder) {
+            let dir = DownloadStore.directory(forFolder: folder)
+            let saved = (try? Data(contentsOf: dir.appendingPathComponent(Self.savedDetailFileName)))
+                .flatMap { try? JellyfinMediaClient.decodeItemDetail($0) }
+            let fetched: MediaItemDetail? = saved == nil
+                ? try? await client.getItemDetail(credential: credential, authHeader: authHeader, itemId: id) : nil
+            guard let detail = saved ?? fetched, (try? DownloadStore.ensureDirectory(forFolder: folder)) != nil else { continue }
+            async let poster = Self.saveImage(itemId: id, tag: detail.item.primaryImageTag, type: .primary, width: Self.posterWidth,
+                                              credential: credential, as: "poster.jpg", in: dir)
+            async let backdrop = Self.saveImage(itemId: id, tag: detail.item.backdropImageTags.first, type: .backdrop,
+                                                width: Self.backdropWidth, credential: credential, as: "backdrop.jpg", in: dir)
+            let (posterName, backdropName) = await (poster, backdrop)
+            let hasArtwork = detail.item.primaryImageTag != nil || !detail.item.backdropImageTags.isEmpty
+            guard !hasArtwork || posterName != nil || backdropName != nil else { continue }
+            for name in [posterName, backdropName].compactMap({ $0 }) { ImageCache.forget(dir.appendingPathComponent(name)) }
+            for item in items where item.storedFolderName == folder {
+                item.posterFileName = posterName ?? item.posterFileName
+                item.backdropFileName = backdropName ?? item.backdropFileName
+            }
+            for show in shows where show.seriesId == folder {
+                show.posterFileName = posterName ?? show.posterFileName
+                show.backdropFileName = backdropName ?? show.backdropFileName
+            }
+            upgraded.insert(folder)
+        }
+        try? modelContext.save()
+        UserDefaults.standard.set(Array(upgraded), forKey: Self.artworkUpgradedKey)
     }
 
     func cancelDownload(itemId: String) {
