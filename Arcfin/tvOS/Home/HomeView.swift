@@ -37,6 +37,7 @@ struct HomeView: View {
     @State private var isHomeShowing = false
     @State private var homePath = NavigationPath()
     @State private var isHeroScrolledAway = false
+    @State private var pinnedHeroItem: MediaItem?
     @State private var heroVideoRequestedItemID: String?
     @State private var heroVideoIsPlaying = false
     @State private var heroChromeHidden = false
@@ -93,7 +94,14 @@ struct HomeView: View {
             && !PlayerActivity.shared.isPlayerOpen && !isBehindLock
     }
 
+    /// While the classic hero is scrolled away it keeps what it showed, rather than loading a
+    /// full-screen backdrop and logo for every card focused below it.
     private var heroDisplayItem: MediaItem? {
+        if !modernHome, isHeroScrolledAway, let pinnedHeroItem { return pinnedHeroItem }
+        return liveHeroItem
+    }
+
+    private var liveHeroItem: MediaItem? {
         if modernHome {
             switch focus.modernHero {
             case .media(let item): return item
@@ -125,6 +133,7 @@ struct HomeView: View {
                         }
                         .scrollTargetBehavior(TVFoldSnappingBehavior(showcaseHeight: sh))
                         .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y > sh / 2 } action: { _, scrolledAway in
+                            pinnedHeroItem = scrolledAway ? liveHeroItem : nil
                             isHeroScrolledAway = scrolledAway
                         }
                         .ignoresSafeArea()
