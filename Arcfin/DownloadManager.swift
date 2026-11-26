@@ -526,6 +526,7 @@ final class DownloadManager: NSObject {
     /// runs concurrently from ContentView's own `.task`, so `authManager.state` isn't
     /// reliably `.authenticated` yet at the moment `configure` itself is called.
     private func runSmartDownloadsOnLaunch() {
+        guard PlatformStorage.downloadsTitles else { return }
         Task {
             try? await Task.sleep(for: .seconds(5))
             guard let authManager, let credential = authManager.state.credential else { return }
@@ -2275,6 +2276,7 @@ final class DownloadManager: NSObject {
     /// places other than launch: the app coming to the foreground, the connection coming back,
     /// the player closing, or a show being switched on.
     func refreshSmartDownloads() {
+        guard PlatformStorage.downloadsTitles else { return }
         if queueHold == .storage { recheckQueueHold() }
         retryUnfinishedDownloads()
         guard let authManager, let credential = authManager.state.credential else {
@@ -2302,6 +2304,7 @@ final class DownloadManager: NSObject {
     /// download, which would make the budget check below (totalDownloadedBytes) race against
     /// downloads that haven't happened yet. isRunningSmartDownloads guards reentrancy.
     func runSmartDownloadsIfNeeded(credential: ServerCredential, authHeader: String) async {
+        guard PlatformStorage.downloadsTitles else { return }
         guard let modelContext, ProfileRules.shared.canDownload else {
             Self.smartLog.notice("Smart Downloads skipped: downloads not allowed for this profile")
             return
