@@ -28,6 +28,7 @@ struct HomeView: View {
     @State private var model = HomeModel()
     @State private var hero = HomeHeroCarousel()
     @State private var heroStretch: CGFloat = 0
+    @State private var isRefreshing = false
 
     /// Counted when the offline banner or prompt can show, not a @Query: a query of every
     /// download re-rendered all of Home on each save to any of them (position writes, each
@@ -125,6 +126,13 @@ struct HomeView: View {
                 }
                 .screenBackground()
                 .ignoresSafeArea(edges: [.top, .horizontal])
+                // The hero stretches up into the space a pull opens, over the system's
+                // spinner: this one sits on top of it, below the Dynamic Island.
+                .overlay(alignment: .top) {
+                    HomeRefreshIndicator(pull: heroStretch, isRefreshing: isRefreshing)
+                        .padding(.top, insets.top + 8)
+                        .ignoresSafeArea(edges: .top)
+                }
                 .navigationDestination(isPresented: $showSettings) {
                     SettingsView()
                 }
@@ -203,6 +211,8 @@ struct HomeView: View {
         // survive that cancellation instead of losing the race every cold launch.
         .task(id: authManager.state.credential?.id) { Task { await loadHome() } }
         .refreshable {
+            isRefreshing = true
+            defer { isRefreshing = false }
             if shuffleHomeShelves { model.reshuffleShelves() }
             await loadHome(force: true)
         }
@@ -527,5 +537,24 @@ extension HomeView {
         UserDefaults.standard.removeObject(forKey: "arcfin.pendingPartyCode")
         guard let pending else { return }
         watchParty = WatchPartyLaunch(.join(code: pending))
+    }
+}
+
+/// Pull-to-refresh's spinner, over the hero that stretches up into the space a pull opens.
+private struct HomeRefreshIndicator: View {
+    let pull: CGFloat
+    let isRefreshing: Bool
+
+    var body: some View {
+        ProgressView()
+            .tint(.white)
+            .controlSize(.regular)
+            .padding(10)
+            .background(.ultraThinMaterial, in: Circle())
+            .opacity(isRefreshing ? 1 : min(max((pull - 12) / 50, 0), 1))
+            .scaleEffect(isRefreshing ? 1 : 0.7 + 0.3 * min(pull / 62, 1))
+            .animation(DT.Animation.fast, value: isRefreshing)
+            .allowsHitTesting(false)
+            .accessibilityHidden(!isRefreshing)
     }
 }
