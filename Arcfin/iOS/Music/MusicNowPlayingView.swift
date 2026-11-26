@@ -137,6 +137,13 @@ struct MusicNowPlayingView: View {
                 }
                 .padding(.horizontal, DT.Spacing.lg)
                 .padding(.bottom, DT.Spacing.sm)
+                // Across the foot of the player, behind the controls, when it's set to show there.
+                .background(alignment: .bottom) {
+                    MusicArtworkVisualizer(bars: 40, spacing: 3, cornerRadius: 0, placement: .bottom)
+                        .frame(height: 220)
+                        .mask(LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.45)))
+                        .ignoresSafeArea(edges: .bottom)
+                }
                 .background { MusicArtworkBackdrop(url: MusicAPI.artworkURL(song, width: 600)) }
                 .task(id: "\(song.id) \(lyricsAttempt)") { await loadLyrics(song) }
             } else {

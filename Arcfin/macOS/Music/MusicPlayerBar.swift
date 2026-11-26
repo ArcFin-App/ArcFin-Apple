@@ -226,6 +226,12 @@ struct MusicMacNowPlaying: View {
                     }
                 }
                 .padding(DT.Spacing.xl)
+                // Across the foot of the window, behind the song, when it's set to show there.
+                .background(alignment: .bottom) {
+                    MusicArtworkVisualizer(bars: 48, spacing: 3, cornerRadius: 0, placement: .bottom)
+                        .frame(height: 140)
+                        .mask(LinearGradient(colors: [.clear, .black], startPoint: .top, endPoint: UnitPoint(x: 0.5, y: 0.45)))
+                }
                 .task(id: "\(song.id) \(lyricsAttempt)") {
                     lyrics = nil
                     lyricsLoaded = false
