@@ -228,6 +228,7 @@ struct LibraryDetailView: View {
 
     private var playlistHeader: some View {
         PlaylistHeader(
+            id: model.playlist?.id,
             heroURL: model.playlistHeroURL(in: mediaRepo),
             posterURLs: model.items.prefix(3).map { LibraryItemText.posterURL($0, in: mediaRepo) },
             name: model.playlistName ?? model.library.name,

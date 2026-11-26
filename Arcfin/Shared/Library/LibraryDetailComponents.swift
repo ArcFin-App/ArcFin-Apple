@@ -139,9 +139,10 @@ struct LibraryEmptyResults: View {
     }
 }
 
-/// A playlist's page opens like a collection's: the first title's artwork as the hero,
+/// A playlist's page opens like a collection's: its own backdrop, or its first title's, as the hero,
 /// its first posters fanned out with the name and length, then Play and Shuffle.
 struct PlaylistHeader: View {
+    let id: String?
     let heroURL: URL?
     let posterURLs: [URL?]
     let name: String
@@ -156,15 +157,19 @@ struct PlaylistHeader: View {
                 HStack(alignment: .bottom, spacing: 14) {
                     FannedPosters(urls: posterURLs)
                     VStack(alignment: .leading, spacing: 6) {
+                        if let id {
+                            HeroLogoOrName(itemID: id, name: name)
+                        } else {
+                            Text(name)
+                                .font(.system(.title2, weight: .heavy))
+                                .foregroundStyle(DT.Color.textPrimary)
+                                .lineLimit(3)
+                                .minimumScaleFactor(0.8)
+                        }
                         Text("PLAYLIST")
                             .font(.system(.caption2, weight: .bold))
                             .tracking(1.5)
                             .foregroundStyle(DT.Color.accent)
-                        Text(name)
-                            .font(.system(.title2, weight: .heavy))
-                            .foregroundStyle(DT.Color.textPrimary)
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.8)
                         Text(count == 1 ? "1 title" : "\(count) titles")
                             .font(.caption)
                             .foregroundStyle(DT.Color.textSecondary)
