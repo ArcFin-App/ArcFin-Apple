@@ -68,8 +68,9 @@ final class SeerrItemDetailModel {
         isLoadingDetail = false
     }
 
-    func loadHeroTint() async {
-        if let url = item.backdropURL ?? item.posterURL { heroTint = await AverageColor.load(from: url) }
+    /// The page's tint, from the artwork its hero shows.
+    func loadHeroTint(from url: URL?) async {
+        if let url { heroTint = await AverageColor.load(from: url) }
     }
 
     func loadCertification(seerrRepo: SeerrRepository) async {

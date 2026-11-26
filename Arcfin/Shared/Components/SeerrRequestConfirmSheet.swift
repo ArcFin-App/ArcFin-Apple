@@ -102,7 +102,7 @@ struct SeerrRequestConfirmSheet: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 0) {
-                    header
+                    showcaseHeader
                     loadingIndicator
                     if let genres = detail?.genres, !genres.isEmpty { genreRow(genres) }
                     if isSeries { seasonSection }
@@ -115,8 +115,9 @@ struct SeerrRequestConfirmSheet: View {
                     requestFooter
                 }
             }
+            .ignoresSafeArea(edges: .top)
             .navigationTitle("")
-            .inlineNavigationTitle()
+            .transparentInlineNavigationBar()
             .seerrRequestCancelToolbar { requestingItem = nil }
         }
     }
@@ -208,7 +209,38 @@ struct SeerrRequestConfirmSheet: View {
         SeerrRequestCancelButton { requestingItem = nil }
     }
 
-    // MARK: - Header / genres / cast (unchanged visual language)
+    // MARK: - Header
+
+    /// As a title's page opens: the artwork across the top, the name and details at its foot.
+    private var showcaseHeader: some View {
+        ShowcaseHero(urls: [item.backdropURL ?? item.posterURL].compactMap { $0 }, landscapeHeight: 300) {
+            ShowcaseTitle(logoURL: nil, name: item.title, nameStyle: .title)
+            HStack(spacing: 6) {
+                Text(item.mediaType == .tv ? "Series" : "Movie")
+                if let year = item.year { Text(verbatim: "· \(year)") }
+                if let runtime = detail?.runtimeMinutes { Text("· \(runtime) min") }
+                if let rating = detail?.voteAverage, rating > 0 {
+                    Label(rating.formatted(.number.precision(.fractionLength(1))), systemImage: "star.fill")
+                        .labelStyle(.titleAndIcon)
+                        .foregroundStyle(DT.Color.palette("f59e0b"))
+                }
+            }
+            .font(.system(.caption, weight: .semibold))
+            .foregroundStyle(.white.opacity(0.85))
+            .lineLimit(1)
+            if let tagline = detail?.tagline, !tagline.isEmpty {
+                Text(tagline)
+                    .font(.system(.caption, weight: .medium))
+                    .italic()
+                    .foregroundStyle(.white.opacity(0.75))
+                    .lineLimit(2)
+            }
+        }
+        .padding(.bottom, DT.Spacing.md)
+    }
+
+    // MARK: - Header for Apple TV, genres, cast
+
 
     private var header: some View {
         HStack(spacing: 14) {
@@ -286,29 +318,21 @@ struct SeerrRequestConfirmSheet: View {
     }
 
     private func castRow(_ cast: [SeerrCastMember]) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(cast) { member in
-                    VStack(spacing: 4) {
-                        CachedAsyncImage(url: member.profileURL) { phase in
-                            switch phase {
-                            case .success(let img): img.resizable().scaledToFill()
-                            default: Circle().fill(DT.Color.backgroundSecondary)
-                            }
+        VStack(alignment: .leading, spacing: 12) {
+            DetailSectionTitle(title: "Cast")
+                .padding(.horizontal, DT.Spacing.pagePad)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(alignment: .top, spacing: 14) {
+                    ForEach(cast.prefix(20)) { member in
+                        CastPersonCard(imageURL: member.profileURL, name: member.name, role: member.character) {
+                            DetailPersonPlaceholder()
                         }
-                        .frame(width: 48, height: 48)
-                        .clipShape(Circle())
-                        Text(member.name)
-                            .font(.system(.caption2, design: .default, weight: .medium))
-                            .foregroundStyle(DT.Color.textPrimary)
-                            .lineLimit(1)
                     }
-                    .frame(width: 56)
                 }
+                .padding(.horizontal, DT.Spacing.pagePad)
             }
-            .padding(.horizontal, DT.Spacing.pagePad)
+            .shelfScrollButtons()
         }
-        .shelfScrollButtons()
         .padding(.bottom, DT.Spacing.lg)
     }
 

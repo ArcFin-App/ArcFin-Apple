@@ -25,7 +25,6 @@ struct SeerrRequestDetailView: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 heroSection
-                titleBlock
                 SeerrRequestReviewButtons(request: current, review: review)
                     .padding(.horizontal, DT.Spacing.pagePad)
                     .padding(.bottom, DT.Spacing.sm)
@@ -132,35 +131,14 @@ struct SeerrRequestDetailView: View {
     }
 
     private func castRow(_ cast: [SeerrCastMember]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Cast")
-                .font(.system(.caption, design: .default, weight: .semibold))
-                .foregroundStyle(DT.Color.textSecondary)
+        VStack(alignment: .leading, spacing: 12) {
+            DetailSectionTitle(title: "Cast")
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(cast.prefix(12)) { member in
-                        VStack(spacing: 4) {
-                            CachedAsyncImage(url: member.profileURL) { phase in
-                                switch phase {
-                                case .success(let img): img.resizable().scaledToFill()
-                                default: DT.Color.backgroundSecondary
-                                }
-                            }
-                            .frame(width: 56, height: 56)
-                            .clipShape(Circle())
-
-                            Text(member.name)
-                                .font(.system(.caption2, design: .default, weight: .semibold))
-                                .foregroundStyle(DT.Color.textPrimary)
-                                .lineLimit(1)
-                            if let character = member.character {
-                                Text(character)
-                                    .font(.system(.caption2))
-                                    .foregroundStyle(DT.Color.textSecondary)
-                                    .lineLimit(1)
-                            }
+                LazyHStack(alignment: .top, spacing: 14) {
+                    ForEach(cast.prefix(20)) { member in
+                        CastPersonCard(imageURL: member.profileURL, name: member.name, role: member.character) {
+                            DetailPersonPlaceholder()
                         }
-                        .frame(width: 64)
                     }
                 }
             }
@@ -170,41 +148,12 @@ struct SeerrRequestDetailView: View {
 
     // MARK: - Hero
 
-    // Sized by the page, not the artwork, so a wide backdrop can't widen the page.
     private var heroSection: some View {
-        Color.clear.frame(maxWidth: .infinity).frame(height: 260).overlay {
-            ZStack(alignment: .bottom) {
-                if let url = request.backdropURL ?? request.posterURL {
-                    CachedAsyncImage(url: url) { phase in
-                        switch phase {
-                        case .success(let img):
-                            img
-                                .resizable()
-                                .scaledToFill()
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                        default: fallbackHero
-                        }
-                    }
-                } else { fallbackHero }
-
-                LinearGradient(
-                    stops: [
-                        .init(color: .clear, location: 0),
-                        .init(color: DT.Color.backgroundPrimary.opacity(0.5), location: 0.6),
-                        .init(color: DT.Color.backgroundPrimary, location: 1),
-                    ],
-                    startPoint: .top, endPoint: .bottom
-                )
-            }
+        ShowcaseHero(urls: [request.backdropURL ?? request.posterURL].compactMap { $0 }, landscapeHeight: 340) {
+            ShowcaseTitle(logoURL: nil, name: request.mediaTitle, nameStyle: .title)
+            metaRow
         }
-        .clipped()
-    }
-
-    private var fallbackHero: some View {
-        LinearGradient(
-            colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
-            startPoint: .topLeading, endPoint: .bottomTrailing
-        )
+        .padding(.bottom, DT.Spacing.md)
     }
 
     // MARK: - Actions (positioned like MediaDetailView's playButton/trailerButton — see
@@ -235,71 +184,40 @@ struct SeerrRequestDetailView: View {
         .padding(.bottom, DT.Spacing.md)
     }
 
-    // MARK: - Title block
+    // MARK: - Details
 
-    private var titleBlock: some View {
-        HStack(alignment: .top, spacing: 14) {
-            if let url = request.posterURL {
-                CachedAsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
-                    }
-                }
-                .frame(width: 90, height: 132)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
-                .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
-            } else {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(DT.Color.backgroundSecondary)
-                    .frame(width: 90, height: 132)
+    private var metaRow: some View {
+        HStack(spacing: 8) {
+            Text(request.mediaType == .tv ? "Series" : "Movie")
+                .font(.system(.caption2, design: .default, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+            Text("·").accessibilityHidden(true)
+                .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
+            Text(request.requestedAt, style: .date)
+                .font(.system(.caption2))
+                .foregroundStyle(DT.Color.textSecondary)
+            if let runtime = detail?.runtimeMinutes {
+                Text("·").accessibilityHidden(true)
+                    .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
+                Text("\(runtime) min")
+                    .font(.system(.caption2))
+                    .foregroundStyle(DT.Color.textSecondary)
             }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(request.mediaTitle)
-                    .font(.system(.title3, design: .default, weight: .heavy))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .tracking(-0.5)
-                    .lineLimit(3)
-
-                HStack(spacing: 8) {
-                    Text(request.mediaType == .tv ? "Series" : "Movie")
-                        .font(.system(.caption2, design: .default, weight: .semibold))
-                        .foregroundStyle(DT.Color.textSecondary)
-                    Text("·").accessibilityHidden(true)
-                        .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
-                    Text(request.requestedAt, style: .date)
-                        .font(.system(.caption2))
-                        .foregroundStyle(DT.Color.textSecondary)
-                    if let runtime = detail?.runtimeMinutes {
-                        Text("·").accessibilityHidden(true)
-                            .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
-                        Text("\(runtime) min")
-                            .font(.system(.caption2))
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-                    if let rating = detail?.voteAverage, rating > 0 {
-                        Text("·").accessibilityHidden(true)
-                            .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
-                        HStack(spacing: 2) {
-                            Image(systemName: "star.fill").font(.system(.caption2))
-                            Text(rating.formatted(.number.precision(.fractionLength(1))))
-                        }
-                        .font(.system(.caption2))
-                        .foregroundStyle(DT.Color.palette("f59e0b"))
-                    }
+            if let rating = detail?.voteAverage, rating > 0 {
+                Text("·").accessibilityHidden(true)
+                    .foregroundStyle(DT.Color.textPrimary.opacity(0.2))
+                HStack(spacing: 2) {
+                    Image(systemName: "star.fill").font(.system(.caption2))
+                    Text(rating.formatted(.number.precision(.fractionLength(1))))
                 }
-                // Lets HStack compress/truncate these Text children when every optional
-                // field is present at once, instead of overflowing past the screen edge —
-                // same fix as MediaDetailView.metaRow.
-                .lineLimit(1)
+                .font(.system(.caption2))
+                .foregroundStyle(DT.Color.palette("f59e0b"))
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, -50)
-        .padding(.bottom, DT.Spacing.md)
+        // Lets HStack compress/truncate these Text children when every optional
+        // field is present at once, instead of overflowing past the screen edge —
+        // same fix as MediaDetailView.metaRow.
+        .lineLimit(1)
     }
 
     private var statusRow: some View {
