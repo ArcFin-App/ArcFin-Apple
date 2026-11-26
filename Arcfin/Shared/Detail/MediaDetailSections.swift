@@ -95,12 +95,12 @@ struct DetailCastSection: View {
                 // saturate AsyncImage's shared URLSession all at once and fail the whole
                 // burst together under any network degradation. See ShelfRow.swift for the
                 // same fix applied to Home's shelves.
-                LazyHStack(alignment: .top, spacing: 12) {
+                LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(cast) { person in
                         Button { onSelect(person) } label: {
                             CastPersonCard(
                                 imageURL: person.primaryImageTag.flatMap {
-                                    mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 120)
+                                    mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 300)
                                 },
                                 name: person.name,
                                 role: person.role,
@@ -118,9 +118,9 @@ struct DetailCastSection: View {
     }
 }
 
-private struct DetailPersonPlaceholder: View {
+struct DetailPersonPlaceholder: View {
     var body: some View {
-        Circle()
+        Rectangle()
             .fill(DT.Color.backgroundSecondary)
             .overlay(Image(systemName: "person.fill")
                 .contentFont(.title2)
@@ -128,6 +128,7 @@ private struct DetailPersonPlaceholder: View {
     }
 }
 
+/// A cast member: their photo standing, their name, and who they play.
 struct CastPersonCard<Placeholder: View>: View {
     let imageURL: URL?
     let name: String
@@ -137,7 +138,7 @@ struct CastPersonCard<Placeholder: View>: View {
     @State private var hovered = false
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 3) {
             Group {
                 if let imageURL {
                     RetryingAsyncImage(
@@ -151,25 +152,26 @@ struct CastPersonCard<Placeholder: View>: View {
                     placeholder()
                 }
             }
-            .frame(width: 60, height: 60)
-            .clipShape(Circle())
-            .overlay(Circle().stroke(hovered ? DT.Color.accent.opacity(0.6) : DT.Color.textPrimary.opacity(0.1), lineWidth: hovered ? 2 : 1))
-            .scaleEffect(hovered ? 1.06 : 1)
+            .frame(width: 104, height: 138)
+            .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
+            .overlay(RoundedRectangle(cornerRadius: DT.Radius.md)
+                .stroke(hovered ? DT.Color.accent.opacity(0.6) : DT.Color.textPrimary.opacity(0.08), lineWidth: hovered ? 2 : 1))
+            .scaleEffect(hovered ? 1.04 : 1)
+            .padding(.bottom, 5)
 
             Text(name)
-                .contentFont(.caption2, design: .default, weight: .semibold)
+                .contentFont(.footnote, design: .default, weight: .semibold)
                 .foregroundStyle(DT.Color.textPrimary)
                 .lineLimit(2)
-                .multilineTextAlignment(.center)
 
             if let role, !role.isEmpty {
                 Text(role)
-                    .contentFont(.caption2, design: .default)
+                    .contentFont(.caption, design: .default)
                     .foregroundStyle(DT.Color.textSecondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
         }
-        .frame(width: 70, alignment: .top)
+        .frame(width: 104, alignment: .topLeading)
         .animation(DT.Animation.fast, value: hovered)
         .onPointerHover { hovered = $0 }
     }
