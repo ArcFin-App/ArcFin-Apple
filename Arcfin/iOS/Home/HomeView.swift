@@ -106,7 +106,7 @@ struct HomeView: View {
                             ForEach(orderedVisibleShelves) { shelf in
                                 if HomeModel.showsShelfSkeleton(shuffled: shuffleHomeShelves, mediaRepo: mediaRepo),
                                    !HomeShelfPrefs.pinned.contains(shelf), !shelf.isSeerr {
-                                    ShelfRow(title: shelf.title) { HomePosterCards(items: [], card: posterCard) }
+                                    ShelfRow(title: shelf.title) { HomePosterCards(items: [], card: { posterCard($0, row: shelf.rawValue) }) }
                                 } else {
                                     shelfView(for: shelf)
                                         .accessibilityElement(children: .contain)
@@ -139,6 +139,10 @@ struct HomeView: View {
                 .navigationDestination(for: MediaItem.self) { item in
                     MediaDetailView(item: item, zoomNamespace: zoomNamespace)
                         .zoomNavigationTransition(id: item.id, in: zoomNamespace)
+                }
+                .navigationDestination(for: HomeCardRoute.self) { route in
+                    MediaDetailView(item: route.item, zoomNamespace: zoomNamespace)
+                        .zoomNavigationTransition(id: route.sourceID, in: zoomNamespace)
                 }
                 .navigationDestination(item: $model.detailItem) { item in
                     if item.type == .boxSet {
@@ -463,15 +467,16 @@ struct HomeView: View {
             openSeerrItem: { model.openSeerrShelfItem($0, authManager: authManager, seerrRepo: seerrRepo) }
         ) { item, isLandscape in
             if isLandscape {
-                continueWatchingCard(item)
+                continueWatchingCard(item, row: shelf.rawValue)
             } else {
-                posterCard(item)
+                posterCard(item, row: shelf.rawValue)
             }
         }
     }
 
-    private func continueWatchingCard(_ item: MediaItem) -> some View {
-        NavigationLink(value: item) {
+    private func continueWatchingCard(_ item: MediaItem, row: String) -> some View {
+        let route = HomeCardRoute(item: item, row: row)
+        return NavigationLink(value: route) {
             PosterCard(
                 title: HomeText.title(item),
                 subtitle: HomeText.subtitle(item),
@@ -486,11 +491,12 @@ struct HomeView: View {
         // touched in a tightly-packed horizontal shelf, causing taps to land on the
         // neighboring card instead of the one under your finger.
         .contextMenu { longPressMenu(item) }
-        .zoomTransitionSource(id: item.id, in: zoomNamespace)
+        .zoomTransitionSource(id: route.sourceID, in: zoomNamespace)
     }
 
-    private func posterCard(_ item: MediaItem) -> some View {
-        NavigationLink(value: item) {
+    private func posterCard(_ item: MediaItem, row: String) -> some View {
+        let route = HomeCardRoute(item: item, row: row)
+        return NavigationLink(value: route) {
             PosterCard(
                 title: HomeText.title(item),
                 subtitle: HomeText.subtitle(item),
@@ -500,7 +506,7 @@ struct HomeView: View {
         }
         .buttonStyle(PressableButtonStyle())
         .contextMenu { longPressMenu(item) }
-        .zoomTransitionSource(id: item.id, in: zoomNamespace)
+        .zoomTransitionSource(id: route.sourceID, in: zoomNamespace)
     }
 
     /// The poster long-press menu: the usual quick actions, with Play and Play Trailer on top.
@@ -557,4 +563,12 @@ private struct HomeRefreshIndicator: View {
             .allowsHitTesting(false)
             .accessibilityHidden(!isRefreshing)
     }
+}
+
+/// A title opened from one of Home's rows. The zoom starts from that row's card: a title in
+/// two rows has two cards, and keyed by the title alone it could open out of the other one.
+struct HomeCardRoute: Hashable {
+    let item: MediaItem
+    let row: String
+    var sourceID: String { "\(row)/\(item.id)" }
 }
