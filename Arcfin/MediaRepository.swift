@@ -534,8 +534,7 @@ final class MediaRepository {
                                             type: .backdrop, fillWidth: fillWidth, token: token)
     }
 
-    // Episode screenshot — uses the episode's own Primary (screenshot) or Thumb image,
-    // bypassing the episode→series poster redirect in imageURL(for:type:).
+    // Episode screenshot — the episode's own Thumb, else its Primary (the screenshot).
     func episodeThumbnailURL(for item: MediaItem, fillWidth: Int = 240) -> URL? {
         guard let base = baseURL, let token = accessToken else { return nil }
         if let tag = item.thumbImageTag {
@@ -547,6 +546,25 @@ final class MediaRepository {
                                                 type: .primary, fillWidth: fillWidth, token: token)
         }
         return nil
+    }
+
+    /// Every backdrop the item has, in the server's order: the title page's hero moves
+    /// through them.
+    func backdropURLs(for item: MediaItem, fillWidth: Int) -> [URL] {
+        guard let base = baseURL, let token = accessToken else { return [] }
+        return item.backdropImageTags.enumerated().map { index, tag in
+            JellyfinMediaClient.imageURL(baseURL: base, itemID: item.id, tag: tag, type: .backdrop,
+                                         fillWidth: fillWidth, index: index, token: token)
+        }
+    }
+
+    /// Landscape art for a small card: an episode's screenshot, else any wide art it or its
+    /// show has; for anything else its Thumb, then its Backdrop.
+    func landscapeURL(for item: MediaItem, fillWidth: Int = 240) -> URL? {
+        if item.type == .episode {
+            return episodeThumbnailURL(for: item, fillWidth: fillWidth) ?? imageURL(for: item, type: .backdrop, fillWidth: fillWidth)
+        }
+        return imageURL(for: item, type: .thumb, fillWidth: fillWidth)
     }
 
     func libraryBackdropURL(for library: JellyfinLibrary, fillWidth: Int = 700) -> URL? {
@@ -568,8 +586,10 @@ final class MediaRepository {
                                             type: .primary, fillWidth: fillWidth, token: token)
     }
 
-    func logoURL(for item: MediaItem) -> URL? {
-        logoURL(itemID: item.id)
+    /// A season or episode has no logo of its own: its show's stands in.
+    func logoURL(for item: MediaItem, fillWidth: Int = 300) -> URL? {
+        let ownsLogo = item.type != .episode && item.type != .season
+        return logoURL(itemID: ownsLogo ? item.id : (item.seriesId ?? item.id), fillWidth: fillWidth)
     }
 
     func logoURL(itemID: String, fillWidth: Int = 300) -> URL? {
