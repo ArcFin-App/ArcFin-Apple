@@ -239,6 +239,11 @@ struct HomeView: View {
         }
         ImageCache.preheat(urls: Array(heroURLs.prefix(8)))
         ImageCache.prefetch(urls: Array(heroURLs.dropFirst(8)))
+        // The next launch's splash wall, as on the other platforms.
+        let splashPicks = mediaRepo.recentlyAddedMovies + mediaRepo.recentlyAddedShows + mediaRepo.recentlyAdded
+        Task {
+            await SplashMosaicStore.save(splashPicks) { mediaRepo.imageURL(for: $0, type: .primary, fillWidth: 300) }
+        }
         model.openPendingDeepLink(authManager: authManager, mediaRepo: mediaRepo)
         model.playPendingWatch(authManager: authManager)
         await model.loadDiscover(enabled: seerrDiscoverEnabled, mediaRepo: mediaRepo, seerrRepo: seerrRepo)

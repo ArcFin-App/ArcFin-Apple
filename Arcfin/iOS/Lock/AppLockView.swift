@@ -43,6 +43,7 @@ struct AppLockView: View {
     private var bodyContent: some View {
         ZStack {
             DT.Color.backgroundPrimary.ignoresSafeArea()
+            if model.pinTarget == nil { ProfilePickerMosaic() }
 
             if let target = model.pinTarget {
                 PINPadView(
