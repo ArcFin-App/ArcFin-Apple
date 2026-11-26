@@ -15,7 +15,7 @@ struct MusicHero<Art: View, Info: View, Heading: View>: View {
     @ViewBuilder let heading: () -> Heading
     @ViewBuilder let info: () -> Info
 
-    /// How much taller than the art: the blurred part below it.
+    /// How far below the art the blurred copy reaches.
     private let extent: CGFloat = 1.16
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -31,38 +31,18 @@ struct MusicHero<Art: View, Info: View, Heading: View>: View {
             // one layout pass: a width read back into state moved the glass Shuffle button a
             // second time in the same frame.
             Color.clear
-                .aspectRatio(1 / extent, contentMode: .fit)
-                .frame(maxHeight: maxArtHeight * extent)
+                .aspectRatio(1, contentMode: .fit)
+                .frame(maxHeight: maxArtHeight)
                 .frame(maxWidth: .infinity)
-                .overlay {
+                // The blurred copy carries on below the cover, under the names and the songs,
+                // instead of taking space of its own: the names sat a growing gap below Play.
+                .overlay(alignment: .top) {
                     GeometryReader { proxy in
-                        let side = proxy.size.width, artHeight = proxy.size.height / extent
-                        ZStack(alignment: .top) {
-                            // Larger than the space, so the blur's soft edges fall outside it.
-                            art(proxy.size)
-                                .frame(width: side, height: proxy.size.height)
-                                .scaleEffect(1.3)
-                                .blur(radius: 40)
-                                .frame(width: side, height: proxy.size.height)
-                                .clipped()
-                            art(CGSize(width: side, height: artHeight))
-                                .frame(width: side, height: artHeight)
-                                .clipped()
-                                // Darker toward the foot, so the buttons read on a light cover.
-                                .overlay {
-                                    LinearGradient(colors: [.clear, .black.opacity(0.45)], startPoint: .center, endPoint: .bottom)
-                                }
-                                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.84),
-                                                             .init(color: .clear, location: 1)],
-                                                     startPoint: .top, endPoint: .bottom))
-                        }
-                        .frame(width: side, height: proxy.size.height, alignment: .top)
+                        artwork(side: proxy.size.width, artHeight: proxy.size.height)
                     }
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
                 }
-                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.72),
-                                             .init(color: .clear, location: 1)],
-                                     startPoint: .top, endPoint: .bottom))
-                .accessibilityHidden(true)
                 .overlay {
                     GeometryReader { proxy in
                         VStack(spacing: 14) {
@@ -71,16 +51,43 @@ struct MusicHero<Art: View, Info: View, Heading: View>: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, DT.Spacing.pagePad)
-                        .frame(height: max(proxy.size.height / extent - 22, 0), alignment: .bottom)
+                        .frame(height: max(proxy.size.height - 22, 0), alignment: .bottom)
                     }
                 }
             info()
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, DT.Spacing.pagePad)
-                // Over the soft part below the cover.
-                .padding(.top, -36)
+                // Over the soft foot of the cover, just below Play and Shuffle.
+                .padding(.top, -6)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private func artwork(side: CGFloat, artHeight: CGFloat) -> some View {
+        let height = artHeight * extent
+        return ZStack(alignment: .top) {
+            // Larger than the space, so the blur's soft edges fall outside it.
+            art(CGSize(width: side, height: height))
+                .frame(width: side, height: height)
+                .scaleEffect(1.3)
+                .blur(radius: 40)
+                .frame(width: side, height: height)
+                .clipped()
+            art(CGSize(width: side, height: artHeight))
+                .frame(width: side, height: artHeight)
+                .clipped()
+                // Darker toward the foot, so the buttons read on a light cover.
+                .overlay {
+                    LinearGradient(colors: [.clear, .black.opacity(0.45)], startPoint: .center, endPoint: .bottom)
+                }
+                .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.84),
+                                             .init(color: .clear, location: 1)],
+                                     startPoint: .top, endPoint: .bottom))
+        }
+        .frame(width: side, height: height, alignment: .top)
+        .mask(LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.72),
+                                     .init(color: .clear, location: 1)],
+                             startPoint: .top, endPoint: .bottom))
     }
 
     private var buttons: some View {
