@@ -106,6 +106,9 @@ struct AppLockView: View {
         // profile, so auto-prompting for a DIFFERENT profile the moment it's tapped would
         // let Face ID silently switch identities without the PIN ever being the real gate.
         guard useFaceID, profile.id == activeID, didAttemptBiometricsFor != profile.id else { return }
+        // Started with the pad's first frame, the Face ID prompt left Cancel laid out off the
+        // left edge on a cold start (#764): the pad settles first.
+        guard (try? await Task.sleep(for: .milliseconds(450))) != nil else { return }
         didAttemptBiometricsFor = profile.id
         let context = LAContext()
         guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil) else { return }
