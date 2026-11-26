@@ -11,7 +11,8 @@ struct NoConnectionView: View {
     @State private var confirmSignOut = false
 
     var body: some View {
-        NoConnectionContent(signOut: { confirmSignOut = true }) {
+        NoConnectionContent(networkTips: [String(localized: "Check that Wi-Fi or Mobile Data is turned on"),
+                                          String(localized: "Try turning Wi-Fi or Mobile Data off, then back on")], signOut: { confirmSignOut = true }) {
             Button {
                 offlineModeEnabled = true
             } label: {

@@ -218637,6 +218637,198 @@
           }
         }
       }
+    },
+    "You'll need to sign in again to use it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du musst dich erneut anmelden, um ihn zu nutzen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tendrás que volver a iniciar sesión para usarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous devrez vous reconnecter pour l’utiliser."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dovrai accedere di nuovo per usarlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用するには再度サインインする必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용하려면 다시 로그인해야 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je moet opnieuw inloggen om hem te gebruiken."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você vai precisar entrar de novo para usá-lo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Чтобы использовать его, нужно будет войти снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你需要重新登录才能使用它。"
+          }
+        }
+      }
+    },
+    "Check that your Mac is connected to Wi-Fi or Ethernet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prüfe, ob dein Mac mit WLAN oder Ethernet verbunden ist"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprueba que tu Mac esté conectado a Wi-Fi o Ethernet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifiez que votre Mac est connecté au Wi-Fi ou à Ethernet"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla che il Mac sia connesso al Wi-Fi o a Ethernet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacがWi-FiまたはEthernetに接続されているか確認してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac이 Wi-Fi 또는 이더넷에 연결되어 있는지 확인하세요"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controleer of je Mac verbonden is met wifi of ethernet"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifique se o Mac está conectado ao Wi-Fi ou à Ethernet"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверьте, что Mac подключен к Wi-Fi или Ethernet"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "检查你的 Mac 是否已连接到无线局域网或以太网"
+          }
+        }
+      }
+    },
+    "Check that this Apple TV is connected in Settings › Network" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prüfe unter Einstellungen › Netzwerk, ob dieses Apple TV verbunden ist"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprueba en Ajustes › Red que este Apple TV esté conectado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifiez dans Réglages › Réseau que cette Apple TV est connectée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla in Impostazioni › Network che questa Apple TV sia connessa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定 › ネットワークで、このApple TVが接続されているか確認してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정 › 네트워크에서 이 Apple TV가 연결되어 있는지 확인하세요"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controleer in Instellingen › Netwerk of deze Apple TV verbonden is"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifique em Ajustes › Rede se esta Apple TV está conectada"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверьте в «Настройки › Сеть», что эта Apple TV подключена"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“设置 › 网络”中检查这台 Apple TV 是否已连接"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

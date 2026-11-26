@@ -9,12 +9,12 @@ struct NoConnectionView: View {
     @State private var confirmSignOut = false
 
     var body: some View {
-        NoConnectionContent(signOut: { confirmSignOut = true }) {}
+        NoConnectionContent(networkTips: [String(localized: "Check that this Apple TV is connected in Settings › Network")], signOut: { confirmSignOut = true }) {}
             .alert("Sign out of this server?", isPresented: $confirmSignOut) {
                 Button("Sign Out", role: .destructive) { authManager.signOut() }
                 Button("Cancel", role: .cancel) {}
             } message: {
-                Text("You'll need to sign in again to use it. Downloads stay on this device.")
+                Text("You'll need to sign in again to use it.")
             }
     }
 }
