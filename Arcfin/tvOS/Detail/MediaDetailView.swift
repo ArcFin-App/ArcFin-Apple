@@ -444,9 +444,6 @@ struct MediaDetailView: View {
             TitleInsights(tmdbId: model.insightsTmdbId, mediaType: MediaDetailModel.seerrMediaType(for: item), part: .ratings,
                           spacingBelow: 56, spacingAbove: ratingsFollowHero ? 48 : 0, rowInset: 80)
                 .focusSection()
-            TitleIssuesSection(tmdbId: model.insightsTmdbId, mediaType: MediaDetailModel.seerrMediaType(for: item))
-                .padding(.horizontal, 80)
-                .padding(.bottom, 56)
             if let d = model.detail, !d.cast.isEmpty { castSection(d).trackSectionOffset().focusSection() }
             if !model.seerrRelatedItems.isEmpty {
                 seerrRelatedSection.trackSectionOffset().focusSection()
@@ -467,6 +464,10 @@ struct MediaDetailView: View {
             TitleInsights(tmdbId: model.insightsTmdbId, mediaType: MediaDetailModel.seerrMediaType(for: item), detail: model.detail, part: .details)
                 .padding(.horizontal, 80)
                 .focusSection()
+            // Last, as the other platforms put Report a Problem at the foot of the page.
+            TitleIssuesSection(tmdbId: model.insightsTmdbId, mediaType: MediaDetailModel.seerrMediaType(for: item))
+                .padding(.horizontal, 80)
+                .padding(.top, 56)
         }
     }
 
