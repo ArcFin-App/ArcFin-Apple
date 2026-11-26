@@ -17,6 +17,8 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
     var cardImageURL: ((MediaItem) -> URL?)? = nil
     /// Titles Seerr has in the same grid as the library's, rather than a row.
     var creditsInGrid = false
+    /// The grid for those titles, where the library's cards aren't portrait posters.
+    var creditColumns: [GridItem]? = nil
     /// Each platform's button around a library title's poster.
     @ViewBuilder let itemLink: (MediaItem, PosterCard) -> ItemLink
     /// Each platform's button around a credit Seerr can request.
@@ -65,7 +67,7 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
                     if creditsInGrid, !model.missingCredits.isEmpty {
                         PersonSectionHeader(title: "Also Appears In")
                             .padding(.top, model.items.isEmpty ? 0 : DT.Spacing.md)
-                        LazyVGrid(columns: columns, spacing: 16) {
+                        LazyVGrid(columns: creditColumns ?? columns, spacing: 16) {
                             ForEach(model.missingCredits) { credit in
                                 creditLink(credit, PersonCreditCard(credit: credit, scale: creditScale, fillsWidth: true))
                             }
@@ -165,13 +167,16 @@ struct PersonDetailHeader: View {
 struct PersonShowcaseHeader: View {
     @Environment(MediaRepository.self) private var mediaRepo
     let person: MediaPerson
+    /// Standing on a phone; across the width, face kept in frame, on a television.
+    var portrait = true
+    var landscapeHeight: CGFloat = 420
 
     var photoURL: URL? {
-        person.primaryImageTag.flatMap { mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 1000) }
+        person.primaryImageTag.flatMap { mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: portrait ? 1000 : 1920) }
     }
 
     var body: some View {
-        ShowcaseHero(urls: [photoURL].compactMap { $0 }, portrait: true, focus: .top) {
+        ShowcaseHero(urls: [photoURL].compactMap { $0 }, portrait: portrait, landscapeHeight: landscapeHeight, focus: .top) {
             ZStack {
                 LinearGradient(colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
                                startPoint: .topLeading, endPoint: .bottomTrailing)
