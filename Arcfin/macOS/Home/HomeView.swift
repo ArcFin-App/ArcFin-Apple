@@ -116,6 +116,12 @@ struct HomeView: View {
                 } action: { _, stretch in
                     heroStretch = stretch
                 }
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.contentOffset.y + geometry.contentInsets.top > heroH * 0.8
+                } action: { _, scrolledAway in
+                    hero.isScrolledAway = scrolledAway
+                    if !scrolledAway { loadHeroVideoBackdrop() }
+                }
                 .screenBackground()
                 .ignoresSafeArea(edges: .top)
                 .navigationDestination(isPresented: $showSettings) {
