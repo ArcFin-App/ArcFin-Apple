@@ -318,9 +318,10 @@ nonisolated enum BackgroundRefresh {
                 let window = MaintenanceWindow(id: event.id, starts: starts, ends: ends, message: event.body ?? "")
                 await NotificationManager.notifyMaintenance(id: event.id, summary: await MainActor.run { window.summary })
             case "test": await NotificationManager.notifyServerTest(id: event.id)
-            case "seerr-pending", "seerr-auto-approved", "seerr-failed" where toApprove:
+            case "seerr-pending" where toApprove, "seerr-auto-approved" where toApprove, "seerr-failed" where toApprove:
                 await NotificationManager.notifyRequestToManage(event, title: title, hidingDetails: pinLocked)
-            case "issue-reported", "issue-comment", "issue-resolved", "issue-reopened" where issues:
+            case "issue-reported" where issues, "issue-comment" where issues, "issue-resolved" where issues,
+                 "issue-reopened" where issues:
                 await NotificationManager.notifyIssue(event, hidingDetails: pinLocked)
             default: continue
             }
