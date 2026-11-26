@@ -54,6 +54,11 @@ public enum ImageCache: Sendable {
         (shared.configuration.dataCache as? DataCache)?.removeAll()
     }
 
+    /// Drops one image from both caches, for a file replaced at the same address.
+    public static func forget(_ url: URL) {
+        shared.cache.removeCachedImage(for: ImageRequest(url: url), caches: .all)
+    }
+
     #if canImport(UIKit)
     public typealias PlatformImage = UIImage
     #elseif canImport(AppKit)

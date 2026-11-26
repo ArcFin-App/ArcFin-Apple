@@ -28,6 +28,7 @@ struct HomeView: View {
     @State private var model = HomeModel()
     @State private var hero = HomeHeroCarousel()
     @State private var heroStretch: CGFloat = 0
+    @State private var isRefreshing = false
 
     /// Counted when the offline banner or prompt can show, not a @Query: a query of every
     /// download re-rendered all of Home on each save to any of them (position writes, each
@@ -105,7 +106,7 @@ struct HomeView: View {
                             ForEach(orderedVisibleShelves) { shelf in
                                 if HomeModel.showsShelfSkeleton(shuffled: shuffleHomeShelves, mediaRepo: mediaRepo),
                                    !HomeShelfPrefs.pinned.contains(shelf), !shelf.isSeerr {
-                                    ShelfRow(title: shelf.title) { HomePosterCards(items: [], card: posterCard) }
+                                    ShelfRow(title: shelf.title) { HomePosterCards(items: [], card: { posterCard($0, row: shelf.rawValue) }) }
                                 } else {
                                     shelfView(for: shelf)
                                         .accessibilityElement(children: .contain)
@@ -123,14 +124,31 @@ struct HomeView: View {
                 } action: { _, stretch in
                     heroStretch = stretch
                 }
+                .onScrollGeometryChange(for: Bool.self) { geometry in
+                    geometry.contentOffset.y + geometry.contentInsets.top > heroH * 0.8
+                } action: { _, scrolledAway in
+                    hero.isScrolledAway = scrolledAway
+                    if !scrolledAway { loadHeroVideoBackdrop() }
+                }
                 .screenBackground()
                 .ignoresSafeArea(edges: [.top, .horizontal])
+                // The hero stretches up into the space a pull opens, over the system's
+                // spinner: this one sits on top of it, below the Dynamic Island.
+                .overlay(alignment: .top) {
+                    HomeRefreshIndicator(pull: heroStretch, isRefreshing: isRefreshing)
+                        .padding(.top, insets.top + 8)
+                        .ignoresSafeArea(edges: .top)
+                }
                 .navigationDestination(isPresented: $showSettings) {
                     SettingsView()
                 }
                 .navigationDestination(for: MediaItem.self) { item in
                     MediaDetailView(item: item, zoomNamespace: zoomNamespace)
                         .zoomNavigationTransition(id: item.id, in: zoomNamespace)
+                }
+                .navigationDestination(for: HomeCardRoute.self) { route in
+                    MediaDetailView(item: route.item, zoomNamespace: zoomNamespace)
+                        .zoomNavigationTransition(id: route.sourceID, in: zoomNamespace)
                 }
                 .navigationDestination(item: $model.detailItem) { item in
                     if item.type == .boxSet {
@@ -203,6 +221,8 @@ struct HomeView: View {
         // survive that cancellation instead of losing the race every cold launch.
         .task(id: authManager.state.credential?.id) { Task { await loadHome() } }
         .refreshable {
+            isRefreshing = true
+            defer { isRefreshing = false }
             if shuffleHomeShelves { model.reshuffleShelves() }
             await loadHome(force: true)
         }
@@ -453,15 +473,16 @@ struct HomeView: View {
             openSeerrItem: { model.openSeerrShelfItem($0, authManager: authManager, seerrRepo: seerrRepo) }
         ) { item, isLandscape in
             if isLandscape {
-                continueWatchingCard(item)
+                continueWatchingCard(item, row: shelf.rawValue)
             } else {
-                posterCard(item)
+                posterCard(item, row: shelf.rawValue)
             }
         }
     }
 
-    private func continueWatchingCard(_ item: MediaItem) -> some View {
-        NavigationLink(value: item) {
+    private func continueWatchingCard(_ item: MediaItem, row: String) -> some View {
+        let route = HomeCardRoute(item: item, row: row)
+        return NavigationLink(value: route) {
             PosterCard(
                 title: HomeText.title(item),
                 subtitle: HomeText.subtitle(item),
@@ -476,11 +497,12 @@ struct HomeView: View {
         // touched in a tightly-packed horizontal shelf, causing taps to land on the
         // neighboring card instead of the one under your finger.
         .contextMenu { longPressMenu(item) }
-        .zoomTransitionSource(id: item.id, in: zoomNamespace)
+        .zoomTransitionSource(id: route.sourceID, in: zoomNamespace)
     }
 
-    private func posterCard(_ item: MediaItem) -> some View {
-        NavigationLink(value: item) {
+    private func posterCard(_ item: MediaItem, row: String) -> some View {
+        let route = HomeCardRoute(item: item, row: row)
+        return NavigationLink(value: route) {
             PosterCard(
                 title: HomeText.title(item),
                 subtitle: HomeText.subtitle(item),
@@ -490,7 +512,7 @@ struct HomeView: View {
         }
         .buttonStyle(PressableButtonStyle())
         .contextMenu { longPressMenu(item) }
-        .zoomTransitionSource(id: item.id, in: zoomNamespace)
+        .zoomTransitionSource(id: route.sourceID, in: zoomNamespace)
     }
 
     /// The poster long-press menu: the usual quick actions, with Play and Play Trailer on top.
@@ -528,4 +550,31 @@ extension HomeView {
         guard let pending else { return }
         watchParty = WatchPartyLaunch(.join(code: pending))
     }
+}
+
+/// Pull-to-refresh's spinner, over the hero that stretches up into the space a pull opens.
+private struct HomeRefreshIndicator: View {
+    let pull: CGFloat
+    let isRefreshing: Bool
+
+    var body: some View {
+        ProgressView()
+            .tint(.white)
+            .controlSize(.regular)
+            .padding(10)
+            .background(.ultraThinMaterial, in: Circle())
+            .opacity(isRefreshing ? 1 : min(max((pull - 12) / 50, 0), 1))
+            .scaleEffect(isRefreshing ? 1 : 0.7 + 0.3 * min(pull / 62, 1))
+            .animation(DT.Animation.fast, value: isRefreshing)
+            .allowsHitTesting(false)
+            .accessibilityHidden(!isRefreshing)
+    }
+}
+
+/// A title opened from one of Home's rows. The zoom starts from that row's card: a title in
+/// two rows has two cards, and keyed by the title alone it could open out of the other one.
+struct HomeCardRoute: Hashable {
+    let item: MediaItem
+    let row: String
+    var sourceID: String { "\(row)/\(item.id)" }
 }

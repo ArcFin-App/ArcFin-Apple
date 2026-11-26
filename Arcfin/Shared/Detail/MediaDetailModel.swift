@@ -336,8 +336,9 @@ final class MediaDetailModel {
         }
     }
 
-    func loadHeroTint(mediaRepo: MediaRepository) async {
-        guard let url = mediaRepo.imageURL(for: item, type: .backdrop, fillWidth: 120) else { return }
+    /// The page's tint, from the artwork its hero shows.
+    func loadHeroTint(from url: URL?) async {
+        guard let url else { return }
         heroTint = await AverageColor.load(from: url)
     }
 

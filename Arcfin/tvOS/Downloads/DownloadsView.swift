@@ -33,7 +33,11 @@ struct DownloadsView: View {
             downloadManager.purgeWatchedDownloads()
         }
         .task(id: items.count) { model.refreshFreeBytes() }
-        .task { if isOnline { await downloadManager.saveMissingDetails() } }
+        .task {
+            guard isOnline else { return }
+            await downloadManager.saveMissingDetails()
+            await downloadManager.upgradeSavedArtwork()
+        }
         .navigationTitle("Downloads")
         .toolbar {
             if let goBackOnline {

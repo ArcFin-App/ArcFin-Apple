@@ -11,7 +11,7 @@ struct NoConnectionView: View {
     @State private var confirmSignOut = false
 
     var body: some View {
-        NoConnectionContent(signOut: { confirmSignOut = true }) {
+        NoConnectionContent(networkTips: [String(localized: "Check that your Mac is connected to Wi-Fi or Ethernet")], signOut: { confirmSignOut = true }) {
             Button {
                 offlineModeEnabled = true
             } label: {

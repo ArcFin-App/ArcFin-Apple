@@ -68,6 +68,8 @@ struct SplashMosaicView: View {
     /// 0…1: how far the staggered column fade-in has got.
     var reveal: Double
     var isAnimated: Bool
+    /// 1 is the splash's pace; lower for a screen someone stays on.
+    var speed: Double = 1
 
     private let columnCount = 8
     /// Each column is one run of posters shown twice, so scrolling by exactly one run loops
@@ -85,8 +87,8 @@ struct SplashMosaicView: View {
                 let time = timeline.date.timeIntervalSinceReferenceDate
                 HStack(alignment: .top, spacing: spacing) {
                     ForEach(0..<columnCount, id: \.self) { column in
-                        let speed = 14 + CGFloat(column % 3) * 4
-                        let travelled = isAnimated ? CGFloat(time * speed).truncatingRemainder(dividingBy: cycle) : cycle / 2
+                        let pace = (14 + Double(column % 3) * 4) * speed
+                        let travelled = isAnimated ? CGFloat(time * pace).truncatingRemainder(dividingBy: cycle) : cycle / 2
                         // Alternate columns run up and down.
                         let drift = column.isMultiple(of: 2) ? travelled : cycle - travelled
                         VStack(spacing: spacing) {
@@ -102,12 +104,36 @@ struct SplashMosaicView: View {
                         .opacity(min(max(reveal * Double(columnCount) - Double(column) * 0.6, 0), 1))
                     }
                 }
-                .frame(width: proxy.size.width, height: proxy.size.height)
+                // Held from the top: centred, a column taller than the screen hung half of
+                // itself above it, and as it drifted its lower end left the bottom empty.
+                .frame(width: proxy.size.width, height: proxy.size.height, alignment: .top)
                 .rotationEffect(.degrees(-14))
                 .scaleEffect(1.45)
             }
         }
         .allowsHitTesting(false)
         .accessibilityHidden(true)
+    }
+}
+
+/// The splash's wall of posters behind the profile picker, drifting slower and dimmer so it
+/// sets the scene without pulling the eye from the profiles.
+struct ProfilePickerMosaic: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var posters = SplashMosaicStore.loadImages()
+
+    var body: some View {
+        if !posters.isEmpty {
+            ZStack {
+                SplashMosaicView(posters: posters, reveal: 1, isAnimated: !reduceMotion, speed: 0.35)
+                    .blur(radius: 2)
+                    .opacity(0.4)
+                LinearGradient(colors: [DT.Color.backgroundPrimary.opacity(0.75), DT.Color.backgroundPrimary.opacity(0.45),
+                                        DT.Color.backgroundPrimary.opacity(0.9)],
+                               startPoint: .top, endPoint: .bottom)
+            }
+            .ignoresSafeArea()
+            .transition(.opacity)
+        }
     }
 }

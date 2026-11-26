@@ -8,6 +8,7 @@ struct PersonDetailView: View {
     let person: MediaPerson
 
     @Environment(AuthManager.self) private var authManager
+    @Environment(MediaRepository.self) private var mediaRepo
     @Environment(SeerrRepository.self) private var seerrRepo
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
@@ -16,6 +17,11 @@ struct PersonDetailView: View {
     @Namespace private var zoomNamespace
     @State private var requestingCredit: SeerrItem?
     @State private var openedCredit: SeerrItem?
+
+    /// The photo the hero shows, small, for the page's tint.
+    private var photoURL: URL? {
+        person.primaryImageTag.flatMap { mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 120) }
+    }
 
     init(person: MediaPerson) {
         self.person = person
@@ -32,16 +38,19 @@ struct PersonDetailView: View {
     }
 
     var body: some View {
-        PersonDetailContent(model: model, columns: columns, creditScale: 1) { item, poster in
+        PersonDetailContent(model: model, columns: columns, creditScale: 1, creditsInGrid: true) { item, poster in
             Button { selectedItem = item } label: { poster }
                 .buttonStyle(PressableButtonStyle())
                 .zoomTransitionSource(id: item.id, in: zoomNamespace)
         } creditLink: { credit, card in
             Button { openCredit(credit.asSeerrItem) } label: { card }
                 .buttonStyle(PressableButtonStyle())
+        } header: { _ in
+            PersonShowcaseHeader(person: person)
         }
-        .screenBackground()
-        .navigationTitle(person.name)
+        .ignoresSafeArea(edges: .top)
+        .musicHeroBackground(photoURL)
+        .navigationTitle("")
         .sheet(item: $requestingCredit) { item in
             SeerrRequestConfirmSheet(item: item, requestingItem: $requestingCredit)
                 .presentationDetents([.medium, .large])
@@ -49,6 +58,7 @@ struct PersonDetailView: View {
                 .presentationBackground(.ultraThinMaterial)
         }
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.hidden, for: .navigationBar)
         .navigationDestination(item: $selectedItem) { item in
             MediaDetailView(item: item, zoomNamespace: zoomNamespace)
                 .zoomNavigationTransition(id: item.id, in: zoomNamespace)

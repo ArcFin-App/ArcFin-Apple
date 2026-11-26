@@ -15,6 +15,10 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
     /// The artwork for a library title's card, where the platform's card isn't a portrait
     /// poster; the primary image otherwise.
     var cardImageURL: ((MediaItem) -> URL?)? = nil
+    /// Titles Seerr has in the same grid as the library's, rather than a row.
+    var creditsInGrid = false
+    /// The grid for those titles, where the library's cards aren't portrait posters.
+    var creditColumns: [GridItem]? = nil
     /// Each platform's button around a library title's poster.
     @ViewBuilder let itemLink: (MediaItem, PosterCard) -> ItemLink
     /// Each platform's button around a credit Seerr can request.
@@ -60,7 +64,16 @@ struct PersonDetailContent<ItemLink: View, CreditLink: View, Header: View>: View
                         .padding(.horizontal, DT.Spacing.pagePad)
                     }
 
-                    if let first = model.missingCredits.first {
+                    if creditsInGrid, !model.missingCredits.isEmpty {
+                        PersonSectionHeader(title: "Also Appears In")
+                            .padding(.top, model.items.isEmpty ? 0 : DT.Spacing.md)
+                        LazyVGrid(columns: creditColumns ?? columns, spacing: 16) {
+                            ForEach(model.missingCredits) { credit in
+                                creditLink(credit, PersonCreditCard(credit: credit, scale: creditScale, fillsWidth: true))
+                            }
+                        }
+                        .padding(.horizontal, DT.Spacing.pagePad)
+                    } else if let first = model.missingCredits.first {
                         PersonSectionHeader(title: "Also Appears In")
                         // A prolific actor has hundreds of credits, so only the cards on screen
                         // are built. A lazy row in a shelf has come out with no height on Apple
@@ -149,6 +162,42 @@ struct PersonDetailHeader: View {
     }
 }
 
+/// A person's page opening as a title's does: their photo across the top, their name and
+/// role at its foot.
+struct PersonShowcaseHeader: View {
+    @Environment(MediaRepository.self) private var mediaRepo
+    let person: MediaPerson
+    /// Standing on a phone; across the width, face kept in frame, on a television.
+    var portrait = true
+    var landscapeHeight: CGFloat = 420
+
+    var photoURL: URL? {
+        person.primaryImageTag.flatMap { mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: portrait ? 1000 : 1920) }
+    }
+
+    var body: some View {
+        ShowcaseHero(urls: [photoURL].compactMap { $0 }, portrait: portrait, landscapeHeight: landscapeHeight, focus: .top) {
+            ZStack {
+                LinearGradient(colors: [DT.Color.accentDeep, DT.Color.backgroundPrimary],
+                               startPoint: .topLeading, endPoint: .bottomTrailing)
+                if photoURL == nil {
+                    Image(systemName: "person.fill")
+                        .scaledFont(size: 96)
+                        .foregroundStyle(.white.opacity(0.25))
+                }
+            }
+        } content: {
+            ShowcaseTitle(logoURL: nil, name: person.name)
+            if let role = person.role, !role.isEmpty {
+                Text(verbatim: role)
+                    .contentFont(.headline, design: .default, weight: .semibold)
+                    .foregroundStyle(.white.opacity(0.85))
+                    .lineLimit(2)
+            }
+        }
+    }
+}
+
 private struct PersonPhotoPlaceholder: View {
     var body: some View {
         Circle()
@@ -164,8 +213,8 @@ private struct PersonSectionHeader: View {
 
     var body: some View {
         Text(title)
-            .contentFont(.footnote, design: .default, weight: .semibold)
-            .foregroundStyle(DT.Color.textSecondary)
+            .contentFont(.title3, design: .default, weight: .bold)
+            .foregroundStyle(DT.Color.textPrimary)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, DT.Spacing.pagePad)
             .accessibilityAddTraits(.isHeader)
@@ -177,24 +226,19 @@ struct PersonCreditCard: View {
     let credit: SeerrPersonCredit
     /// Apple TV draws these larger, at the distance it's watched from.
     let scale: CGFloat
+    /// As wide as its grid column, rather than a row's fixed width.
+    var fillsWidth = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             ZStack(alignment: .bottomTrailing) {
                 Group {
-                    if let url = credit.posterURL {
-                        RetryingAsyncImage(
-                            url: url,
-                            logCategory: "PersonDetailView",
-                            logContext: "credit title=\(credit.title)",
-                            content: { img in img.resizable().scaledToFill() },
-                            placeholder: { DT.Color.backgroundSecondary }
-                        )
+                    if fillsWidth {
+                        Color.clear.aspectRatio(2 / 3, contentMode: .fit).overlay { poster }
                     } else {
-                        DT.Color.backgroundSecondary
+                        poster.frame(width: 110 * scale, height: 165 * scale)
                     }
                 }
-                .frame(width: 110 * scale, height: 165 * scale)
                 .clipShape(RoundedRectangle(cornerRadius: DT.Radius.md))
 
                 Image(systemName: "plus.circle.fill")
@@ -212,6 +256,22 @@ struct PersonCreditCard: View {
                 .foregroundStyle(DT.Color.textSecondary)
                 .lineLimit(1, reservesSpace: true)
         }
-        .frame(width: 110 * scale)
+        .frame(width: fillsWidth ? nil : 110 * scale)
+        .frame(maxWidth: fillsWidth ? .infinity : nil, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private var poster: some View {
+        if let url = credit.posterURL {
+            RetryingAsyncImage(
+                url: url,
+                logCategory: "PersonDetailView",
+                logContext: "credit title=\(credit.title)",
+                content: { img in img.resizable().scaledToFill() },
+                placeholder: { DT.Color.backgroundSecondary }
+            )
+        } else {
+            DT.Color.backgroundSecondary
+        }
     }
 }

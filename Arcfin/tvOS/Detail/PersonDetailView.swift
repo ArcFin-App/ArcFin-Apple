@@ -15,6 +15,7 @@ struct PersonDetailView: View {
     @State private var selectedItem: MediaItem?
     @State private var requestingCredit: SeerrItem?
     @State private var openCredit: SeerrItem?
+    @State private var tint: Color?
     @FocusState private var focus: FocusTarget?
 
     /// Where focus sits on this page: the header while there's nothing else to select, then the
@@ -24,7 +25,14 @@ struct PersonDetailView: View {
         case card(String)
     }
 
+    /// The photo the hero shows, small, for the page's tint.
+    private var photoURL: URL? {
+        person.primaryImageTag.flatMap { mediaRepo.personImageURL(personId: person.id, tag: $0, fillWidth: 120) }
+    }
+
     private let columns = [GridItem(.adaptive(minimum: DT.Size.posterCard.width), spacing: 40)]
+    /// Portrait posters, so narrower than the library's landscape cards.
+    private let creditColumns = [GridItem(.adaptive(minimum: 200), spacing: 40)]
 
     init(person: MediaPerson) {
         self.person = person
@@ -45,7 +53,8 @@ struct PersonDetailView: View {
     var body: some View {
         // Apple TV's cards are landscape: the portrait poster was cropped to a strip.
         PersonDetailContent(model: model, columns: columns, creditScale: 1.8,
-                            cardImageURL: { mediaRepo.tvImageURL(for: $0, fillWidth: 640) }) { item, poster in
+                            cardImageURL: { mediaRepo.tvImageURL(for: $0, fillWidth: 640) },
+                            creditsInGrid: true, creditColumns: creditColumns) { item, poster in
             Button { selectedItem = item } label: { poster }
                 .buttonStyle(TVCardButtonStyle())
                 .focusEffectDisabled()
@@ -56,18 +65,21 @@ struct PersonDetailView: View {
                 .focusEffectDisabled()
                 .tvFocusRing(cornerRadius: DT.Radius.md)
                 .focused($focus, equals: .card("credit-\(credit.id)"))
-        } header: { header in
+        } header: { _ in
             // Focusable so the page always has something on screen to select: while it loads,
             // when it's empty or failed, and when coming down from the tab bar while the first
             // card is still below the screen. Without it focus stayed on the tab bar, where
-            // Back leaves the page's stack.
-            header
-                .padding(.horizontal, 32)
-                .padding(.bottom, 16)
-                .tvFocusable(cornerRadius: DT.Radius.lg)
+            // Back leaves the page's stack. No ring: it would outline the whole hero.
+            PersonShowcaseHeader(person: person, portrait: false, landscapeHeight: 640)
+                // To the screen's edges, past the TV's side margins the rest of the page keeps.
+                .ignoresSafeArea(edges: .horizontal)
+                .padding(.bottom, 24)
+                .focusable()
+                .focusEffectDisabled()
                 .focused($focus, equals: .header)
         }
         .focusSection()
+        .ignoresSafeArea(edges: .top)
         .defaultFocus($focus, .header)
         .task(id: hasCards) {
             guard hasCards else { return }
@@ -77,7 +89,11 @@ struct PersonDetailView: View {
                 try? await Task.sleep(for: .milliseconds(100))
             }
         }
-        .screenBackground()
+        .detailPageBackground(tint: tint)
+        .task(id: photoURL) {
+            guard let photoURL else { return }
+            tint = await AverageColor.load(from: photoURL)
+        }
         // The header already shows the name; a navigation title repeated it above the page.
         .toolbar(.hidden, for: .navigationBar)
         .appSheet(item: $requestingCredit) { item in

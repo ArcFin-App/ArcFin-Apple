@@ -22,7 +22,9 @@ final class HomeHeroCarousel {
     /// Something over Home that onDisappear doesn't report: a title's page, a sheet, the
     /// player (a full-screen cover, or a Mac's own window).
     var isCovered = false { didSet { if !isShowing { stopVideoBackdrop() } } }
-    var isShowing: Bool { isHomeVisible && !isCovered }
+    /// Home scrolled down past the hero: nothing in it can be seen, so it holds still.
+    var isScrolledAway = false { didSet { if !isShowing { stopVideoBackdrop() } } }
+    var isShowing: Bool { isHomeVisible && !isCovered && !isScrolledAway }
     var playbackRequest: HeroPlaybackRequest?
 
     struct HeroPlaybackRequest: Identifiable, Equatable {

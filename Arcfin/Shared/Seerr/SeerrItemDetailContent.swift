@@ -17,6 +17,7 @@ struct SeerrItemDetailContent: View {
     @Environment(AuthManager.self) private var authManager
 
     @State private var requestBounceTrigger = 0
+    @State private var pageWidth: CGFloat = 0
 
     private var item: SeerrItem { model.item }
     private var detail: SeerrMediaDetail? { model.detail }
@@ -25,7 +26,6 @@ struct SeerrItemDetailContent: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 heroSection
-                titleBlock
                 actionButtons
                 if let key = detail?.trailerYouTubeKey {
                     SeerrTrailerButton(videoID: key, title: item.title)
@@ -91,6 +91,7 @@ struct SeerrItemDetailContent: View {
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
             }
         }
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { pageWidth = $0 }
         .detailPageBackground(tint: model.heroTint)
         .ignoresSafeArea(edges: .top)
         .navigationTitle("")
@@ -127,7 +128,7 @@ struct SeerrItemDetailContent: View {
         } message: {
             Text(model.watchlistError ?? "")
         }
-        .task(id: item.id) { await model.loadHeroTint() }
+        .task(id: heroURLs.first) { await model.loadHeroTint(from: heroURLs.first) }
         .task(id: item.id) { await model.loadDiscovery(seerrRepo: seerrRepo) }
         .task { await model.loadDetail(seerrRepo: seerrRepo) }
         .task { await model.loadLibraryItem(authManager: authManager) }
@@ -223,35 +224,14 @@ struct SeerrItemDetailContent: View {
     }
 
     private func castRow(_ cast: [SeerrCastMember]) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Cast")
-                .font(.system(.caption, design: .default, weight: .semibold))
-                .foregroundStyle(DT.Color.textSecondary)
+        VStack(alignment: .leading, spacing: 12) {
+            DetailSectionTitle(title: "Cast")
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(cast.prefix(12)) { member in
-                        VStack(spacing: 4) {
-                            CachedAsyncImage(url: member.profileURL) { phase in
-                                switch phase {
-                                case .success(let img): img.resizable().scaledToFill()
-                                default: DT.Color.backgroundSecondary
-                                }
-                            }
-                            .frame(width: 56, height: 56)
-                            .clipShape(Circle())
-
-                            Text(member.name)
-                                .font(.system(.caption2, design: .default, weight: .semibold))
-                                .foregroundStyle(DT.Color.textPrimary)
-                                .lineLimit(1)
-                            if let character = member.character {
-                                Text(character)
-                                    .font(.system(.caption2))
-                                    .foregroundStyle(DT.Color.textSecondary)
-                                    .lineLimit(1)
-                            }
+                LazyHStack(alignment: .top, spacing: 14) {
+                    ForEach(cast.prefix(20)) { member in
+                        CastPersonCard(imageURL: member.profileURL, name: member.name, role: member.character) {
+                            DetailPersonPlaceholder()
                         }
-                        .frame(width: 64)
                     }
                 }
             }
@@ -261,8 +241,19 @@ struct SeerrItemDetailContent: View {
 
     // MARK: - Hero
 
+    /// The standing poster on a narrow page, where it fills the top better than a strip of backdrop.
+    private var showsPoster: Bool { pageWidth > 0 && pageWidth < 600 && item.posterPath != nil }
+
+    private var heroURLs: [URL] {
+        let poster = item.posterPath.flatMap { URL(string: "https://image.tmdb.org/t/p/w780\($0)") }
+        return [showsPoster ? poster : (item.backdropURL ?? poster)].compactMap { $0 }
+    }
+
     private var heroSection: some View {
-        DetailHeroBackdrop(url: item.backdropURL ?? item.posterURL)
+        ShowcaseHero(urls: heroURLs, portrait: showsPoster, landscapeHeight: 440) {
+            ShowcaseTitle(logoURL: nil, name: item.title)
+            metaRow
+        }
     }
 
     // MARK: - Discovery
@@ -338,79 +329,48 @@ struct SeerrItemDetailContent: View {
         .padding(.bottom, DT.Spacing.md)
     }
 
-    // MARK: - Title block
+    // MARK: - Details
 
-    private var titleBlock: some View {
-        HStack(alignment: .top, spacing: 14) {
-            if let url = item.posterURL {
-                CachedAsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let img): img.resizable().scaledToFill()
-                    default: RoundedRectangle(cornerRadius: 10).fill(DT.Color.backgroundSecondary)
-                    }
-                }
-                .frame(width: 90, height: 132)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
-                .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
-            } else {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(DT.Color.backgroundSecondary)
-                    .frame(width: 90, height: 132)
+    private var metaRow: some View {
+        HStack(spacing: 8) {
+            Text(item.mediaType == .tv ? "Series" : "Movie")
+                .font(.system(.caption2, design: .default, weight: .semibold))
+                .foregroundStyle(DT.Color.textSecondary)
+            if let year = item.year {
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
+                Text(year)
+                    .font(.system(.caption2))
+                    .foregroundStyle(DT.Color.textSecondary)
             }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(item.title)
-                    .font(.system(.title3, design: .default, weight: .heavy))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .tracking(-0.5)
-                    .lineLimit(3)
-
-                HStack(spacing: 8) {
-                    Text(item.mediaType == .tv ? "Series" : "Movie")
-                        .font(.system(.caption2, design: .default, weight: .semibold))
-                        .foregroundStyle(DT.Color.textSecondary)
-                    if let year = item.year {
-                        Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
-                        Text(year)
-                            .font(.system(.caption2))
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-                    if let certification = model.certification, !certification.isEmpty {
-                        Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
-                        Text(certification)
-                            .font(.system(.caption2, design: .default, weight: .semibold))
-                            .foregroundStyle(DT.Color.textSecondary)
-                            .padding(.horizontal, 5).padding(.vertical, 1)
-                            .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
-                            .accessibilityLabel("Rated \(certification)")
-                    }
-                    if let runtime = detail?.runtimeMinutes {
-                        Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
-                        Text("\(runtime) min")
-                            .font(.system(.caption2))
-                            .foregroundStyle(DT.Color.textSecondary)
-                    }
-                    if let rating = detail?.voteAverage, rating > 0 {
-                        Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
-                        HStack(spacing: 2) {
-                            Image(systemName: "star.fill").font(.system(.caption2))
-                            Text(rating.formatted(.number.precision(.fractionLength(1))))
-                        }
-                        .font(.system(.caption2))
-                        .foregroundStyle(DT.Color.palette("f59e0b"))
-                    }
-                }
-                // Lets HStack compress/truncate these Text children when every optional
-                // field is present at once, instead of overflowing past the screen edge —
-                // same fix as MediaDetailView.metaRow.
-                .lineLimit(1)
+            if let certification = model.certification, !certification.isEmpty {
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
+                Text(certification)
+                    .font(.system(.caption2, design: .default, weight: .semibold))
+                    .foregroundStyle(DT.Color.textSecondary)
+                    .padding(.horizontal, 5).padding(.vertical, 1)
+                    .overlay(RoundedRectangle(cornerRadius: 3).stroke(DT.Color.textSecondary.opacity(0.35), lineWidth: 1))
+                    .accessibilityLabel("Rated \(certification)")
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            if let runtime = detail?.runtimeMinutes {
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
+                Text("\(runtime) min")
+                    .font(.system(.caption2))
+                    .foregroundStyle(DT.Color.textSecondary)
+            }
+            if let rating = detail?.voteAverage, rating > 0 {
+                Text("·").accessibilityHidden(true).foregroundStyle(DT.Color.textPrimary.opacity(0.2))
+                HStack(spacing: 2) {
+                    Image(systemName: "star.fill").font(.system(.caption2))
+                    Text(rating.formatted(.number.precision(.fractionLength(1))))
+                }
+                .font(.system(.caption2))
+                .foregroundStyle(DT.Color.palette("f59e0b"))
+            }
         }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, -50)
-        .padding(.bottom, DT.Spacing.md)
+        // Lets HStack compress/truncate these Text children when every optional
+        // field is present at once, instead of overflowing past the screen edge —
+        // same fix as MediaDetailView.metaRow.
+        .lineLimit(1)
     }
 
     private func availabilityRow(label: LocalizedStringKey, status: (label: String, colorHex: String)) -> some View {

@@ -232,8 +232,6 @@ struct SeerrItemDetailView: View {
         VStack(alignment: .leading, spacing: 56) {
             TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .ratings, rowInset: 80)
                 .focusSection()
-            TitleIssuesSection(tmdbId: item.id, mediaType: item.mediaType)
-                .padding(.horizontal, 80)
             if let seasons = detail?.seasons, !seasons.isEmpty { seasonsRow(seasons) }
             if let cast = detail?.cast, !cast.isEmpty { castRow(cast) }
             if let collection = model.collection { collectionRow(collection) }
@@ -243,6 +241,8 @@ struct SeerrItemDetailView: View {
             TitleInsights(tmdbId: item.id, mediaType: item.mediaType, part: .details)
                 .padding(.horizontal, 80)
                 .focusSection()
+            TitleIssuesSection(tmdbId: item.id, mediaType: item.mediaType)
+                .padding(.horizontal, 80)
         }
     }
 

@@ -11,6 +11,8 @@ import AuthCore
 ///
 /// Each platform's `NoConnectionView` adds its own ways out between Retry and Sign Out.
 struct NoConnectionContent<MoreActions: View>: View {
+    /// What to check first on this device: only a phone or iPad has mobile data.
+    let networkTips: [String]
     let signOut: () -> Void
     @ViewBuilder let moreActions: MoreActions
 
@@ -18,12 +20,12 @@ struct NoConnectionContent<MoreActions: View>: View {
     @Environment(MediaRepository.self) private var mediaRepo
     @State private var now = Date.now
 
-    private let tips = [
-        String(localized: "Check that Wi-Fi or Mobile Data is turned on"),
-        String(localized: "Try turning Wi-Fi or Mobile Data off, then back on"),
-        String(localized: "Quit Arcfin completely and reopen it"),
-        String(localized: "Confirm your server is online and reachable from this network"),
-    ]
+    private var tips: [String] {
+        networkTips + [
+            String(localized: "Quit Arcfin completely and reopen it"),
+            String(localized: "Confirm your server is online and reachable from this network"),
+        ]
+    }
 
     var body: some View {
         ZStack {

@@ -37,38 +37,38 @@ struct MusicSmartPlaylistView: View {
     @State private var backdrop: URL?
 
     var body: some View {
-        List {
-            MusicHero(play: { MusicActions.play(songs ?? []) }, shuffle: { MusicActions.shuffle(songs ?? []) },
-                      canPlay: songs?.isEmpty == false) { size in
-                // The four covers, square to the width and cropped to the hero.
-                MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: max(size.width, size.height),
-                                      showsTitle: false) {
-                    MusicArtwork(url: $0, cornerRadius: 0)
+        // A scroll view, not a list: a list row clips the hero's blur where it runs on below.
+        ScrollView {
+            VStack(spacing: DT.Spacing.lg) {
+                MusicHero(play: { MusicActions.play(songs ?? []) }, shuffle: { MusicActions.shuffle(songs ?? []) },
+                          canPlay: songs?.isEmpty == false) { size in
+                    // The four covers, square to the width and cropped to the hero.
+                    MusicSmartPlaylistArt(playlist: playlist, libraryID: libraryID, side: max(size.width, size.height),
+                                          showsTitle: false) {
+                        MusicArtwork(url: $0, cornerRadius: 0)
+                    }
+                } info: {
+                    VStack(spacing: DT.Spacing.xs) {
+                        Text(playlist.title).font(.title2.weight(.bold)).foregroundStyle(DT.Color.textPrimary)
+                        Text(playlist.detail).font(.subheadline).foregroundStyle(DT.Color.textSecondary)
+                    }
                 }
-            } info: {
-                VStack(spacing: DT.Spacing.xs) {
-                    Text(playlist.title).font(.title2.weight(.bold)).foregroundStyle(DT.Color.textPrimary)
-                    Text(playlist.detail).font(.subheadline).foregroundStyle(DT.Color.textSecondary)
+                if let songs {
+                    if songs.isEmpty {
+                        ContentUnavailableView("No Songs", systemImage: playlist.systemImage)
+                    }
+                    LazyVStack(alignment: .leading, spacing: DT.Spacing.xs) {
+                        ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
+                            MusicSongRow(song: song) { MusicActions.play(songs, from: index) }
+                        }
+                    }
+                    .padding(.horizontal, DT.Spacing.pagePad)
+                } else {
+                    ProgressView().frame(maxWidth: .infinity)
                 }
             }
-            .listRowInsets(EdgeInsets())
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-            if let songs {
-                if songs.isEmpty {
-                    ContentUnavailableView("No Songs", systemImage: playlist.systemImage)
-                        .listRowSeparator(.hidden)
-                        .listRowBackground(Color.clear)
-                }
-                ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
-                    MusicSongRow(song: song) { MusicActions.play(songs, from: index) }
-                }
-            } else {
-                ProgressView().frame(maxWidth: .infinity).listRowSeparator(.hidden).listRowBackground(Color.clear)
-            }
+            .padding(.bottom, DT.Spacing.xl)
         }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
         .ignoresSafeArea(edges: .top)
         .musicHeroBackground(backdrop)
         .inlineNavigationTitle()

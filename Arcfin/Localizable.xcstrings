@@ -218637,6 +218637,454 @@
           }
         }
       }
+    },
+    "A New Look for Titles" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein neuer Look für Titel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nuevo aspecto para los títulos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nouveau look pour les titres"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nuovo aspetto per i titoli"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "タイトルの新しいデザイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새로워진 작품 화면"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een nieuwe look voor titels"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um novo visual para os títulos"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новый вид страниц"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焕然一新的作品页面"
+          }
+        }
+      }
+    },
+    "Movies, shows, people and Seerr titles open with their artwork across the screen, the logo at its foot and the page tinted to match. Downloads look the same, and the ones you already have update to the new artwork." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filme, Serien, Personen und Seerr-Titel öffnen sich mit ihrem Artwork über den ganzen Bildschirm, dem Logo darunter und einer passend getönten Seite. Downloads sehen genauso aus, und deine bisherigen Downloads erhalten das neue Artwork."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Las películas, series, personas y títulos de Seerr se abren con su arte a toda pantalla, el logotipo al pie y la página teñida a juego. Las descargas se ven igual, y las que ya tienes se actualizan al nuevo arte."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les films, séries, personnes et titres Seerr s’ouvrent avec leur illustration sur tout l’écran, le logo en bas et la page teintée assortie. Les téléchargements ont le même style, et ceux que vous avez déjà passent à la nouvelle illustration."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Film, serie, persone e titoli di Seerr si aprono con l’immagine a tutto schermo, il logo in basso e la pagina tinta in tono. I download hanno lo stesso aspetto e quelli che hai già passano alla nuova immagine."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "映画、番組、人物、Seerrのタイトルは、画面いっぱいのアートワークと下部のロゴで開き、ページもその色に染まります。ダウンロードも同じデザインになり、既存のダウンロードも新しいアートワークに更新されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "영화, 프로그램, 인물, Seerr 작품이 화면 가득한 아트워크와 하단의 로고로 열리고 페이지도 그 색으로 물듭니다. 다운로드도 같은 모습이며, 이미 받은 다운로드도 새 아트워크로 업데이트됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Films, series, personen en Seerr-titels openen met hun artwork over het hele scherm, het logo eronder en de pagina in een bijpassende tint. Downloads zien er hetzelfde uit, en je bestaande downloads krijgen het nieuwe artwork."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filmes, séries, pessoas e títulos do Seerr abrem com a arte em tela cheia, o logotipo embaixo e a página tingida para combinar. Os downloads têm o mesmo visual, e os que você já tem são atualizados com a nova arte."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Фильмы, сериалы, люди и тайтлы Seerr открываются с обложкой на весь экран, логотипом внизу и страницей в тон. Загрузки выглядят так же, а уже скачанные получат новые обложки."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "电影、剧集、人物和 Seerr 作品打开时，海报铺满屏幕，标志位于底部，页面也会染上相应的颜色。下载项采用相同的设计，已有的下载也会更新为新的海报。"
+          }
+        }
+      }
+    },
+    "A New Look for People" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein neuer Look für Personen"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nuevo aspecto para las personas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nouveau look pour les personnes"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un nuovo aspetto per le persone"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人物ページの新しいデザイン"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새로워진 인물 화면"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Een nieuwe look voor personen"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um novo visual para as pessoas"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Новый вид страниц людей"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "焕然一新的人物页面"
+          }
+        }
+      }
+    },
+    "A person's page opens with their photo across the screen and the page tinted to match, and the titles they're also in sit in a grid." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Seite einer Person öffnet sich mit ihrem Foto über den ganzen Bildschirm und einer passend getönten Seite, und die Titel, in denen sie auch mitspielt, stehen in einem Raster."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La página de una persona se abre con su foto a toda pantalla y la página teñida a juego, y los títulos en los que también aparece se muestran en una cuadrícula."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La page d’une personne s’ouvre avec sa photo sur tout l’écran et la page teintée assortie, et les titres où elle apparaît aussi s’affichent en grille."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La pagina di una persona si apre con la sua foto a tutto schermo e la pagina tinta in tono, e gli altri titoli in cui appare sono disposti in una griglia."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人物のページは画面いっぱいの写真で開き、ページもその色に染まります。ほかの出演作はグリッドで表示されます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "인물 페이지가 화면 가득한 사진으로 열리고 페이지도 그 색으로 물들며, 함께 출연한 작품은 격자로 표시됩니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De pagina van een persoon opent met hun foto over het hele scherm en de pagina in een bijpassende tint, en de titels waarin ze ook te zien zijn staan in een raster."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A página de uma pessoa abre com a foto em tela cheia e a página tingida para combinar, e os outros títulos em que ela aparece ficam em uma grade."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Страница человека открывается с фото на весь экран и страницей в тон, а другие тайтлы с его участием показаны сеткой."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "人物页面打开时，照片铺满屏幕，页面也会染上相应的颜色；其参演的其他作品以网格显示。"
+          }
+        }
+      }
+    },
+    "You'll need to sign in again to use it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du musst dich erneut anmelden, um ihn zu nutzen."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tendrás que volver a iniciar sesión para usarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous devrez vous reconnecter pour l’utiliser."
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dovrai accedere di nuovo per usarlo."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用するには再度サインインする必要があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사용하려면 다시 로그인해야 합니다."
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Je moet opnieuw inloggen om hem te gebruiken."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Você vai precisar entrar de novo para usá-lo."
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Чтобы использовать его, нужно будет войти снова."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你需要重新登录才能使用它。"
+          }
+        }
+      }
+    },
+    "Check that your Mac is connected to Wi-Fi or Ethernet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prüfe, ob dein Mac mit WLAN oder Ethernet verbunden ist"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprueba que tu Mac esté conectado a Wi-Fi o Ethernet"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifiez que votre Mac est connecté au Wi-Fi ou à Ethernet"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla che il Mac sia connesso al Wi-Fi o a Ethernet"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "MacがWi-FiまたはEthernetに接続されているか確認してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mac이 Wi-Fi 또는 이더넷에 연결되어 있는지 확인하세요"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controleer of je Mac verbonden is met wifi of ethernet"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifique se o Mac está conectado ao Wi-Fi ou à Ethernet"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверьте, что Mac подключен к Wi-Fi или Ethernet"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "检查你的 Mac 是否已连接到无线局域网或以太网"
+          }
+        }
+      }
+    },
+    "Check that this Apple TV is connected in Settings › Network" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prüfe unter Einstellungen › Netzwerk, ob dieses Apple TV verbunden ist"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Comprueba en Ajustes › Red que este Apple TV esté conectado"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vérifiez dans Réglages › Réseau que cette Apple TV est connectée"
+          }
+        },
+        "it" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controlla in Impostazioni › Network che questa Apple TV sia connessa"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定 › ネットワークで、このApple TVが接続されているか確認してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "설정 › 네트워크에서 이 Apple TV가 연결되어 있는지 확인하세요"
+          }
+        },
+        "nl" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Controleer in Instellingen › Netwerk of deze Apple TV verbonden is"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verifique em Ajustes › Rede se esta Apple TV está conectada"
+          }
+        },
+        "ru" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Проверьте в «Настройки › Сеть», что эта Apple TV подключена"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在“设置 › 网络”中检查这台 Apple TV 是否已连接"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"

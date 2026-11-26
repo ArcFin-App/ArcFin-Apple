@@ -72,8 +72,7 @@ struct DownloadedItemDetailPage: View {
         GeometryReader { proxy in
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 0) {
-                    DetailHeroBackdrop(url: DownloadedItemDetailModel.heroURL(for: item))
-                    titleBlock
+                    hero(isNarrow: proxy.size.width < 600)
                     VStack(alignment: .leading, spacing: DT.Spacing.lg) {
                         playRow
                         if let tagline = item.tagline, !tagline.isEmpty {
@@ -115,42 +114,28 @@ struct DownloadedItemDetailPage: View {
 
     // MARK: - Title
 
-    private var titleBlock: some View {
-        HStack(alignment: .bottom, spacing: 14) {
-            CachedAsyncImage(url: fileURL(item.posterFileName)) { phase in
-                switch phase {
-                case .success(let image): image.resizable().scaledToFill()
-                default: DT.Color.backgroundSecondary
-                }
+    /// As the title's page opens online: the saved poster on a phone (a movie's), else the saved
+    /// backdrop, with the name and details at its foot.
+    private func hero(isNarrow: Bool) -> some View {
+        let poster = fileURL(item.posterFileName)
+        let showsPoster = isNarrow && !isEpisode && poster != nil
+        let url = showsPoster ? poster : DownloadedItemDetailModel.heroURL(for: item)
+        return ShowcaseHero(urls: [url].compactMap { $0 }, portrait: showsPoster, landscapeHeight: 380) {
+            if isEpisode, let series = item.seriesName {
+                Text(series)
+                    .font(.system(.subheadline, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.85))
+                    .lineLimit(1)
             }
-            .frame(width: isEpisode ? 150 : 90, height: isEpisode ? 84 : 132)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(DT.Color.textPrimary.opacity(0.1), lineWidth: 1))
-            .shadow(color: .black.opacity(0.6), radius: 12, y: 4)
-
-            VStack(alignment: .leading, spacing: 5) {
-                if isEpisode, let series = item.seriesName {
-                    Text(series)
-                        .font(.system(.caption, weight: .semibold))
-                        .foregroundStyle(DT.Color.accent)
-                        .lineLimit(1)
-                }
-                Text(item.name)
-                    .font(.system(.title3, weight: .heavy))
-                    .foregroundStyle(DT.Color.textPrimary)
-                    .lineLimit(3)
-                Text(metaLine)
-                    .font(.system(.caption))
-                    .foregroundStyle(DT.Color.textSecondary)
-                    .lineLimit(2)
-                Label("Downloaded", systemImage: "arrow.down.circle.fill")
-                    .font(.system(.caption2, weight: .semibold))
-                    .foregroundStyle(DT.Color.accent)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            ShowcaseTitle(logoURL: nil, name: item.name, nameStyle: .title)
+            Text(metaLine)
+                .font(.system(.caption, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.8))
+                .lineLimit(2)
+            Label("Downloaded", systemImage: "arrow.down.circle.fill")
+                .font(.system(.caption2, weight: .semibold))
+                .foregroundStyle(DT.Color.accent)
         }
-        .padding(.horizontal, DT.Spacing.pagePad)
-        .padding(.top, -60)
     }
 
     private var metaLine: String {

@@ -429,18 +429,17 @@ public struct JellyfinMediaClient: Sendable {
         tag: String,
         type: JellyfinImageType = .primary,
         fillWidth: Int = 300,
+        index: Int = 0,
         token: String
     ) -> URL {
         let path: String
         switch type {
         case .backdrop:
-            path = "Items/\(itemID)/Images/Backdrop/0"
+            path = "Items/\(itemID)/Images/Backdrop/\(index)"
         case .logo:
             path = "Items/\(itemID)/Images/Logo/0"
-        case .primary:
-            path = "Items/\(itemID)/Images/Primary"
-        case .thumb:
-            path = "Items/\(itemID)/Images/Thumb"
+        case .primary, .thumb:
+            path = "Items/\(itemID)/Images/\(type.rawValue)"
         }
         var comps = URLComponents(url: baseURL.appendingPathComponent(path), resolvingAgainstBaseURL: false)!
         comps.queryItems = [

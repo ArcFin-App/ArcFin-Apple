@@ -35,11 +35,10 @@ struct MediaDetailView: View {
     @State private var openedSeerrItem: SeerrItem?
     @State private var watchParty: WatchPartyLaunch?
 
-    // A Mac window is far wider than a phone: a 260 pt strip of backdrop and a 90 pt
-    // poster left the top of the page looking like a banner ad.
+    // A Mac window is far wider than a phone: a taller hero than the iPhone's strip.
     private let headerMetrics = DetailHeaderMetrics(
-        heroHeight: 420, posterSize: CGSize(width: 170, height: 250), titleStyle: .largeTitle,
-        backdropFillWidth: 1800, posterFillWidth: 400
+        heroHeight: 520, titleStyle: .largeTitle,
+        backdropFillWidth: 2000, posterFillWidth: 900
     )
 
     init(item: MediaItem, zoomNamespace: Namespace.ID? = nil) {
@@ -52,8 +51,8 @@ struct MediaDetailView: View {
         let shareURL = model.shareURL(authManager: authManager)
         ScrollView(showsIndicators: false) {
             VStack(spacing: 0) {
-                MediaDetailHero(item: item, metrics: headerMetrics)
-                MediaDetailTitleBlock(item: item, detail: model.detail, awards: model.awards, metrics: headerMetrics)
+                MediaDetailHero(item: item, detail: model.detail, awards: model.awards, metrics: headerMetrics,
+                                isNarrow: false) { url in Task { await model.loadHeroTint(from: url) } }
                 if model.isLoading { loadingContent }
                 else { detailContent }
                 Spacer().frame(height: DT.Size.tabBarHeight + 24)
@@ -73,7 +72,6 @@ struct MediaDetailView: View {
         .ignoresSafeArea(edges: .top)
         .task(id: item.id) {
             model.readKeptEpisodeCount()
-            await model.loadHeroTint(mediaRepo: mediaRepo)
         }
         // Handoff to another device, Spotlight, and on-screen awareness: Siri and Apple
         // Intelligence can resolve "this movie" to the MediaEntity for what's on screen.

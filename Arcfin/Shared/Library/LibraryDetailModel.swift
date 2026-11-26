@@ -36,6 +36,9 @@ final class LibraryDetailModel {
     var newPlaylistName = ""
     var createdPlaylist: MediaPlaylist?
     private(set) var playlistTint: Color?
+    /// The playlist itself, for artwork of its own.
+    private(set) var playlistItem: MediaItem?
+    private var checkedPlaylistItem = false
 
     private(set) var items: [MediaItem] = [] {
         didSet { gridEntries = makeGridEntries() }
@@ -218,7 +221,13 @@ final class LibraryDetailModel {
         item.id == items.last?.id && hasMore && !isLoadingMore
     }
 
+    /// The playlist's own backdrop when it has one, else its first title's.
     func playlistHeroURL(in mediaRepo: MediaRepository) -> URL? {
+        // Not the first title's while the playlist's own may still come.
+        guard checkedPlaylistItem else { return nil }
+        if let own = playlistItem, !own.backdropImageTags.isEmpty {
+            return mediaRepo.imageURL(for: own, type: .backdrop, fillWidth: 1200)
+        }
         guard let first = items.first else { return nil }
         return mediaRepo.imageURL(for: first, type: .backdrop, fillWidth: 1200)
     }
@@ -342,7 +351,16 @@ final class LibraryDetailModel {
             sortOption = saved
         }
         if startsAddingTitles { showAddTitles = true }
+        async let own: Void = loadPlaylistItem(authManager: authManager)
         await fetchFirstPage(authManager: authManager, mediaRepo: mediaRepo)
+        await own
+    }
+
+    private func loadPlaylistItem(authManager: AuthManager) async {
+        guard let playlist, let cred = authManager.state.credential else { return }
+        let header = authManager.authClient.authHeader(token: cred.accessToken)
+        playlistItem = try? await client.getItemDetail(credential: cred, authHeader: header, itemId: playlist.id).item
+        checkedPlaylistItem = true
     }
 
     /// Re-fetches from the top with the current filter/sort selection — used whenever a
