@@ -227,6 +227,11 @@ private struct AppRootPrompts: ViewModifier {
                 AppServices.remoteSessions.stop()
             }
         }
+        // Another profile: the last one's devices go at once, not at the next look.
+        .onChange(of: model.authManager.state.credential?.id) {
+            AppServices.remoteSessions.stop()
+            if watchesOtherDevices { AppServices.remoteSessions.start(authManager: model.authManager) }
+        }
         // A signed-out Apple TV on the network, offered for setup with this profile (#481).
         .task(id: offersNearbySetup) {
             if offersNearbySetup { setupGuide.start(authManager: model.authManager) } else { setupGuide.stop() }

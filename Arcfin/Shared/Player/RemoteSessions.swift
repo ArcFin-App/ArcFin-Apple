@@ -75,7 +75,11 @@ final class RemoteSessions {
         let header = authManager.authClient.authHeader(token: credential.accessToken)
         let ownDevice = UserDefaults.standard.string(forKey: "arcfin.deviceId")
         guard let found = try? await client.controllableSessions(credential: credential, authHeader: header) else { return }
-        let controllable = found.filter { $0.supportsRemoteControl && $0.deviceId != ownDevice }
+        // An admin can control every session on the server: only this profile's own count here.
+        let ownUser = Self.normalized(credential.userID)
+        let controllable = found.filter {
+            $0.supportsRemoteControl && $0.deviceId != ownDevice && $0.userId.map(Self.normalized) == ownUser
+        }
         // Set only on a change (and counted then, or on the first answer after stop()): the tab
         // view reads both, and an unchanged list every poll redrew it for nothing.
         let changed = controllable != sessions
@@ -84,6 +88,10 @@ final class RemoteSessions {
         if isShowingRemote, selected == nil { isShowingRemote = false }
         if changed || !hasRefreshed { refreshCount += 1 }
         hasRefreshed = true
+    }
+
+    private static func normalized(_ id: String) -> String {
+        id.replacingOccurrences(of: "-", with: "").lowercased()
     }
 
     func open(_ session: JellyfinSession? = nil) {
