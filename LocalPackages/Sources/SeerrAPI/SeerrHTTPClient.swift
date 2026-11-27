@@ -122,7 +122,10 @@ public actor SeerrHTTPClient {
     /// for each title one by one, and they're reloaded by Home, Discover, Requests and after
     /// every request, approval or decline.
     private var titleDetails: [String: (item: SeerrItem, fetched: Date)] = [:]
-    private static let titleDetailLifetime: TimeInterval = 600
+    private static let titleDetailLifetime: TimeInterval = 6 * 3600
+    /// The server's Arcfin Sync can fill in a page of requests' titles in one call (0.8 and later).
+    /// Set to false once it says it can't, so older plugins fall back to looking each title up.
+    private var serverFillsRequests = true
     private let session: URLSession
     // UserDefaults key used to persist a per-URL auth-failure cooldown across cold launches.
     private let authFailedKey: String
@@ -436,10 +439,19 @@ public actor SeerrHTTPClient {
         var raw: [SeerrWatchlistItemResponse] = []
         var page = 1
         while true {
-            var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/discover/watchlist"),
+            // Through the server, each page comes with its titles' names and artwork already in it.
+            let filled = throughServer && serverFillsRequests
+            var comps = URLComponents(url: baseURL.appendingPathComponent(filled ? "Watchlist" : "api/v1/discover/watchlist"),
                                       resolvingAgainstBaseURL: false)!
             comps.queryItems = [URLQueryItem(name: "page", value: "\(page)")]
-            let decoded = try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!))
+            let data: Data
+            do {
+                data = try await fetch(comps.url!, timeout: filled ? 30 : 15)
+            } catch SeerrError.requestFailed(let status, _) where filled && status == 404 {
+                serverFillsRequests = false
+                continue
+            }
+            let decoded = try JSONDecoder().decode(Page.self, from: data)
             raw += decoded.results
             guard page < (decoded.totalPages ?? 1), page < 25, !decoded.results.isEmpty else { break }
             page += 1
@@ -449,6 +461,11 @@ public actor SeerrHTTPClient {
         let previous = titleDetails
         if refresh { titleDetails = [:] }
         let now = Date()
+        for r in raw {
+            if let card = r.arcfin?.item(tmdbId: r.tmdbId, mediaType: r.mediaType) {
+                titleDetails["\(r.mediaType ?? "movie"):\(r.tmdbId ?? -1)"] = (card, now)
+            }
+        }
         var items = [SeerrItem?](repeating: nil, count: raw.count)
         var missing: [(index: Int, key: String, entry: SeerrWatchlistItemResponse)] = []
         for (index, r) in raw.enumerated() {
@@ -511,22 +528,37 @@ public actor SeerrHTTPClient {
         }
         let take = 100
         var collected: [SeerrRequestResponse] = []
+        let now = Date()
         while collected.count < limit {
-            var comps = URLComponents(url: baseURL.appendingPathComponent("api/v1/request"),
+            // Through the server, a page comes with each title's name and artwork already in it,
+            // instead of one lookup per request afterwards.
+            let filled = throughServer && serverFillsRequests
+            var comps = URLComponents(url: baseURL.appendingPathComponent(filled ? "Requests" : "api/v1/request"),
                                       resolvingAgainstBaseURL: false)!
             comps.queryItems = [
                 URLQueryItem(name: "filter", value: filter),
                 URLQueryItem(name: "skip", value: "\(collected.count)"),
                 URLQueryItem(name: "take", value: "\(take)"),
             ]
-            let page = try JSONDecoder().decode(Page.self, from: try await fetch(comps.url!))
+            let data: Data
+            do {
+                data = try await fetch(comps.url!, timeout: filled ? 30 : 15)
+            } catch SeerrError.requestFailed(let status, _) where filled && status == 404 {
+                serverFillsRequests = false
+                continue
+            }
+            let page = try JSONDecoder().decode(Page.self, from: data)
+            for r in page.results {
+                if let card = r.arcfin?.item(tmdbId: r.media.tmdbId, mediaType: r.media.mediaType) {
+                    titleDetails[Self.detailKey(r)] = (card, now)
+                }
+            }
             collected += page.results
             // Seerr may serve fewer than asked for, so stop on its total, not a short page.
             let done = page.pageInfo?.results.map { collected.count >= $0 } ?? (page.results.count < take)
             if page.results.isEmpty || done { break }
         }
         let raw = collected
-        let now = Date()
 
         // The request list only carries tmdbId/mediaType — title and artwork
         // live on TMDB, so fetch each item's detail to fill them in. A failure here used to
@@ -620,6 +652,31 @@ public actor SeerrHTTPClient {
             byRegion[entry.region] = entry.rating
         }
         return byRegion[region.uppercased()] ?? byRegion["US"] ?? byRegion.values.first
+    }
+
+    /// Age ratings for many titles at once ("movie:603" → "15", empty where TMDB has none), from the
+    /// server's Arcfin Sync in one call. nil when Seerr isn't through the server or its plugin can't,
+    /// so the caller asks title by title instead.
+    public func ratings(for titles: [(mediaType: RequestMediaType, tmdbId: Int)], region: String) async -> [String: String]? {
+        guard throughServer, serverFillsRequests, !titles.isEmpty else { return nil }
+        var result: [String: String] = [:]
+        for chunk in stride(from: 0, to: titles.count, by: 100).map({ Array(titles[$0..<min($0 + 100, titles.count)]) }) {
+            var comps = URLComponents(url: baseURL.appendingPathComponent("Ratings"), resolvingAgainstBaseURL: false)!
+            comps.queryItems = [
+                URLQueryItem(name: "titles", value: chunk.map { "\($0.mediaType == .tv ? "tv" : "movie"):\($0.tmdbId)" }.joined(separator: ",")),
+                URLQueryItem(name: "region", value: region),
+            ]
+            do {
+                let page = try JSONDecoder().decode([String: String?].self, from: try await fetch(comps.url!, timeout: 20))
+                for (key, rating) in page { if let rating { result[key] = rating } }
+            } catch SeerrError.requestFailed(let status, _) where status == 404 {
+                serverFillsRequests = false
+                return nil
+            } catch {
+                return nil
+            }
+        }
+        return result
     }
 
     /// Movies (or shows) matching a TMDB keyword, e.g. "time travel".
@@ -1208,6 +1265,8 @@ private struct SeerrMediaInfoResponse: Decodable {
 private struct SeerrWatchlistItemResponse: Decodable {
     let tmdbId: Int?
     let mediaType: String?
+    /// The title's name and artwork, when the server's Arcfin Sync filled them in.
+    let arcfin: SeerrRequestResponse.ServerCard?
 }
 
 private struct SeerrRequestResponse: Decodable {
@@ -1216,6 +1275,20 @@ private struct SeerrRequestResponse: Decodable {
     let createdAt: String?
     let media: SeerrRequestMedia
     let requestedBy: RequestedBy?
+    /// The title's name and artwork, when the server's Arcfin Sync filled them in.
+    let arcfin: ServerCard?
+
+    struct ServerCard: Decodable {
+        let title: String?
+        let posterPath: String?
+        let backdropPath: String?
+
+        func item(tmdbId: Int?, mediaType: String?) -> SeerrItem? {
+            guard let tmdbId, let title else { return nil }
+            return SeerrItem(id: tmdbId, title: title, mediaType: mediaType == "tv" ? .tv : .movie,
+                             posterPath: posterPath, backdropPath: backdropPath)
+        }
+    }
 
     struct RequestedBy: Decodable {
         let id: Int?

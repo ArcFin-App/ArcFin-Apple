@@ -27,6 +27,8 @@ final class ProfileRules {
     @ObservationIgnored private var certifications: [String: String?] = [:]
 
     var policy: UserPolicy { profile?.policy ?? UserPolicy() }
+    /// Seerr lists are filtered by age rating: only with a maximum rating, as in `visible`.
+    var filtersSeerr: Bool { policy.maxParentalRating != nil }
     var restrictsContent: Bool { policy.restrictsContent }
     var canDownload: Bool { policy.enableContentDownloading }
     var canManageSubtitles: Bool { policy.isAdministrator || policy.enableSubtitleManagement }
