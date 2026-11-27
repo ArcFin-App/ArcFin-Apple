@@ -799,7 +799,12 @@ final class SeerrRepository {
     private func visible(_ items: [SeerrItem]) async -> [SeerrItem] {
         guard hasCatalog else { return items }
         let client = client, tmdb = tmdb
-        return await ProfileRules.shared.visible(items, region: await region()) { item, region in
+        let region = await region()
+        // Through the server, every title's rating comes in one call instead of one each.
+        let known = ProfileRules.shared.filtersSeerr
+            ? await client?.ratings(for: items.map { ($0.mediaType, $0.id) }, region: region) : nil
+        return await ProfileRules.shared.visible(items, region: region) { item, region in
+            if let rating = known?["\(item.mediaType == .tv ? "tv" : "movie"):\(item.id)"] { return rating }
             if let client, let rating = try? await client.certification(mediaType: item.mediaType, tmdbId: item.id, region: region) {
                 return rating
             }
