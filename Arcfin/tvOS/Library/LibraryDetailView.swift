@@ -12,6 +12,9 @@ struct LibraryDetailView: View {
     @State private var scrolledItemID: MediaItem.ID? = nil
     @FocusState private var focusedItemID: MediaItem.ID?
     @State private var showFilterSheet = false
+    /// Search has its own page: tvOS draws a search field's keyboard above the view it's on,
+    /// which pushed the action row, the grid and the A–Z column out of place.
+    @State private var showSearch = false
 
     init(library: JellyfinLibrary, playlist: MediaPlaylist? = nil, startsAddingTitles: Bool = false) {
         _model = State(initialValue: LibraryDetailModel(library: library, playlist: playlist, startsAddingTitles: startsAddingTitles))
@@ -60,30 +63,7 @@ struct LibraryDetailView: View {
                         if model.playlist != nil { playlistHeader }
                         tvActionRow
                         LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
-                            ForEach(model.gridEntries) { entry in
-                                Group {
-                                    if entry.items.count > 1 {
-                                        showGroupCell(entry.items)
-                                    } else {
-                                        itemCell(entry.items[0])
-                                    }
-                                }
-                                .onAppear {
-                                    if let last = entry.items.last, model.shouldLoadMore(after: last) {
-                                        Task { await model.loadMore(authManager: authManager) }
-                                    }
-                                }
-                            }
-
-                            if model.isLoadingMore {
-                                ProgressView()
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                            } else if model.loadMoreFailed {
-                                Button("Try Again") { Task { await model.loadMore(authManager: authManager) } }
-                                    .frame(maxWidth: .infinity)
-                                    .padding()
-                            }
+                            gridCells(tracksFocus: true)
                         }
                         .padding(DT.Spacing.pagePad)
                         // Room for the A–Z column.
@@ -133,7 +113,11 @@ struct LibraryDetailView: View {
         .onChange(of: model.extraFilters) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
         .onChange(of: model.watchedFilter) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
         .onChange(of: model.favoritesOnly) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
-        .modifier(LibrarySearchModifier(model: model, authManager: authManager, mediaRepo: mediaRepo))
+        .navigationDestination(isPresented: $showSearch) { searchPage }
+        .onChange(of: showSearch) { _, shown in
+            if !shown, !model.searchText.isEmpty { model.searchText = "" }
+        }
+        .onChange(of: model.searchText) { _, _ in model.filtersChanged(authManager: authManager, mediaRepo: mediaRepo) }
         .fullScreenCover(item: $model.playlistPlayback, onDismiss: {
             PlayQueue.clear()
             reload()
@@ -215,6 +199,8 @@ struct LibraryDetailView: View {
             } else if model.isPlaylistsLibrary {
                 Button { model.showNewPlaylist = true } label: { tvActionLabel("New Playlist", systemImage: "plus") }
             }
+            Button { showSearch = true } label: { tvActionLabel("Search", systemImage: "magnifyingglass") }
+                .accessibilityLabel(Text(model.searchPrompt))
             Button { showFilterSheet = true } label: {
                 tvActionLabel("Filter & Sort", systemImage: model.filtersActive ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
             }
@@ -266,6 +252,62 @@ struct LibraryDetailView: View {
         }
     }
 
+    /// The grid's cards, with Load More at the end. Only the library page tracks focus, for the
+    /// A–Z jump; the search page's cards would share its IDs.
+    @ViewBuilder
+    private func gridCells(tracksFocus: Bool) -> some View {
+        ForEach(model.gridEntries) { entry in
+            Group {
+                if entry.items.count > 1 {
+                    showGroupCell(entry.items)
+                } else if tracksFocus {
+                    itemCell(entry.items[0]).focused($focusedItemID, equals: entry.items[0].id)
+                } else {
+                    itemCell(entry.items[0])
+                }
+            }
+            .onAppear {
+                if let last = entry.items.last, model.shouldLoadMore(after: last) {
+                    Task { await model.loadMore(authManager: authManager) }
+                }
+            }
+        }
+
+        if model.isLoadingMore {
+            ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding()
+        } else if model.loadMoreFailed {
+            Button("Try Again") { Task { await model.loadMore(authManager: authManager) } }
+                .frame(maxWidth: .infinity)
+                .padding()
+        }
+    }
+
+    /// The keyboard at the top, as Browse's search, and the matching titles in the grid below it.
+    private var searchPage: some View {
+        Group {
+            if !model.isSearching {
+                Color.clear
+            } else if model.items.isEmpty, model.isLoading {
+                ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if model.items.isEmpty {
+                LibraryEmptyResults(model: model, retry: reload)
+            } else {
+                ScrollView(showsIndicators: false) {
+                    LazyVGrid(columns: columns, spacing: DT.Spacing.shelfGap) {
+                        gridCells(tracksFocus: false)
+                    }
+                    .padding(DT.Spacing.pagePad)
+                    .focusSection()
+                }
+                .scrollClipDisabled()
+            }
+        }
+        .searchable(text: $model.searchText, prompt: Text(model.searchPrompt))
+        .screenBackground()
+    }
+
     private func itemCell(_ item: MediaItem) -> some View {
         gridLink(for: item) {
             PosterCard(
@@ -279,7 +321,6 @@ struct LibraryDetailView: View {
         }
         .buttonStyle(TVCardButtonStyle())
         .focusEffectDisabled()
-        .focused($focusedItemID, equals: item.id)
         .contextMenu(menuItems: { libraryMenu(item) }, preview: { LibraryItemPreview(item: item, imageURL: mediaRepo.imageURL(for: item)) })
     }
 
