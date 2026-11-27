@@ -7,6 +7,9 @@ import SwiftUI
 enum WhatsNew {
     static var items: [WhatsNewItem] {
         [
+            WhatsNewItem(icon: "play.square.stack",
+                         title: "Arcs",
+                         detail: "Scroll through scenes from your own films and shows, picked for you. Double-tap to like, find a scene by a line you remember, send one to friends with your Arcs code, or share the clip itself. Needs Arcfin Sync 0.8 on your server."),
             WhatsNewItem(icon: "photo.on.rectangle",
                          title: "A New Look for Titles",
                          detail: "Movies, shows, people and Seerr titles open with their artwork across the screen, the logo at its foot and the page tinted to match. Downloads look the same, and the ones you already have update to the new artwork."),
