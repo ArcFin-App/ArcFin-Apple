@@ -16,6 +16,7 @@ enum WidgetSnapshotUpdater {
     /// Sign-out / profile removal: empties the widgets right away.
     static func clear() {
         WidgetSnapshotStore.clear()
+        ArcsWidgetStore.clear()
         WidgetCenter.shared.reloadAllTimelines()
     }
 

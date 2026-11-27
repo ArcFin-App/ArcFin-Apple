@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import SwiftUI
+import JellyfinAPI
 import AuthCore
 import Telemetry
 
@@ -49,6 +50,13 @@ struct SettingsView: View {
                 MusicSettingsView()
             } label: {
                 settingsRow("Music", icon: "music.note")
+            }
+            if authManager.arcfinSyncStatus?.isOn("arcs") == true {
+                NavigationLink {
+                    ArcsSettingsView()
+                } label: {
+                    settingsRow("Arcs", icon: "play.square.stack")
+                }
             }
             NavigationLink {
                 AppearanceView()

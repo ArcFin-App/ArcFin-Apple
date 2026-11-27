@@ -61,6 +61,9 @@ struct ArcfinSyncAdminView: View {
                             }
                             .tvListRow()
                         }
+                        if features.contains("arcs") {
+                            AdminPlatform.arcsAdminLink(users: model.users)
+                        }
                         if features.contains("watchParty") || features.contains("pickTogether") {
                             NavigationLink {
                                 LiveSessionsAdminView().tvSettingsPage()
@@ -172,7 +175,7 @@ struct ArcfinSyncAdminView: View {
     }
 
     private static let householdFeatures: Set<String> = ["sharedAccounts", "announcements", "maintenance"]
-    private static let adminFeatures: Set<String> = Self.householdFeatures.union(["downloadLimits", "pickTogether", "watchParty", "recommendations", "hidden",
+    private static let adminFeatures: Set<String> = Self.householdFeatures.union(["arcs", "downloadLimits", "pickTogether", "watchParty", "recommendations", "hidden",
                                                                                   "integrations", "signedCommands", "limits"])
 
     private var features: Set<String> { Set(authManager.arcfinSyncStatus?.features ?? []) }

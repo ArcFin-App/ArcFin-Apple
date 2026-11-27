@@ -17,6 +17,7 @@ struct NotificationsSettingsView: View {
     @AppStorage(BackgroundRefresh.announcementsKey) private var notifyAnnouncements = true
     @AppStorage(BackgroundRefresh.requestsToApproveKey) private var notifyRequestsToApprove = true
     @AppStorage(BackgroundRefresh.issuesKey) private var notifyIssues = true
+    @AppStorage(BackgroundRefresh.arcsSentKey) private var notifyArcsSent = true
     @AppStorage(QuietHours.enabledKey) private var quietHoursEnabled = false
     @AppStorage(QuietHours.startKey) private var quietStart = QuietHours.defaultStart
     @AppStorage(QuietHours.endKey) private var quietEnd = QuietHours.defaultEnd
@@ -98,6 +99,10 @@ struct NotificationsSettingsView: View {
                     TVRowLabelText(title: "Issues", detail: "When an issue you reported gets a comment or is resolved, and new issues if you manage them in Seerr. Needs the Arcfin Sync plugin.")
                 }
                 .syncLocked(BackgroundRefresh.issuesKey, authManager)
+                Toggle(isOn: $notifyArcsSent) {
+                    TVRowLabelText(title: "Scenes from Friends", detail: "When a friend sends you a scene in Arcs. Needs the Arcfin Sync plugin.")
+                }
+                .syncLocked(BackgroundRefresh.arcsSentKey, authManager)
                 Toggle(isOn: $notifyRequestsToApprove) {
                     TVRowLabelText(title: "Requests to Approve", detail: "If you can approve requests in Seerr: new ones waiting, ones approved automatically, and ones that failed. Needs the Arcfin Sync plugin.")
                 }

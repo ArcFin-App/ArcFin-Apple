@@ -246,6 +246,7 @@ public struct PickTogetherClient: Sendable {
             throw PickTogetherError(status: status, message: message?.isEmpty == false ? message : nil)
         }
         if T.self == Empty.self { return Empty() as! T }
+        if data.isEmpty, let empty = T.self as? any EmptyBodyDecodable.Type { return empty.emptyBody as! T }
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .custom { keys in PascalKey(keys.last!.stringValue.prefix(1).lowercased() + keys.last!.stringValue.dropFirst()) }
         decoder.dateDecodingStrategy = .custom { decoder in

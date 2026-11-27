@@ -6,14 +6,20 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
     // Case name stays "requests" even though it now displays as "Discover" — the rawValue is
     // persisted in bottomNavOrder/bottomNavActive UserDefaults strings, renaming it would drop
     // the tab from every existing saved layout instead of just relabeling it.
-    case home, browse, stats, requests, watchlist, admin
+    case home, browse, arcs, stats, requests, watchlist, admin
 
     var id: String { rawValue }
+
+    /// The tabs this platform has: Arcs is only on iPhone and iPad.
+    static var available: [BottomNavItem] {
+        allCases.filter { $0 != .arcs || PlatformMetrics.hasArcs }
+    }
 
     var title: String {
         switch self {
         case .home:      String(localized: "Home")
         case .browse:    String(localized: "Browse")
+        case .arcs:      String(localized: "Arcs")
         case .stats:     String(localized: "Stats")
         case .requests:  String(localized: "Discover")
         case .watchlist: String(localized: "Watchlist")
@@ -25,6 +31,7 @@ enum BottomNavItem: String, CaseIterable, Identifiable {
         switch self {
         case .home:      "house"
         case .browse:    "square.grid.2x2"
+        case .arcs:      "play.square.stack"
         case .stats:     "chart.xyaxis.line"
         case .requests:  "sparkle.magnifyingglass"
         case .watchlist: "bookmark"
@@ -45,8 +52,8 @@ enum BottomNavPrefs {
     /// Every tab, in the user's chosen order — any tab type added in a future update
     /// that isn't in the saved order yet is appended at the end rather than dropped.
     static func order(from raw: String) -> [BottomNavItem] {
-        let saved = raw.split(separator: ",").compactMap { BottomNavItem(rawValue: String($0)) }
-        let missing = BottomNavItem.allCases.filter { !saved.contains($0) }
+        let saved = raw.split(separator: ",").compactMap { BottomNavItem(rawValue: String($0)) }.filter(BottomNavItem.available.contains)
+        let missing = BottomNavItem.available.filter { !saved.contains($0) }
         return saved + missing
     }
 
@@ -57,7 +64,7 @@ enum BottomNavPrefs {
     /// Every tab except Stats and Admin until the user chooses; both are opt-in, from
     /// Navigation settings (or Appearance on Apple TV, which has no Admin).
     static func active(from raw: String) -> Set<BottomNavItem> {
-        guard !raw.isEmpty else { return Set(BottomNavItem.allCases).subtracting([.stats, .admin]) }
+        guard !raw.isEmpty else { return Set(BottomNavItem.available).subtracting([.stats, .admin]) }
         return Set(raw.split(separator: ",").compactMap { BottomNavItem(rawValue: String($0)) })
     }
 

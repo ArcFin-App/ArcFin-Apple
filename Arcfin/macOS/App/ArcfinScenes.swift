@@ -72,7 +72,7 @@ extension ArcfinApp {
                 }
                 PlaybackCommands()
                 CommandMenu("Go") {
-                    ForEach(Array(BottomNavItem.allCases.enumerated()), id: \.element) { index, tab in
+                    ForEach(Array(BottomNavItem.available.enumerated()), id: \.element) { index, tab in
                         Button(tab.title) {
                             NotificationCenter.default.post(name: .arcfinSelectTab, object: nil, userInfo: ["tab": tab.rawValue])
                         }

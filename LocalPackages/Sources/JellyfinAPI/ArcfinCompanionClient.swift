@@ -197,6 +197,8 @@ public struct ServerEvent: Sendable, Decodable, Equatable, Identifiable {
     public let actor: String?
     public let starts: Date?
     public let ends: Date?
+    /// arcs-sent: the scene someone sent.
+    public private(set) var clipId: String? = nil
 
     public init(id: String, kind: String, title: String = "", body: String? = nil, requestId: Int? = nil, issueId: Int? = nil,
                 issueType: Int? = nil, problemSeason: Int? = nil, problemEpisode: Int? = nil, actor: String? = nil,
