@@ -35,6 +35,10 @@ extension AppRootModel {
             ArcfinRouting.showDiscover()
         case "search":
             ArcfinRouting.search(url.pathComponents.dropFirst().first ?? "")
+        case "arcs":
+            ArcsDeepLink.receive(url)
+        case "arcs-friend":
+            ArcsDeepLink.receiveFriend(url)
         default:
             break
         }

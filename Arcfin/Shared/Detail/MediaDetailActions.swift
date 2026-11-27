@@ -326,11 +326,20 @@ struct DetailMoreMenu: View {
     let searchSubtitles: () -> Void
     /// Where the platform has watch parties; shown when the server's Arcfin Sync plugin offers them.
     var startWatchParty: (() -> Void)? = nil
+    /// Where the platform has Arcs: this title's scenes, one after another.
+    var openArcs: (() -> Void)? = nil
 
     var body: some View {
         let item = model.item
         let isWatched = model.isWatched
         Menu {
+            if let openArcs, authManager.arcfinSyncStatus?.isOn("arcs") == true,
+               [.movie, .series, .episode].contains(item.type) {
+                Button(action: openArcs) {
+                    Label(item.type == .movie ? "Scenes from This Film" : "Scenes from This Show", systemImage: "play.square.stack")
+                }
+                Divider()
+            }
             if item.type == .movie || item.type == .episode {
                 Button { model.markWatched(!isWatched, authManager: authManager) } label: {
                     Label(isWatched ? "Mark as Unwatched" : "Mark as Watched", systemImage: isWatched ? "eye.slash" : "checkmark")

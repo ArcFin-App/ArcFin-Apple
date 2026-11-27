@@ -5,6 +5,8 @@ import JellyfinAPI
 
 /// The design tokens that differ on this platform; `DT` reads them.
 enum PlatformMetrics {
+    /// Arcs, the vertical feed of scenes from the library: made for a phone or tablet held upright.
+    nonisolated static let hasArcs = true
     /// Whether the app tells Now Playing if it's playing. Only the Mac takes it; elsewhere the
     /// system works it out from the audio session and logs a missing entitlement instead.
     static let setsNowPlayingState = false

@@ -34,6 +34,7 @@ struct MainTabView: View {
         case .requests:  SeerrView()
         case .watchlist: NavigationStack { WatchlistView() }
         case .admin:     NavigationStack { AdminView() }
+        case .arcs:      EmptyView()
         }
     }
 

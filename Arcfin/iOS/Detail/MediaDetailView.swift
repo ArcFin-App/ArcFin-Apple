@@ -33,6 +33,7 @@ struct MediaDetailView: View {
     @State private var requestingSeerrItem: SeerrItem?
     @State private var openedSeerrItem: SeerrItem?
     @State private var watchParty: WatchPartyLaunch?
+    @State private var arcsTitle: ArcsTitle?
 
     private let headerMetrics = DetailHeaderMetrics(
         heroHeight: 440, titleStyle: .largeTitle,
@@ -117,8 +118,12 @@ struct MediaDetailView: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 DetailMoreMenu(model: model, searchSubtitles: { showSubtitleSearch = true },
-                               startWatchParty: { watchParty = WatchPartyLaunch(.host(model.detail?.item ?? item, officialRating: model.detail?.officialRating)) })
+                               startWatchParty: { watchParty = WatchPartyLaunch(.host(model.detail?.item ?? item, officialRating: model.detail?.officialRating)) },
+                               openArcs: { arcsTitle = ArcsTitle(id: item.type == .episode ? (item.seriesId ?? item.id) : item.id) })
             }
+        }
+        .fullScreenCover(item: $arcsTitle) { title in
+            ArcsCover(feed: .series, seriesID: title.id)
         }
         .fullScreenCover(item: $watchParty) { party in
             WatchPartyView(launch: party.launch) { request in
@@ -284,6 +289,8 @@ struct MediaDetailView: View {
         if !model.seasons.isEmpty {
             DetailSeriesSection(model: model, spoilerProtection: spoilerProtection) { selectedEpisode = $0 }
         }
+
+        ArcsBestScenes(item: item)
 
         // Similar / recommended
         if !model.seerrRelatedItems.isEmpty {

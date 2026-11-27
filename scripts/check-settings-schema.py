@@ -56,6 +56,9 @@ EXCLUDED = {
     "arcfin.introduction.onboardingSeen": "onboarding",
     "arcfin.introduction.whatsNewSeen": "onboarding",
     "arcfin.adminTabOffered": "prompt shown once",
+    "arcfin.arcsTabOffered": "prompt shown once",
+    "arcfin.pendingArcsClip": "link waiting for launch",
+    "arcfin.pendingArcsFriend": "link waiting for launch",
     "arcfin.whoIsWatchingOffered": "prompt shown once",
     # Sync's own bookkeeping
     "arcfin.settingsSync.lastSynced": "sync state",

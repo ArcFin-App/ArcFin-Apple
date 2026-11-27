@@ -36,6 +36,7 @@ nonisolated enum BackgroundRefresh {
     static let announcementsKey = "notifyAnnouncements"
     static let requestsToApproveKey = "notifyRequestsToApprove"
     static let issuesKey = "notifyIssues"
+    static let arcsSentKey = "notifyArcsSent"
 
     #if os(iOS)
     /// BGTask isn't Sendable. The work and the expiration handler can both finish it, so the
@@ -180,6 +181,9 @@ nonisolated enum BackgroundRefresh {
         if let credential = IntentSession.credential() {
             await WidgetSnapshotUpdater.refreshProgress(credential: credential, authHeader: IntentSession.authHeader(for: credential))
         }
+        #if os(iOS)
+        await ArcsWidgetPublisher.refresh()
+        #endif
         guard !Task.isCancelled else { return }
         await checkServerFeed()
         guard !Task.isCancelled else { return }
@@ -305,6 +309,7 @@ nonisolated enum BackgroundRefresh {
         let announcements = defaults.object(forKey: announcementsKey) as? Bool ?? true
         let toApprove = defaults.object(forKey: requestsToApproveKey) as? Bool ?? true
         let issues = defaults.object(forKey: issuesKey) as? Bool ?? true
+        let arcsSent = PlatformMetrics.hasArcs && (defaults.object(forKey: arcsSentKey) as? Bool ?? true)
         for event in feed.events {
             let title = event.title.isEmpty || pinLocked ? String(localized: "One of your requests") : event.title
             switch event.kind {
@@ -323,6 +328,8 @@ nonisolated enum BackgroundRefresh {
             case "issue-reported" where issues, "issue-comment" where issues, "issue-resolved" where issues,
                  "issue-reopened" where issues:
                 await NotificationManager.notifyIssue(event, hidingDetails: pinLocked)
+            case "arcs-sent" where arcsSent:
+                await NotificationManager.notifyArcsSent(event, hidingDetails: pinLocked)
             default: continue
             }
         }

@@ -18,6 +18,7 @@ struct StatsView: View {
     @State private var isWide = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @State private var showShare = false
+    @State private var arcsStats: ArcsMyStats?
 
     var body: some View {
         NavigationStack {
@@ -44,6 +45,7 @@ struct StatsView: View {
                 .navigationDestination(for: MediaPerson.self) { PersonDetailView(person: $0) }
         }
         .task(id: authManager.state.credential?.id) { await model.load(authManager: authManager) }
+        .task(id: arcsTaskID) { arcsStats = await ArcsStatsSection.load(authManager: authManager) }
         .task(id: model.input(period: period)) { await model.compute(period: period, reduceMotion: reduceMotion) }
         .task(id: musicTaskID) { if shownKind != .video { await model.loadMusic(authManager: authManager) } }
         .task(id: model.musicInput(period: period)) { await model.computeMusic(period: period, reduceMotion: reduceMotion) }
@@ -61,6 +63,10 @@ struct StatsView: View {
         }
         guard let stats = model.stats, !stats.isEmpty else { return nil }
         return .video(stats)
+    }
+
+    private var arcsTaskID: String {
+        "\(authManager.state.credential?.id.uuidString ?? "")-\(authManager.arcfinSyncStatus?.isOn("arcs") == true)"
     }
 
     private var musicTaskID: String { "\(authManager.state.credential?.id.uuidString ?? "")-\(shownKind != .video)" }
@@ -90,6 +96,7 @@ struct StatsView: View {
                     if period != .allTime, let title = stepperTitle { periodStepper(title) }
                     StatsKindContent(kind: shownKind, model: model, period: period, isWide: isWide,
                                      compactHero: verticalSizeClass == .compact)
+                    if shownKind != .music, let arcsStats { ArcsStatsSection(stats: arcsStats) }
                 }
                 .padding(.horizontal, DT.Spacing.pagePad)
                 .padding(.top, 8)
@@ -97,7 +104,10 @@ struct StatsView: View {
                 .frame(maxWidth: isWide ? 1300 : 900)
                 .frame(maxWidth: .infinity)
             }
-            .refreshable { await model.load(authManager: authManager) }
+            .refreshable {
+                await model.load(authManager: authManager)
+                arcsStats = await ArcsStatsSection.load(authManager: authManager)
+            }
             .onGeometryChange(for: Bool.self) { $0.size.width >= 700 } action: { isWide = $0 }
         }
     }

@@ -103,6 +103,9 @@ struct HomeView: View {
                                 HomeConnectionBanner(hasDownloads: hasDownloads)
                             }
                             ServerNoticeBanners()
+                            ArcsSceneOfTheDay()
+                                .arcsDeepLink()
+                                .arcsFriendLink()
                             ForEach(orderedVisibleShelves) { shelf in
                                 if HomeModel.showsShelfSkeleton(shuffled: shuffleHomeShelves, mediaRepo: mediaRepo),
                                    !HomeShelfPrefs.pinned.contains(shelf), !shelf.isSeerr {

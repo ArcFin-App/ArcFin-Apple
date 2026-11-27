@@ -114,6 +114,14 @@ enum NotificationManager {
                    body: String(localized: "Your server's notifications reach this device."), identifier: id)
     }
 
+    /// A friend sent a scene in Arcs: opens it there. A PIN profile's shows no name or title.
+    static func notifyArcsSent(_ event: ServerEvent, hidingDetails: Bool) async {
+        let sender = event.title
+        let heading = hidingDetails || sender.isEmpty ? String(localized: "Someone sent you a scene") : String(localized: "\(sender) sent you a scene")
+        let route = event.clipId.flatMap { URL(string: "arcfin://arcs/\($0)") }.map(Route.link)
+        await send(title: heading, body: hidingDetails ? "" : (event.body ?? ""), identifier: event.id, route: route, threadIdentifier: "arcs-sent")
+    }
+
     /// For people who can approve requests in Seerr: one waiting, approved by itself, or failed.
     static func notifyRequestToManage(_ event: ServerEvent, title: String, hidingDetails: Bool) async {
         let heading = switch event.kind {

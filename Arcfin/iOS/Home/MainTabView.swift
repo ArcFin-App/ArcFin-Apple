@@ -21,10 +21,12 @@ struct MainTabView: View {
 
     private var visibleTabs: [BottomNavItem] {
         MainTabs.visible(orderString: orderString, activeString: activeString, seerrConfigured: seerrRepo.isConfigured,
-                         isAdmin: authManager.isAdmin, limit: tabLimit)
+                         isAdmin: authManager.isAdmin, arcsAvailable: authManager.arcfinSyncStatus?.isOn("arcs") == true,
+                         limit: tabLimit)
     }
 
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.scenePhase) private var scenePhase
     private var tabLimit: Int { sizeClass == .compact ? BottomNavPrefs.maxActiveCompact : BottomNavPrefs.maxActiveRegular }
 
     @ViewBuilder
@@ -36,6 +38,7 @@ struct MainTabView: View {
         case .requests:  SeerrView()
         case .watchlist: NavigationStack { WatchlistView() }
         case .admin:     NavigationStack { AdminView() }
+        case .arcs:      ArcsTab()
         }
     }
 
@@ -48,10 +51,19 @@ struct MainTabView: View {
                     Tab(tab.title, systemImage: tab.icon, value: tab) {
                         tabDestination(tab)
                     }
+                    // Scenes friends sent that haven't been watched.
+                    .badge(tab == .arcs ? ArcsBadge.shared.unseen : 0)
                 }
             }
             .tabViewStyle(.sidebarAdaptable)
             .adminTabOffer(limit: tabLimit)
+            .arcsTabOffer(limit: tabLimit)
+            .task(id: visibleTabs.contains(.arcs)) {
+                if visibleTabs.contains(.arcs) { ArcsPrefetch.shared.start(authManager: authManager) }
+            }
+            .task(id: ArcsBadgeKey(arcs: visibleTabs.contains(.arcs), active: scenePhase == .active)) {
+                if visibleTabs.contains(.arcs), scenePhase == .active { await ArcsBadge.shared.refresh(authManager: authManager) }
+            }
             // The playing-streams badge, kept current while Arcfin is open.
             .task(id: showsStreamBadge && authManager.isAdmin) {
                 if showsStreamBadge && authManager.isAdmin { await StreamBadge.keepCurrent() } else { await StreamBadge.refresh() }
@@ -78,7 +90,8 @@ struct MainTabView: View {
             .onAppear {
                 if !visibleTabs.contains(selectedTab) { selectedTab = .home }
             }
-            .modifier(CastMiniControllerAccessory())
+            // Arcs fills the screen with its own video; the bar would sit over its controls.
+            .modifier(CastMiniControllerAccessory(hidden: selectedTab == .arcs))
             // arcfin://downloads — from the download Live Activity's tap target.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinShowMusic)) { _ in
                 selectedTab = .browse
@@ -99,6 +112,8 @@ struct MainTabView: View {
                 // A route that came in before the tabs were up: Library and Home take it from here.
                 if UserDefaults.standard.bool(forKey: "arcfin.pendingShowDownloads") { selectedTab = .browse }
                 if UserDefaults.standard.string(forKey: "arcfin.pendingPlayID") != nil { selectedTab = .home }
+                if UserDefaults.standard.string(forKey: ArcsDeepLink.pendingKey) != nil
+                    || UserDefaults.standard.string(forKey: ArcsDeepLink.pendingFriendKey) != nil { selectedTab = .home }
             }
             // Siri / Shortcuts search: results are shown by the Browse tab.
             .onReceive(NotificationCenter.default.publisher(for: .arcfinSearch)) { _ in
@@ -115,13 +130,23 @@ struct MainTabView: View {
             .onReceive(NotificationCenter.default.publisher(for: .arcfinPlayItem)) { _ in
                 selectedTab = .home
             }
+            // The Scene of the Day widget: Home opens the scene in Arcs.
+            .onReceive(NotificationCenter.default.publisher(for: .arcfinOpenArcs)) { _ in
+                selectedTab = .home
+            }
         }
     }
+}
+
+private struct ArcsBadgeKey: Equatable {
+    let arcs: Bool
+    let active: Bool
 }
 
 /// `isEnabled:` arrived in iOS 26.1; the older overload can't hide the bar, so on 26.0
 /// there is no mini controller rather than a permanently empty accessory.
 private struct CastMiniControllerAccessory: ViewModifier {
+    var hidden = false
     /// A video on a Chromecast; music on one keeps the music bar.
     private var casting: Bool {
         CastManager.shared.isConnected && CastManager.shared.nowPlayingTitle != nil && !AppServices.music.isCasting
@@ -142,8 +167,8 @@ private struct CastMiniControllerAccessory: ViewModifier {
     @ViewBuilder
     private func accessory(_ content: Content) -> some View {
         if #available(iOS 26.1, *) {
-            content.tabViewBottomAccessory(isEnabled: casting || AppServices.music.isActive
-                                           || AppServices.remoteSessions.selected != nil) {
+            content.tabViewBottomAccessory(isEnabled: !hidden && (casting || AppServices.music.isActive
+                                           || AppServices.remoteSessions.selected != nil)) {
                 // Casting from here comes first, then music on this device, then another
                 // device playing on this profile.
                 if casting {
